@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import type { Recommendation, CareerGapResponse } from "@/lib/types";
+import type { Recommendation } from "@/lib/types";
 import type { SupportedUiLanguage } from "@/lib/user-locales";
 import {
   ActionListIcon,
@@ -13,6 +13,17 @@ import {
   SparkIcon,
   TargetIcon,
 } from "@/components/ui-flat-icons";
+
+type CareerGapResponse = {
+  key_gap_summary?: string | null;
+  current_role?: string | null;
+  short_term_role?: string | null;
+  short_term_level?: string | null;
+  mid_term_role?: string | null;
+  mid_term_level?: string | null;
+  long_term_role?: string | null;
+  long_term_level?: string | null;
+};
 
 function getCoachModeLabel(
   mode: string | undefined,
