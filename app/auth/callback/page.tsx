@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { saveToken } from "@/lib/auth";
 import { routeUserAfterLogin } from "@/lib/post-login-routing";
@@ -43,7 +43,7 @@ function BrandMark() {
   );
 }
 
-export default function AuthCallbackPage() {
+function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -172,5 +172,66 @@ export default function AuthCallbackPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+function AuthCallbackFallback() {
+  return (
+    <main
+      className="page"
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "32px 20px",
+      }}
+    >
+      <div className="page-wrap" style={{ maxWidth: 760, width: "100%" }}>
+        <div
+          className="card stack"
+          style={{
+            textAlign: "center",
+            gap: 18,
+            minHeight: 360,
+            justifyContent: "center",
+            background:
+              "linear-gradient(180deg, rgba(255,255,255,0.92), rgba(248,250,252,0.95))",
+          }}
+        >
+          <div className="stack" style={{ gap: 8, alignItems: "center" }}>
+            <BrandMark />
+            <BadgePill icon={<SparkIcon size={14} />}>Authentication</BadgePill>
+            <h1 className="title" style={{ margin: 0 }}>
+              LeanWorker
+            </h1>
+            <div className="muted">Career intelligence amplified</div>
+          </div>
+
+          <div className="row" style={{ justifyContent: "center" }}>
+            <BadgePill icon={<CheckCircleIcon size={14} />}>Login</BadgePill>
+          </div>
+
+          <h2 className="title" style={{ fontSize: 28, margin: 0 }}>
+            Signing you in...
+          </h2>
+
+          <p className="subtitle" style={{ margin: 0, maxWidth: 580, alignSelf: "center" }}>
+            We are preparing your coaching workspace, restoring your context, and loading your
+            personalized environment.
+          </p>
+
+          <div className="loader" style={{ alignSelf: "center" }} />
+        </div>
+      </div>
+    </main>
+  );
+}
+
+export default function AuthCallbackPage() {
+  return (
+    <Suspense fallback={<AuthCallbackFallback />}>
+      <AuthCallbackContent />
+    </Suspense>
   );
 }
