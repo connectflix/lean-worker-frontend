@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "LeanWorker",
-  description: "",
+  description:
+    "LeanWorker helps you turn career uncertainty into clear action with AI-powered coaching, personalized recommendations, and practical next steps.",
   icons: {
     icon: "/favicon.png",
     shortcut: "/favicon.png",
