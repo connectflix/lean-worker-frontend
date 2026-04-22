@@ -613,8 +613,8 @@ function SessionPageContent() {
 
   const center =
     sessionId && sessionMode === "voice" ? (
-      <div className="stack" style={{ gap: 16 }}>
-        <div className="card stack">
+      <div className="session-cockpit-column">
+        <div className="card stack" style={{ flexShrink: 0 }}>
           <div className="row" style={{ gap: 8, alignItems: "center" }}>
             <SessionIcon />
             <div className="section-title">{copy.voiceHeadline}</div>
@@ -632,8 +632,8 @@ function SessionPageContent() {
         </div>
       </div>
     ) : sessionId ? (
-      <div className="stack" style={{ gap: 16 }}>
-        <div className="card stack">
+      <div className="session-cockpit-column">
+        <div className="card stack" style={{ flexShrink: 0 }}>
           <div className="row" style={{ gap: 8, alignItems: "center" }}>
             <SessionIcon />
             <div className="section-title">{copy.writtenHeadline}</div>

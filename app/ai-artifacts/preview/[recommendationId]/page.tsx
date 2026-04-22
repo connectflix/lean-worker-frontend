@@ -18,6 +18,7 @@ import {
   createAIArtifactCheckoutSession,
   getMyAIArtifacts,
   previewAIArtifact,
+  submitSupportCaseFlow,
 } from "@/lib/api";
 import { useUiLanguage } from "@/lib/use-ui-language";
 import type {
@@ -133,6 +134,12 @@ function AIArtifactPreviewContent() {
     ebook: null,
     audiobook: null,
   });
+
+  const [supportOpen, setSupportOpen] = useState(false);
+  const [supportMessage, setSupportMessage] = useState("");
+  const [supportSubmitting, setSupportSubmitting] = useState(false);
+  const [supportSuccess, setSupportSuccess] = useState<string | null>(null);
+  const [supportError, setSupportError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -257,6 +264,57 @@ function AIArtifactPreviewContent() {
     router.push(`/ai-artifacts/preview/${recommendationId}?format=${alternateFormat}`);
   }
 
+  async function handleSubmitSupport() {
+    const trimmed = supportMessage.trim();
+
+    if (!trimmed) {
+      setSupportError(
+        uiLanguage === "fr"
+          ? "Merci de décrire le problème avant l’envoi."
+          : "Please describe the issue before sending.",
+      );
+      setSupportSuccess(null);
+      return;
+    }
+
+    try {
+      setSupportSubmitting(true);
+      setSupportError(null);
+      setSupportSuccess(null);
+
+      const contextLine =
+        uiLanguage === "fr"
+          ? `Contexte preview — recommendation_id=${recommendationId}, format=${format}, artifact_status=${currentArtifact?.status ?? "none"}, prix=${currentArtifact?.price_eur ?? totalPrice}€.`
+          : `Preview context — recommendation_id=${recommendationId}, format=${format}, artifact_status=${currentArtifact?.status ?? "none"}, price=${currentArtifact?.price_eur ?? totalPrice}€.`;
+
+      const finalMessage = `${trimmed}\n\n${contextLine}`;
+
+      await submitSupportCaseFlow({
+        message: finalMessage,
+        language: uiLanguage,
+        source: "artifact_preview_page",
+      });
+
+      setSupportSuccess(
+        uiLanguage === "fr"
+          ? "Ton signal a bien été envoyé. Nous allons analyser le problème."
+          : "Your report has been sent successfully. We will analyze the issue.",
+      );
+      setSupportMessage("");
+      setSupportOpen(false);
+    } catch (err) {
+      setSupportError(
+        err instanceof Error
+          ? err.message
+          : uiLanguage === "fr"
+            ? "Impossible d’envoyer le signal pour le moment."
+            : "Unable to send the report right now.",
+      );
+    } finally {
+      setSupportSubmitting(false);
+    }
+  }
+
   function getPrimaryButtonLabel() {
     if (redirecting) {
       return uiLanguage === "fr" ? "Redirection..." : "Redirecting...";
@@ -298,6 +356,11 @@ function AIArtifactPreviewContent() {
         ? "Découvrir la version audio"
         : "Discover audio version";
   }
+
+  const supportPlaceholder =
+    uiLanguage === "fr"
+      ? "Décris brièvement le problème rencontré sur cette preview ou ce paiement (prix, format, checkout, accès, déblocage, etc.)."
+      : "Briefly describe the issue you encountered with this preview or payment (price, format, checkout, access, unlock, etc.).";
 
   return (
     <AppShell
@@ -529,6 +592,93 @@ function AIArtifactPreviewContent() {
                   : "Back to recommendations"}
               </button>
             </div>
+          </div>
+
+          <div className="card stack">
+            <div className="row space-between" style={{ alignItems: "center", gap: 12 }}>
+              <div className="section-title">
+                {uiLanguage === "fr" ? "Besoin d’aide ?" : "Need help?"}
+              </div>
+
+              <button
+                className="button ghost"
+                type="button"
+                onClick={() => {
+                  setSupportOpen((value) => !value);
+                  setSupportError(null);
+                  setSupportSuccess(null);
+                }}
+              >
+                {supportOpen
+                  ? uiLanguage === "fr"
+                    ? "Masquer"
+                    : "Hide"
+                  : uiLanguage === "fr"
+                    ? "Signaler un problème"
+                    : "Report an issue"}
+              </button>
+            </div>
+
+            <div className="muted">
+              {uiLanguage === "fr"
+                ? "LeanWorker tente déjà de détecter automatiquement certains incidents. Utilise ce formulaire si le problème persiste."
+                : "LeanWorker already tries to detect some incidents automatically. Use this form if the issue persists."}
+            </div>
+
+            {supportSuccess ? (
+              <div className="card-soft" style={{ color: "var(--success, #15803d)" }}>
+                {supportSuccess}
+              </div>
+            ) : null}
+
+            {supportError ? (
+              <div className="card-soft" style={{ color: "var(--danger)" }}>
+                {supportError}
+              </div>
+            ) : null}
+
+            {supportOpen ? (
+              <div className="card-soft stack" style={{ gap: 10 }}>
+                <textarea
+                  className="input"
+                  value={supportMessage}
+                  onChange={(e) => setSupportMessage(e.target.value)}
+                  placeholder={supportPlaceholder}
+                  rows={5}
+                  style={{ width: "100%", resize: "vertical" }}
+                />
+
+                <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
+                  <button
+                    className="button"
+                    type="button"
+                    onClick={() => void handleSubmitSupport()}
+                    disabled={supportSubmitting}
+                  >
+                    {supportSubmitting
+                      ? uiLanguage === "fr"
+                        ? "Envoi..."
+                        : "Sending..."
+                      : uiLanguage === "fr"
+                        ? "Envoyer"
+                        : "Send"}
+                  </button>
+
+                  <button
+                    className="button ghost"
+                    type="button"
+                    onClick={() => {
+                      setSupportOpen(false);
+                      setSupportMessage("");
+                      setSupportError(null);
+                    }}
+                    disabled={supportSubmitting}
+                  >
+                    {uiLanguage === "fr" ? "Annuler" : "Cancel"}
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </div>
         </>
       )}

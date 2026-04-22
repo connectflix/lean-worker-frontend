@@ -30,7 +30,69 @@ import type {
   AdminIntelligenceSummary,
   AdminCoverageSummary,
   AdminLeverQualitySummary,
+  AdminSupportTriageRequest,
+  AdminSupportTriageResponse,
+  AdminSupportResolutionRequest,
+  AdminSupportResolutionResponse,
+  AdminTechOpsMonitoringRequest,
+  AdminTechOpsMonitoringResponse,
+  AdminBusinessOpsMonitoringRequest,
+  AdminBusinessOpsMonitoringResponse,
+  AdminChiefOfStaffRequest,
+  AdminChiefOfStaffResponse,
+  AdminDailyBriefingRequest,
+  AdminDailyBriefingResponse,
+  AdminOrchestrationRequest,
+  AdminOrchestrationResponse,
+  AdminCustomerExperienceMonitoringRequest,
+  AdminCustomerExperienceMonitoringResponse,
 } from "./types";
+
+export type SupportIssuePayload = {
+  message: string;
+  language?: string;
+  user_email?: string | null;
+  user_id?: number | null;
+  source?: string | null;
+};
+
+export type SupportTriageResult = {
+  summary: string;
+  category:
+    | "auth_login"
+    | "payment_issue"
+    | "artifact_access_generation"
+    | "recommendation_quality"
+    | "onboarding_confusion"
+    | "technical_bug"
+    | "feature_request"
+    | "trust_safety"
+    | "other";
+  severity: "P1" | "P2" | "P3" | "P4";
+  confidence: number;
+  likely_causes: string[];
+  recommended_owner: "support_resolution" | "tech_ops" | "business_ops" | "founder";
+  recommended_actions: string[];
+  founder_escalation: boolean;
+};
+
+export type SupportCaseFlowResult = {
+  scenario: string;
+  status: "success" | "partial" | "failed";
+  executed_agents: string[];
+  final_output: Record<string, unknown>;
+  intermediate_results: Record<string, unknown>;
+  escalations: string[];
+  confidence: number;
+};
+
+export type AdminSupportCaseFlowPayload = {
+  message: string;
+  language?: string;
+  user_email?: string | null;
+  user_id?: number | null;
+  source?: string | null;
+};
 
 function getPreferredUiLanguage(): SupportedUiLanguage {
   if (typeof window !== "undefined") {
@@ -337,6 +399,24 @@ export async function getMyAIArtifacts(): Promise<AIArtifactStatusResponse[]> {
   return apiFetch<AIArtifactStatusResponse[]>("/ai-artifacts");
 }
 
+export async function submitSupportTriage(
+  payload: SupportIssuePayload,
+): Promise<SupportTriageResult> {
+  return apiFetch<SupportTriageResult>("/support/triage", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function submitSupportCaseFlow(
+  payload: SupportIssuePayload,
+): Promise<SupportCaseFlowResult> {
+  return apiFetch<SupportCaseFlowResult>("/support/case-flow", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 /* ---------------- ADMIN ---------------- */
 
 export async function adminLogin(email: string, password: string): Promise<AdminLoginResponse> {
@@ -417,6 +497,87 @@ export async function getAdminCoverageSummary(): Promise<AdminCoverageSummary> {
 
 export async function getAdminQualitySummary(): Promise<AdminLeverQualitySummary> {
   return adminApiFetch<AdminLeverQualitySummary>("/admin/quality/summary");
+}
+
+export async function adminSupportTriage(
+  payload: AdminSupportTriageRequest,
+): Promise<AdminSupportTriageResponse> {
+  return adminApiFetch<AdminSupportTriageResponse>("/admin/support/triage", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function adminSupportResolution(
+  payload: AdminSupportResolutionRequest,
+): Promise<AdminSupportResolutionResponse> {
+  return adminApiFetch<AdminSupportResolutionResponse>("/admin/support/resolve", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function adminTechOpsMonitoring(
+  payload: AdminTechOpsMonitoringRequest,
+): Promise<AdminTechOpsMonitoringResponse> {
+  return adminApiFetch<AdminTechOpsMonitoringResponse>("/admin/tech-ops/assess", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function adminBusinessOpsMonitoring(
+  payload: AdminBusinessOpsMonitoringRequest,
+): Promise<AdminBusinessOpsMonitoringResponse> {
+  return adminApiFetch<AdminBusinessOpsMonitoringResponse>("/admin/business-ops/assess", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function adminChiefOfStaff(
+  payload: AdminChiefOfStaffRequest,
+): Promise<AdminChiefOfStaffResponse> {
+  return adminApiFetch<AdminChiefOfStaffResponse>("/admin/chief-of-staff/synthesize", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function adminDailyBriefing(
+  payload: AdminDailyBriefingRequest,
+): Promise<AdminDailyBriefingResponse> {
+  return adminApiFetch<AdminDailyBriefingResponse>("/admin/daily-briefing/generate", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function adminOrchestrationRun(
+  payload: AdminOrchestrationRequest,
+): Promise<AdminOrchestrationResponse> {
+  return adminApiFetch<AdminOrchestrationResponse>("/admin/orchestration/run", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function adminSupportCaseFlow(
+  payload: AdminSupportCaseFlowPayload,
+): Promise<SupportCaseFlowResult> {
+  return adminApiFetch<SupportCaseFlowResult>("/admin/orchestration/support-case", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function adminCustomerExperienceMonitoring(
+  payload: AdminCustomerExperienceMonitoringRequest,
+): Promise<AdminCustomerExperienceMonitoringResponse> {
+  return adminApiFetch<AdminCustomerExperienceMonitoringResponse>("/admin/customer-experience/assess", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 /* ---------------- ONBOARDING ---------------- */

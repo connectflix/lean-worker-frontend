@@ -510,6 +510,316 @@ export type AdminLeverQualitySummary = {
   lowest_quality_levers: AdminLeverQualityItem[];
 };
 
+export type AdminSupportTriageCategory =
+  | "auth_login"
+  | "payment_issue"
+  | "artifact_access_generation"
+  | "recommendation_quality"
+  | "onboarding_confusion"
+  | "technical_bug"
+  | "feature_request"
+  | "trust_safety"
+  | "other";
+
+export type AdminSupportTriageSeverity = "P1" | "P2" | "P3" | "P4";
+
+export type AdminSupportTriageOwner =
+  | "support_resolution"
+  | "tech_ops"
+  | "business_ops"
+  | "founder";
+
+export type AdminSupportTriageRequest = {
+  message: string;
+  language: string;
+  user_email?: string | null;
+  user_id?: number | null;
+  source?: string | null;
+};
+
+export type AdminSupportTriageResponse = {
+  summary: string;
+  category: AdminSupportTriageCategory;
+  severity: AdminSupportTriageSeverity;
+  confidence: number;
+  likely_causes: string[];
+  recommended_owner: AdminSupportTriageOwner;
+  recommended_actions: string[];
+  founder_escalation: boolean;
+};
+
+export type AdminSupportResolutionRequest = {
+  message: string;
+  language: string;
+  triage_category: AdminSupportTriageCategory;
+  triage_severity: AdminSupportTriageSeverity;
+  triage_owner: AdminSupportTriageOwner;
+  founder_escalation: boolean;
+  user_email?: string | null;
+  user_id?: number | null;
+  source?: string | null;
+};
+
+export type AdminSupportResolutionResponse = {
+  user_reply: string;
+  internal_summary: string;
+  resolution_checks: string[];
+  suggested_next_step: string;
+  escalate: boolean;
+  escalation_reason?: string | null;
+  confidence: number;
+};
+
+export type AdminTechSignalType =
+  | "auth_error"
+  | "api_error"
+  | "webhook_failure"
+  | "artifact_generation_failure"
+  | "availability_alert"
+  | "frontend_runtime_error"
+  | "unknown";
+
+export type AdminTechSignalSource =
+  | "render"
+  | "vercel"
+  | "stripe"
+  | "backend"
+  | "frontend"
+  | "manual_test"
+  | "unknown";
+
+export type AdminTechEnvironment = "production" | "staging" | "development";
+
+export type AdminTechIncidentStatus = "healthy" | "watch" | "incident";
+
+export type AdminTechIncidentType =
+  | "auth_failure"
+  | "api_failure"
+  | "webhook_failure"
+  | "artifact_generation_failure"
+  | "availability_issue"
+  | "frontend_runtime_issue"
+  | "configuration_issue"
+  | "unknown";
+
+export type AdminTechIncidentSeverity = "critical" | "high" | "medium" | "low";
+
+export type AdminTechOpsMonitoringRequest = {
+  signal_type: AdminTechSignalType;
+  signal_source: AdminTechSignalSource;
+  message: string;
+  language: string;
+  environment: AdminTechEnvironment;
+  context?: Record<string, string | number | boolean | null> | null;
+};
+
+export type AdminTechOpsMonitoringResponse = {
+  status: AdminTechIncidentStatus;
+  incident_detected: boolean;
+  incident_type: AdminTechIncidentType;
+  severity: AdminTechIncidentSeverity;
+  summary: string;
+  likely_causes: string[];
+  recommended_checks: string[];
+  escalate: boolean;
+  escalation_reason?: string | null;
+  confidence: number;
+};
+
+export type AdminBusinessSignalType =
+  | "payment_signal"
+  | "unlock_signal"
+  | "artifact_signal"
+  | "engagement_signal"
+  | "funnel_signal"
+  | "retention_signal"
+  | "unknown";
+
+export type AdminBusinessSignalSource =
+  | "stripe"
+  | "backend"
+  | "dashboard"
+  | "analytics"
+  | "manual_test"
+  | "unknown";
+
+export type AdminBusinessEnvironment = "production" | "staging" | "development";
+
+export type AdminBusinessIssueStatus = "healthy" | "watch" | "issue";
+
+export type AdminBusinessIssueType =
+  | "payment_conversion_issue"
+  | "post_payment_unlock_issue"
+  | "artifact_delivery_issue"
+  | "recommendation_engagement_issue"
+  | "funnel_drop_issue"
+  | "retention_risk"
+  | "business_configuration_issue"
+  | "unknown";
+
+export type AdminBusinessIssueSeverity = "critical" | "high" | "medium" | "low";
+
+export type AdminBusinessOpsMonitoringRequest = {
+  signal_type: AdminBusinessSignalType;
+  signal_source: AdminBusinessSignalSource;
+  message: string;
+  language: string;
+  environment: AdminBusinessEnvironment;
+  context?: Record<string, string | number | boolean | null> | null;
+};
+
+export type AdminBusinessOpsMonitoringResponse = {
+  status: AdminBusinessIssueStatus;
+  issue_detected: boolean;
+  issue_type: AdminBusinessIssueType;
+  severity: AdminBusinessIssueSeverity;
+  summary: string;
+  likely_causes: string[];
+  recommended_checks: string[];
+  escalate: boolean;
+  escalation_reason?: string | null;
+  confidence: number;
+};
+
+export type AdminChiefOfStaffOverallHealth = "healthy" | "watch" | "critical";
+
+export type AdminChiefOfStaffRequest = {
+  language: string;
+  support_summary?: string | null;
+  tech_ops_summary?: string | null;
+  business_ops_summary?: string | null;
+  founder_notes?: string | null;
+  context?: Record<string, string | number | boolean | null> | null;
+};
+
+export type AdminChiefOfStaffResponse = {
+  executive_summary: string;
+  overall_health: AdminChiefOfStaffOverallHealth;
+  top_priorities: string[];
+  key_risks: string[];
+  recommended_decisions: string[];
+  recommended_owner_actions: string[];
+  founder_attention_required: boolean;
+  founder_attention_reason?: string | null;
+  confidence: number;
+};
+
+export type AdminDailyBriefingHealthStatus = "healthy" | "watch" | "critical";
+
+export type AdminDailyBriefingRequest = {
+  language: string;
+  support_summary?: string | null;
+  tech_ops_summary?: string | null;
+  business_ops_summary?: string | null;
+  chief_of_staff_summary?: string | null;
+  founder_notes?: string | null;
+  context?: Record<string, string | number | boolean | null> | null;
+};
+
+export type AdminDailyBriefingResponse = {
+  daily_overview: string;
+  health_status: AdminDailyBriefingHealthStatus;
+  new_important_signals: string[];
+  open_operational_points: string[];
+  things_improving: string[];
+  things_worsening: string[];
+  today_priorities: string[];
+  owner_action_list: string[];
+  founder_focus?: string | null;
+  confidence: number;
+};
+
+export type AdminOrchestrationScenario =
+  | "support_case_flow"
+  | "ops_incident_flow"
+  | "daily_management_flow"
+  | "growth_followup_flow"
+  | "customer_experience_flow";
+
+export type AdminOrchestrationStatus = "success" | "partial" | "failed";
+
+export type AdminOrchestrationOptions = {
+  include_intermediate_results?: boolean;
+  force_chief_of_staff?: boolean;
+  force_daily_briefing?: boolean;
+  force_customer_experience?: boolean;
+};
+
+export type AdminOrchestrationRequest = {
+  scenario: AdminOrchestrationScenario;
+  language: string;
+  input_payload: Record<string, unknown>;
+  options?: AdminOrchestrationOptions;
+};
+
+export type AdminOrchestrationResponse = {
+  scenario: AdminOrchestrationScenario;
+  status: AdminOrchestrationStatus;
+  executed_agents: string[];
+  final_output: Record<string, unknown>;
+  intermediate_results: Record<string, unknown>;
+  escalations: string[];
+  confidence: number;
+};
+
+export type AdminCustomerExperienceSignalType =
+  | "coach_signal"
+  | "recommendation_signal"
+  | "lever_signal"
+  | "artifact_signal"
+  | "journey_signal"
+  | "trust_signal"
+  | "unknown";
+
+export type AdminCustomerExperienceSignalSource =
+  | "user_feedback"
+  | "support_case"
+  | "manual_test"
+  | "dashboard"
+  | "conversation_review"
+  | "unknown";
+
+export type AdminCustomerExperienceEnvironment = "production" | "staging" | "development";
+
+export type AdminCustomerExperienceStatus = "healthy" | "watch" | "degraded";
+
+export type AdminCustomerExperienceArea =
+  | "coach_quality"
+  | "recommendation_relevance"
+  | "lever_relevance"
+  | "artifact_value"
+  | "journey_clarity"
+  | "trust_and_confidence"
+  | "overall_experience"
+  | "unknown";
+
+export type AdminCustomerExperienceSeverity = "high" | "medium" | "low";
+
+export type AdminCustomerExperienceRisk = "high" | "medium" | "low";
+
+export type AdminCustomerExperienceMonitoringRequest = {
+  signal_type: AdminCustomerExperienceSignalType;
+  signal_source: AdminCustomerExperienceSignalSource;
+  message: string;
+  language: string;
+  environment: AdminCustomerExperienceEnvironment;
+  context?: Record<string, string | number | boolean | null> | null;
+};
+
+export type AdminCustomerExperienceMonitoringResponse = {
+  satisfaction_status: AdminCustomerExperienceStatus;
+  issue_detected: boolean;
+  experience_area: AdminCustomerExperienceArea;
+  severity: AdminCustomerExperienceSeverity;
+  summary: string;
+  likely_causes: string[];
+  recommended_actions: string[];
+  user_experience_risk: AdminCustomerExperienceRisk;
+  escalate: boolean;
+  escalation_reason?: string | null;
+  confidence: number;
+};
+
 export type ProfileResponse = {
   given_name?: string | null;
   current_role?: string | null;

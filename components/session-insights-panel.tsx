@@ -213,114 +213,118 @@ export function SessionInsightsPanel({
   }
 
   return (
-    <div className="stack">
-      <div className="card stack">
-        <div className="row" style={{ gap: 8, alignItems: "center" }}>
-          <SessionIcon />
-          <div className="section-title">{copy.live}</div>
-        </div>
+    <div className="session-insights-shell">
+      <div className="session-insights-scroll">
+        <div className="stack">
+          <div className="card stack">
+            <div className="row" style={{ gap: 8, alignItems: "center" }}>
+              <SessionIcon />
+              <div className="section-title">{copy.live}</div>
+            </div>
 
-        <div className="muted">{copy.liveText}</div>
+            <div className="muted">{copy.liveText}</div>
 
-        <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
-          <BadgePill icon={<SessionIcon size={14} />}>Session #{sessionId}</BadgePill>
-          <BadgePill icon={<SparkIcon size={14} />}>{copy.focus}</BadgePill>
-        </div>
+            <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
+              <BadgePill icon={<SessionIcon size={14} />}>Session #{sessionId}</BadgePill>
+              <BadgePill icon={<SparkIcon size={14} />}>{copy.focus}</BadgePill>
+            </div>
 
-        <div className="card-soft">
-          <div className="muted">{copy.focusText}</div>
-        </div>
-      </div>
-
-      <div className="card stack">
-        <div className="row" style={{ gap: 8, alignItems: "center" }}>
-          <BrainIcon />
-          <div className="section-title">{copy.currentCoachStyle}</div>
-        </div>
-
-        <div className="muted">{copy.currentCoachStyleText}</div>
-
-        <div className="card-soft stack" style={{ gap: 10 }}>
-          <div style={{ fontSize: 16, fontWeight: 700 }}>
-            {coachStyleLabel || copy.adaptiveDefault}
+            <div className="card-soft">
+              <div className="muted">{copy.focusText}</div>
+            </div>
           </div>
 
-          <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
-            <BadgePill icon={<BrainIcon size={14} />}>
-              {copy.currentMode}: {coachModeLabel || copy.adaptiveDefault}
-            </BadgePill>
+          <div className="card stack">
+            <div className="row" style={{ gap: 8, alignItems: "center" }}>
+              <BrainIcon />
+              <div className="section-title">{copy.currentCoachStyle}</div>
+            </div>
 
-            <BadgePill icon={<TargetIcon size={14} />}>
-              {copy.currentIntent}: {coachIntentLabel || copy.adaptiveDefault}
-            </BadgePill>
-          </div>
-        </div>
-      </div>
+            <div className="muted">{copy.currentCoachStyleText}</div>
 
-      <div className="card stack">
-        <div className="row" style={{ gap: 8, alignItems: "center" }}>
-          <PathIcon />
-          <div className="section-title">{copy.gap}</div>
-        </div>
-
-        {careerGap?.key_gap_summary ? (
-          <div className="card-soft">
-            <div className="muted">{careerGap.key_gap_summary}</div>
-          </div>
-        ) : (
-          <div className="card-soft">
-            <div className="muted">{copy.noGap}</div>
-          </div>
-        )}
-
-        <div className="stack" style={{ gap: 10 }}>
-          {renderRoleBlock(copy.current, careerGap?.current_role, null)}
-          {renderRoleBlock(copy.short, careerGap?.short_term_role, careerGap?.short_term_level)}
-          {renderRoleBlock(copy.mid, careerGap?.mid_term_role, careerGap?.mid_term_level)}
-          {renderRoleBlock(copy.long, careerGap?.long_term_role, careerGap?.long_term_level)}
-        </div>
-      </div>
-
-      <div className="card stack">
-        <div className="row" style={{ gap: 8, alignItems: "center" }}>
-          <ActionListIcon />
-          <div className="section-title">{copy.recs}</div>
-        </div>
-
-        {activeRecommendations.length === 0 ? (
-          <div className="card-soft">
-            <div className="muted">{copy.noRecs}</div>
-          </div>
-        ) : (
-          <>
-            <div className="muted">{copy.activeRecommendations}</div>
-
-            {activeRecommendations.slice(0, 3).map((rec) => (
-              <div key={rec.id} className="card-soft stack" style={{ gap: 10 }}>
-                <strong>{rec.title}</strong>
-
-                <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                  <BadgePill
-                    icon={
-                      rec.status === "in_progress" ? (
-                        <ClockIcon size={14} />
-                      ) : (
-                        <ActionListIcon size={14} />
-                      )
-                    }
-                  >
-                    {rec.priority} •{" "}
-                    {rec.status === "in_progress" ? copy.statusInProgress : copy.statusOpen}
-                  </BadgePill>
-                </div>
-
-                {rec.action_track && (
-                  <div className="muted">{rec.action_track.replaceAll("_", " ")}</div>
-                )}
+            <div className="card-soft stack" style={{ gap: 10 }}>
+              <div style={{ fontSize: 16, fontWeight: 700 }}>
+                {coachStyleLabel || copy.adaptiveDefault}
               </div>
-            ))}
-          </>
-        )}
+
+              <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
+                <BadgePill icon={<BrainIcon size={14} />}>
+                  {copy.currentMode}: {coachModeLabel || copy.adaptiveDefault}
+                </BadgePill>
+
+                <BadgePill icon={<TargetIcon size={14} />}>
+                  {copy.currentIntent}: {coachIntentLabel || copy.adaptiveDefault}
+                </BadgePill>
+              </div>
+            </div>
+          </div>
+
+          <div className="card stack">
+            <div className="row" style={{ gap: 8, alignItems: "center" }}>
+              <PathIcon />
+              <div className="section-title">{copy.gap}</div>
+            </div>
+
+            {careerGap?.key_gap_summary ? (
+              <div className="card-soft">
+                <div className="muted">{careerGap.key_gap_summary}</div>
+              </div>
+            ) : (
+              <div className="card-soft">
+                <div className="muted">{copy.noGap}</div>
+              </div>
+            )}
+
+            <div className="stack" style={{ gap: 10 }}>
+              {renderRoleBlock(copy.current, careerGap?.current_role, null)}
+              {renderRoleBlock(copy.short, careerGap?.short_term_role, careerGap?.short_term_level)}
+              {renderRoleBlock(copy.mid, careerGap?.mid_term_role, careerGap?.mid_term_level)}
+              {renderRoleBlock(copy.long, careerGap?.long_term_role, careerGap?.long_term_level)}
+            </div>
+          </div>
+
+          <div className="card stack">
+            <div className="row" style={{ gap: 8, alignItems: "center" }}>
+              <ActionListIcon />
+              <div className="section-title">{copy.recs}</div>
+            </div>
+
+            {activeRecommendations.length === 0 ? (
+              <div className="card-soft">
+                <div className="muted">{copy.noRecs}</div>
+              </div>
+            ) : (
+              <>
+                <div className="muted">{copy.activeRecommendations}</div>
+
+                {activeRecommendations.slice(0, 3).map((rec) => (
+                  <div key={rec.id} className="card-soft stack" style={{ gap: 10 }}>
+                    <strong>{rec.title}</strong>
+
+                    <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                      <BadgePill
+                        icon={
+                          rec.status === "in_progress" ? (
+                            <ClockIcon size={14} />
+                          ) : (
+                            <ActionListIcon size={14} />
+                          )
+                        }
+                      >
+                        {rec.priority} •{" "}
+                        {rec.status === "in_progress" ? copy.statusInProgress : copy.statusOpen}
+                      </BadgePill>
+                    </div>
+
+                    {rec.action_track && (
+                      <div className="muted">{rec.action_track.replaceAll("_", " ")}</div>
+                    )}
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

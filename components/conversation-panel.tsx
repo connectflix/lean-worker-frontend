@@ -166,7 +166,8 @@ export function ConversationPanel({
         display: "flex",
         flexDirection: "column",
         minHeight: 0,
-        height: "100%",
+        height: isCockpit ? "clamp(460px, calc(100vh - 270px), 900px)" : "100%",
+        maxHeight: isCockpit ? "calc(100vh - 270px)" : undefined,
         border: isCockpit ? "none" : undefined,
         background: isCockpit ? "transparent" : undefined,
         boxShadow: isCockpit ? "none" : undefined,
@@ -174,7 +175,10 @@ export function ConversationPanel({
     >
       {isCockpit ? (
         <div className="card stack" style={{ gap: 14, margin: 16, marginBottom: 0 }}>
-          <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
+          <div
+            className="row"
+            style={{ justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}
+          >
             <div className="stack" style={{ gap: 6 }}>
               <div className="row" style={{ gap: 8, alignItems: "center" }}>
                 <SessionIcon />

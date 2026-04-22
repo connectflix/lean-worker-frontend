@@ -58,6 +58,30 @@ function AdminDashboardContent() {
             </div>
 
             <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+              <button className="button ghost" onClick={() => (window.location.href = "/admin/support-triage")}>
+                Support triage
+              </button>
+              <button className="button ghost" onClick={() => (window.location.href = "/admin/support-resolution")}>
+                Support resolution
+              </button>
+              <button className="button ghost" onClick={() => (window.location.href = "/admin/tech-ops-monitoring")}>
+                Tech ops monitoring
+              </button>
+              <button className="button ghost" onClick={() => (window.location.href = "/admin/business-ops-monitoring")}>
+                Business ops monitoring
+              </button>
+              <button className="button ghost" onClick={() => (window.location.href = "/admin/customer-experience-monitoring")}>
+                Customer Experience
+              </button>
+              <button className="button ghost" onClick={() => (window.location.href = "/admin/chief-of-staff")}>
+                Chief of Staff
+              </button>
+              <button className="button ghost" onClick={() => (window.location.href = "/admin/daily-briefing")}>
+                Daily Briefing
+              </button>
+              <button className="button ghost" onClick={() => (window.location.href = "/admin/orchestration")}>
+                Orchestration
+              </button>
               <button className="button ghost" onClick={() => (window.location.href = "/admin/intelligence")}>
                 Intelligence
               </button>
