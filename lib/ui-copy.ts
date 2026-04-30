@@ -1,6 +1,5 @@
 import type { SupportedUiLanguage } from "@/lib/user-locales";
 
-type CopyValue = string | ((...args: string[]) => string);
 
 export type UiCopy = {
   common: {

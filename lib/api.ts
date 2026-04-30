@@ -1,3 +1,4 @@
+// lib/api.ts
 import { API_BASE_URL } from "./config";
 import { clearToken, getToken } from "./auth";
 import { clearAdminToken, getAdminToken } from "./admin-auth";
@@ -46,6 +47,39 @@ import type {
   AdminOrchestrationResponse,
   AdminCustomerExperienceMonitoringRequest,
   AdminCustomerExperienceMonitoringResponse,
+  AdminOrchestrationRunSummary,
+  AdminOrchestrationRunDetail,
+  AdminWorker,
+  AdminWorkerCreate,
+  AdminWorkerUpdate,
+  AdminWorkerConversation,
+  AdminWorkerConversationCreate,
+  AdminWorkerConversationUpdate,
+  AdminWorkerEngagement,
+  AdminWorkerEngagementCreate,
+  AdminWorkerEngagementUpdate,
+  AdminWorkerEngagementState,
+  AdminWorkerPurposeCanvas,
+  AdminWorkerPurposeCanvasCreate,
+  AdminWorkerPurposeCanvasUpdate,
+  AdminWorkerSignificanceAnswerValue,
+  AdminWorkerSignificanceCanvas,
+  AdminWorkerSignificanceCanvasCreate,
+  AdminWorkerSignificanceCanvasUpdate,
+  AdminWorkerSignificanceCanvasComputedResult,
+  AdminWorkerSignificanceQuestion,
+  AdminWorkerSignificanceQuestionAnswer,
+  AdminWorkerSignificanceScoreMap,
+  AdminOrganization,
+  AdminOrganizationCreate,
+  AdminOrganizationDetail,
+  AdminOrganizationUpdate,
+  AdminOrganizationWorkerSummary,
+  AdminOrganizationAccessAccount,
+  AdminOrganizationAccessAccountCreate,
+  AdminSubscriptionPlan,
+  AdminWorkerSubscriptionSummary,
+  AdminWorkerSubscriptionUpdate,
 } from "./types";
 
 export type SupportIssuePayload = {
@@ -93,6 +127,93 @@ export type AdminSupportCaseFlowPayload = {
   user_id?: number | null;
   source?: string | null;
 };
+
+const ZERO_SIGNIFICANCE_SCORES: AdminWorkerSignificanceScoreMap = {
+  raison: 0,
+  metier: 0,
+  occupation: 0,
+  corvee: 0,
+  hobby: 0,
+};
+
+function isSignificanceAnswerValue(value: unknown): value is AdminWorkerSignificanceAnswerValue {
+  return value === "yes" || value === "no" || value === "maybe" || value === "unknown";
+}
+
+function normalizeSignificanceScores(value: unknown): AdminWorkerSignificanceScoreMap {
+  if (!value || typeof value !== "object") {
+    return { ...ZERO_SIGNIFICANCE_SCORES };
+  }
+
+  const raw = value as Partial<Record<keyof AdminWorkerSignificanceScoreMap, unknown>>;
+
+  return {
+    raison: Number(raw.raison ?? 0),
+    metier: Number(raw.metier ?? 0),
+    occupation: Number(raw.occupation ?? 0),
+    corvee: Number(raw.corvee ?? 0),
+    hobby: Number(raw.hobby ?? 0),
+  };
+}
+
+function normalizeSignificanceQuestionAnswer(
+  value: unknown,
+): AdminWorkerSignificanceQuestionAnswer {
+  const raw = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+
+  const answerValue = isSignificanceAnswerValue(raw.value) ? raw.value : "unknown";
+
+  return {
+    value: answerValue,
+    label: typeof raw.label === "string" && raw.label.trim() ? raw.label : "Je ne sais pas",
+    scores: normalizeSignificanceScores(raw.scores),
+  };
+}
+
+function normalizeSignificanceQuestion(value: unknown, index: number): AdminWorkerSignificanceQuestion {
+  const raw = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+
+  const rawId = raw.id ?? raw.order ?? raw.key ?? index + 1;
+  const normalizedId = Number(rawId);
+  const id = Number.isFinite(normalizedId) && normalizedId > 0 ? normalizedId : index + 1;
+
+  const rawOptions = Array.isArray(raw.answers)
+    ? raw.answers
+    : Array.isArray(raw.options)
+      ? raw.options
+      : [];
+
+  return {
+    id,
+    key: typeof raw.key === "string" ? raw.key : String(id),
+    order:
+      typeof raw.order === "number"
+        ? raw.order
+        : Number.isFinite(Number(raw.order))
+          ? Number(raw.order)
+          : id,
+    text: typeof raw.text === "string" ? raw.text : `Question ${id}`,
+    answers: rawOptions.map(normalizeSignificanceQuestionAnswer),
+    options: rawOptions.map(normalizeSignificanceQuestionAnswer),
+  };
+}
+
+function normalizeSignificanceQuestionsPayload(
+  payload: unknown,
+): AdminWorkerSignificanceQuestion[] {
+  const rawQuestions =
+    payload && typeof payload === "object" && "questions" in payload
+      ? (payload as { questions?: unknown }).questions
+      : payload;
+
+  if (!Array.isArray(rawQuestions)) {
+    return [];
+  }
+
+  return rawQuestions
+    .map((question, index) => normalizeSignificanceQuestion(question, index))
+    .filter((question) => question.id > 0 && question.answers.length > 0);
+}
 
 function getPreferredUiLanguage(): SupportedUiLanguage {
   if (typeof window !== "undefined") {
@@ -160,20 +281,24 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
 
   if (response.status === 401) {
     clearToken();
+
     if (typeof window !== "undefined") {
       window.location.href = "/";
     }
+
     throw new Error("Authentication expired. Please sign in again.");
   }
 
   if (!response.ok) {
     let message = `API error on ${path}`;
+
     try {
       const data = await response.json();
       message = data.detail || JSON.stringify(data);
     } catch {
       message = await response.text();
     }
+
     throw new Error(message || `API error on ${path}`);
   }
 
@@ -193,20 +318,32 @@ async function adminApiFetch<T>(path: string, options: RequestInit = {}): Promis
 
   if (response.status === 401) {
     clearAdminToken();
+
     if (typeof window !== "undefined") {
       window.location.href = "/admin/login";
     }
+
     throw new Error("Admin authentication expired. Please sign in again.");
+  }
+
+  if (response.status === 403) {
+    if (typeof window !== "undefined") {
+      window.location.href = "/admin/organizations";
+    }
+
+    throw new Error("You do not have access to this backoffice area.");
   }
 
   if (!response.ok) {
     let message = `API error on ${path}`;
+
     try {
       const data = await response.json();
       message = data.detail || JSON.stringify(data);
     } catch {
       message = await response.text();
     }
+
     throw new Error(message || `API error on ${path}`);
   }
 
@@ -226,25 +363,31 @@ async function apiFetchBlob(path: string, options: RequestInit = {}): Promise<Bl
 
   if (response.status === 401) {
     clearToken();
+
     if (typeof window !== "undefined") {
       window.location.href = "/";
     }
+
     throw new Error("Authentication expired. Please sign in again.");
   }
 
   if (!response.ok) {
     let message = `API error on ${path}`;
+
     try {
       const data = await response.json();
       message = data.detail || JSON.stringify(data);
     } catch {
       message = await response.text();
     }
+
     throw new Error(message || `API error on ${path}`);
   }
 
   return response.blob();
 }
+
+/* ---------------- USER AUTH / SESSION ---------------- */
 
 export async function getLinkedInAuthorizationUrl(): Promise<string> {
   const data = await apiFetch<{ authorization_url: string }>("/auth/linkedin/login");
@@ -264,9 +407,15 @@ export async function createSession(): Promise<SessionCreateResponse> {
 export async function sendConversationTurn(
   sessionId: number,
   message: string,
+  uiLanguage?: SupportedUiLanguage,
 ): Promise<ConversationTurnResponse> {
+  const resolvedLanguage = uiLanguage || getPreferredUiLanguage();
+
   return apiFetch<ConversationTurnResponse>("/conversations/turn", {
     method: "POST",
+    headers: {
+      "Accept-Language": resolvedLanguage,
+    },
     body: JSON.stringify({ session_id: sessionId, message }),
   });
 }
@@ -275,14 +424,6 @@ export async function closeSession(sessionId: number): Promise<SessionCloseRespo
   return apiFetch<SessionCloseResponse>(`/sessions/${sessionId}/close`, {
     method: "POST",
   });
-}
-
-export async function getRecommendations(): Promise<Recommendation[]> {
-  return apiFetch<Recommendation[]>("/recommendations");
-}
-
-export async function getRecommendation(recommendationId: number): Promise<Recommendation> {
-  return apiFetch<Recommendation>(`/recommendations/${recommendationId}`);
 }
 
 export async function getSessions(): Promise<SessionHistoryItem[]> {
@@ -307,12 +448,14 @@ export async function getSessionProblemDetection(sessionId: number): Promise<Pro
   return apiFetch<ProblemDetection>(`/problem-detection/session/${sessionId}`);
 }
 
-export async function getDashboardSummary(): Promise<DashboardSummary> {
-  return apiFetch<DashboardSummary>("/dashboard/summary");
+/* ---------------- USER RECOMMENDATIONS / DASHBOARD ---------------- */
+
+export async function getRecommendations(): Promise<Recommendation[]> {
+  return apiFetch<Recommendation[]>("/recommendations");
 }
 
-export async function getDashboardTimeline(): Promise<DashboardTimelineItem[]> {
-  return apiFetch<DashboardTimelineItem[]>("/dashboard/timeline");
+export async function getRecommendation(recommendationId: number): Promise<Recommendation> {
+  return apiFetch<Recommendation>(`/recommendations/${recommendationId}`);
 }
 
 export async function updateRecommendation(
@@ -324,6 +467,16 @@ export async function updateRecommendation(
     body: JSON.stringify(payload),
   });
 }
+
+export async function getDashboardSummary(): Promise<DashboardSummary> {
+  return apiFetch<DashboardSummary>("/dashboard/summary");
+}
+
+export async function getDashboardTimeline(): Promise<DashboardTimelineItem[]> {
+  return apiFetch<DashboardTimelineItem[]>("/dashboard/timeline");
+}
+
+/* ---------------- USER VOICE ---------------- */
 
 export async function transcribeAudio(file: Blob): Promise<VoiceTranscriptionResponse> {
   const formData = new FormData();
@@ -342,15 +495,25 @@ export async function synthesizeSpeech(text: string): Promise<Blob> {
   });
 }
 
-export async function voiceTurn(file: Blob): Promise<VoiceTurnResponse> {
+export async function voiceTurn(
+  file: Blob,
+  uiLanguage?: SupportedUiLanguage,
+): Promise<VoiceTurnResponse> {
   const formData = new FormData();
   formData.append("file", file, "recording.webm");
 
+  const resolvedLanguage = uiLanguage || getPreferredUiLanguage();
+
   return apiFetch<VoiceTurnResponse>("/voice/turn", {
     method: "POST",
+    headers: {
+      "Accept-Language": resolvedLanguage,
+    },
     body: formData,
   });
 }
+
+/* ---------------- USER AI ARTIFACTS ---------------- */
 
 export async function previewAIArtifact(
   recommendationId: number,
@@ -381,23 +544,21 @@ export async function createAIArtifactCheckoutSession(
   );
 }
 
-export async function generateAIArtifact(
-  artifactId: number,
-): Promise<AIArtifactResponse> {
+export async function generateAIArtifact(artifactId: number): Promise<AIArtifactResponse> {
   return apiFetch<AIArtifactResponse>(`/ai-artifacts/${artifactId}/generate`, {
     method: "POST",
   });
 }
 
-export async function getAIArtifact(
-  artifactId: number,
-): Promise<AIArtifactResponse> {
+export async function getAIArtifact(artifactId: number): Promise<AIArtifactResponse> {
   return apiFetch<AIArtifactResponse>(`/ai-artifacts/${artifactId}`);
 }
 
 export async function getMyAIArtifacts(): Promise<AIArtifactStatusResponse[]> {
   return apiFetch<AIArtifactStatusResponse[]>("/ai-artifacts");
 }
+
+/* ---------------- USER SUPPORT ---------------- */
 
 export async function submitSupportTriage(
   payload: SupportIssuePayload,
@@ -417,7 +578,7 @@ export async function submitSupportCaseFlow(
   });
 }
 
-/* ---------------- ADMIN ---------------- */
+/* ---------------- ADMIN AUTH ---------------- */
 
 export async function adminLogin(email: string, password: string): Promise<AdminLoginResponse> {
   return fetch(`${API_BASE_URL}/admin/auth/login`, {
@@ -431,12 +592,14 @@ export async function adminLogin(email: string, password: string): Promise<Admin
   }).then(async (response) => {
     if (!response.ok) {
       let message = "Admin login failed.";
+
       try {
         const data = await response.json();
         message = data.detail || JSON.stringify(data);
       } catch {
         message = await response.text();
       }
+
       throw new Error(message);
     }
 
@@ -447,6 +610,8 @@ export async function adminLogin(email: string, password: string): Promise<Admin
 export async function getAdminMe(): Promise<AdminMe> {
   return adminApiFetch<AdminMe>("/admin/auth/me");
 }
+
+/* ---------------- ADMIN LEVERS ---------------- */
 
 export async function getAdminLevers(): Promise<AdminLever[]> {
   return adminApiFetch<AdminLever[]>("/admin/levers");
@@ -483,6 +648,8 @@ export async function deleteAdminLever(leverId: number): Promise<{ deleted: bool
   });
 }
 
+/* ---------------- ADMIN DASHBOARD / QUALITY ---------------- */
+
 export async function getAdminDashboardSummary(): Promise<AdminDashboardSummary> {
   return adminApiFetch<AdminDashboardSummary>("/admin/dashboard/summary");
 }
@@ -498,6 +665,8 @@ export async function getAdminCoverageSummary(): Promise<AdminCoverageSummary> {
 export async function getAdminQualitySummary(): Promise<AdminLeverQualitySummary> {
   return adminApiFetch<AdminLeverQualitySummary>("/admin/quality/summary");
 }
+
+/* ---------------- ADMIN AGENTS ---------------- */
 
 export async function adminSupportTriage(
   payload: AdminSupportTriageRequest,
@@ -553,6 +722,20 @@ export async function adminDailyBriefing(
   });
 }
 
+export async function adminCustomerExperienceMonitoring(
+  payload: AdminCustomerExperienceMonitoringRequest,
+): Promise<AdminCustomerExperienceMonitoringResponse> {
+  return adminApiFetch<AdminCustomerExperienceMonitoringResponse>(
+    "/admin/customer-experience/assess",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+/* ---------------- ADMIN ORCHESTRATION ---------------- */
+
 export async function adminOrchestrationRun(
   payload: AdminOrchestrationRequest,
 ): Promise<AdminOrchestrationResponse> {
@@ -560,6 +743,20 @@ export async function adminOrchestrationRun(
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+export async function getAdminOrchestrationRuns(
+  limit = 50,
+): Promise<AdminOrchestrationRunSummary[]> {
+  return adminApiFetch<AdminOrchestrationRunSummary[]>(
+    `/admin/orchestration/runs?limit=${limit}`,
+  );
+}
+
+export async function getAdminOrchestrationRunDetail(
+  runId: number,
+): Promise<AdminOrchestrationRunDetail> {
+  return adminApiFetch<AdminOrchestrationRunDetail>(`/admin/orchestration/runs/${runId}`);
 }
 
 export async function adminSupportCaseFlow(
@@ -571,16 +768,295 @@ export async function adminSupportCaseFlow(
   });
 }
 
-export async function adminCustomerExperienceMonitoring(
-  payload: AdminCustomerExperienceMonitoringRequest,
-): Promise<AdminCustomerExperienceMonitoringResponse> {
-  return adminApiFetch<AdminCustomerExperienceMonitoringResponse>("/admin/customer-experience/assess", {
+/* ---------------- ADMIN WORKERS ---------------- */
+
+export async function getAdminWorkers(
+  params?: { q?: string; subscription_pack?: string },
+): Promise<AdminWorker[]> {
+  const search = new URLSearchParams();
+
+  if (params?.q) {
+    search.set("q", params.q);
+  }
+
+  if (params?.subscription_pack) {
+    search.set("subscription_pack", params.subscription_pack);
+  }
+
+  const query = search.toString();
+
+  return adminApiFetch<AdminWorker[]>(`/admin/workers${query ? `?${query}` : ""}`);
+}
+
+export async function getAdminWorker(workerId: number): Promise<AdminWorker> {
+  return adminApiFetch<AdminWorker>(`/admin/workers/${workerId}`);
+}
+
+export async function createAdminWorker(payload: AdminWorkerCreate): Promise<AdminWorker> {
+  return adminApiFetch<AdminWorker>("/admin/workers", {
     method: "POST",
     body: JSON.stringify(payload),
   });
 }
 
-/* ---------------- ONBOARDING ---------------- */
+export async function updateAdminWorker(
+  workerId: number,
+  payload: AdminWorkerUpdate,
+): Promise<AdminWorker> {
+  return adminApiFetch<AdminWorker>(`/admin/workers/${workerId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+/* ---------------- ADMIN WORKER CONVERSATIONS ---------------- */
+
+export async function getAdminWorkerConversations(
+  params?: { worker_id?: number },
+): Promise<AdminWorkerConversation[]> {
+  const search = new URLSearchParams();
+
+  if (params?.worker_id != null) {
+    search.set("worker_id", String(params.worker_id));
+  }
+
+  const query = search.toString();
+
+  return adminApiFetch<AdminWorkerConversation[]>(
+    `/admin/worker-conversations${query ? `?${query}` : ""}`,
+  );
+}
+
+export async function getAdminWorkerConversation(
+  conversationId: number,
+): Promise<AdminWorkerConversation> {
+  return adminApiFetch<AdminWorkerConversation>(
+    `/admin/worker-conversations/${conversationId}`,
+  );
+}
+
+export async function createAdminWorkerConversation(
+  payload: AdminWorkerConversationCreate,
+): Promise<AdminWorkerConversation> {
+  return adminApiFetch<AdminWorkerConversation>("/admin/worker-conversations", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateAdminWorkerConversation(
+  conversationId: number,
+  payload: AdminWorkerConversationUpdate,
+): Promise<AdminWorkerConversation> {
+  return adminApiFetch<AdminWorkerConversation>(
+    `/admin/worker-conversations/${conversationId}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+/* ---------------- ADMIN WORKER ENGAGEMENTS ---------------- */
+
+export async function getAdminWorkerEngagements(
+  params?: { worker_id?: number; state_type?: AdminWorkerEngagementState },
+): Promise<AdminWorkerEngagement[]> {
+  const search = new URLSearchParams();
+
+  if (params?.worker_id != null) {
+    search.set("worker_id", String(params.worker_id));
+  }
+
+  if (params?.state_type) {
+    search.set("state_type", params.state_type);
+  }
+
+  const query = search.toString();
+
+  return adminApiFetch<AdminWorkerEngagement[]>(
+    `/admin/worker-engagements${query ? `?${query}` : ""}`,
+  );
+}
+
+export async function getAdminWorkerEngagement(
+  engagementId: number,
+): Promise<AdminWorkerEngagement> {
+  return adminApiFetch<AdminWorkerEngagement>(`/admin/worker-engagements/${engagementId}`);
+}
+
+export async function createAdminWorkerEngagement(
+  payload: AdminWorkerEngagementCreate,
+): Promise<AdminWorkerEngagement> {
+  return adminApiFetch<AdminWorkerEngagement>("/admin/worker-engagements", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateAdminWorkerEngagement(
+  engagementId: number,
+  payload: AdminWorkerEngagementUpdate,
+): Promise<AdminWorkerEngagement> {
+  return adminApiFetch<AdminWorkerEngagement>(`/admin/worker-engagements/${engagementId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function finalizeAdminWorkerEngagement(
+  engagementId: number,
+): Promise<AdminWorkerEngagement> {
+  return adminApiFetch<AdminWorkerEngagement>(
+    `/admin/worker-engagements/${engagementId}/finalize`,
+    {
+      method: "POST",
+    },
+  );
+}
+
+/* ---------------- ADMIN WORKER PURPOSE CANVASES ---------------- */
+
+export async function getAdminWorkerPurposeCanvases(
+  params?: { worker_id?: number },
+): Promise<AdminWorkerPurposeCanvas[]> {
+  const search = new URLSearchParams();
+
+  if (params?.worker_id != null) {
+    search.set("worker_id", String(params.worker_id));
+  }
+
+  const query = search.toString();
+
+  return adminApiFetch<AdminWorkerPurposeCanvas[]>(
+    `/admin/worker-purpose-canvases${query ? `?${query}` : ""}`,
+  );
+}
+
+export async function getAdminWorkerPurposeCanvas(
+  canvasId: number,
+): Promise<AdminWorkerPurposeCanvas> {
+  return adminApiFetch<AdminWorkerPurposeCanvas>(
+    `/admin/worker-purpose-canvases/${canvasId}`,
+  );
+}
+
+export async function createAdminWorkerPurposeCanvas(
+  payload: AdminWorkerPurposeCanvasCreate,
+): Promise<AdminWorkerPurposeCanvas> {
+  return adminApiFetch<AdminWorkerPurposeCanvas>("/admin/worker-purpose-canvases", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateAdminWorkerPurposeCanvas(
+  canvasId: number,
+  payload: AdminWorkerPurposeCanvasUpdate,
+): Promise<AdminWorkerPurposeCanvas> {
+  return adminApiFetch<AdminWorkerPurposeCanvas>(
+    `/admin/worker-purpose-canvases/${canvasId}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function deleteAdminWorkerPurposeCanvas(
+  canvasId: number,
+): Promise<{ deleted: boolean }> {
+  return adminApiFetch<{ deleted: boolean }>(
+    `/admin/worker-purpose-canvases/${canvasId}`,
+    {
+      method: "DELETE",
+    },
+  );
+}
+
+/* ---------------- ADMIN WORKER SIGNIFICANCE CANVASES ---------------- */
+
+export async function getAdminWorkerSignificanceQuestions(): Promise<
+  AdminWorkerSignificanceQuestion[]
+> {
+  const payload = await adminApiFetch<unknown>("/admin/worker-significance-canvases/questions");
+
+  return normalizeSignificanceQuestionsPayload(payload);
+}
+
+export async function computeAdminWorkerSignificanceCanvas(
+  payload: AdminWorkerSignificanceCanvasCreate | AdminWorkerSignificanceCanvasUpdate,
+): Promise<AdminWorkerSignificanceCanvasComputedResult> {
+  return adminApiFetch<AdminWorkerSignificanceCanvasComputedResult>(
+    "/admin/worker-significance-canvases/compute",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function getAdminWorkerSignificanceCanvases(
+  params?: { worker_id?: number },
+): Promise<AdminWorkerSignificanceCanvas[]> {
+  const search = new URLSearchParams();
+
+  if (params?.worker_id != null) {
+    search.set("worker_id", String(params.worker_id));
+  }
+
+  const query = search.toString();
+
+  return adminApiFetch<AdminWorkerSignificanceCanvas[]>(
+    `/admin/worker-significance-canvases${query ? `?${query}` : ""}`,
+  );
+}
+
+export async function getAdminWorkerSignificanceCanvas(
+  canvasId: number,
+): Promise<AdminWorkerSignificanceCanvas> {
+  return adminApiFetch<AdminWorkerSignificanceCanvas>(
+    `/admin/worker-significance-canvases/${canvasId}`,
+  );
+}
+
+export async function createAdminWorkerSignificanceCanvas(
+  payload: AdminWorkerSignificanceCanvasCreate,
+): Promise<AdminWorkerSignificanceCanvas> {
+  return adminApiFetch<AdminWorkerSignificanceCanvas>(
+    "/admin/worker-significance-canvases",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function updateAdminWorkerSignificanceCanvas(
+  canvasId: number,
+  payload: AdminWorkerSignificanceCanvasUpdate,
+): Promise<AdminWorkerSignificanceCanvas> {
+  return adminApiFetch<AdminWorkerSignificanceCanvas>(
+    `/admin/worker-significance-canvases/${canvasId}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function deleteAdminWorkerSignificanceCanvas(
+  canvasId: number,
+): Promise<{ deleted: boolean }> {
+  return adminApiFetch<{ deleted: boolean }>(
+    `/admin/worker-significance-canvases/${canvasId}`,
+    {
+      method: "DELETE",
+    },
+  );
+}
+
+/* ---------------- USER ONBOARDING / PROFILE / CAREER ---------------- */
 
 export type OnboardingPayload = {
   current_role: string;
@@ -591,15 +1067,6 @@ export type OnboardingPayload = {
   mid_term_ambition?: CareerHorizonPayload | null;
   long_term_goal?: CareerHorizonPayload | null;
 };
-
-export async function completeOnboarding(
-  payload: OnboardingPayload,
-): Promise<{ success: boolean }> {
-  return apiFetch<{ success: boolean }>("/onboarding", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-}
 
 export type ProfileResponse = {
   given_name?: string | null;
@@ -621,25 +1088,6 @@ export type ProfileUpdatePayload = {
   improvement_focus?: string | null;
   preferred_coaching_style?: string | null;
 };
-
-export async function getProfile(): Promise<ProfileResponse> {
-  return apiFetch<ProfileResponse>("/profile");
-}
-
-export async function updateProfile(
-  payload: ProfileUpdatePayload,
-): Promise<ProfileResponse> {
-  return apiFetch<ProfileResponse>("/profile", {
-    method: "PATCH",
-    body: JSON.stringify(payload),
-  });
-}
-
-export async function confirmCurrentProfileContext(): Promise<{ success: boolean }> {
-  return apiFetch<{ success: boolean }>("/profile/confirm-current-context", {
-    method: "POST",
-  });
-}
 
 export type CareerLevel =
   | "Starter"
@@ -695,19 +1143,6 @@ export type CareerBlueprintUpsertPayload = {
   is_completed: boolean;
 };
 
-export async function getCareerBlueprint(): Promise<CareerBlueprintResponse | null> {
-  return apiFetch<CareerBlueprintResponse | null>("/career-blueprint");
-}
-
-export async function saveCareerBlueprint(
-  payload: CareerBlueprintUpsertPayload,
-): Promise<CareerBlueprintResponse> {
-  return apiFetch<CareerBlueprintResponse>("/career-blueprint", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-}
-
 export type CareerGapResponse = {
   current_role?: string | null;
   short_term_role?: string | null;
@@ -736,10 +1171,175 @@ export type CareerTrajectoryResponse = {
   trajectory_summary: string | null;
 } | null;
 
+export async function completeOnboarding(
+  payload: OnboardingPayload,
+): Promise<{ success: boolean }> {
+  return apiFetch<{ success: boolean }>("/onboarding", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getProfile(): Promise<ProfileResponse> {
+  return apiFetch<ProfileResponse>("/profile");
+}
+
+export async function updateProfile(payload: ProfileUpdatePayload): Promise<ProfileResponse> {
+  return apiFetch<ProfileResponse>("/profile", {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function confirmCurrentProfileContext(): Promise<{ success: boolean }> {
+  return apiFetch<{ success: boolean }>("/profile/confirm-current-context", {
+    method: "POST",
+  });
+}
+
+export async function getCareerBlueprint(): Promise<CareerBlueprintResponse | null> {
+  return apiFetch<CareerBlueprintResponse | null>("/career-blueprint");
+}
+
+export async function saveCareerBlueprint(
+  payload: CareerBlueprintUpsertPayload,
+): Promise<CareerBlueprintResponse> {
+  return apiFetch<CareerBlueprintResponse>("/career-blueprint", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function getCareerGap(): Promise<CareerGapResponse | null> {
   return apiFetch<CareerGapResponse | null>("/career-gap");
 }
 
 export async function getCareerTrajectory(): Promise<CareerTrajectoryResponse> {
   return apiFetch<CareerTrajectoryResponse>("/dashboard/career-trajectory");
+}
+
+/* ---------------- ADMIN ORGANIZATIONS ---------------- */
+
+export async function getAdminOrganizations(): Promise<AdminOrganization[]> {
+  return adminApiFetch<AdminOrganization[]>("/admin/organizations");
+}
+
+export async function createAdminOrganization(
+  payload: AdminOrganizationCreate,
+): Promise<AdminOrganization> {
+  return adminApiFetch<AdminOrganization>("/admin/organizations", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getAdminOrganizationDetail(
+  organizationId: number,
+): Promise<AdminOrganizationDetail> {
+  return adminApiFetch<AdminOrganizationDetail>(`/admin/organizations/${organizationId}`);
+}
+
+export async function updateAdminOrganization(
+  organizationId: number,
+  payload: AdminOrganizationUpdate,
+): Promise<AdminOrganization> {
+  return adminApiFetch<AdminOrganization>(`/admin/organizations/${organizationId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function createOrResetAdminOrganizationAccessAccount(
+  organizationId: number,
+  payload: AdminOrganizationAccessAccountCreate = {},
+): Promise<AdminOrganizationAccessAccount> {
+  return adminApiFetch<AdminOrganizationAccessAccount>(
+    `/admin/organizations/${organizationId}/access-account`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function assignWorkerToOrganization(
+  organizationId: number,
+  workerId: number,
+): Promise<AdminWorker> {
+  return adminApiFetch<AdminWorker>(
+    `/admin/organizations/${organizationId}/workers/${workerId}`,
+    {
+      method: "POST",
+    },
+  );
+}
+
+export async function unassignWorkerFromOrganization(
+  organizationId: number,
+  workerId: number,
+): Promise<AdminWorker> {
+  return adminApiFetch<AdminWorker>(
+    `/admin/organizations/${organizationId}/workers/${workerId}`,
+    {
+      method: "DELETE",
+    },
+  );
+}
+
+export async function getAdminOrganizationWorkerSummary(
+  organizationId: number,
+  workerId: number,
+): Promise<AdminOrganizationWorkerSummary> {
+  return adminApiFetch<AdminOrganizationWorkerSummary>(
+    `/admin/organizations/${organizationId}/workers/${workerId}/summary`,
+  );
+}
+
+/* ---------------- ADMIN SUBSCRIPTIONS ---------------- */
+
+export async function getAdminSubscriptionPlans(): Promise<AdminSubscriptionPlan[]> {
+  return adminApiFetch<AdminSubscriptionPlan[]>("/admin/subscriptions/plans");
+}
+
+export async function getAdminWorkerSubscription(
+  workerId: number,
+): Promise<AdminWorkerSubscriptionSummary | null> {
+  return adminApiFetch<AdminWorkerSubscriptionSummary | null>(
+    `/admin/workers/${workerId}/subscription`,
+  );
+}
+
+export async function updateAdminWorkerSubscription(
+  workerId: number,
+  payload: AdminWorkerSubscriptionUpdate,
+): Promise<AdminWorkerSubscriptionSummary> {
+  return adminApiFetch<AdminWorkerSubscriptionSummary>(
+    `/admin/workers/${workerId}/subscription`,
+    {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function cancelAdminWorkerSubscription(
+  workerId: number,
+): Promise<AdminWorkerSubscriptionSummary> {
+  return adminApiFetch<AdminWorkerSubscriptionSummary>(
+    `/admin/workers/${workerId}/subscription/cancel`,
+    {
+      method: "POST",
+    },
+  );
+}
+
+export async function reactivateAdminWorkerSubscription(
+  workerId: number,
+): Promise<AdminWorkerSubscriptionSummary> {
+  return adminApiFetch<AdminWorkerSubscriptionSummary>(
+    `/admin/workers/${workerId}/subscription/reactivate`,
+    {
+      method: "POST",
+    },
+  );
 }

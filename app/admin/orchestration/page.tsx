@@ -1,11 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { AdminGuard } from "@/components/admin-guard";
-import { adminOrchestrationRun } from "@/lib/api";
+import { AdminShell } from "@/components/admin-shell";
+import {
+  getAdminMe,
+  adminOrchestrationRun,
+  getAdminOrchestrationRunDetail,
+  getAdminOrchestrationRuns,
+} from "@/lib/api";
 import type {
+  AdminMe,
   AdminOrchestrationOptions,
   AdminOrchestrationResponse,
+  AdminOrchestrationRunDetail,
+  AdminOrchestrationRunSummary,
   AdminOrchestrationScenario,
 } from "@/lib/types";
 
@@ -142,6 +152,9 @@ const SAMPLE_CASES: {
   },
 ];
 
+type RunFilterMode = "all" | "failed" | "partial" | "critical";
+type OrchestrationViewMode = "production" | "test";
+
 function prettyJson(value: unknown): string {
   return JSON.stringify(value ?? {}, null, 2);
 }
@@ -157,6 +170,30 @@ function parseJsonObject(value: string): Record<string, unknown> {
   return parsed as Record<string, unknown>;
 }
 
+function formatRunStatus(status: string): string {
+  if (status === "failed") return "failed";
+  if (status === "partial") return "partial";
+  return "success";
+}
+
+function getStatusColor(status: string): string {
+  if (status === "failed") return "var(--danger)";
+  if (status === "partial") return "var(--warning, #b45309)";
+  return "var(--success, #15803d)";
+}
+
+function isCriticalRun(run: AdminOrchestrationRunSummary): boolean {
+  const escalations = run.escalations ?? [];
+  const haystack = escalations.join(" | ").toLowerCase();
+
+  if (haystack.includes("founder")) return true;
+  if (haystack.includes("critical")) return true;
+  if (haystack.includes("p1")) return true;
+  if (run.status === "failed") return true;
+
+  return false;
+}
+
 export default function AdminOrchestrationPage() {
   return (
     <AdminGuard>
@@ -166,6 +203,12 @@ export default function AdminOrchestrationPage() {
 }
 
 function AdminOrchestrationContent() {
+  const searchParams = useSearchParams();
+  const preopenedRunRef = useRef<HTMLButtonElement | null>(null);
+
+  const [admin, setAdmin] = useState<AdminMe | null>(null);
+  const [viewMode, setViewMode] = useState<OrchestrationViewMode>("production");
+
   const [scenario, setScenario] = useState<AdminOrchestrationScenario>("support_case_flow");
   const [language, setLanguage] = useState("fr");
   const [inputPayloadText, setInputPayloadText] = useState(
@@ -177,6 +220,96 @@ function AdminOrchestrationContent() {
   const [result, setResult] = useState<AdminOrchestrationResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [runs, setRuns] = useState<AdminOrchestrationRunSummary[]>([]);
+  const [runsLoading, setRunsLoading] = useState(true);
+  const [runsError, setRunsError] = useState<string | null>(null);
+  const [selectedRunId, setSelectedRunId] = useState<number | null>(null);
+  const [selectedRunDetail, setSelectedRunDetail] = useState<AdminOrchestrationRunDetail | null>(null);
+  const [runDetailLoading, setRunDetailLoading] = useState(false);
+  const [runDetailError, setRunDetailError] = useState<string | null>(null);
+  const [runFilter, setRunFilter] = useState<RunFilterMode>("all");
+
+  const preopenedRunId = useMemo(() => {
+    const rawRun = searchParams.get("run");
+    if (!rawRun) return null;
+    const parsed = Number(rawRun);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  }, [searchParams]);
+
+  useEffect(() => {
+    async function loadAdminAndRuns() {
+      try {
+        const [me, data] = await Promise.all([
+          getAdminMe(),
+          getAdminOrchestrationRuns(100),
+        ]);
+        setAdmin(me);
+        setRuns(data);
+      } catch (err) {
+        setRunsError(err instanceof Error ? err.message : "Impossible de charger les runs.");
+      } finally {
+        setRunsLoading(false);
+      }
+    }
+
+    void loadAdminAndRuns();
+  }, []);
+
+  useEffect(() => {
+    const rawFilter = searchParams.get("filter");
+    const rawMode = searchParams.get("mode");
+
+    if (
+      rawFilter === "all" ||
+      rawFilter === "failed" ||
+      rawFilter === "partial" ||
+      rawFilter === "critical"
+    ) {
+      setRunFilter(rawFilter);
+    }
+
+    if (rawMode === "test") {
+      setViewMode("test");
+    }
+  }, [searchParams]);
+
+  async function refreshRuns() {
+    setRunsLoading(true);
+    setRunsError(null);
+
+    try {
+      const data = await getAdminOrchestrationRuns(100);
+      setRuns(data);
+    } catch (err) {
+      setRunsError(err instanceof Error ? err.message : "Impossible de charger les runs.");
+    } finally {
+      setRunsLoading(false);
+    }
+  }
+
+  async function loadRunDetail(runId: number) {
+    setRunDetailLoading(true);
+    setRunDetailError(null);
+
+    try {
+      const detail = await getAdminOrchestrationRunDetail(runId);
+      setSelectedRunDetail(detail);
+    } catch (err) {
+      setRunDetailError(
+        err instanceof Error ? err.message : "Impossible de charger le détail du run.",
+      );
+      setSelectedRunDetail(null);
+    } finally {
+      setRunDetailLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!preopenedRunId) return;
+    setSelectedRunId(preopenedRunId);
+    void loadRunDetail(preopenedRunId);
+  }, [preopenedRunId]);
 
   function applySample(index: number) {
     const sample = SAMPLE_CASES[index];
@@ -206,6 +339,7 @@ function AdminOrchestrationContent() {
       });
 
       setResult(response);
+      await refreshRuns();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Échec du run d’orchestration.");
       setResult(null);
@@ -214,42 +348,104 @@ function AdminOrchestrationContent() {
     }
   }
 
-  return (
-    <main className="page">
-      <div className="container stack">
-        <div className="card stack">
-          <div className="row space-between" style={{ alignItems: "flex-start" }}>
-            <div>
-              <h1 className="title">Admin Orchestration</h1>
-              <p className="subtitle">
-                Exécution manuelle des scénarios multi-agents de bout en bout.
-              </p>
-            </div>
+  const filteredRuns = useMemo(() => {
+    if (runFilter === "all") return runs;
+    if (runFilter === "failed") return runs.filter((run) => run.status === "failed");
+    if (runFilter === "partial") return runs.filter((run) => run.status === "partial");
+    return runs.filter((run) => isCriticalRun(run));
+  }, [runs, runFilter]);
 
-            <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-              <button className="button ghost" onClick={() => (window.location.href = "/admin")}>
-                Dashboard
-              </button>
-              <button className="button ghost" onClick={() => (window.location.href = "/admin/chief-of-staff")}>
-                Chief of Staff
-              </button>
-              <button className="button ghost" onClick={() => (window.location.href = "/admin/customer-experience-monitoring")}>
-                Customer Experience
-              </button>
-              <button className="button ghost" onClick={() => (window.location.href = "/admin/daily-briefing")}>
-                Daily Briefing
-              </button>
+  useEffect(() => {
+    if (!preopenedRunId) return;
+    if (!filteredRuns.some((run) => run.id === preopenedRunId)) return;
+
+    const timer = window.setTimeout(() => {
+      preopenedRunRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 150);
+
+    return () => window.clearTimeout(timer);
+  }, [filteredRuns, preopenedRunId]);
+
+  const failedCount = runs.filter((run) => run.status === "failed").length;
+  const partialCount = runs.filter((run) => run.status === "partial").length;
+  const criticalCount = runs.filter((run) => isCriticalRun(run)).length;
+
+  return (
+    <AdminShell
+      activeHref="/admin/orchestration"
+      title="Orchestration"
+      subtitle="Production monitoring by default, with an optional test console when needed."
+      adminEmail={admin?.email ?? null}
+    >
+      <div className="card stack">
+        <div className="row space-between" style={{ gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
+          <div className="stack" style={{ gap: 4 }}>
+            <div className="section-title">Orchestration modes</div>
+            <div className="muted">
+              Production mode focuses on real incidents and operational review. Test mode exposes the manual console only when explicitly needed.
             </div>
+          </div>
+
+          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+            <button
+              className={viewMode === "production" ? "button" : "button ghost"}
+              type="button"
+              onClick={() => setViewMode("production")}
+            >
+              Production mode
+            </button>
+            <button
+              className={viewMode === "test" ? "button secondary" : "button ghost"}
+              type="button"
+              onClick={() => setViewMode("test")}
+            >
+              Test mode
+            </button>
+            <a className="button ghost" href="/admin/agent-reports">
+              Agent Reports
+            </a>
           </div>
         </div>
 
+        {viewMode === "production" ? (
+          <div className="card-soft stack" style={{ gap: 8 }}>
+            <div className="section-title" style={{ fontSize: 15 }}>
+              Production mode active
+            </div>
+            <div className="muted">
+              The manual orchestration console is hidden. You are currently reviewing live runs, alerts, and operational details.
+            </div>
+          </div>
+        ) : (
+          <div className="card-soft stack" style={{ gap: 8 }}>
+            <div className="section-title" style={{ fontSize: 15 }}>
+              Test mode active
+            </div>
+            <div className="muted">
+              The manual console is visible below for controlled testing, payload simulation, and orchestration validation.
+            </div>
+          </div>
+        )}
+      </div>
+
+      {viewMode === "test" ? (
         <div className="grid grid-2">
           <div className="card stack">
-            <div className="section-title">Entrée</div>
+            <div className="row space-between" style={{ gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
+              <div className="stack" style={{ gap: 4 }}>
+                <div className="section-title">Manual test console</div>
+                <div className="muted">
+                  Launch a scenario manually to test or inspect orchestration behavior.
+                </div>
+              </div>
+            </div>
 
             <div className="stack">
               <label className="stack" style={{ gap: 6 }}>
-                <span className="muted">Exemples rapides</span>
+                <span className="muted">Quick samples</span>
                 <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                   {SAMPLE_CASES.map((sample, index) => (
                     <button
@@ -268,16 +464,9 @@ function AdminOrchestrationContent() {
                 <label className="stack" style={{ gap: 6 }}>
                   <span className="muted">Scenario</span>
                   <select
+                    className="select"
                     value={scenario}
                     onChange={(e) => setScenario(e.target.value as AdminOrchestrationScenario)}
-                    style={{
-                      width: "100%",
-                      borderRadius: 12,
-                      border: "1px solid var(--border)",
-                      background: "var(--card)",
-                      color: "var(--text)",
-                      padding: 12,
-                    }}
                   >
                     {SCENARIOS.map((item) => (
                       <option key={item} value={item}>
@@ -288,18 +477,11 @@ function AdminOrchestrationContent() {
                 </label>
 
                 <label className="stack" style={{ gap: 6 }}>
-                  <span className="muted">Langue</span>
+                  <span className="muted">Language</span>
                   <select
+                    className="select"
                     value={language}
                     onChange={(e) => setLanguage(e.target.value)}
-                    style={{
-                      width: "100%",
-                      borderRadius: 12,
-                      border: "1px solid var(--border)",
-                      background: "var(--card)",
-                      color: "var(--text)",
-                      padding: 12,
-                    }}
                   >
                     <option value="fr">Français</option>
                     <option value="en">English</option>
@@ -310,49 +492,37 @@ function AdminOrchestrationContent() {
               <label className="stack" style={{ gap: 6 }}>
                 <span className="muted">Input payload JSON</span>
                 <textarea
+                  className="textarea"
                   value={inputPayloadText}
                   onChange={(e) => setInputPayloadText(e.target.value)}
-                  rows={16}
-                  style={{
-                    width: "100%",
-                    borderRadius: 12,
-                    border: "1px solid var(--border)",
-                    background: "var(--card)",
-                    color: "var(--text)",
-                    padding: 12,
-                    resize: "vertical",
-                    fontFamily: "monospace",
-                  }}
+                  rows={14}
+                  style={{ fontFamily: "monospace" }}
                 />
               </label>
 
               <label className="stack" style={{ gap: 6 }}>
                 <span className="muted">Options JSON</span>
                 <textarea
+                  className="textarea"
                   value={optionsText}
                   onChange={(e) => setOptionsText(e.target.value)}
                   rows={8}
-                  style={{
-                    width: "100%",
-                    borderRadius: 12,
-                    border: "1px solid var(--border)",
-                    background: "var(--card)",
-                    color: "var(--text)",
-                    padding: 12,
-                    resize: "vertical",
-                    fontFamily: "monospace",
-                  }}
+                  style={{ fontFamily: "monospace" }}
                 />
               </label>
 
-              <div className="row" style={{ gap: 8 }}>
-                <button className="button" type="button" onClick={handleRun} disabled={loading}>
-                  {loading ? "Exécution..." : "Lancer l’orchestration"}
+              <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
+                <button className="button" onClick={() => void handleRun()} type="button">
+                  {loading ? "Exécution..." : "Lancer le scénario"}
+                </button>
+
+                <button className="button ghost" onClick={() => void refreshRuns()} type="button">
+                  Rafraîchir les runs
                 </button>
               </div>
 
               {error ? (
-                <div className="card" style={{ color: "var(--danger)" }}>
+                <div className="card-soft" style={{ color: "var(--danger)" }}>
                   {error}
                 </div>
               ) : null}
@@ -360,105 +530,254 @@ function AdminOrchestrationContent() {
           </div>
 
           <div className="card stack">
-            <div className="section-title">Résultat</div>
+            <div className="section-title">Immediate test result</div>
 
-            {!result ? (
-              <div className="muted">Aucun résultat pour le moment.</div>
-            ) : (
-              <div className="stack">
+            {result ? (
+              <div className="stack" style={{ gap: 10 }}>
                 <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                  <span className="badge">Scenario: {result.scenario}</span>
-                  <span className="badge">Status: {result.status}</span>
-                  <span className="badge">
-                    Confidence: {Math.round((result.confidence || 0) * 100)}%
+                  <span className="badge">{result.scenario}</span>
+                  <span className="badge" style={{ color: getStatusColor(result.status) }}>
+                    {result.status}
                   </span>
+                  <span className="badge">confidence {result.confidence.toFixed(2)}</span>
                 </div>
 
-                <div>
-                  <div className="muted">Executed agents</div>
-                  {result.executed_agents.length === 0 ? (
-                    <div className="muted">Aucun agent exécuté.</div>
-                  ) : (
-                    <div className="stack">
-                      {result.executed_agents.map((item, index) => (
-                        <div key={`${item}-${index}`} style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
-                          {item}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <div className="muted">Escalations</div>
-                  {result.escalations.length === 0 ? (
-                    <div className="muted">Aucune escalade.</div>
-                  ) : (
-                    <div className="stack">
-                      {result.escalations.map((item, index) => (
-                        <div key={`${item}-${index}`} style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
-                          {item}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="stack">
-                  <div className="section-title">Final output</div>
-                  <pre
-                    style={{
-                      margin: 0,
-                      padding: 12,
-                      borderRadius: 12,
-                      border: "1px solid var(--border)",
-                      overflowX: "auto",
-                      whiteSpace: "pre-wrap",
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    {JSON.stringify(result.final_output, null, 2)}
-                  </pre>
-                </div>
-
-                <div className="stack">
-                  <div className="section-title">Intermediate results</div>
-                  <pre
-                    style={{
-                      margin: 0,
-                      padding: 12,
-                      borderRadius: 12,
-                      border: "1px solid var(--border)",
-                      overflowX: "auto",
-                      whiteSpace: "pre-wrap",
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    {JSON.stringify(result.intermediate_results, null, 2)}
-                  </pre>
-                </div>
-
-                <div className="stack">
-                  <div className="section-title">Raw JSON</div>
-                  <pre
-                    style={{
-                      margin: 0,
-                      padding: 12,
-                      borderRadius: 12,
-                      border: "1px solid var(--border)",
-                      overflowX: "auto",
-                      whiteSpace: "pre-wrap",
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    {JSON.stringify(result, null, 2)}
-                  </pre>
-                </div>
+                <pre
+                  style={{
+                    margin: 0,
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                    borderRadius: 12,
+                    padding: 12,
+                    background: "var(--panel)",
+                    border: "1px solid var(--border)",
+                    overflowX: "auto",
+                  }}
+                >
+                  {prettyJson(result)}
+                </pre>
               </div>
+            ) : (
+              <div className="muted">Aucun résultat de test affiché pour le moment.</div>
             )}
           </div>
         </div>
+      ) : null}
+
+      <div className="card stack">
+        <div className="row space-between" style={{ alignItems: "flex-start", gap: 12 }}>
+          <div className="stack" style={{ gap: 4 }}>
+            <div className="section-title">Recent incidents and alerts</div>
+            <div className="muted">
+              Filter recent runs by operational risk level.
+            </div>
+          </div>
+
+          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+            <button
+              className={runFilter === "all" ? "button" : "button ghost"}
+              type="button"
+              onClick={() => setRunFilter("all")}
+            >
+              Tous ({runs.length})
+            </button>
+            <button
+              className={runFilter === "failed" ? "button" : "button ghost"}
+              type="button"
+              onClick={() => setRunFilter("failed")}
+            >
+              Failed ({failedCount})
+            </button>
+            <button
+              className={runFilter === "partial" ? "button" : "button ghost"}
+              type="button"
+              onClick={() => setRunFilter("partial")}
+            >
+              Partial ({partialCount})
+            </button>
+            <button
+              className={runFilter === "critical" ? "button" : "button ghost"}
+              type="button"
+              onClick={() => setRunFilter("critical")}
+            >
+              Founder / Critical ({criticalCount})
+            </button>
+          </div>
+        </div>
+
+        {runsLoading ? (
+          <div className="muted">Chargement des runs...</div>
+        ) : runsError ? (
+          <div className="card-soft" style={{ color: "var(--danger)" }}>
+            {runsError}
+          </div>
+        ) : filteredRuns.length === 0 ? (
+          <div className="muted">Aucun run correspondant à ce filtre.</div>
+        ) : (
+          <div
+            className="stack"
+            style={{
+              gap: 10,
+              maxHeight: "52vh",
+              overflowY: "auto",
+              paddingRight: 4,
+            }}
+          >
+            {filteredRuns.map((run) => {
+              const escalations = run.escalations ?? [];
+              const critical = isCriticalRun(run);
+              const isSelected = selectedRunId === run.id;
+              const isPreopened = preopenedRunId === run.id;
+
+              return (
+                <button
+                  key={run.id}
+                  ref={isPreopened ? preopenedRunRef : null}
+                  type="button"
+                  className="card-soft stack"
+                  onClick={() => {
+                    setSelectedRunId(run.id);
+                    void loadRunDetail(run.id);
+                  }}
+                  style={{
+                    gap: 8,
+                    textAlign: "left",
+                    cursor: "pointer",
+                    border: isSelected
+                      ? isPreopened
+                        ? "2px solid var(--danger)"
+                        : "1px solid var(--primary)"
+                      : "1px solid var(--border)",
+                    background: isPreopened
+                      ? "linear-gradient(180deg, rgba(254,242,242,0.95), rgba(255,255,255,0.98))"
+                      : undefined,
+                    boxShadow: isPreopened
+                      ? "0 0 0 3px rgba(220,38,38,0.08)"
+                      : undefined,
+                  }}
+                >
+                  <div className="row space-between" style={{ gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                    <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                      <span className="badge">#{run.id}</span>
+                      <span className="badge">{run.scenario}</span>
+                      <span
+                        className="badge"
+                        style={{ color: getStatusColor(run.status) }}
+                      >
+                        {formatRunStatus(run.status)}
+                      </span>
+                      {critical ? (
+                        <span
+                          style={{
+                            borderRadius: 999,
+                            padding: "4px 10px",
+                            color: "var(--danger)",
+                            background: "rgba(220,38,38,0.08)",
+                          }}
+                        >
+                          critical
+                        </span>
+                      ) : null}
+                      {isPreopened ? (
+                        <span
+                          style={{
+                            borderRadius: 999,
+                            padding: "4px 10px",
+                            color: "var(--danger)",
+                            background: "rgba(220,38,38,0.12)",
+                            fontWeight: 700,
+                          }}
+                        >
+                          opened
+                        </span>
+                      ) : null}
+                    </div>
+
+                    <div className="muted">
+                      {new Date(run.created_at).toLocaleString()}
+                    </div>
+                  </div>
+
+                  <div className="row space-between" style={{ gap: 12, flexWrap: "wrap" }}>
+                    <div className="muted">
+                      confidence {Number(run.confidence ?? 0).toFixed(2)}
+                    </div>
+
+                    <div className="muted">
+                      {escalations.length > 0
+                        ? `${escalations.length} escalation(s)`
+                        : "No escalation"}
+                    </div>
+                  </div>
+
+                  {escalations.length > 0 ? (
+                    <div className="muted" style={{ color: critical ? "var(--danger)" : "var(--text)" }}>
+                      {escalations[0]}
+                    </div>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
-    </main>
+
+      <div className="card stack">
+        <div className="section-title">Selected run detail</div>
+
+        {!selectedRunId ? (
+          <div className="muted">
+            Sélectionne un run dans la liste ci-dessus pour voir son détail.
+          </div>
+        ) : runDetailLoading ? (
+          <div className="muted">Chargement du détail...</div>
+        ) : runDetailError ? (
+          <div className="card-soft" style={{ color: "var(--danger)" }}>
+            {runDetailError}
+          </div>
+        ) : !selectedRunDetail ? (
+          <div className="muted">Aucun détail disponible.</div>
+        ) : (
+          <div className="stack" style={{ gap: 10 }}>
+            <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+              <span className="badge">#{selectedRunDetail.id}</span>
+              <span className="badge">{selectedRunDetail.scenario}</span>
+              <span className="badge" style={{ color: getStatusColor(selectedRunDetail.status) }}>
+                {selectedRunDetail.status}
+              </span>
+              {preopenedRunId === selectedRunDetail.id ? (
+                <span
+                  style={{
+                    borderRadius: 999,
+                    padding: "4px 10px",
+                    color: "var(--danger)",
+                    background: "rgba(220,38,38,0.12)",
+                    fontWeight: 700,
+                  }}
+                >
+                  preopened from dashboard
+                </span>
+              ) : null}
+            </div>
+
+            <pre
+              style={{
+                margin: 0,
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-word",
+                borderRadius: 12,
+                padding: 12,
+                background: "var(--panel)",
+                border: "1px solid var(--border)",
+                overflowX: "auto",
+                maxHeight: "60vh",
+              }}
+            >
+              {prettyJson(selectedRunDetail)}
+            </pre>
+          </div>
+        )}
+      </div>
+    </AdminShell>
   );
 }

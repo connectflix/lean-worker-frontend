@@ -12,7 +12,6 @@ import {
   BadgePill,
   BrainIcon,
   PathIcon,
-  SparkIcon,
   TargetIcon,
 } from "@/components/ui-flat-icons";
 

@@ -1,3 +1,4 @@
+// app/dashboard/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -39,6 +40,11 @@ import type {
   Recommendation,
 } from "@/lib/types";
 
+type ApiErrorLike = {
+  message?: string;
+  detail?: string;
+};
+
 type CareerGap = {
   current_role?: string | null;
   short_term_role?: string | null;
@@ -58,6 +64,13 @@ type CareerGap = {
   destiny_percent?: number | null;
   hobby_percent?: number | null;
   key_gap_summary?: string | null;
+};
+
+type CareerTrajectory = {
+  trajectory_summary?: string | null;
+  current_position?: string | null;
+  target_position?: string | null;
+  strategic_bridge?: string | null;
 };
 
 function prettify(value: string): string {
@@ -93,7 +106,7 @@ function getBestRecommendation(recommendations: Recommendation[]): Recommendatio
 }
 
 function buildLocalizedTrajectorySummary(
-  trajectory: any,
+  trajectory: CareerTrajectory | null,
   uiLanguage: "fr" | "en",
 ): string | null {
   if (!trajectory) return null;
@@ -103,7 +116,11 @@ function buildLocalizedTrajectorySummary(
   const targetPosition = trajectory.target_position?.trim?.() || "";
   const strategicBridge = trajectory.strategic_bridge?.trim?.() || "";
 
-  if (rawSummary && !looksLikeTranslationKey(rawSummary) && !looksLikeTranslationKey(strategicBridge)) {
+  if (
+    rawSummary &&
+    !looksLikeTranslationKey(rawSummary) &&
+    !looksLikeTranslationKey(strategicBridge)
+  ) {
     return rawSummary;
   }
 
@@ -122,12 +139,15 @@ function buildLocalizedTrajectorySummary(
     if (currentPosition && targetPosition && safeBridge) {
       return `Tu es actuellement ${currentPosition}. Ta trajectoire vise ${targetPosition}. Le pont stratégique consiste à ${safeBridge}.`;
     }
+
     if (currentPosition && targetPosition) {
       return `Tu es actuellement ${currentPosition}. Ta trajectoire vise ${targetPosition}.`;
     }
+
     if (targetPosition && safeBridge) {
       return `Ta trajectoire vise ${targetPosition}. Le pont stratégique consiste à ${safeBridge}.`;
     }
+
     if (currentPosition && safeBridge) {
       return `Tu es actuellement ${currentPosition}. Le pont stratégique consiste à ${safeBridge}.`;
     }
@@ -135,12 +155,15 @@ function buildLocalizedTrajectorySummary(
     if (currentPosition && targetPosition && safeBridge) {
       return `You are currently ${currentPosition}. Your trajectory aims toward ${targetPosition}. The strategic bridge is ${safeBridge}.`;
     }
+
     if (currentPosition && targetPosition) {
       return `You are currently ${currentPosition}. Your trajectory aims toward ${targetPosition}.`;
     }
+
     if (targetPosition && safeBridge) {
       return `Your trajectory aims toward ${targetPosition}. The strategic bridge is ${safeBridge}.`;
     }
+
     if (currentPosition && safeBridge) {
       return `You are currently ${currentPosition}. The strategic bridge is ${safeBridge}.`;
     }
@@ -166,9 +189,10 @@ function DashboardContent() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [timeline, setTimeline] = useState<DashboardTimelineItem[]>([]);
   const [openSession, setOpenSession] = useState<OpenSessionResponse | null>(null);
-  const [careerBlueprint, setCareerBlueprint] = useState<CareerBlueprintResponse | null>(null);
+  const [careerBlueprint, setCareerBlueprint] =
+    useState<CareerBlueprintResponse | null>(null);
   const [careerGap, setCareerGap] = useState<CareerGap | null>(null);
-  const [trajectory, setTrajectory] = useState<any>(null);
+  const [trajectory, setTrajectory] = useState<CareerTrajectory | null>(null);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
 
   const [loading, setLoading] = useState(true);
@@ -204,10 +228,11 @@ function DashboardContent() {
       setOpenSession(openSessionData);
       setCareerBlueprint(careerBlueprintData);
       setCareerGap(careerGapData);
-      setTrajectory(trajectoryData);
+      setTrajectory(trajectoryData as CareerTrajectory);
       setRecommendations(recommendationsData);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load dashboard.");
+    } catch (err: unknown) {
+      const apiError = err as ApiErrorLike;
+      setError(apiError.detail || apiError.message || "Failed to load dashboard.");
     } finally {
       setLoading(false);
     }
@@ -229,8 +254,9 @@ function DashboardContent() {
 
       const session = await createSession();
       router.push(`/session?sessionId=${session.session_id}`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create session.");
+    } catch (err: unknown) {
+      const apiError = err as ApiErrorLike;
+      setError(apiError.detail || apiError.message || "Failed to create session.");
       setStarting(false);
     }
   }
@@ -244,8 +270,9 @@ function DashboardContent() {
     try {
       await forceCloseSession(openSession.session_id);
       await loadDashboard();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to close active session.");
+    } catch (err: unknown) {
+      const apiError = err as ApiErrorLike;
+      setError(apiError.detail || apiError.message || "Failed to close active session.");
     } finally {
       setForceClosing(false);
     }
@@ -258,14 +285,16 @@ function DashboardContent() {
     try {
       await confirmCurrentProfileContext();
       await loadDashboard();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to confirm profile.");
+    } catch (err: unknown) {
+      const apiError = err as ApiErrorLike;
+      setError(apiError.detail || apiError.message || "Failed to confirm profile.");
     } finally {
       setConfirmingProfile(false);
     }
   }
 
   const blueprintCompleted = !!careerBlueprint?.is_completed;
+
   const bestRecommendation = useMemo(
     () => getBestRecommendation(recommendations),
     [recommendations],
@@ -315,11 +344,14 @@ function DashboardContent() {
               ? "Impossible de charger le tableau de bord"
               : "Unable to load the dashboard"}
           </div>
+
           <div className="muted">{error}</div>
+
           <div className="row" style={{ flexWrap: "wrap" }}>
             <button className="button" onClick={() => void loadDashboard()}>
               {uiLanguage === "fr" ? "Réessayer" : "Try again"}
             </button>
+
             <button className="button ghost" onClick={handleStartSession}>
               {uiLanguage === "fr" ? "Démarrer une session" : "Start a session"}
             </button>
@@ -332,11 +364,13 @@ function DashboardContent() {
               ? "Ton espace est prêt, mais encore vide"
               : "Your workspace is ready, but still empty"}
           </div>
+
           <div className="muted">
             {uiLanguage === "fr"
               ? "Démarre une première session pour faire émerger tes premiers insights, recommandations et signaux de trajectoire."
               : "Start your first session to surface your first insights, recommendations, and trajectory signals."}
           </div>
+
           <div className="row" style={{ flexWrap: "wrap" }}>
             <button className="button" onClick={handleStartSession} disabled={starting}>
               {starting
@@ -347,10 +381,8 @@ function DashboardContent() {
                   ? "Démarrer une première session"
                   : "Start your first session"}
             </button>
-            <button
-              className="button ghost"
-              onClick={() => router.push("/career-blueprint")}
-            >
+
+            <button className="button ghost" onClick={() => router.push("/career-blueprint")}>
               {uiLanguage === "fr" ? "Compléter le blueprint" : "Complete blueprint"}
             </button>
           </div>
@@ -372,10 +404,7 @@ function DashboardContent() {
               </div>
 
               <div className="row" style={{ flexWrap: "wrap", gap: 10 }}>
-                <button
-                  className="button"
-                  onClick={() => router.push("/profile/update-context")}
-                >
+                <button className="button" onClick={() => router.push("/profile/update-context")}>
                   {uiLanguage === "fr" ? "Mettre à jour mon profil" : "Update my profile"}
                 </button>
 
@@ -411,17 +440,11 @@ function DashboardContent() {
               </div>
 
               <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
-                <button
-                  className="button"
-                  onClick={() => router.push("/career-blueprint")}
-                >
+                <button className="button" onClick={() => router.push("/career-blueprint")}>
                   {uiLanguage === "fr" ? "Commencer le blueprint" : "Start blueprint"}
                 </button>
 
-                <button
-                  className="button ghost"
-                  onClick={() => router.push("/career-blueprint")}
-                >
+                <button className="button ghost" onClick={() => router.push("/career-blueprint")}>
                   {uiLanguage === "fr" ? "En savoir plus" : "Learn more"}
                 </button>
               </div>
@@ -437,6 +460,7 @@ function DashboardContent() {
                       ? "Career Blueprint actif"
                       : "Career Blueprint active"}
                   </div>
+
                   <div className="muted">
                     {uiLanguage === "fr"
                       ? "Ton blueprint est enregistré et utilisé par le coach pour personnaliser les échanges."
@@ -444,10 +468,7 @@ function DashboardContent() {
                   </div>
                 </div>
 
-                <button
-                  className="button ghost"
-                  onClick={() => router.push("/career-blueprint")}
-                >
+                <button className="button ghost" onClick={() => router.push("/career-blueprint")}>
                   {uiLanguage === "fr" ? "Mettre à jour" : "Update"}
                 </button>
               </div>
@@ -476,9 +497,11 @@ function DashboardContent() {
               <BadgePill icon={<SparkIcon size={14} />}>
                 {uiLanguage === "fr" ? "Espace actif" : "Active workspace"}
               </BadgePill>
+
               <BadgePill icon={<BrainIcon size={14} />}>
                 {uiLanguage === "fr" ? "Mémoire continue" : "Continuous memory"}
               </BadgePill>
+
               <BadgePill icon={<TargetIcon size={14} />}>
                 {uiLanguage === "fr" ? "Trajectoire suivie" : "Trajectory tracking"}
               </BadgePill>
@@ -503,15 +526,10 @@ function DashboardContent() {
                 className="button secondary"
                 onClick={() => router.push("/recommendations")}
               >
-                {uiLanguage === "fr"
-                  ? "Voir les recommandations"
-                  : "View recommendations"}
+                {uiLanguage === "fr" ? "Voir les recommandations" : "View recommendations"}
               </button>
 
-              <button
-                className="button ghost"
-                onClick={() => router.push("/career-blueprint")}
-              >
+              <button className="button ghost" onClick={() => router.push("/career-blueprint")}>
                 {uiLanguage === "fr" ? "Ouvrir le blueprint" : "Open blueprint"}
               </button>
             </div>
@@ -524,9 +542,7 @@ function DashboardContent() {
               <div className="row" style={{ alignItems: "center", gap: 8 }}>
                 <SessionIcon />
                 <div className="section-title">
-                  {uiLanguage === "fr"
-                    ? "Session active détectée"
-                    : "Active session detected"}
+                  {uiLanguage === "fr" ? "Session active détectée" : "Active session detected"}
                 </div>
               </div>
 
@@ -566,17 +582,13 @@ function DashboardContent() {
           )}
 
           {bestRecommendation ? (
-            <BestNextActionCard
-              recommendation={bestRecommendation}
-              uiLanguage={uiLanguage}
-            />
+            <BestNextActionCard recommendation={bestRecommendation} uiLanguage={uiLanguage} />
           ) : (
             <div className="card stack">
               <div className="section-title">
-                {uiLanguage === "fr"
-                  ? "Prochaine meilleure action"
-                  : "Best next action"}
+                {uiLanguage === "fr" ? "Prochaine meilleure action" : "Best next action"}
               </div>
+
               <div className="muted">
                 {uiLanguage === "fr"
                   ? "Le coach n’a pas encore assez de matière pour proposer une action prioritaire unique. Une ou deux sessions supplémentaires aideront à faire émerger un meilleur next move."
@@ -593,6 +605,7 @@ function DashboardContent() {
                   {uiLanguage === "fr" ? "Trajectoire de carrière" : "Career trajectory"}
                 </div>
               </div>
+
               <div className="muted">
                 {localizedTrajectorySummary ||
                   (uiLanguage === "fr"
@@ -621,6 +634,7 @@ function DashboardContent() {
                     <div key={`${item.session_id}-${item.started_at}`} className="card-soft">
                       <div className="row space-between" style={{ gap: 8, alignItems: "center" }}>
                         <strong>Session #{item.session_id}</strong>
+
                         <BadgePill icon={<ClockIcon size={14} />}>
                           {new Date(item.started_at).toLocaleDateString()}
                         </BadgePill>
@@ -652,10 +666,7 @@ function DashboardContent() {
                   </div>
                 </div>
 
-                <button
-                  className="button ghost"
-                  onClick={() => router.push("/career-blueprint")}
-                >
+                <button className="button ghost" onClick={() => router.push("/career-blueprint")}>
                   {uiLanguage === "fr" ? "Voir le blueprint" : "View blueprint"}
                 </button>
               </div>
@@ -707,25 +718,22 @@ function DashboardContent() {
               <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
                 {careerGap.role_gap_short_term && (
                   <BadgePill icon={<TargetIcon size={14} />}>
-                    {uiLanguage === "fr"
-                      ? "Écart de rôle à court terme"
-                      : "Short-term role gap"}
+                    {uiLanguage === "fr" ? "Écart de rôle à court terme" : "Short-term role gap"}
                   </BadgePill>
                 )}
+
                 {careerGap.role_gap_mid_term && (
                   <BadgePill icon={<PathIcon size={14} />}>
-                    {uiLanguage === "fr"
-                      ? "Évolution de rôle à moyen terme"
-                      : "Mid-term role shift"}
+                    {uiLanguage === "fr" ? "Évolution de rôle à moyen terme" : "Mid-term role shift"}
                   </BadgePill>
                 )}
+
                 {careerGap.role_gap_long_term && (
                   <BadgePill icon={<LayerIcon size={14} />}>
-                    {uiLanguage === "fr"
-                      ? "Évolution de rôle à long terme"
-                      : "Long-term role shift"}
+                    {uiLanguage === "fr" ? "Évolution de rôle à long terme" : "Long-term role shift"}
                   </BadgePill>
                 )}
+
                 {careerGap.level_gap_mid_term && (
                   <BadgePill icon={<ChartIcon size={14} />}>
                     {uiLanguage === "fr"
@@ -733,6 +741,7 @@ function DashboardContent() {
                       : "Level progression expected"}
                   </BadgePill>
                 )}
+
                 {careerGap.level_gap_long_term && (
                   <BadgePill icon={<ChartIcon size={14} />}>
                     {uiLanguage === "fr"
@@ -745,80 +754,75 @@ function DashboardContent() {
           )}
 
           {summary && (
-            <>
-              <div className="grid grid-2">
-                <div className="card stack">
-                  <div className="row" style={{ alignItems: "center", gap: 8 }}>
-                    <ChartIcon />
-                    <div className="section-title">
-                      {uiLanguage === "fr"
-                        ? "Progression des recommandations"
-                        : "Recommendation progress"}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-2">
-                    <div>
-                      <strong>Total</strong>
-                      <div className="muted">{summary.recommendation_stats.total}</div>
-                    </div>
-
-                    <div>
-                      <strong>{uiLanguage === "fr" ? "Ouvertes" : "Open"}</strong>
-                      <div className="muted">{summary.recommendation_stats.open}</div>
-                    </div>
-
-                    <div>
-                      <strong>{uiLanguage === "fr" ? "En cours" : "In progress"}</strong>
-                      <div className="muted">{summary.recommendation_stats.in_progress}</div>
-                    </div>
-
-                    <div>
-                      <strong>{uiLanguage === "fr" ? "Terminées" : "Completed"}</strong>
-                      <div className="muted">{summary.recommendation_stats.completed}</div>
-                    </div>
+            <div className="grid grid-2">
+              <div className="card stack">
+                <div className="row" style={{ alignItems: "center", gap: 8 }}>
+                  <ChartIcon />
+                  <div className="section-title">
+                    {uiLanguage === "fr"
+                      ? "Progression des recommandations"
+                      : "Recommendation progress"}
                   </div>
                 </div>
 
-                <div className="card stack">
-                  <div className="row" style={{ alignItems: "center", gap: 8 }}>
-                    <BrainIcon />
-                    <div className="section-title">
-                      {uiLanguage === "fr" ? "Patterns récurrents" : "Recurring patterns"}
-                    </div>
+                <div className="grid grid-2">
+                  <div>
+                    <strong>Total</strong>
+                    <div className="muted">{summary.recommendation_stats.total}</div>
                   </div>
 
                   <div>
-                    <strong>
-                      {uiLanguage === "fr"
-                        ? "Problème principal dominant"
-                        : "Dominant primary problem"}
-                    </strong>
-                    <div className="muted">
-                      {summary.problem_trends.top_primary_problem
-                        ? prettify(summary.problem_trends.top_primary_problem)
-                        : uiLanguage === "fr"
-                          ? "Pas encore assez de données"
-                          : "Not enough data yet"}
-                    </div>
+                    <strong>{uiLanguage === "fr" ? "Ouvertes" : "Open"}</strong>
+                    <div className="muted">{summary.recommendation_stats.open}</div>
                   </div>
 
                   <div>
-                    <strong>{uiLanguage === "fr" ? "Sévérité moyenne" : "Average severity"}</strong>
-                    <div className="muted">
-                      {summary.problem_trends.average_severity || "—"}
-                    </div>
+                    <strong>{uiLanguage === "fr" ? "En cours" : "In progress"}</strong>
+                    <div className="muted">{summary.recommendation_stats.in_progress}</div>
                   </div>
 
                   <div>
-                    <strong>{uiLanguage === "fr" ? "Urgence moyenne" : "Average urgency"}</strong>
-                    <div className="muted">
-                      {summary.problem_trends.average_urgency || "—"}
-                    </div>
+                    <strong>{uiLanguage === "fr" ? "Terminées" : "Completed"}</strong>
+                    <div className="muted">{summary.recommendation_stats.completed}</div>
                   </div>
                 </div>
               </div>
-            </>
+
+              <div className="card stack">
+                <div className="row" style={{ alignItems: "center", gap: 8 }}>
+                  <BrainIcon />
+                  <div className="section-title">
+                    {uiLanguage === "fr" ? "Patterns récurrents" : "Recurring patterns"}
+                  </div>
+                </div>
+
+                <div>
+                  <strong>
+                    {uiLanguage === "fr"
+                      ? "Problème principal dominant"
+                      : "Dominant primary problem"}
+                  </strong>
+
+                  <div className="muted">
+                    {summary.problem_trends.top_primary_problem
+                      ? prettify(summary.problem_trends.top_primary_problem)
+                      : uiLanguage === "fr"
+                        ? "Pas encore assez de données"
+                        : "Not enough data yet"}
+                  </div>
+                </div>
+
+                <div>
+                  <strong>{uiLanguage === "fr" ? "Sévérité moyenne" : "Average severity"}</strong>
+                  <div className="muted">{summary.problem_trends.average_severity || "—"}</div>
+                </div>
+
+                <div>
+                  <strong>{uiLanguage === "fr" ? "Urgence moyenne" : "Average urgency"}</strong>
+                  <div className="muted">{summary.problem_trends.average_urgency || "—"}</div>
+                </div>
+              </div>
+            </div>
           )}
         </>
       )}

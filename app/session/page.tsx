@@ -21,7 +21,7 @@ import {
   getCurrentOpenSession,
   getRecommendations,
 } from "@/lib/api";
-import type { Recommendation, SessionCloseResponse } from "@/lib/types";
+import type { Recommendation } from "@/lib/types";
 import { resolveUiLanguage, type SupportedUiLanguage } from "@/lib/user-locales";
 
 type SessionMode = "written" | "voice";
@@ -80,6 +80,8 @@ function SessionPageContent() {
     );
   }, [user]);
 
+  const searchParamsKey = searchParams.toString();
+
   async function loadSessionPage() {
     try {
       setLoading(true);
@@ -117,6 +119,7 @@ function SessionPageContent() {
       setSessionId(resolvedSessionId);
 
       const [gap, recs] = await Promise.all([getCareerGap(), getRecommendations()]);
+
       setCareerGap(gap);
       setRecommendations(recs);
       setCoachMode(undefined);
@@ -130,7 +133,8 @@ function SessionPageContent() {
 
   useEffect(() => {
     void loadSessionPage();
-  }, [searchParams]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParamsKey]);
 
   const copy = useMemo(
     () =>
@@ -139,7 +143,7 @@ function SessionPageContent() {
             title: "Coaching",
             noSession: "Lance ton prochain espace de coaching",
             noSessionText:
-              "Choisis le mode qui correspond le mieux à ta manière de réfléchir et d’avancer. Les deux expériences s’appuient sur le même cockpit de coaching, la même mémoire et les mêmes recommandations.",
+              "Choisis le mode qui correspond le mieux à ta manière de réfléchir et d’avancer. Les deux expériences s’appuient sur le même cockpit de coaching, la même mémoire, le Purpose Canvas et les mêmes recommandations.",
             noSessionHint:
               "Tu peux démarrer immédiatement en mode écrit ou vocal, sans repasser par le tableau de bord.",
             sessionErrorTitle: "Impossible de charger l’espace de coaching",
@@ -161,7 +165,9 @@ function SessionPageContent() {
               "Pour une conversation plus fluide, plus spontanée et plus immersive.",
             activeContext: "Contexte actif",
             activeContextText:
-              "Le coach s’appuie sur ta trajectoire, ton historique et tes recommandations pour ajuster sa posture.",
+              "Le coach s’appuie sur ton profil, ta trajectoire, ton historique, ton Purpose Canvas, tes canvases d’engagement et tes recommandations pour ajuster sa posture.",
+            activeContextPurpose:
+              "Le Purpose Canvas peut maintenant influencer naturellement les questions, reformulations et recommandations du coach.",
             writtenHeadline: "Conversation écrite active",
             writtenLead:
               "Retrouve le même espace de coaching que la session vocale, avec une interaction textuelle au centre.",
@@ -170,6 +176,8 @@ function SessionPageContent() {
               "Interaction immersive voix-only avec le même cockpit de coaching.",
             modeCardTitle: "Mode actif",
             trajectory: "Trajectoire",
+            purposeCanvas: "Purpose Canvas",
+            memoryActive: "Mémoire active",
             viewHistory: "Voir l’historique",
             viewDashboard: "Retour au tableau de bord",
             launchingWritten: "Ouverture de la session écrite...",
@@ -183,7 +191,7 @@ function SessionPageContent() {
             title: "Coaching",
             noSession: "Launch your next coaching space",
             noSessionText:
-              "Choose the mode that best fits the way you think and move forward. Both experiences rely on the same coaching cockpit, memory, and recommendations.",
+              "Choose the mode that best fits the way you think and move forward. Both experiences rely on the same coaching cockpit, memory, Purpose Canvas, and recommendations.",
             noSessionHint:
               "You can start immediately in written or voice mode without going back through the dashboard.",
             sessionErrorTitle: "Unable to load the coaching workspace",
@@ -205,7 +213,9 @@ function SessionPageContent() {
               "Best for a more fluid, spontaneous, and immersive conversation.",
             activeContext: "Active context",
             activeContextText:
-              "Your coach uses your trajectory, history, and recommendations to adapt its stance.",
+              "Your coach uses your profile, trajectory, history, Purpose Canvas, engagement canvases, and recommendations to adapt its stance.",
+            activeContextPurpose:
+              "The Purpose Canvas can now naturally influence the coach’s questions, reflections, and recommendations.",
             writtenHeadline: "Written conversation active",
             writtenLead:
               "Use the same coaching cockpit as voice mode, with text interaction in the center.",
@@ -214,6 +224,8 @@ function SessionPageContent() {
               "Immersive voice-only interaction within the same coaching cockpit.",
             modeCardTitle: "Active mode",
             trajectory: "Trajectory",
+            purposeCanvas: "Purpose Canvas",
+            memoryActive: "Memory active",
             viewHistory: "View history",
             viewDashboard: "Back to dashboard",
             launchingWritten: "Opening written session...",
@@ -236,7 +248,7 @@ function SessionPageContent() {
       params.set("mode", mode);
       params.set("sessionId", String(created.session_id));
 
-      router.push(`/session?${params.toString()}`);
+      router.push(`/sessions?${params.toString()}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to start session.");
     } finally {
@@ -244,7 +256,7 @@ function SessionPageContent() {
     }
   }
 
-  function handleClosed(_result: SessionCloseResponse) {
+  function handleClosed() {
     router.push("/dashboard");
   }
 
@@ -264,7 +276,7 @@ function SessionPageContent() {
       params.set("sessionId", String(sessionId));
     }
 
-    router.replace(`/session?${params.toString()}`);
+    router.replace(`/sessions?${params.toString()}`);
     setSessionMode(mode);
   }
 
@@ -334,11 +346,19 @@ function SessionPageContent() {
                 : "Trajectory in analysis"}
           </BadgePill>
 
+          <BadgePill icon={<BrainIcon size={14} />}>{copy.purposeCanvas}</BadgePill>
+
           <BadgePill icon={<SparkIcon size={14} />}>
             {uiLanguage === "fr"
               ? `${recommendations.length} recommandation${recommendations.length > 1 ? "s" : ""}`
               : `${recommendations.length} recommendation${recommendations.length > 1 ? "s" : ""}`}
           </BadgePill>
+
+          <BadgePill icon={<SessionIcon size={14} />}>{copy.memoryActive}</BadgePill>
+        </div>
+
+        <div className="card-soft muted" style={{ lineHeight: 1.55 }}>
+          {copy.activeContextPurpose}
         </div>
 
         <div className="row" style={{ flexWrap: "wrap", gap: 10 }}>
@@ -624,6 +644,7 @@ function SessionPageContent() {
 
         <div className="chat-surface">
           <VoiceSessionPanel
+            key={`voice-${sessionId}-${uiLanguage}`}
             sessionId={sessionId}
             uiLanguage={uiLanguage}
             onClosed={handleClosed}
@@ -643,6 +664,7 @@ function SessionPageContent() {
 
         <div className="chat-surface">
           <ConversationPanel
+            key={`written-${sessionId}-${uiLanguage}`}
             sessionId={sessionId}
             uiLanguage={uiLanguage}
             onClosed={handleClosed}

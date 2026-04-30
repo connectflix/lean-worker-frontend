@@ -7,7 +7,6 @@ import type {
   AdminBusinessEnvironment,
   AdminBusinessIssueSeverity,
   AdminBusinessIssueStatus,
-  AdminBusinessIssueType,
   AdminBusinessOpsMonitoringResponse,
   AdminBusinessSignalSource,
   AdminBusinessSignalType,
@@ -123,9 +122,11 @@ function statusBadgeStyle(status: AdminBusinessIssueStatus) {
   if (status === "issue") {
     return { borderColor: "rgba(198,40,40,0.25)", color: "var(--danger)" };
   }
+
   if (status === "watch") {
     return { borderColor: "rgba(183,121,31,0.25)", color: "var(--warning)" };
   }
+
   return { borderColor: "rgba(21,128,61,0.20)", color: "var(--success)" };
 }
 
@@ -203,10 +204,16 @@ function AdminBusinessOpsMonitoringContent() {
               <button className="button ghost" onClick={() => (window.location.href = "/admin")}>
                 Dashboard
               </button>
-              <button className="button ghost" onClick={() => (window.location.href = "/admin/tech-ops-monitoring")}>
+              <button
+                className="button ghost"
+                onClick={() => (window.location.href = "/admin/tech-ops-monitoring")}
+              >
                 Tech ops monitoring
               </button>
-              <button className="button ghost" onClick={() => (window.location.href = "/admin/support-resolution")}>
+              <button
+                className="button ghost"
+                onClick={() => (window.location.href = "/admin/support-resolution")}
+              >
                 Support resolution
               </button>
             </div>
@@ -361,7 +368,12 @@ function AdminBusinessOpsMonitoringContent() {
               </label>
 
               <div className="row" style={{ gap: 8 }}>
-                <button className="button" type="button" onClick={handleAssess} disabled={loading || !message.trim()}>
+                <button
+                  className="button"
+                  type="button"
+                  onClick={handleAssess}
+                  disabled={loading || !message.trim()}
+                >
                   {loading ? "Analyse..." : "Analyser le signal"}
                 </button>
               </div>
@@ -396,15 +408,9 @@ function AdminBusinessOpsMonitoringContent() {
                     <span className="badge" style={severityBadgeStyle(result.severity)}>
                       Severity: {result.severity}
                     </span>
-                    <span className="badge">
-                      Type: {result.issue_type}
-                    </span>
-                    <span className="badge">
-                      Issue: {result.issue_detected ? "yes" : "no"}
-                    </span>
-                    <span className="badge">
-                      Escalate: {result.escalate ? "yes" : "no"}
-                    </span>
+                    <span className="badge">Type: {result.issue_type}</span>
+                    <span className="badge">Issue: {result.issue_detected ? "yes" : "no"}</span>
+                    <span className="badge">Escalate: {result.escalate ? "yes" : "no"}</span>
                     <span className="badge">
                       Confidence: {Math.round((result.confidence || 0) * 100)}%
                     </span>

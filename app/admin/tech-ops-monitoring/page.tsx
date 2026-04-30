@@ -7,7 +7,6 @@ import type {
   AdminTechEnvironment,
   AdminTechIncidentSeverity,
   AdminTechIncidentStatus,
-  AdminTechIncidentType,
   AdminTechOpsMonitoringResponse,
   AdminTechSignalSource,
   AdminTechSignalType,
@@ -19,7 +18,8 @@ const SAMPLE_SIGNALS = [
     payload: {
       signal_type: "auth_error" as AdminTechSignalType,
       signal_source: "backend" as AdminTechSignalSource,
-      message: "Multiple 401/403 errors detected on LinkedIn auth callback and /auth/me in production.",
+      message:
+        "Multiple 401/403 errors detected on LinkedIn auth callback and /auth/me in production.",
       language: "fr",
       environment: "production" as AdminTechEnvironment,
       context: {
@@ -102,6 +102,7 @@ function formatContextText(value: string): Record<string, string | number | bool
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
       return parsed as Record<string, string | number | boolean | null>;
     }
+
     return null;
   } catch {
     return null;
@@ -125,9 +126,11 @@ function statusBadgeStyle(status: AdminTechIncidentStatus) {
   if (status === "incident") {
     return { borderColor: "rgba(198,40,40,0.25)", color: "var(--danger)" };
   }
+
   if (status === "watch") {
     return { borderColor: "rgba(183,121,31,0.25)", color: "var(--warning)" };
   }
+
   return { borderColor: "rgba(21,128,61,0.20)", color: "var(--success)" };
 }
 
@@ -205,10 +208,16 @@ function AdminTechOpsMonitoringContent() {
               <button className="button ghost" onClick={() => (window.location.href = "/admin")}>
                 Dashboard
               </button>
-              <button className="button ghost" onClick={() => (window.location.href = "/admin/support-triage")}>
+              <button
+                className="button ghost"
+                onClick={() => (window.location.href = "/admin/support-triage")}
+              >
                 Support triage
               </button>
-              <button className="button ghost" onClick={() => (window.location.href = "/admin/support-resolution")}>
+              <button
+                className="button ghost"
+                onClick={() => (window.location.href = "/admin/support-resolution")}
+              >
                 Support resolution
               </button>
             </div>
@@ -363,7 +372,12 @@ function AdminTechOpsMonitoringContent() {
               </label>
 
               <div className="row" style={{ gap: 8 }}>
-                <button className="button" type="button" onClick={handleAssess} disabled={loading || !message.trim()}>
+                <button
+                  className="button"
+                  type="button"
+                  onClick={handleAssess}
+                  disabled={loading || !message.trim()}
+                >
                   {loading ? "Analyse..." : "Analyser le signal"}
                 </button>
               </div>
@@ -398,9 +412,7 @@ function AdminTechOpsMonitoringContent() {
                     <span className="badge" style={severityBadgeStyle(result.severity)}>
                       Severity: {result.severity}
                     </span>
-                    <span className="badge">
-                      Type: {result.incident_type}
-                    </span>
+                    <span className="badge">Type: {result.incident_type}</span>
                     <span className="badge">
                       Incident: {result.incident_detected ? "yes" : "no"}
                     </span>

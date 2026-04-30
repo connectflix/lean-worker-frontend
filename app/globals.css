@@ -27,8 +27,8 @@
   --radius-md: 18px;
   --radius-lg: 28px;
 
-  --max-content-width: 1360px;
-  --page-content-width: 1280px;
+  --max-content-width: 1560px;
+  --page-content-width: 1480px;
   --sidebar-width: 292px;
   --topbar-height: 72px;
 
@@ -333,6 +333,10 @@ body {
 
 .grid-5 {
   grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.grid-6 {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
 .title {
@@ -974,6 +978,172 @@ body {
   text-align: center;
 }
 
+/* ---------------- ADMIN UX FOUNDATION ---------------- */
+
+.admin-app-shell .sidebar {
+  display: block;
+}
+
+.admin-sidebar-card {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.94));
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: var(--shadow-md);
+  position: sticky;
+  top: 0;
+  height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+
+.admin-brand-block {
+  margin-bottom: 8px;
+}
+
+.admin-alert-hero {
+  border: 1px solid rgba(220, 38, 38, 0.18);
+  background:
+    radial-gradient(circle at top right, rgba(220, 38, 38, 0.06), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(254, 242, 242, 0.92));
+}
+
+.admin-metric-value {
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.admin-dashboard-toolbar {
+  margin-top: -2px;
+}
+
+.admin-kpi-scroll {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 4px;
+}
+
+.admin-kpi-row {
+  display: grid;
+  gap: 16px;
+  align-items: stretch;
+  min-width: max-content;
+}
+
+.admin-kpi-row--5 {
+  grid-template-columns: repeat(5, minmax(180px, 1fr));
+}
+
+.admin-kpi-row--6 {
+  grid-template-columns: repeat(6, minmax(170px, 1fr));
+}
+
+.admin-kpi-card {
+  min-width: 0;
+}
+
+.admin-kpi-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+
+.admin-kpi-scroll::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.16);
+  border-radius: 999px;
+}
+
+.admin-kpi-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ---------------- ADMIN LOGIN ---------------- */
+
+.admin-login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.admin-login-shell {
+  width: 100%;
+  max-width: 1180px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(380px, 0.85fr);
+  gap: 24px;
+  align-items: stretch;
+}
+
+.admin-login-hero {
+  min-height: 620px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background:
+    radial-gradient(circle at top right, rgba(37, 99, 235, 0.08), transparent 30%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 250, 252, 0.92));
+}
+
+.admin-login-panel {
+  min-height: 620px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 250, 252, 0.95));
+}
+
+.admin-login-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.admin-login-hero-title {
+  font-size: 42px;
+  line-height: 1.08;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.03em;
+  max-width: 760px;
+}
+
+.admin-login-feature-grid {
+  margin-top: 8px;
+}
+
+.admin-login-field {
+  gap: 8px;
+}
+
+.admin-login-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--foreground);
+  letter-spacing: -0.01em;
+}
+
+.admin-login-input {
+  min-height: 48px;
+}
+
+.admin-login-submit {
+  width: 100%;
+  min-height: 46px;
+}
+
+.admin-login-error {
+  border: 1px solid rgba(198, 40, 40, 0.18);
+  background: rgba(198, 40, 40, 0.06);
+  color: var(--danger);
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 @media (max-width: 1360px) {
   .workspace-layout--three {
     grid-template-columns: 280px minmax(0, 1fr);
@@ -1034,6 +1204,10 @@ body {
   .grid-5 {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  .grid-6 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 960px) {
@@ -1057,7 +1231,8 @@ body {
   .grid-2,
   .grid-3,
   .grid-4,
-  .grid-5 {
+  .grid-5,
+  .grid-6 {
     grid-template-columns: 1fr;
   }
 
@@ -1144,5 +1319,35 @@ body {
   .offer-cross-sell-group {
     padding-left: 0;
     border-left: none;
+  }
+
+  .admin-app-shell .sidebar {
+    display: none;
+  }
+
+  .admin-metric-value {
+    font-size: 30px;
+  }
+
+  .admin-login-page {
+    padding: 16px;
+  }
+
+  .admin-login-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-login-hero,
+  .admin-login-panel {
+    min-height: auto;
+  }
+
+  .admin-login-hero-title {
+    font-size: 32px;
+  }
+
+  .admin-kpi-row--5,
+  .admin-kpi-row--6 {
+    min-width: 820px;
   }
 }

@@ -1,16 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { AuthGuard } from "@/components/auth-guard";
 import {
   ArrowRightIcon,
   BadgePill,
   CheckCircleIcon,
-  ClockIcon,
   LayerIcon,
-  SparkIcon,
   TargetIcon,
 } from "@/components/ui-flat-icons";
 import {
@@ -69,6 +67,10 @@ function localizePreviewSubtitle(
       "Un guide pratique concis, généré à partir de ta recommandation de coaching.",
     "A concise audio guide generated from your coaching recommendation.":
       "Un guide audio concis, généré à partir de ta recommandation de coaching.",
+    "Personalized AI-generated mini e-book":
+      "Mini e-book personnalisé généré par IA",
+    "Personalized AI-generated mini audiobook":
+      "Mini audiobook personnalisé généré par IA",
   };
 
   return knownTranslations[normalized] ?? subtitle;
@@ -96,9 +98,27 @@ function localizeOutlineSectionTitle(
       "Ce que cette recommandation change",
     "How to move from insight to action":
       "Comment passer de l’insight à l’action",
+    "What you are facing right now":
+      "Ta situation actuelle",
+    "Why this matters now":
+      "Pourquoi c’est important maintenant",
+    "A practical action plan":
+      "Un plan d’action concret",
+    "Your next 48 hours":
+      "Tes prochaines 48h",
   };
 
   return knownTranslations[normalized] ?? title;
+}
+
+function resolveRecommendationId(searchParams: ReturnType<typeof useSearchParams>): number {
+  const raw =
+    searchParams.get("recommendationId") ||
+    searchParams.get("recommendation_id") ||
+    searchParams.get("id") ||
+    "";
+
+  return Number(raw);
 }
 
 export default function AIArtifactPreviewPage() {
@@ -111,10 +131,9 @@ export default function AIArtifactPreviewPage() {
 
 function AIArtifactPreviewContent() {
   const router = useRouter();
-  const params = useParams();
   const searchParams = useSearchParams();
 
-  const recommendationId = Number(params?.recommendationId);
+  const recommendationId = resolveRecommendationId(searchParams);
   const initialFormat = (searchParams.get("format") || "ebook") as "ebook" | "audiobook";
 
   const { uiLanguage } = useUiLanguage("en");
@@ -140,6 +159,15 @@ function AIArtifactPreviewContent() {
   const [supportSubmitting, setSupportSubmitting] = useState(false);
   const [supportSuccess, setSupportSuccess] = useState<string | null>(null);
   const [supportError, setSupportError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const urlFormat = (searchParams.get("format") || "ebook") as "ebook" | "audiobook";
+    const normalizedFormat = urlFormat === "audiobook" ? "audiobook" : "ebook";
+
+    if (normalizedFormat !== format) {
+      setFormat(normalizedFormat);
+    }
+  }, [searchParams, format]);
 
   useEffect(() => {
     async function load() {
@@ -201,10 +229,26 @@ function AIArtifactPreviewContent() {
   const currentArtifactInProgress =
     currentArtifact?.status === "paid" || currentArtifact?.status === "generating";
 
+  function updateFormat(nextFormat: "ebook" | "audiobook") {
+    setFormat(nextFormat);
+
+    if (recommendationId && !Number.isNaN(recommendationId)) {
+      router.replace(`/ai-artifacts/preview?recommendationId=${recommendationId}&format=${nextFormat}`);
+    }
+  }
+
   async function handlePrimaryAction() {
     try {
       setRedirecting(true);
       setError(null);
+
+      if (!recommendationId || Number.isNaN(recommendationId)) {
+        throw new Error(
+          uiLanguage === "fr"
+            ? "Identifiant de recommandation invalide."
+            : "Invalid recommendation identifier.",
+        );
+      }
 
       if (currentArtifact) {
         if (currentArtifactIsUnlocked || currentArtifactInProgress) {
@@ -214,6 +258,7 @@ function AIArtifactPreviewContent() {
 
         if (currentArtifactNeedsPayment) {
           const checkout = await createAIArtifactCheckoutSession(currentArtifact.id);
+
           if (!checkout.checkout_url) {
             throw new Error(
               uiLanguage === "fr"
@@ -221,6 +266,7 @@ function AIArtifactPreviewContent() {
                 : "Unable to create checkout session.",
             );
           }
+
           window.location.href = checkout.checkout_url;
           return;
         }
@@ -261,7 +307,7 @@ function AIArtifactPreviewContent() {
       return;
     }
 
-    router.push(`/ai-artifacts/preview/${recommendationId}?format=${alternateFormat}`);
+    router.push(`/ai-artifacts/preview?recommendationId=${recommendationId}&format=${alternateFormat}`);
   }
 
   async function handleSubmitSupport() {
@@ -359,8 +405,8 @@ function AIArtifactPreviewContent() {
 
   const supportPlaceholder =
     uiLanguage === "fr"
-      ? "Décris brièvement le problème rencontré sur cette preview ou ce paiement (prix, format, checkout, accès, déblocage, etc.)."
-      : "Briefly describe the issue you encountered with this preview or payment (price, format, checkout, access, unlock, etc.).";
+      ? "Décris brièvement le problème rencontré sur cette preview ou ce paiement : prix, format, checkout, accès, déblocage, etc."
+      : "Briefly describe the issue you encountered with this preview or payment: price, format, checkout, access, unlock, etc.";
 
   return (
     <AppShell
@@ -408,6 +454,7 @@ function AIArtifactPreviewContent() {
         <>
           <div className="card stack">
             <h1 className="title">{preview.title}</h1>
+
             <div className="muted">
               {localizePreviewSubtitle(preview.subtitle, uiLanguage)}
             </div>
@@ -431,7 +478,7 @@ function AIArtifactPreviewContent() {
             <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
               <button
                 className={format === "ebook" ? "button" : "button ghost"}
-                onClick={() => setFormat("ebook")}
+                onClick={() => updateFormat("ebook")}
                 type="button"
               >
                 {uiLanguage === "fr" ? "Version mini e-book" : "Mini e-book version"}
@@ -439,7 +486,7 @@ function AIArtifactPreviewContent() {
 
               <button
                 className={format === "audiobook" ? "button" : "button ghost"}
-                onClick={() => setFormat("audiobook")}
+                onClick={() => updateFormat("audiobook")}
                 type="button"
               >
                 {uiLanguage === "fr" ? "Version mini audiobook" : "Mini audiobook version"}
@@ -450,8 +497,11 @@ function AIArtifactPreviewContent() {
           {currentArtifactExists ? (
             <div className="card stack">
               <div className="section-title">
-                {uiLanguage === "fr" ? "Déjà débloqué ou déjà initié" : "Already unlocked or already started"}
+                {uiLanguage === "fr"
+                  ? "Déjà débloqué ou déjà initié"
+                  : "Already unlocked or already started"}
               </div>
+
               <div className="card-soft">
                 {currentArtifactIsUnlocked
                   ? uiLanguage === "fr"
@@ -472,11 +522,40 @@ function AIArtifactPreviewContent() {
             <div className="section-title">
               {uiLanguage === "fr" ? "Pourquoi c’est critique" : "Why this matters now"}
             </div>
+
             <div className="card-soft">
               {preview.goal ||
                 (uiLanguage === "fr"
                   ? "Ce point est directement lié à ta progression actuelle et bloque ton évolution."
                   : "This point is directly connected to your current progress and is slowing you down.")}
+            </div>
+          </div>
+
+          <div className="card stack">
+            <div className="section-title">
+              {uiLanguage === "fr"
+                ? "Alignement personnalisé"
+                : "Personalized alignment"}
+            </div>
+
+            <div className="card-soft stack" style={{ gap: 10 }}>
+              <div className="row" style={{ gap: 8, alignItems: "center" }}>
+                <CheckCircleIcon size={14} />
+                <span>
+                  {uiLanguage === "fr"
+                    ? "Le guide tient compte de ta recommandation et de ton contexte de coaching."
+                    : "The guide takes your recommendation and coaching context into account."}
+                </span>
+              </div>
+
+              <div className="row" style={{ gap: 8, alignItems: "center" }}>
+                <CheckCircleIcon size={14} />
+                <span>
+                  {uiLanguage === "fr"
+                    ? "S’il est disponible, ton Purpose Canvas enrichit la personnalisation : Travail, Aspiration, Inspiration, Passion, Vocation et Formation."
+                    : "When available, your Purpose Canvas enriches personalization: Travail, Aspiration, Inspiration, Passion, Vocation, and Formation."}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -567,7 +646,12 @@ function AIArtifactPreviewContent() {
             </div>
 
             <div className="row" style={{ flexWrap: "wrap", gap: 10 }}>
-              <button className="button" onClick={handlePrimaryAction} type="button">
+              <button
+                className="button"
+                onClick={() => void handlePrimaryAction()}
+                type="button"
+                disabled={redirecting}
+              >
                 <span style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
                   <ArrowRightIcon size={14} />
                   {getPrimaryButtonLabel()}
@@ -642,7 +726,7 @@ function AIArtifactPreviewContent() {
                 <textarea
                   className="input"
                   value={supportMessage}
-                  onChange={(e) => setSupportMessage(e.target.value)}
+                  onChange={(event) => setSupportMessage(event.target.value)}
                   placeholder={supportPlaceholder}
                   rows={5}
                   style={{ width: "100%", resize: "vertical" }}

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { closeSession, getSessionDetail, synthesizeSpeech, voiceTurn } from "@/lib/api";
 import { getUiCopy } from "@/lib/ui-copy";
-import type { SessionCloseResponse } from "@/lib/types";
+import type { SessionCloseResponse, TranscriptTurn, VoiceTurnResponse } from "@/lib/types";
 import type { SupportedUiLanguage } from "@/lib/user-locales";
 import {
   BadgePill,
@@ -246,6 +246,32 @@ function getSupportedAudioMimeType(): string {
   return "";
 }
 
+function getLatestAgentCoachState(
+  transcript: TranscriptTurn[],
+): { coachMode?: string; coachIntent?: string } | null {
+  const latestAgentTurn = [...transcript]
+    .reverse()
+    .find((turn) => turn.speaker === "agent" && (turn.coach_mode || turn.coach_intent));
+
+  if (!latestAgentTurn) {
+    return null;
+  }
+
+  return {
+    coachMode: latestAgentTurn.coach_mode,
+    coachIntent: latestAgentTurn.coach_intent,
+  };
+}
+
+function getCoachStateFromVoiceTurn(
+  result: VoiceTurnResponse,
+): { coachMode?: string; coachIntent?: string } {
+  return {
+    coachMode: result.coach_mode,
+    coachIntent: result.coach_intent,
+  };
+}
+
 export function VoiceSessionPanel({
   sessionId,
   onClosed,
@@ -297,52 +323,55 @@ export function VoiceSessionPanel({
   }, [voiceEnabled]);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function loadSessionVoiceSpace() {
       try {
-        const detail = await getSessionDetail(sessionId);
-        const latestAgentTurn = [...(detail.transcript || [])]
-          .reverse()
-          .find(
-            (turn) =>
-              turn.speaker === "agent" &&
-              ((turn as any).coach_mode || (turn as any).coach_intent),
-          );
+        setBootstrapping(true);
+        setStage("loading");
 
-        if (latestAgentTurn) {
-          const nextMode = (latestAgentTurn as any).coach_mode;
-          const nextIntent = (latestAgentTurn as any).coach_intent;
-          setCoachMode(nextMode);
-          setCoachIntent(nextIntent);
+        const detail = await getSessionDetail(sessionId);
+
+        if (cancelled) return;
+
+        const latestCoachState = getLatestAgentCoachState(detail.transcript || []);
+
+        if (latestCoachState) {
+          setCoachMode(latestCoachState.coachMode);
+          setCoachIntent(latestCoachState.coachIntent);
 
           if (onCoachStateChange) {
-            onCoachStateChange({
-              coachMode: nextMode,
-              coachIntent: nextIntent,
-            });
+            onCoachStateChange(latestCoachState);
           }
         }
       } catch {
         // ignore bootstrap detail errors
       } finally {
-        setBootstrapping(false);
-        setStage("idle");
+        if (!cancelled) {
+          setBootstrapping(false);
+          setStage("idle");
+        }
       }
     }
 
     void loadSessionVoiceSpace();
 
     return () => {
+      cancelled = true;
       cleanupAllResources();
+
       if (earconContextRef.current) {
         void earconContextRef.current.close();
         earconContextRef.current = null;
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId, onCoachStateChange]);
 
   useEffect(() => {
     const key = `${stage}:${voiceEnabled ? "on" : "off"}`;
     if (lastEarconRef.current === key) return;
+
     lastEarconRef.current = key;
 
     if (!voiceEnabled) return;
@@ -354,6 +383,7 @@ export function VoiceSessionPanel({
     } else if (stage === "agent_speaking") {
       void playEarcon("coach");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage, voiceEnabled]);
 
   const labels = useMemo(() => {
@@ -362,6 +392,8 @@ export function VoiceSessionPanel({
       voiceOnly: uiLanguage === "fr" ? "Voix uniquement" : "Voice only",
       adaptiveCoach: uiLanguage === "fr" ? "Coach adaptatif" : "Adaptive coach",
       activeMemory: uiLanguage === "fr" ? "Mémoire active" : "Active memory",
+      purposeAware:
+        uiLanguage === "fr" ? "Purpose Canvas intégré" : "Purpose Canvas integrated",
       coachStyle: uiLanguage === "fr" ? "Style du coach" : "Coach style",
       startVoice:
         uiLanguage === "fr" ? "Démarrer la session vocale" : "Start voice session",
@@ -391,8 +423,8 @@ export function VoiceSessionPanel({
       error: uiLanguage === "fr" ? "Erreur vocale" : "Voice error",
       immersiveNote:
         uiLanguage === "fr"
-          ? "Le transcript visuel est masqué pour garder une expérience plus immersive et sonore."
-          : "Visual transcript is hidden to preserve a more immersive audio-first experience.",
+          ? "Le transcript visuel est masqué pour garder une expérience plus immersive et sonore. Le coach exploite aussi le Purpose Canvas lorsqu’il existe."
+          : "Visual transcript is hidden to preserve a more immersive audio-first experience. The coach also uses the Purpose Canvas when available.",
       accessibilityHint:
         uiLanguage === "fr"
           ? "Tu peux simplement parler et t’arrêter naturellement. Aucun bouton n’est nécessaire pour passer la main."
@@ -517,6 +549,7 @@ export function VoiceSessionPanel({
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
       mediaRecorderRef.current.stop();
     }
+
     mediaRecorderRef.current = null;
   }
 
@@ -753,15 +786,14 @@ export function VoiceSessionPanel({
     setMicLevel(0);
 
     try {
-      const result = await voiceTurn(audioBlob);
-      const nextMode = (result as any).coach_mode;
-      const nextIntent = (result as any).coach_intent;
+      const result = await voiceTurn(audioBlob, uiLanguage);
+      const nextCoachState = getCoachStateFromVoiceTurn(result);
 
-      setCoachMode(nextMode);
-      setCoachIntent(nextIntent);
+      setCoachMode(nextCoachState.coachMode);
+      setCoachIntent(nextCoachState.coachIntent);
 
       if (onCoachStateChange) {
-        onCoachStateChange({ coachMode: nextMode, coachIntent: nextIntent });
+        onCoachStateChange(nextCoachState);
       }
 
       const coachAudio = await synthesizeSpeech(result.agent_message);
@@ -813,11 +845,13 @@ export function VoiceSessionPanel({
     if (!voiceEnabledRef.current) return;
     if (!analyserRef.current) return;
     if (rafRef.current !== null) return;
+
     monitorVoiceLoop();
   }
 
   function monitorVoiceLoop() {
     const analyser = analyserRef.current;
+
     if (!analyser) {
       rafRef.current = null;
       return;
@@ -1042,6 +1076,7 @@ export function VoiceSessionPanel({
             <BadgePill icon={<SparkIcon size={14} />}>{labels.voiceOnly}</BadgePill>
             <BadgePill icon={<BrainIcon size={14} />}>{labels.adaptiveCoach}</BadgePill>
             <BadgePill icon={<TargetIcon size={14} />}>{labels.activeMemory}</BadgePill>
+            <BadgePill icon={<SparkIcon size={14} />}>{labels.purposeAware}</BadgePill>
           </div>
         </div>
 
@@ -1057,7 +1092,7 @@ export function VoiceSessionPanel({
           </div>
         </div>
 
-        {currentCoachStyle && (
+        {currentCoachStyle ? (
           <div className="card-soft stack" style={{ gap: 8 }}>
             <div className="row space-between" style={{ flexWrap: "wrap", gap: 10 }}>
               <div className="section-title">{labels.coachStyle}</div>
@@ -1068,15 +1103,17 @@ export function VoiceSessionPanel({
               {currentCoachIntent ? (
                 <BadgePill icon={<TargetIcon size={14} />}>{currentCoachIntent}</BadgePill>
               ) : null}
+
               {currentCoachMode ? (
                 <BadgePill icon={<BrainIcon size={14} />}>{currentCoachMode}</BadgePill>
               ) : null}
+
               <BadgePill icon={<ClockIcon size={14} />}>{labels.currentVoiceText}</BadgePill>
             </div>
 
             <div className="muted">{labels.immersiveNote}</div>
           </div>
-        )}
+        ) : null}
       </div>
 
       {bootstrapping ? (
@@ -1159,6 +1196,7 @@ export function VoiceSessionPanel({
                   transition: "transform 90ms linear",
                 }}
               />
+
               {orb.icon}
             </div>
 
@@ -1252,7 +1290,7 @@ export function VoiceSessionPanel({
               {!voiceEnabled ? (
                 <button
                   className="button"
-                  onClick={startVoiceSession}
+                  onClick={() => void startVoiceSession()}
                   disabled={bootstrapping || closing}
                   type="button"
                   aria-label={labels.startVoice}
@@ -1275,7 +1313,7 @@ export function VoiceSessionPanel({
 
               <button
                 className="button secondary"
-                onClick={handleCloseSession}
+                onClick={() => void handleCloseSession()}
                 disabled={closing || bootstrapping || stage === "processing"}
                 type="button"
                 aria-label={labels.closeSession}
@@ -1288,11 +1326,11 @@ export function VoiceSessionPanel({
         </div>
       )}
 
-      {error && (
+      {error ? (
         <div className="card-soft" style={{ color: "var(--danger)" }}>
           {error}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

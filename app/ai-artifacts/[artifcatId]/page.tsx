@@ -23,6 +23,7 @@ function formatArtifactType(format: string, uiLanguage: "fr" | "en"): string {
   if (format === "audiobook") {
     return uiLanguage === "fr" ? "Mini audiobook" : "Mini audiobook";
   }
+
   return uiLanguage === "fr" ? "Mini e-book" : "Mini e-book";
 }
 
@@ -57,9 +58,11 @@ function getStatusIcon(status: string) {
 
 function formatDuration(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
+
   const total = Math.floor(seconds);
   const mins = Math.floor(total / 60);
   const secs = total % 60;
+
   return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
@@ -86,6 +89,7 @@ function parseArtifactIdFromSources(
   if (pathname) {
     const segments = pathname.split("/").filter(Boolean);
     const last = segments[segments.length - 1];
+
     if (last && last !== "ai-artifacts") {
       const parsed = Number(last);
       if (Number.isFinite(parsed) && parsed > 0) {
@@ -99,6 +103,7 @@ function parseArtifactIdFromSources(
 
 function resolveAssetUrl(src: string | null | undefined): string | null {
   if (!src) return null;
+
   const trimmed = src.trim();
   if (!trimmed) return null;
 
@@ -108,7 +113,43 @@ function resolveAssetUrl(src: string | null | undefined): string | null {
 
   const base = API_BASE_URL.replace(/\/+$/, "");
   const path = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+
   return `${base}${path}`;
+}
+
+function localizeArtifactSubtitle(
+  subtitle: string | null | undefined,
+  uiLanguage: "fr" | "en",
+): string | null {
+  if (!subtitle) return subtitle ?? null;
+  if (uiLanguage !== "fr") return subtitle;
+
+  const normalized = subtitle.trim();
+
+  const knownTranslations: Record<string, string> = {
+    "Personalized AI-generated mini e-book":
+      "Mini e-book personnalisé généré par IA",
+    "Personalized AI-generated mini audiobook":
+      "Mini audiobook personnalisé généré par IA",
+  };
+
+  return knownTranslations[normalized] ?? subtitle;
+}
+
+function extractPurposeCanvasContext(artifact: AIArtifactResponse | null): string {
+  const payload = artifact?.personalization_context_json;
+
+  if (!payload || typeof payload !== "object") {
+    return "";
+  }
+
+  const value = (payload as Record<string, unknown>).purpose_canvas_context;
+
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function hasPurposeCanvasContext(artifact: AIArtifactResponse | null): boolean {
+  return Boolean(extractPurposeCanvasContext(artifact));
 }
 
 function PremiumAudioPlayer({
@@ -141,7 +182,9 @@ function PremiumAudioPlayer({
   function savePosition(time: number) {
     try {
       localStorage.setItem(storageKey, String(time));
-    } catch {}
+    } catch {
+      // Ignore storage failures.
+    }
   }
 
   useEffect(() => {
@@ -164,7 +207,10 @@ function PremiumAudioPlayer({
     const onTimeUpdate = () => {
       const time = audio.currentTime || 0;
       setCurrentTime(time);
-      if (Math.floor(time) % 2 === 0) savePosition(time);
+
+      if (Math.floor(time) % 2 === 0) {
+        savePosition(time);
+      }
     };
 
     const onEnded = () => {
@@ -200,13 +246,18 @@ function PremiumAudioPlayer({
   async function togglePlay() {
     const audio = audioRef.current;
     if (!audio) return;
-    if (audio.paused) await audio.play();
-    else audio.pause();
+
+    if (audio.paused) {
+      await audio.play();
+    } else {
+      audio.pause();
+    }
   }
 
   function seekTo(value: number) {
     const audio = audioRef.current;
     if (!audio) return;
+
     audio.currentTime = value;
     setCurrentTime(value);
     savePosition(value);
@@ -215,7 +266,9 @@ function PremiumAudioPlayer({
   function jump(delta: number) {
     const audio = audioRef.current;
     if (!audio) return;
+
     const next = Math.max(0, Math.min(audio.duration || 0, audio.currentTime + delta));
+
     audio.currentTime = next;
     setCurrentTime(next);
     savePosition(next);
@@ -224,6 +277,7 @@ function PremiumAudioPlayer({
   function changeRate(rate: number) {
     const audio = audioRef.current;
     if (!audio) return;
+
     audio.playbackRate = rate;
     setPlaybackRate(rate);
   }
@@ -239,6 +293,7 @@ function PremiumAudioPlayer({
         <div className="section-title">
           {uiLanguage === "fr" ? "Lecteur audio" : "Audio player"}
         </div>
+
         <div className="muted">
           {uiLanguage === "fr"
             ? "Écoute directement ton mini audiobook."
@@ -278,7 +333,7 @@ function PremiumAudioPlayer({
         <select
           className="input"
           value={playbackRate}
-          onChange={(e) => changeRate(Number(e.target.value))}
+          onChange={(event) => changeRate(Number(event.target.value))}
           style={{ width: 110 }}
           disabled={!isReady}
         >
@@ -297,7 +352,7 @@ function PremiumAudioPlayer({
           max={duration || 0}
           step={0.1}
           value={Math.min(currentTime, duration || 0)}
-          onChange={(e) => seekTo(Number(e.target.value))}
+          onChange={(event) => seekTo(Number(event.target.value))}
           disabled={!isReady}
           style={{ width: "100%", accentColor: "var(--primary)" }}
         />
@@ -343,8 +398,11 @@ function AIArtifactDetailContent() {
 
   async function loadArtifact(showRefreshing = false) {
     try {
-      if (showRefreshing) setRefreshing(true);
-      else setLoading(true);
+      if (showRefreshing) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
 
       setError(null);
 
@@ -374,6 +432,7 @@ function AIArtifactDetailContent() {
 
   useEffect(() => {
     void loadArtifact();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [artifactId, pathname, uiLanguage]);
 
   useEffect(() => {
@@ -384,18 +443,24 @@ function AIArtifactDetailContent() {
     () => resolveAssetUrl(artifact?.audio_url),
     [artifact?.audio_url],
   );
-  const canPlayAudio = useMemo(() => !!resolvedAudioUrl, [resolvedAudioUrl]);
+
+  const canPlayAudio = useMemo(() => Boolean(resolvedAudioUrl), [resolvedAudioUrl]);
+  const purposeCanvasAvailable = useMemo(
+    () => hasPurposeCanvasContext(artifact),
+    [artifact],
+  );
 
   const outlineSections = Array.isArray(
-    (artifact?.outline_json as { sections?: Array<{ title?: string }> } | undefined)?.sections,
+    (artifact?.outline_json as { sections?: Array<{ title?: string }> } | undefined)
+      ?.sections,
   )
     ? ((artifact?.outline_json as { sections?: Array<{ title?: string }> }).sections ?? [])
     : [];
 
   const supportPlaceholder =
     uiLanguage === "fr"
-      ? "Décris brièvement le problème rencontré sur ce guide (paiement, accès, génération, lecture audio, contenu indisponible, etc.)."
-      : "Briefly describe the issue you encountered with this guide (payment, access, generation, audio playback, unavailable content, etc.).";
+      ? "Décris brièvement le problème rencontré sur ce guide : paiement, accès, génération, lecture audio, contenu indisponible, etc."
+      : "Briefly describe the issue you encountered with this guide: payment, access, generation, audio playback, unavailable content, etc.";
 
   async function handleSubmitSupport() {
     const trimmed = supportMessage.trim();
@@ -478,6 +543,7 @@ function AIArtifactDetailContent() {
           <div className="section-title">
             {uiLanguage === "fr" ? "Chargement du guide IA" : "Loading AI guide"}
           </div>
+
           <div className="muted">
             {uiLanguage === "fr"
               ? "Nous récupérons ton contenu généré."
@@ -491,6 +557,7 @@ function AIArtifactDetailContent() {
               ? "Impossible de charger le guide IA"
               : "Unable to load AI guide"}
           </div>
+
           <div className="muted">{error}</div>
 
           <div className="row" style={{ flexWrap: "wrap", gap: 10 }}>
@@ -512,6 +579,7 @@ function AIArtifactDetailContent() {
           <div className="section-title">
             {uiLanguage === "fr" ? "Artefact introuvable" : "Artifact not found"}
           </div>
+
           <div className="muted">
             {uiLanguage === "fr"
               ? "Le guide demandé n’existe pas ou n’est plus accessible."
@@ -524,8 +592,14 @@ function AIArtifactDetailContent() {
             <div className="row space-between" style={{ alignItems: "flex-start", gap: 16 }}>
               <div className="stack" style={{ gap: 6 }}>
                 <div className="section-title">{artifact.title}</div>
+
                 <div className="muted">{formatArtifactType(artifact.format, uiLanguage)}</div>
-                {artifact.subtitle ? <div className="muted">{artifact.subtitle}</div> : null}
+
+                {artifact.subtitle ? (
+                  <div className="muted">
+                    {localizeArtifactSubtitle(artifact.subtitle, uiLanguage)}
+                  </div>
+                ) : null}
               </div>
 
               <BadgePill icon={getStatusIcon(artifact.status)}>
@@ -554,7 +628,10 @@ function AIArtifactDetailContent() {
 
             {artifact.goal ? (
               <div className="card-soft stack" style={{ gap: 6 }}>
-                <div className="section-title">{uiLanguage === "fr" ? "Objectif" : "Goal"}</div>
+                <div className="section-title">
+                  {uiLanguage === "fr" ? "Objectif" : "Goal"}
+                </div>
+
                 <div style={{ whiteSpace: "pre-wrap" }}>{artifact.goal}</div>
               </div>
             ) : null}
@@ -564,7 +641,24 @@ function AIArtifactDetailContent() {
                 <div className="section-title">
                   {uiLanguage === "fr" ? "Action ciblée" : "Target action"}
                 </div>
+
                 <div style={{ whiteSpace: "pre-wrap" }}>{artifact.target_action}</div>
+              </div>
+            ) : null}
+
+            {purposeCanvasAvailable ? (
+              <div className="card-soft stack" style={{ gap: 8 }}>
+                <div className="section-title">
+                  {uiLanguage === "fr"
+                    ? "Personnalisation Purpose Canvas"
+                    : "Purpose Canvas personalization"}
+                </div>
+
+                <div className="muted">
+                  {uiLanguage === "fr"
+                    ? "Ce guide a été enrichi avec ton Purpose Canvas : Travail, Aspiration, Inspiration, Passion, Vocation et Formation."
+                    : "This guide was enriched with your Purpose Canvas: Travail, Aspiration, Inspiration, Passion, Vocation, and Formation."}
+                </div>
               </div>
             ) : null}
 
@@ -577,6 +671,7 @@ function AIArtifactDetailContent() {
                 className="button ghost"
                 onClick={() => void loadArtifact(true)}
                 type="button"
+                disabled={refreshing}
               >
                 <span style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
                   <ClockIcon size={14} />
@@ -644,7 +739,7 @@ function AIArtifactDetailContent() {
                 <textarea
                   className="input"
                   value={supportMessage}
-                  onChange={(e) => setSupportMessage(e.target.value)}
+                  onChange={(event) => setSupportMessage(event.target.value)}
                   placeholder={supportPlaceholder}
                   rows={5}
                   style={{ width: "100%", resize: "vertical" }}
@@ -701,7 +796,31 @@ function AIArtifactDetailContent() {
                   : "This purchase corresponds to a mini audiobook only."}
             </div>
 
-            {artifact.format === "audiobook" && canPlayAudio ? (
+            {artifact.status !== "completed" ? (
+              <div className="card-soft">
+                {artifact.status === "pending_payment"
+                  ? uiLanguage === "fr"
+                    ? "Le paiement n’est pas encore confirmé pour ce guide."
+                    : "Payment has not been confirmed for this guide yet."
+                  : artifact.status === "paid"
+                    ? uiLanguage === "fr"
+                      ? "Le paiement est confirmé. La génération peut démarrer."
+                      : "Payment is confirmed. Generation can start."
+                    : artifact.status === "generating"
+                      ? uiLanguage === "fr"
+                        ? "La génération est en cours. Actualise cette page dans quelques secondes."
+                        : "Generation is in progress. Refresh this page in a few seconds."
+                      : artifact.status === "failed"
+                        ? uiLanguage === "fr"
+                          ? "La génération a échoué. Tu peux signaler le problème via le support."
+                          : "Generation failed. You can report the issue via support."
+                        : uiLanguage === "fr"
+                          ? "Le guide n’est pas encore disponible."
+                          : "The guide is not available yet."}
+              </div>
+            ) : null}
+
+            {artifact.status === "completed" && artifact.format === "audiobook" && canPlayAudio ? (
               <PremiumAudioPlayer
                 src={resolvedAudioUrl!}
                 uiLanguage={uiLanguage}
@@ -709,7 +828,9 @@ function AIArtifactDetailContent() {
               />
             ) : null}
 
-            {artifact.format === "ebook" && artifact.content_markdown ? (
+            {artifact.status === "completed" &&
+            artifact.format === "ebook" &&
+            artifact.content_markdown ? (
               <PremiumEbookReader
                 outlineSections={outlineSections}
                 contentMarkdown={artifact.content_markdown}
@@ -737,14 +858,6 @@ function AIArtifactDetailContent() {
                     : "The mini audiobook is ready, but the audio file is not yet playable here."}
                 </div>
               )}
-
-            {artifact.status === "generating" ? (
-              <div className="muted">
-                {uiLanguage === "fr"
-                  ? "La génération est en cours. Recharge cette page dans quelques secondes."
-                  : "Generation is in progress. Refresh this page in a few seconds."}
-              </div>
-            ) : null}
           </div>
 
           {artifact.format === "audiobook" && artifact.audio_script_text ? (

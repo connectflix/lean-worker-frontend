@@ -3,7 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { closeSession, getSessionDetail, sendConversationTurn } from "@/lib/api";
 import { getUiCopy } from "@/lib/ui-copy";
-import type { SessionCloseResponse } from "@/lib/types";
+import type {
+  ConversationTurnResponse,
+  SessionCloseResponse,
+  TranscriptTurn,
+} from "@/lib/types";
 import type { SupportedUiLanguage } from "@/lib/user-locales";
 import {
   BadgePill,
@@ -18,6 +22,24 @@ type Turn = {
   coachMode?: string;
   coachIntent?: string;
 };
+
+function mapTranscriptTurnToLocalTurn(turn: TranscriptTurn): Turn {
+  return {
+    speaker: turn.speaker,
+    text: turn.text,
+    coachMode: turn.coach_mode,
+    coachIntent: turn.coach_intent,
+  };
+}
+
+function mapConversationResponseToAgentTurn(response: ConversationTurnResponse): Turn {
+  return {
+    speaker: "agent",
+    text: response.agent_message,
+    coachMode: response.coach_mode,
+    coachIntent: response.coach_intent,
+  };
+}
 
 export function ConversationPanel({
   sessionId,
@@ -44,18 +66,24 @@ export function ConversationPanel({
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function load() {
       try {
+        setBootstrapping(true);
+        setError(null);
+
         const detail = await getSessionDetail(sessionId);
-        const existingTurns = (detail.transcript || []).map((t) => ({
-          speaker: t.speaker,
-          text: t.text,
-          coachMode: (t as any).coach_mode,
-          coachIntent: (t as any).coach_intent,
-        }));
+
+        if (cancelled) return;
+
+        const existingTurns = (detail.transcript || []).map(mapTranscriptTurnToLocalTurn);
         setTurns(existingTurns);
 
-        const lastAgentTurn = [...existingTurns].reverse().find((t) => t.speaker === "agent");
+        const lastAgentTurn = [...existingTurns]
+          .reverse()
+          .find((turn) => turn.speaker === "agent");
+
         if (lastAgentTurn && onCoachStateChange) {
           onCoachStateChange({
             coachMode: lastAgentTurn.coachMode,
@@ -63,23 +91,36 @@ export function ConversationPanel({
           });
         }
       } catch {
-        setError(copy.session.loadingSession);
+        if (!cancelled) {
+          setError(
+            uiLanguage === "fr"
+              ? "Impossible de charger la session."
+              : "Unable to load the session.",
+          );
+        }
       } finally {
-        setBootstrapping(false);
+        if (!cancelled) {
+          setBootstrapping(false);
+        }
       }
     }
 
     void load();
-  }, [sessionId, onCoachStateChange, copy.session.loadingSession]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionId, uiLanguage, onCoachStateChange]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [turns, loading]);
 
   async function handleSend() {
-    if (!message.trim() || loading || closing) return;
-
     const userText = message.trim();
+
+    if (!userText || loading || closing) return;
+
     setMessage("");
     setLoading(true);
     setError(null);
@@ -87,26 +128,23 @@ export function ConversationPanel({
     setTurns((prev) => [...prev, { speaker: "user", text: userText }]);
 
     try {
-      const res = await sendConversationTurn(sessionId, userText);
+      const response = await sendConversationTurn(sessionId, userText, uiLanguage);
+      const agentTurn = mapConversationResponseToAgentTurn(response);
 
-      setTurns((prev) => [
-        ...prev,
-        {
-          speaker: "agent",
-          text: res.agent_message,
-          coachMode: (res as any).coach_mode,
-          coachIntent: (res as any).coach_intent,
-        },
-      ]);
+      setTurns((prev) => [...prev, agentTurn]);
 
       if (onCoachStateChange) {
         onCoachStateChange({
-          coachMode: (res as any).coach_mode,
-          coachIntent: (res as any).coach_intent,
+          coachMode: agentTurn.coachMode,
+          coachIntent: agentTurn.coachIntent,
         });
       }
     } catch {
-      setError(uiLanguage === "fr" ? "Erreur lors de l’envoi du message" : "Error sending message");
+      setError(
+        uiLanguage === "fr"
+          ? "Erreur lors de l’envoi du message."
+          : "Error sending message.",
+      );
     } finally {
       setLoading(false);
     }
@@ -118,10 +156,15 @@ export function ConversationPanel({
     try {
       setClosing(true);
       setError(null);
+
       const result = await closeSession(sessionId);
       onClosed(result);
     } catch {
-      setError(uiLanguage === "fr" ? "Erreur lors de la clôture" : "Error closing session");
+      setError(
+        uiLanguage === "fr"
+          ? "Erreur lors de la clôture."
+          : "Error closing session.",
+      );
       setClosing(false);
     }
   }
@@ -131,6 +174,8 @@ export function ConversationPanel({
     textOnly: uiLanguage === "fr" ? "Écrit uniquement" : "Text only",
     adaptiveCoach: uiLanguage === "fr" ? "Coach adaptatif" : "Adaptive coach",
     activeMemory: uiLanguage === "fr" ? "Mémoire active" : "Active memory",
+    purposeAware:
+      uiLanguage === "fr" ? "Purpose Canvas intégré" : "Purpose Canvas integrated",
     loading:
       uiLanguage === "fr"
         ? "Préparation de l’espace écrit..."
@@ -145,7 +190,11 @@ export function ConversationPanel({
       uiLanguage === "fr"
         ? "Écris naturellement. Entrée pour envoyer, Maj+Entrée pour aller à la ligne."
         : "Write naturally. Press Enter to send, Shift+Enter for a new line.",
-    send: loading ? (uiLanguage === "fr" ? "Envoi..." : "Sending...") : copy.session.sendTextTurn,
+    send: loading
+      ? uiLanguage === "fr"
+        ? "Envoi..."
+        : "Sending..."
+      : copy.session.sendTextTurn,
     close: closing
       ? uiLanguage === "fr"
         ? "Clôture..."
@@ -153,8 +202,12 @@ export function ConversationPanel({
       : copy.session.closeSession,
     immersiveNote:
       uiLanguage === "fr"
-        ? "Même cockpit que la voix, avec interaction écrite au centre."
-        : "Same cockpit as voice mode, with written interaction in the center.",
+        ? "Même cockpit que la voix, avec interaction écrite au centre. Le coach exploite maintenant aussi le Purpose Canvas lorsqu’il existe."
+        : "Same cockpit as voice mode, with written interaction in the center. The coach now also uses the Purpose Canvas when available.",
+    coachReplyHint:
+      uiLanguage === "fr"
+        ? "Le coach répondra ici, avec le contexte actif disponible."
+        : "The coach will answer here, using the available active context.",
   };
 
   const isCockpit = variant === "cockpit";
@@ -177,7 +230,12 @@ export function ConversationPanel({
         <div className="card stack" style={{ gap: 14, margin: 16, marginBottom: 0 }}>
           <div
             className="row"
-            style={{ justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}
+            style={{
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+              gap: 12,
+              flexWrap: "wrap",
+            }}
           >
             <div className="stack" style={{ gap: 6 }}>
               <div className="row" style={{ gap: 8, alignItems: "center" }}>
@@ -191,6 +249,7 @@ export function ConversationPanel({
               <BadgePill icon={<SparkIcon size={14} />}>{labels.textOnly}</BadgePill>
               <BadgePill icon={<SparkIcon size={14} />}>{labels.adaptiveCoach}</BadgePill>
               <BadgePill icon={<ClockIcon size={14} />}>{labels.activeMemory}</BadgePill>
+              <BadgePill icon={<SparkIcon size={14} />}>{labels.purposeAware}</BadgePill>
             </div>
           </div>
         </div>
@@ -214,19 +273,19 @@ export function ConversationPanel({
             <div className="muted">{labels.empty}</div>
           </div>
         ) : (
-          turns.map((turn, i) => {
+          turns.map((turn, index) => {
             const isUser = turn.speaker === "user";
 
             return (
               <div
-                key={i}
+                key={`${turn.speaker}-${index}`}
                 className={`chat-bubble ${isUser ? "chat-user" : "chat-agent"}`}
               >
-                {!isUser && (
+                {!isUser ? (
                   <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
                     Coach
                   </div>
-                )}
+                ) : null}
 
                 <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
                   {turn.text}
@@ -236,11 +295,11 @@ export function ConversationPanel({
           })
         )}
 
-        {loading && (
+        {loading ? (
           <div className="chat-bubble chat-agent">
             <div className="muted">{labels.typing}</div>
           </div>
-        )}
+        ) : null}
 
         <div ref={messagesEndRef} />
       </div>
@@ -255,7 +314,7 @@ export function ConversationPanel({
           flexShrink: 0,
         }}
       >
-        {error && (
+        {error ? (
           <div
             style={{
               marginBottom: 10,
@@ -265,7 +324,7 @@ export function ConversationPanel({
           >
             {error}
           </div>
-        )}
+        ) : null}
 
         {isCockpit ? (
           <div className="stack" style={{ gap: 12 }}>
@@ -282,7 +341,7 @@ export function ConversationPanel({
               className="textarea chat-input-textarea"
               placeholder={copy.session.typeMessage}
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={(event) => setMessage(event.target.value)}
               rows={4}
               disabled={loading || closing}
               style={{
@@ -293,19 +352,24 @@ export function ConversationPanel({
                 display: "block",
                 lineHeight: 1.5,
               }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
                   void handleSend();
                 }
               }}
             />
 
-            <div className="row" style={{ gap: 12, justifyContent: "space-between", flexWrap: "wrap" }}>
+            <div
+              className="row"
+              style={{
+                gap: 12,
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+              }}
+            >
               <div className="muted" style={{ fontSize: 12 }}>
-                {uiLanguage === "fr"
-                  ? "Le coach répondra ici, dans le même cockpit."
-                  : "The coach will answer here, in the same cockpit."}
+                {labels.coachReplyHint}
               </div>
 
               <div className="row" style={{ gap: 12, flexWrap: "wrap" }}>
@@ -314,6 +378,7 @@ export function ConversationPanel({
                   onClick={() => void handleSend()}
                   disabled={!message.trim() || loading || closing}
                   style={{ whiteSpace: "nowrap" }}
+                  type="button"
                 >
                   {labels.send}
                 </button>
@@ -323,6 +388,7 @@ export function ConversationPanel({
                   onClick={() => void handleCloseSession()}
                   disabled={loading || closing}
                   style={{ whiteSpace: "nowrap" }}
+                  type="button"
                 >
                   {labels.close}
                 </button>
@@ -351,7 +417,7 @@ export function ConversationPanel({
                 className="textarea chat-input-textarea"
                 placeholder={copy.session.typeMessage}
                 value={message}
-                onChange={(e) => setMessage(e.target.value)}
+                onChange={(event) => setMessage(event.target.value)}
                 rows={3}
                 disabled={loading || closing}
                 style={{
@@ -362,9 +428,9 @@ export function ConversationPanel({
                   display: "block",
                   lineHeight: 1.5,
                 }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
                     void handleSend();
                   }
                 }}
@@ -385,6 +451,7 @@ export function ConversationPanel({
                 onClick={() => void handleSend()}
                 disabled={!message.trim() || loading || closing}
                 style={{ whiteSpace: "nowrap" }}
+                type="button"
               >
                 {labels.send}
               </button>
@@ -394,6 +461,7 @@ export function ConversationPanel({
                 onClick={() => void handleCloseSession()}
                 disabled={loading || closing}
                 style={{ whiteSpace: "nowrap" }}
+                type="button"
               >
                 {labels.close}
               </button>

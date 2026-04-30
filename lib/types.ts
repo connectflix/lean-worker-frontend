@@ -1,3 +1,6 @@
+// lib/types.ts
+import type { ReactNode } from "react";
+
 export type Me = {
   id: number;
   auth_provider: string;
@@ -45,6 +48,10 @@ export type VoiceTurnResponse = {
   mime_type: string;
   coach_mode: string;
   coach_intent: string;
+};
+
+export type VoiceTranscriptionResponse = {
+  transcript: string;
 };
 
 export type Lever = {
@@ -232,9 +239,9 @@ export type AIArtifactCreateRequest = {
 export type AIArtifactResponse = {
   id: number;
   user_id: number;
-  session_id: number;
+  session_id: number | null;
   recommendation_id: number;
-  lever_id: number;
+  lever_id: number | null;
   format: string;
   status: string;
   title: string;
@@ -368,9 +375,7 @@ export type DashboardTimelineItem = {
   total_recommendations: number;
 };
 
-export type VoiceTranscriptionResponse = {
-  transcript: string;
-};
+/* ---------------- ADMIN LEVERS ---------------- */
 
 export type AdminLever = {
   id: number;
@@ -425,8 +430,713 @@ export type AdminStatusToggleResponse = {
 export type AdminMe = {
   id: number;
   email: string;
+  role: "admin" | "organization";
+  organization_id?: number | null;
   is_active: boolean;
 };
+
+/* ---------------- ADMIN WORKERS / SUBSCRIPTIONS ---------------- */
+
+export type AdminSubscriptionPack = "standard" | "classique" | "flix" | "executif";
+
+export type AdminWorkerSubscriptionSummary = {
+  id?: number | null;
+  pack: AdminSubscriptionPack | string;
+  status: "active" | "inactive" | "cancelled" | "past_due" | string;
+  billing_cycle: "monthly" | "yearly" | "custom" | string;
+
+  monthly_price_eur: number;
+  annual_price_eur?: number | null;
+  total_paid_eur: number;
+
+  started_at?: string | null;
+  current_period_start?: string | null;
+  current_period_end?: string | null;
+  cancelled_at?: string | null;
+
+  stripe_customer_id?: string | null;
+  stripe_subscription_id?: string | null;
+};
+
+export type AdminWorker = {
+  id: number;
+  auth_provider: string;
+  provider_user_id: string;
+
+  email?: string | null;
+  email_verified: boolean;
+
+  display_name: string;
+  given_name?: string | null;
+  family_name?: string | null;
+  avatar_url?: string | null;
+
+  locale?: string | null;
+  language: string;
+
+  onboarding_completed: boolean;
+
+  current_role?: string | null;
+  industry?: string | null;
+  primary_goal?: string | null;
+  main_challenge?: string | null;
+  improvement_focus?: string | null;
+  preferred_coaching_style?: string | null;
+
+  profile_update_suspected: boolean;
+  profile_last_confirmed_at?: string | null;
+
+  business_id?: string | null;
+  location?: string | null;
+  phone_number?: string | null;
+  subscription_pack: AdminSubscriptionPack;
+  profession?: string | null;
+  organization_id?: number | null;
+
+  total_spent_eur?: number;
+  paid_artifacts_count?: number;
+  artifacts_spent_eur?: number;
+  subscription_total_paid_eur?: number;
+  active_subscription?: AdminWorkerSubscriptionSummary | null;
+
+  created_at: string;
+
+  is_manually_created?: boolean;
+  linkedin_linked_at?: string | null;
+};
+
+export type AdminWorkerCreate = {
+  email: string;
+  display_name: string;
+  given_name?: string | null;
+  family_name?: string | null;
+  language?: string | null;
+  business_id?: string | null;
+  location?: string | null;
+  phone_number?: string | null;
+  subscription_pack?: AdminSubscriptionPack | null;
+  profession?: string | null;
+  organization_id?: number | null;
+};
+
+export type AdminWorkerUpdate = {
+  business_id?: string | null;
+  location?: string | null;
+  phone_number?: string | null;
+  subscription_pack?: AdminSubscriptionPack | null;
+  profession?: string | null;
+};
+
+export type AdminSubscriptionPlan = {
+  pack: AdminSubscriptionPack | string;
+  label: string;
+  monthly_price_eur: number;
+  annual_price_eur?: number | null;
+  billing_cycles: string[];
+  is_contact_sales: boolean;
+  description?: string | null;
+};
+
+export type AdminWorkerSubscriptionUpdate = {
+  pack: AdminSubscriptionPack;
+  status: "active" | "inactive" | "cancelled" | "past_due";
+  billing_cycle: "monthly" | "yearly" | "custom";
+
+  monthly_price_eur?: number | null;
+  annual_price_eur?: number | null;
+  total_paid_eur?: number | null;
+
+  current_period_start?: string | null;
+  current_period_end?: string | null;
+
+  stripe_customer_id?: string | null;
+  stripe_subscription_id?: string | null;
+};
+
+/* ---------------- ADMIN WORKER CONVERSATIONS ---------------- */
+
+export type AdminWorkerConversation = {
+  id: number;
+  worker_id: number;
+  title: string;
+  source_type: "url" | "upload";
+  source_label?: string | null;
+  video_url?: string | null;
+  file_path?: string | null;
+  conversation_date?: string | null;
+  transcript?: string | null;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdminWorkerConversationCreate = {
+  worker_id: number;
+  title: string;
+  source_type: "url" | "upload";
+  source_label?: string | null;
+  video_url?: string | null;
+  file_path?: string | null;
+  conversation_date?: string | null;
+  transcript?: string | null;
+  notes?: string | null;
+};
+
+export type AdminWorkerConversationUpdate = {
+  title?: string | null;
+  source_type?: "url" | "upload" | null;
+  source_label?: string | null;
+  video_url?: string | null;
+  file_path?: string | null;
+  conversation_date?: string | null;
+  transcript?: string | null;
+  notes?: string | null;
+};
+
+/* ---------------- ADMIN WORKER ENGAGEMENTS ---------------- */
+
+export type AdminWorkerEngagementState = "current" | "future";
+export type AdminWorkerEngagementStatus = "draft" | "finalized";
+export type AdminWorkerEngagementCoherenceStatus = "coherent" | "watch" | "critical";
+
+export type AdminWorkerEngagementCoherenceFlag = {
+  code: string;
+  level: "low" | "medium" | "high";
+  message: string;
+  related_blocks: string[];
+};
+
+export type AdminWorkerEngagement = {
+  id: number;
+  worker_id: number;
+  state_type: AdminWorkerEngagementState;
+  status: AdminWorkerEngagementStatus;
+  title: string;
+
+  identity_text?: string | null;
+  purpose_text?: string | null;
+  missions_text?: string | null;
+  ambitions_text?: string | null;
+
+  career_intent_compensation?: string | null;
+  career_intent_role?: string | null;
+  career_intent_passion_criteria?: string | null;
+  career_intent_collaboration_profile?: string | null;
+  career_intent_performance_level?: string | null;
+  career_intent_responsibilities?: string | null;
+
+  vision_text?: string | null;
+  actions_text?: string | null;
+  objectives_text?: string | null;
+
+  talent_intent_foundations?: string | null;
+  talent_intent_personality?: string | null;
+  talent_intent_watch?: string | null;
+  talent_intent_next_level?: string | null;
+  talent_intent_impact_niches?: string | null;
+  talent_intent_social_contributions?: string | null;
+
+  coherence_status: AdminWorkerEngagementCoherenceStatus;
+  coherence_summary?: string | null;
+  coherence_flags: AdminWorkerEngagementCoherenceFlag[];
+
+  is_finalized: boolean;
+  finalized_at?: string | null;
+
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdminWorkerEngagementCreate = {
+  worker_id: number;
+  state_type: AdminWorkerEngagementState;
+  title: string;
+
+  identity_text?: string | null;
+  purpose_text?: string | null;
+  missions_text?: string | null;
+  ambitions_text?: string | null;
+
+  career_intent_compensation?: string | null;
+  career_intent_role?: string | null;
+  career_intent_passion_criteria?: string | null;
+  career_intent_collaboration_profile?: string | null;
+  career_intent_performance_level?: string | null;
+  career_intent_responsibilities?: string | null;
+
+  vision_text?: string | null;
+  actions_text?: string | null;
+  objectives_text?: string | null;
+
+  talent_intent_foundations?: string | null;
+  talent_intent_personality?: string | null;
+  talent_intent_watch?: string | null;
+  talent_intent_next_level?: string | null;
+  talent_intent_impact_niches?: string | null;
+  talent_intent_social_contributions?: string | null;
+
+  is_finalized?: boolean;
+};
+
+export type AdminWorkerEngagementUpdate = {
+  title?: string | null;
+
+  identity_text?: string | null;
+  purpose_text?: string | null;
+  missions_text?: string | null;
+  ambitions_text?: string | null;
+
+  career_intent_compensation?: string | null;
+  career_intent_role?: string | null;
+  career_intent_passion_criteria?: string | null;
+  career_intent_collaboration_profile?: string | null;
+  career_intent_performance_level?: string | null;
+  career_intent_responsibilities?: string | null;
+
+  vision_text?: string | null;
+  actions_text?: string | null;
+  objectives_text?: string | null;
+
+  talent_intent_foundations?: string | null;
+  talent_intent_personality?: string | null;
+  talent_intent_watch?: string | null;
+  talent_intent_next_level?: string | null;
+  talent_intent_impact_niches?: string | null;
+  talent_intent_social_contributions?: string | null;
+
+  is_finalized?: boolean | null;
+};
+
+/* ---------------- ADMIN WORKER PURPOSE CANVASES ---------------- */
+
+export type AdminWorkerPurposeRelationStatus = "pending" | "coherent" | "incoherent";
+
+export type AdminWorkerPurposeRelation = {
+  from?: string;
+  to?: string;
+  source?: string;
+  target?: string;
+  source_node_key?: string;
+  target_node_key?: string;
+  source_label?: string | null;
+  target_label?: string | null;
+  status: AdminWorkerPurposeRelationStatus | string;
+  is_coherent?: boolean;
+  reason?: string | null;
+  rationale?: string | null;
+};
+
+export type AdminWorkerPurposeCoherenceStatus =
+  | "not_evaluated"
+  | "coherent"
+  | "partially_coherent"
+  | "incoherent"
+  | string;
+
+export type AdminWorkerPurposeCanvas = {
+  id: number;
+  worker_id: number;
+
+  travail_text?: string | null;
+  aspiration_text?: string | null;
+  inspiration_text?: string | null;
+  passion_text?: string | null;
+  vocation_text?: string | null;
+  formation_text?: string | null;
+
+  coherence_score: number;
+  coherence_status: AdminWorkerPurposeCoherenceStatus;
+  coherence_summary?: string | null;
+  relation_map_json: AdminWorkerPurposeRelation[] | Record<string, unknown>[];
+
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdminWorkerPurposeCanvasCreate = {
+  worker_id: number;
+
+  travail_text?: string | null;
+  aspiration_text?: string | null;
+  inspiration_text?: string | null;
+  passion_text?: string | null;
+  vocation_text?: string | null;
+  formation_text?: string | null;
+
+  coherence_score?: number;
+  coherence_status?: AdminWorkerPurposeCoherenceStatus;
+  coherence_summary?: string | null;
+  relation_map_json?: AdminWorkerPurposeRelation[] | Record<string, unknown>[];
+};
+
+export type AdminWorkerPurposeCanvasUpdate = {
+  travail_text?: string | null;
+  aspiration_text?: string | null;
+  inspiration_text?: string | null;
+  passion_text?: string | null;
+  vocation_text?: string | null;
+  formation_text?: string | null;
+
+  coherence_score?: number | null;
+  coherence_status?: AdminWorkerPurposeCoherenceStatus | null;
+  coherence_summary?: string | null;
+  relation_map_json?: AdminWorkerPurposeRelation[] | Record<string, unknown>[] | null;
+};
+
+/* ---------------- ADMIN WORKER SIGNIFICANCE CANVASES ---------------- */
+
+export type AdminWorkerSignificanceDimensionKey =
+  | "raison"
+  | "metier"
+  | "occupation"
+  | "corvee"
+  | "hobby";
+
+export type AdminWorkerSignificanceAnswerValue = "yes" | "no" | "maybe" | "unknown";
+
+export type AdminWorkerSignificanceCoherenceStatus =
+  | "not_evaluated"
+  | "balanced"
+  | "dominant"
+  | "fragmented"
+  | "tension"
+  | string;
+
+export type AdminWorkerSignificanceScoreMap = Record<
+  AdminWorkerSignificanceDimensionKey,
+  number
+>;
+
+export type AdminWorkerSignificanceQuestionAnswer = {
+  value: AdminWorkerSignificanceAnswerValue;
+  label: string;
+  scores: AdminWorkerSignificanceScoreMap;
+};
+
+export type AdminWorkerSignificanceQuestionOption = AdminWorkerSignificanceQuestionAnswer;
+
+export type AdminWorkerSignificanceQuestion = {
+  id: number;
+  key?: string | null;
+  order?: number | null;
+  text: string;
+
+  // Frontend-friendly shape.
+  answers: AdminWorkerSignificanceQuestionAnswer[];
+
+  // Backend may return this name. Keep it for compatibility.
+  options?: AdminWorkerSignificanceQuestionOption[] | null;
+};
+
+export type AdminWorkerSignificanceAnswer = {
+  question_id: number;
+  question_key?: string | null;
+  question_text?: string | null;
+
+  answer: AdminWorkerSignificanceAnswerValue;
+  answer_value?: AdminWorkerSignificanceAnswerValue | string | null;
+  answer_key?: AdminWorkerSignificanceAnswerValue | string | null;
+  answer_label?: string | null;
+
+  scores?: AdminWorkerSignificanceScoreMap | null;
+};
+
+export type AdminWorkerSignificanceStoredAnswer = Partial<AdminWorkerSignificanceAnswer> &
+  Record<string, unknown>;
+
+export type AdminWorkerSignificanceDimension = {
+  key: AdminWorkerSignificanceDimensionKey;
+  label: string;
+  score: number;
+  percentage: number;
+  tone?: string;
+};
+
+export type AdminWorkerSignificanceCanvas = {
+  id: number;
+  worker_id: number;
+
+  title?: string | null;
+
+  answers_json: AdminWorkerSignificanceStoredAnswer[];
+
+  raw_scores_json?: AdminWorkerSignificanceScoreMap | Record<string, unknown> | null;
+  scores_json?: AdminWorkerSignificanceScoreMap | Record<string, unknown> | null;
+  percentages_json?: AdminWorkerSignificanceScoreMap | Record<string, unknown> | null;
+  dimensions_json?: AdminWorkerSignificanceDimension[] | Record<string, unknown>[] | null;
+
+  raison_score?: number;
+  metier_score?: number;
+  occupation_score?: number;
+  corvee_score?: number;
+  hobby_score?: number;
+
+  total_score?: number;
+
+  raison_percent?: number;
+  metier_percent?: number;
+  occupation_percent?: number;
+  corvee_percent?: number;
+  hobby_percent?: number;
+
+  dominant_section?: AdminWorkerSignificanceDimensionKey | string | null;
+  dominant_dimension?: AdminWorkerSignificanceDimensionKey | string | null;
+  dominant_percent?: number;
+
+  perception_summary?: string | null;
+  analysis_summary?: string | null;
+  coherence_status?: AdminWorkerSignificanceCoherenceStatus | null;
+
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdminWorkerSignificanceCanvasCreate = {
+  worker_id: number;
+  title?: string | null;
+
+  answers_json?: AdminWorkerSignificanceStoredAnswer[];
+
+  raw_scores_json?: AdminWorkerSignificanceScoreMap | Record<string, unknown> | null;
+  scores_json?: AdminWorkerSignificanceScoreMap | Record<string, unknown> | null;
+  percentages_json?: AdminWorkerSignificanceScoreMap | Record<string, unknown> | null;
+  dimensions_json?: AdminWorkerSignificanceDimension[] | Record<string, unknown>[] | null;
+
+  dominant_section?: AdminWorkerSignificanceDimensionKey | string | null;
+  dominant_dimension?: AdminWorkerSignificanceDimensionKey | string | null;
+
+  perception_summary?: string | null;
+  analysis_summary?: string | null;
+  coherence_status?: AdminWorkerSignificanceCoherenceStatus | null;
+};
+
+export type AdminWorkerSignificanceCanvasUpdate = {
+  title?: string | null;
+
+  answers_json?: AdminWorkerSignificanceStoredAnswer[] | null;
+
+  raw_scores_json?: AdminWorkerSignificanceScoreMap | Record<string, unknown> | null;
+  scores_json?: AdminWorkerSignificanceScoreMap | Record<string, unknown> | null;
+  percentages_json?: AdminWorkerSignificanceScoreMap | Record<string, unknown> | null;
+  dimensions_json?: AdminWorkerSignificanceDimension[] | Record<string, unknown>[] | null;
+
+  dominant_section?: AdminWorkerSignificanceDimensionKey | string | null;
+  dominant_dimension?: AdminWorkerSignificanceDimensionKey | string | null;
+
+  perception_summary?: string | null;
+  analysis_summary?: string | null;
+  coherence_status?: AdminWorkerSignificanceCoherenceStatus | null;
+};
+
+export type AdminWorkerSignificanceCanvasComputedResult = {
+  scores: AdminWorkerSignificanceScoreMap;
+  percentages: AdminWorkerSignificanceScoreMap;
+  total_score: number;
+  dominant_section?: AdminWorkerSignificanceDimensionKey | string | null;
+  dominant_dimension?: AdminWorkerSignificanceDimensionKey | string | null;
+  dominant_percent: number;
+  perception_summary?: string | null;
+  analysis_summary: string;
+  coherence_status?: AdminWorkerSignificanceCoherenceStatus | null;
+};
+
+export type AdminWorkerSignificanceQuestionsResponse = {
+  questions: AdminWorkerSignificanceQuestion[];
+};
+
+/* ---------------- CAREER / PROFILE ---------------- */
+
+export type ProfileResponse = {
+  given_name?: string | null;
+  current_role?: string | null;
+  industry?: string | null;
+  primary_goal?: string | null;
+  main_challenge?: string | null;
+  improvement_focus?: string | null;
+  preferred_coaching_style?: string | null;
+  profile_update_suspected: boolean;
+  profile_last_confirmed_at?: string | null;
+};
+
+export type ProfileUpdatePayload = {
+  current_role?: string | null;
+  industry?: string | null;
+  primary_goal?: string | null;
+  main_challenge?: string | null;
+  improvement_focus?: string | null;
+  preferred_coaching_style?: string | null;
+};
+
+export type CareerLevel = "Starter" | "Junior" | "Senior" | "Expert" | "Master" | "Elite";
+
+export type CareerHorizonPayload = {
+  target_compensation?: string | null;
+  target_role?: string | null;
+  target_level?: CareerLevel | null;
+};
+
+export type StartingPointPayload = {
+  my_profession_percent: number;
+  my_work_percent: number;
+  chore_percent: number;
+  destiny_percent: number;
+  hobby_percent: number;
+};
+
+export type CareerBlueprintResponse = {
+  id: number;
+  user_id: number;
+  identity_text?: string | null;
+  vision_text?: string | null;
+  talent_focus_text?: string | null;
+  career_focus_text?: string | null;
+  inspiration_person?: string | null;
+  aspiration_person?: string | null;
+  short_term_mission?: CareerHorizonPayload | null;
+  mid_term_ambition?: CareerHorizonPayload | null;
+  long_term_goal?: CareerHorizonPayload | null;
+  starting_point?: StartingPointPayload | null;
+  is_completed: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CareerBlueprintUpsertPayload = {
+  identity_text?: string | null;
+  vision_text?: string | null;
+  talent_focus_text?: string | null;
+  career_focus_text?: string | null;
+  inspiration_person?: string | null;
+  aspiration_person?: string | null;
+  short_term_mission?: CareerHorizonPayload | null;
+  mid_term_ambition?: CareerHorizonPayload | null;
+  long_term_goal?: CareerHorizonPayload | null;
+  starting_point?: StartingPointPayload | null;
+  is_completed: boolean;
+};
+
+export type CareerGapResponse = {
+  current_role?: string | null;
+  short_term_role?: string | null;
+  short_term_level?: string | null;
+  mid_term_role?: string | null;
+  mid_term_level?: string | null;
+  long_term_role?: string | null;
+  long_term_level?: string | null;
+  role_gap_short_term: boolean;
+  role_gap_mid_term: boolean;
+  role_gap_long_term: boolean;
+  level_gap_mid_term: boolean;
+  level_gap_long_term: boolean;
+  profession_percent?: number | null;
+  work_percent?: number | null;
+  chore_percent?: number | null;
+  destiny_percent?: number | null;
+  hobby_percent?: number | null;
+  key_gap_summary?: string | null;
+};
+
+export type CareerTrajectoryResponse = {
+  current_position: string | null;
+  target_position: string | null;
+  strategic_bridge: string | null;
+  trajectory_summary: string | null;
+} | null;
+
+/* ---------------- ADMIN ORGANIZATIONS ---------------- */
+
+export type AdminOrganizationType = "agent_flix" | "agent_premium" | "agent_de_reve";
+
+export type AdminOrganization = {
+  id: number;
+  name: string;
+  code?: string | null;
+  organization_type: AdminOrganizationType;
+  description?: string | null;
+  contact_email?: string | null;
+  contact_phone?: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdminOrganizationCreate = {
+  name: string;
+  code?: string | null;
+  organization_type?: AdminOrganizationType;
+  description?: string | null;
+  contact_email?: string | null;
+  contact_phone?: string | null;
+  is_active?: boolean | null;
+};
+
+export type AdminOrganizationUpdate = {
+  name?: string | null;
+  code?: string | null;
+  organization_type?: AdminOrganizationType | null;
+  description?: string | null;
+  contact_email?: string | null;
+  contact_phone?: string | null;
+  is_active?: boolean | null;
+};
+
+export type AdminOrganizationAccessAccountCreate = {
+  email?: string | null;
+  temporary_password?: string | null;
+};
+
+export type AdminOrganizationAccessAccount = {
+  admin_user_id: number;
+  organization_id: number;
+  email: string;
+  role: "organization" | string;
+  is_active: boolean;
+  temporary_password: string;
+  created_new_account: boolean;
+  message: string;
+};
+
+export type AdminOrganizationDetail = {
+  organization: AdminOrganization;
+  workers: AdminWorker[];
+};
+
+export type AdminOrganizationWorkerLeverSummary = {
+  id: number;
+  name: string;
+  category: string;
+  description: string;
+  url?: string | null;
+  provider_type?: string;
+  is_paid?: boolean;
+  price_min_eur?: number | null;
+  price_max_eur?: number | null;
+  currency?: string;
+  is_active: boolean;
+  is_default?: boolean;
+  priority_score?: number;
+  usage_count: number;
+  recommendation_ids: number[];
+  match_reasons: string[];
+  is_highlighted: boolean;
+  best_display_rank?: number | null;
+};
+
+export type AdminOrganizationWorkerSummary = {
+  worker: AdminWorker;
+  career_blueprint: CareerBlueprintResponse | null;
+  sessions: SessionHistoryItem[];
+  recommendations: Recommendation[];
+  artifacts: AIArtifactStatusResponse[];
+  levers: AdminOrganizationWorkerLeverSummary[];
+  session_count: number;
+  external_conversation_count: number;
+  recommendation_count: number;
+  artifact_count: number;
+  lever_count: number;
+};
+
+/* ---------------- ADMIN DASHBOARD / INTELLIGENCE ---------------- */
 
 export type AdminDashboardCategoryStat = {
   category: string;
@@ -509,6 +1219,8 @@ export type AdminLeverQualitySummary = {
   top_quality_levers: AdminLeverQualityItem[];
   lowest_quality_levers: AdminLeverQualityItem[];
 };
+
+/* ---------------- ADMIN SUPPORT / OPS AGENTS ---------------- */
 
 export type AdminSupportTriageCategory =
   | "auth_login"
@@ -681,6 +1393,8 @@ export type AdminBusinessOpsMonitoringResponse = {
   confidence: number;
 };
 
+/* ---------------- CHIEF OF STAFF / BRIEFING / ORCHESTRATION ---------------- */
+
 export type AdminChiefOfStaffOverallHealth = "healthy" | "watch" | "critical";
 
 export type AdminChiefOfStaffRequest = {
@@ -762,6 +1476,34 @@ export type AdminOrchestrationResponse = {
   confidence: number;
 };
 
+export type AdminOrchestrationRunSummary = {
+  id: number;
+  scenario: AdminOrchestrationScenario | string;
+  status: AdminOrchestrationStatus | string;
+  language?: string | null;
+  confidence: number;
+  executed_agents?: string[] | null;
+  escalations?: string[] | null;
+  created_at: string;
+};
+
+export type AdminOrchestrationRunDetail = {
+  id: number;
+  scenario: AdminOrchestrationScenario | string;
+  status: AdminOrchestrationStatus | string;
+  language?: string | null;
+  input_payload_json?: Record<string, unknown> | null;
+  options_json?: Record<string, unknown> | null;
+  executed_agents_json?: string[] | null;
+  final_output_json?: Record<string, unknown> | null;
+  intermediate_results_json?: Record<string, unknown> | null;
+  escalations_json?: string[] | null;
+  confidence: number;
+  created_at: string;
+};
+
+/* ---------------- CUSTOMER EXPERIENCE AGENT ---------------- */
+
 export type AdminCustomerExperienceSignalType =
   | "coach_signal"
   | "recommendation_signal"
@@ -820,76 +1562,4 @@ export type AdminCustomerExperienceMonitoringResponse = {
   confidence: number;
 };
 
-export type ProfileResponse = {
-  given_name?: string | null;
-  current_role?: string | null;
-  industry?: string | null;
-  primary_goal?: string | null;
-  main_challenge?: string | null;
-  improvement_focus?: string | null;
-  preferred_coaching_style?: string | null;
-  profile_update_suspected: boolean;
-  profile_last_confirmed_at?: string | null;
-};
-
-export type ProfileUpdatePayload = {
-  current_role?: string | null;
-  industry?: string | null;
-  primary_goal?: string | null;
-  main_challenge?: string | null;
-  improvement_focus?: string | null;
-  preferred_coaching_style?: string | null;
-};
-
-export type CareerLevel =
-  | "Starter"
-  | "Junior"
-  | "Senior"
-  | "Expert"
-  | "Master"
-  | "Elite";
-
-export type CareerHorizonPayload = {
-  target_compensation?: string | null;
-  target_role?: string | null;
-  target_level?: CareerLevel | null;
-};
-
-export type StartingPointPayload = {
-  my_profession_percent: number;
-  my_work_percent: number;
-  chore_percent: number;
-  destiny_percent: number;
-  hobby_percent: number;
-};
-
-export type CareerBlueprintResponse = {
-  id: number;
-  user_id: number;
-  identity_text?: string | null;
-  vision_text?: string | null;
-  talent_focus_text?: string | null;
-  career_focus_text?: string | null;
-  inspiration_person?: string | null;
-  aspiration_person?: string | null;
-  short_term_mission?: CareerHorizonPayload | null;
-  mid_term_ambition?: CareerHorizonPayload | null;
-  long_term_goal?: CareerHorizonPayload | null;
-  starting_point?: StartingPointPayload | null;
-  is_completed: boolean;
-  created_at: string;
-  updated_at: string;
-};
-
-export type CareerBlueprintUpsertPayload = {
-  identity_text?: string | null;
-  vision_text?: string | null;
-  talent_focus_text?: string | null;
-  career_focus_text?: string | null;
-  inspiration_person?: string | null;
-  aspiration_person?: string | null;
-  short_term_mission?: CareerHorizonPayload | null;
-  mid_term_ambition?: CareerHorizonPayload | null;
-  long_term_goal?: CareerHorizonPayload | null;
-  starting_point?: StartingPointPayload | null;
-};
+export type AdminRenderableNode = ReactNode;

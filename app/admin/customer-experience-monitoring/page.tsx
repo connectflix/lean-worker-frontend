@@ -4,7 +4,6 @@ import { useState } from "react";
 import { AdminGuard } from "@/components/admin-guard";
 import { adminCustomerExperienceMonitoring } from "@/lib/api";
 import type {
-  AdminCustomerExperienceArea,
   AdminCustomerExperienceMonitoringResponse,
   AdminCustomerExperienceRisk,
   AdminCustomerExperienceSeverity,
@@ -20,7 +19,8 @@ const SAMPLE_SIGNALS = [
     payload: {
       signal_type: "coach_signal" as AdminCustomerExperienceSignalType,
       signal_source: "manual_test" as AdminCustomerExperienceSignalSource,
-      message: "The coach answers in English while the user writes in French, which creates frustration and a poor experience.",
+      message:
+        "The coach answers in English while the user writes in French, which creates frustration and a poor experience.",
       language: "fr",
       environment: "production" as AdminCustomerExperienceEnvironment,
       context: {
@@ -34,7 +34,8 @@ const SAMPLE_SIGNALS = [
     payload: {
       signal_type: "recommendation_signal" as AdminCustomerExperienceSignalType,
       signal_source: "user_feedback" as AdminCustomerExperienceSignalSource,
-      message: "The user says the recommendations feel too generic and not relevant to their situation.",
+      message:
+        "The user says the recommendations feel too generic and not relevant to their situation.",
       language: "fr",
       environment: "production" as AdminCustomerExperienceEnvironment,
       context: {
@@ -47,7 +48,8 @@ const SAMPLE_SIGNALS = [
     payload: {
       signal_type: "lever_signal" as AdminCustomerExperienceSignalType,
       signal_source: "support_case" as AdminCustomerExperienceSignalSource,
-      message: "The user does not understand why this lever was suggested and does not see its value.",
+      message:
+        "The user does not understand why this lever was suggested and does not see its value.",
       language: "fr",
       environment: "production" as AdminCustomerExperienceEnvironment,
       context: {
@@ -60,7 +62,8 @@ const SAMPLE_SIGNALS = [
     payload: {
       signal_type: "journey_signal" as AdminCustomerExperienceSignalType,
       signal_source: "manual_test" as AdminCustomerExperienceSignalSource,
-      message: "The journey feels confusing and the next step is not clear after recommendations are shown.",
+      message:
+        "The journey feels confusing and the next step is not clear after recommendations are shown.",
       language: "fr",
       environment: "production" as AdminCustomerExperienceEnvironment,
       context: {
@@ -104,6 +107,7 @@ function formatContextText(value: string): Record<string, string | number | bool
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
       return parsed as Record<string, string | number | boolean | null>;
     }
+
     return null;
   } catch {
     return null;
@@ -152,15 +156,19 @@ export default function AdminCustomerExperienceMonitoringPage() {
 }
 
 function AdminCustomerExperienceMonitoringContent() {
-  const [signalType, setSignalType] = useState<AdminCustomerExperienceSignalType>("coach_signal");
-  const [signalSource, setSignalSource] = useState<AdminCustomerExperienceSignalSource>("manual_test");
+  const [signalType, setSignalType] =
+    useState<AdminCustomerExperienceSignalType>("coach_signal");
+  const [signalSource, setSignalSource] =
+    useState<AdminCustomerExperienceSignalSource>("manual_test");
   const [message, setMessage] = useState(SAMPLE_SIGNALS[0].payload.message);
   const [language, setLanguage] = useState("fr");
-  const [environment, setEnvironment] = useState<AdminCustomerExperienceEnvironment>("production");
+  const [environment, setEnvironment] =
+    useState<AdminCustomerExperienceEnvironment>("production");
   const [contextText, setContextText] = useState(
     JSON.stringify(SAMPLE_SIGNALS[0].payload.context, null, 2),
   );
-  const [result, setResult] = useState<AdminCustomerExperienceMonitoringResponse | null>(null);
+  const [result, setResult] =
+    useState<AdminCustomerExperienceMonitoringResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -209,7 +217,8 @@ function AdminCustomerExperienceMonitoringContent() {
             <div>
               <h1 className="title">Admin Customer Experience Monitoring</h1>
               <p className="subtitle">
-                Analyse manuelle des signaux de satisfaction client sur le coach, les recommandations, les leviers et le parcours.
+                Analyse manuelle des signaux de satisfaction client sur le coach, les
+                recommandations, les leviers et le parcours.
               </p>
             </div>
 
@@ -217,10 +226,16 @@ function AdminCustomerExperienceMonitoringContent() {
               <button className="button ghost" onClick={() => (window.location.href = "/admin")}>
                 Dashboard
               </button>
-              <button className="button ghost" onClick={() => (window.location.href = "/admin/business-ops-monitoring")}>
+              <button
+                className="button ghost"
+                onClick={() => (window.location.href = "/admin/business-ops-monitoring")}
+              >
                 Business ops
               </button>
-              <button className="button ghost" onClick={() => (window.location.href = "/admin/daily-briefing")}>
+              <button
+                className="button ghost"
+                onClick={() => (window.location.href = "/admin/daily-briefing")}
+              >
                 Daily Briefing
               </button>
             </div>
@@ -253,7 +268,9 @@ function AdminCustomerExperienceMonitoringContent() {
                   <span className="muted">Signal type</span>
                   <select
                     value={signalType}
-                    onChange={(e) => setSignalType(e.target.value as AdminCustomerExperienceSignalType)}
+                    onChange={(e) =>
+                      setSignalType(e.target.value as AdminCustomerExperienceSignalType)
+                    }
                     style={{
                       width: "100%",
                       borderRadius: 12,
@@ -275,7 +292,9 @@ function AdminCustomerExperienceMonitoringContent() {
                   <span className="muted">Signal source</span>
                   <select
                     value={signalSource}
-                    onChange={(e) => setSignalSource(e.target.value as AdminCustomerExperienceSignalSource)}
+                    onChange={(e) =>
+                      setSignalSource(e.target.value as AdminCustomerExperienceSignalSource)
+                    }
                     style={{
                       width: "100%",
                       borderRadius: 12,
@@ -318,7 +337,9 @@ function AdminCustomerExperienceMonitoringContent() {
                   <span className="muted">Environment</span>
                   <select
                     value={environment}
-                    onChange={(e) => setEnvironment(e.target.value as AdminCustomerExperienceEnvironment)}
+                    onChange={(e) =>
+                      setEnvironment(e.target.value as AdminCustomerExperienceEnvironment)
+                    }
                     style={{
                       width: "100%",
                       borderRadius: 12,
@@ -375,7 +396,12 @@ function AdminCustomerExperienceMonitoringContent() {
               </label>
 
               <div className="row" style={{ gap: 8 }}>
-                <button className="button" type="button" onClick={handleAssess} disabled={loading || !message.trim()}>
+                <button
+                  className="button"
+                  type="button"
+                  onClick={handleAssess}
+                  disabled={loading || !message.trim()}
+                >
                   {loading ? "Analyse..." : "Analyser le signal"}
                 </button>
               </div>
@@ -412,15 +438,9 @@ function AdminCustomerExperienceMonitoringContent() {
                   <span className="badge" style={riskBadgeStyle(result.user_experience_risk)}>
                     UX risk: {result.user_experience_risk}
                   </span>
-                  <span className="badge">
-                    Area: {result.experience_area}
-                  </span>
-                  <span className="badge">
-                    Issue: {result.issue_detected ? "yes" : "no"}
-                  </span>
-                  <span className="badge">
-                    Escalate: {result.escalate ? "yes" : "no"}
-                  </span>
+                  <span className="badge">Area: {result.experience_area}</span>
+                  <span className="badge">Issue: {result.issue_detected ? "yes" : "no"}</span>
+                  <span className="badge">Escalate: {result.escalate ? "yes" : "no"}</span>
                   <span className="badge">
                     Confidence: {Math.round((result.confidence || 0) * 100)}%
                   </span>
