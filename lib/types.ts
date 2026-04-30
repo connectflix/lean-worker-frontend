@@ -422,6 +422,17 @@ export type AdminLoginResponse = {
   token_type: string;
 };
 
+export type AdminChangePasswordRequest = {
+  current_password: string;
+  new_password: string;
+  confirm_new_password: string;
+};
+
+export type AdminChangePasswordResponse = {
+  success: boolean;
+  message: string;
+};
+
 export type AdminStatusToggleResponse = {
   id: number;
   is_active: boolean;
@@ -820,11 +831,7 @@ export type AdminWorkerSignificanceQuestion = {
   key?: string | null;
   order?: number | null;
   text: string;
-
-  // Frontend-friendly shape.
   answers: AdminWorkerSignificanceQuestionAnswer[];
-
-  // Backend may return this name. Keep it for compatibility.
   options?: AdminWorkerSignificanceQuestionOption[] | null;
 };
 

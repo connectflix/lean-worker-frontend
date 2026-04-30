@@ -1,11 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { clearAdminToken } from "@/lib/admin-auth";
 
 type AdminNavItem = {
   label: string;
   href: string;
-  section: "overview" | "operations" | "catalog";
+  section: "overview" | "operations" | "catalog" | "account";
   roles: Array<"admin" | "organization">;
 };
 
@@ -19,7 +20,12 @@ type AdminShellProps = {
 };
 
 const NAV_ITEMS: AdminNavItem[] = [
-  { label: "Dashboard", href: "/admin", section: "overview", roles: ["admin"] },
+  {
+    label: "Dashboard",
+    href: "/admin",
+    section: "overview",
+    roles: ["admin"],
+  },
 
   {
     label: "Orchestration",
@@ -34,12 +40,29 @@ const NAV_ITEMS: AdminNavItem[] = [
     roles: ["admin"],
   },
 
-  { label: "Manage Levers", href: "/admin/levers", section: "catalog", roles: ["admin"] },
-  { label: "Manage Workers", href: "/admin/workers", section: "catalog", roles: ["admin"] },
+  {
+    label: "Manage Levers",
+    href: "/admin/levers",
+    section: "catalog",
+    roles: ["admin"],
+  },
+  {
+    label: "Manage Workers",
+    href: "/admin/workers",
+    section: "catalog",
+    roles: ["admin"],
+  },
   {
     label: "Manage Organizations",
     href: "/admin/organizations",
     section: "catalog",
+    roles: ["admin", "organization"],
+  },
+
+  {
+    label: "Change password",
+    href: "/admin/change-password",
+    section: "account",
     roles: ["admin", "organization"],
   },
 ];
@@ -47,7 +70,8 @@ const NAV_ITEMS: AdminNavItem[] = [
 function sectionLabel(section: AdminNavItem["section"]): string {
   if (section === "overview") return "OVERVIEW";
   if (section === "operations") return "OPERATIONS";
-  return "CATALOG";
+  if (section === "catalog") return "CATALOG";
+  return "ACCOUNT";
 }
 
 export function AdminShell({
@@ -58,7 +82,7 @@ export function AdminShell({
   activeHref = "/admin",
   children,
 }: AdminShellProps) {
-  const sections: AdminNavItem["section"][] = ["overview", "operations", "catalog"];
+  const sections: AdminNavItem["section"][] = ["overview", "operations", "catalog", "account"];
 
   function handleLogout() {
     clearAdminToken();
@@ -108,13 +132,13 @@ export function AdminShell({
                       (item.href !== "/admin" && activeHref.startsWith(item.href));
 
                     return (
-                      <a
+                      <Link
                         key={item.href}
                         href={item.href}
                         className={`nav-item ${isActive ? "active" : ""}`}
                       >
                         <span>{item.label}</span>
-                      </a>
+                      </Link>
                     );
                   })}
                 </div>

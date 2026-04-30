@@ -8,6 +8,8 @@ import type {
   AdminLeverCreate,
   AdminLeverUpdate,
   AdminLoginResponse,
+  AdminChangePasswordRequest,
+  AdminChangePasswordResponse,
   AdminMe,
   AdminStatusToggleResponse,
   AIArtifactCreateRequest,
@@ -183,6 +185,8 @@ function normalizeSignificanceQuestion(value: unknown, index: number): AdminWork
       ? raw.options
       : [];
 
+  const normalizedOptions = rawOptions.map(normalizeSignificanceQuestionAnswer);
+
   return {
     id,
     key: typeof raw.key === "string" ? raw.key : String(id),
@@ -193,8 +197,8 @@ function normalizeSignificanceQuestion(value: unknown, index: number): AdminWork
           ? Number(raw.order)
           : id,
     text: typeof raw.text === "string" ? raw.text : `Question ${id}`,
-    answers: rawOptions.map(normalizeSignificanceQuestionAnswer),
-    options: rawOptions.map(normalizeSignificanceQuestionAnswer),
+    answers: normalizedOptions,
+    options: normalizedOptions,
   };
 }
 
@@ -604,6 +608,15 @@ export async function adminLogin(email: string, password: string): Promise<Admin
     }
 
     return response.json();
+  });
+}
+
+export async function changeAdminPassword(
+  payload: AdminChangePasswordRequest,
+): Promise<AdminChangePasswordResponse> {
+  return adminApiFetch<AdminChangePasswordResponse>("/admin/auth/change-password", {
+    method: "POST",
+    body: JSON.stringify(payload),
   });
 }
 
