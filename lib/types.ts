@@ -443,6 +443,9 @@ export type AdminMe = {
   email: string;
   role: "admin" | "organization";
   organization_id?: number | null;
+  organization_name?: string | null;
+  organization_code?: string | null;
+  organization_type?: string | null;
   is_active: boolean;
 };
 
@@ -951,6 +954,195 @@ export type AdminWorkerSignificanceQuestionsResponse = {
   questions: AdminWorkerSignificanceQuestion[];
 };
 
+/* ---------------- ADMIN WORKER TIME CANVASES ---------------- */
+
+export type AdminWorkerTimeCanvasReadinessStatus =
+  | "not_evaluated"
+  | "ready"
+  | "partially_ready"
+  | "at_risk"
+  | string;
+
+export type AdminWorkerTimeCanvas = {
+  id: number;
+  worker_id: number;
+
+  available_time_text?: string | null;
+  time_constraints_text?: string | null;
+  time_energy_text?: string | null;
+  time_rituals_text?: string | null;
+  time_priorities_text?: string | null;
+  time_risks_text?: string | null;
+
+  readiness_score?: number | null;
+  readiness_status?: AdminWorkerTimeCanvasReadinessStatus | null;
+  summary_text?: string | null;
+
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdminWorkerTimeCanvasCreate = {
+  worker_id: number;
+
+  available_time_text?: string | null;
+  time_constraints_text?: string | null;
+  time_energy_text?: string | null;
+  time_rituals_text?: string | null;
+  time_priorities_text?: string | null;
+  time_risks_text?: string | null;
+
+  readiness_score?: number | null;
+  readiness_status?: AdminWorkerTimeCanvasReadinessStatus | null;
+  summary_text?: string | null;
+};
+
+export type AdminWorkerTimeCanvasUpdate = {
+  available_time_text?: string | null;
+  time_constraints_text?: string | null;
+  time_energy_text?: string | null;
+  time_rituals_text?: string | null;
+  time_priorities_text?: string | null;
+  time_risks_text?: string | null;
+
+  readiness_score?: number | null;
+  readiness_status?: AdminWorkerTimeCanvasReadinessStatus | null;
+  summary_text?: string | null;
+};
+
+/* ---------------- ADMIN BOOKINGS ---------------- */
+
+export type AdminBookingStatus =
+  | "requested"
+  | "confirmed"
+  | "completed"
+  | "cancelled"
+  | "no_show"
+  | string;
+
+export type AdminBooking = {
+  id: number;
+
+  worker_id?: number | null;
+  organization_id?: number | null;
+
+  title: string;
+  description?: string | null;
+
+  booking_type?: string | null;
+  status: AdminBookingStatus;
+
+  starts_at?: string | null;
+  ends_at?: string | null;
+  timezone?: string | null;
+
+  location?: string | null;
+  meeting_url?: string | null;
+
+  source: string;
+  external_provider?: string | null;
+
+  external_event_uri?: string | null;
+  external_invitee_uri?: string | null;
+  external_event_type_uri?: string | null;
+
+  cancel_url?: string | null;
+  reschedule_url?: string | null;
+
+  invitee_email?: string | null;
+  invitee_name?: string | null;
+
+  worker_email?: string | null;
+  worker_display_name?: string | null;
+
+  organization_name?: string | null;
+  organization_code?: string | null;
+
+  price_eur?: number | null;
+  notes?: string | null;
+
+  external_payload_json?: Record<string, unknown> | null;
+
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdminBookingCreate = {
+  worker_id?: number | null;
+  organization_id?: number | null;
+
+  title: string;
+  description?: string | null;
+
+  booking_type?: string | null;
+  status?: AdminBookingStatus | null;
+
+  starts_at?: string | null;
+  ends_at?: string | null;
+  timezone?: string | null;
+
+  location?: string | null;
+  meeting_url?: string | null;
+
+  source?: string | null;
+  external_provider?: string | null;
+
+  external_event_uri?: string | null;
+  external_invitee_uri?: string | null;
+  external_event_type_uri?: string | null;
+
+  cancel_url?: string | null;
+  reschedule_url?: string | null;
+
+  invitee_email?: string | null;
+  invitee_name?: string | null;
+
+  price_eur?: number | null;
+  notes?: string | null;
+
+  external_payload_json?: Record<string, unknown> | null;
+};
+
+export type AdminBookingUpdate = Partial<AdminBookingCreate>;
+
+export type AdminCalendlySyncRequest = {
+  organization_id?: number | null;
+  worker_id?: number | null;
+  status?: string | null;
+  event_type_uri?: string | null;
+  days_past?: number | null;
+  days_future?: number | null;
+};
+
+export type AdminCalendlySyncResponse = {
+  provider: "calendly" | string;
+  scanned_events: number;
+  scanned_invitees: number;
+  created_count: number;
+  updated_count: number;
+  skipped_count: number;
+  bookings: AdminBooking[];
+  message: string;
+};
+
+export type AdminCalendlyAvailableTime = {
+  start_time: string;
+  scheduling_url?: string | null;
+  status: "available" | string;
+  event_type_uri: string;
+  raw_payload?: Record<string, unknown> | null;
+};
+
+export type AdminCalendlyAvailabilityResponse = {
+  provider: "calendly" | string;
+  event_type_uri: string;
+  start_time: string;
+  end_time: string;
+  available_times: AdminCalendlyAvailableTime[];
+  available_count: number;
+  message: string;
+};
+
 /* ---------------- CAREER / PROFILE ---------------- */
 
 export type ProfileResponse = {
@@ -1062,6 +1254,7 @@ export type AdminOrganization = {
   description?: string | null;
   contact_email?: string | null;
   contact_phone?: string | null;
+  calendly_event_type_uri?: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -1074,6 +1267,7 @@ export type AdminOrganizationCreate = {
   description?: string | null;
   contact_email?: string | null;
   contact_phone?: string | null;
+  calendly_event_type_uri?: string | null;
   is_active?: boolean | null;
 };
 
@@ -1084,6 +1278,7 @@ export type AdminOrganizationUpdate = {
   description?: string | null;
   contact_email?: string | null;
   contact_phone?: string | null;
+  calendly_event_type_uri?: string | null;
   is_active?: boolean | null;
 };
 

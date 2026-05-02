@@ -6,7 +6,11 @@ import { clearAdminToken, getAdminToken } from "@/lib/admin-auth";
 import { getAdminMe } from "@/lib/api";
 import type { AdminMe } from "@/lib/types";
 
-const ORGANIZATION_ALLOWED_PREFIXES = ["/admin/organizations"];
+const ORGANIZATION_ALLOWED_PREFIXES = [
+  "/admin/organizations",
+  "/admin/bookings",
+  "/admin/change-password",
+];
 
 function isAllowedForOrganization(pathname: string): boolean {
   return ORGANIZATION_ALLOWED_PREFIXES.some(

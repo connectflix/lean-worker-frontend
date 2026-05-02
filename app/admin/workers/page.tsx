@@ -11,6 +11,7 @@ import {
   createAdminWorkerEngagement,
   createAdminWorkerPurposeCanvas,
   createAdminWorkerSignificanceCanvas,
+  createAdminWorkerTimeCanvas,
   finalizeAdminWorkerEngagement,
   getAdminMe,
   getAdminWorkerConversations,
@@ -18,12 +19,14 @@ import {
   getAdminWorkerPurposeCanvases,
   getAdminWorkerSignificanceCanvases,
   getAdminWorkerSignificanceQuestions,
+  getAdminWorkerTimeCanvases,
   getAdminWorkers,
   updateAdminWorker,
   updateAdminWorkerConversation,
   updateAdminWorkerEngagement,
   updateAdminWorkerPurposeCanvas,
   updateAdminWorkerSignificanceCanvas,
+  updateAdminWorkerTimeCanvas,
 } from "@/lib/api";
 import type {
   AdminMe,
@@ -46,10 +49,19 @@ import type {
   AdminWorkerSignificanceCanvasUpdate,
   AdminWorkerSignificanceQuestion,
   AdminWorkerSignificanceScoreMap,
+  AdminWorkerTimeCanvas,
+  AdminWorkerTimeCanvasCreate,
+  AdminWorkerTimeCanvasUpdate,
   AdminWorkerUpdate,
 } from "@/lib/types";
 
-type WorkersViewMode = "workers" | "conversations" | "engagements" | "purpose" | "significance";
+type WorkersViewMode =
+  | "workers"
+  | "conversations"
+  | "engagements"
+  | "purpose"
+  | "significance"
+  | "time";
 
 type SubscriptionPack = "standard" | "classique" | "flix" | "executif";
 
@@ -145,6 +157,24 @@ type SignificanceFormState = {
   worker_id: string;
   answers: Record<number, AdminWorkerSignificanceAnswerValue>;
 };
+
+type TimeFormState = {
+  worker_id: string;
+  available_time_text: string;
+  time_constraints_text: string;
+  time_energy_text: string;
+  time_rituals_text: string;
+  time_priorities_text: string;
+  time_risks_text: string;
+};
+
+type TimeNodeKey =
+  | "available_time_text"
+  | "time_constraints_text"
+  | "time_energy_text"
+  | "time_rituals_text"
+  | "time_priorities_text"
+  | "time_risks_text";
 
 type SaveIndicator = "idle" | "typing" | "saving" | "saved" | "error";
 
@@ -300,6 +330,16 @@ const EMPTY_SIGNIFICANCE_FORM: SignificanceFormState = {
   answers: {},
 };
 
+const EMPTY_TIME_FORM: TimeFormState = {
+  worker_id: "",
+  available_time_text: "",
+  time_constraints_text: "",
+  time_energy_text: "",
+  time_rituals_text: "",
+  time_priorities_text: "",
+  time_risks_text: "",
+};
+
 const PURPOSE_NODES: Array<{
   key: PurposeNodeKey;
   label: string;
@@ -362,6 +402,57 @@ const PURPOSE_NODES: Array<{
     tone: "rose",
     x: 15,
     y: 32,
+  },
+];
+
+const TIME_NODES: Array<{
+  key: TimeNodeKey;
+  label: string;
+  subtitle: string;
+  placeholder: string;
+  tone: CanvasTone;
+}> = [
+  {
+    key: "available_time_text",
+    label: "Available Time",
+    subtitle: "Temps réellement disponible pour exécuter les actions",
+    placeholder: "Ex: 3 créneaux de 45 minutes par semaine, plutôt le matin...",
+    tone: "blue",
+  },
+  {
+    key: "time_constraints_text",
+    label: "Time Constraints",
+    subtitle: "Contraintes horaires, charge, obligations et limites",
+    placeholder: "Ex: réunions longues, enfants le soir, fatigue après 18h...",
+    tone: "rose",
+  },
+  {
+    key: "time_energy_text",
+    label: "Energy Rhythm",
+    subtitle: "Moments d’énergie haute/basse et rythme naturel",
+    placeholder: "Ex: énergie forte le matin, baisse après déjeuner...",
+    tone: "amber",
+  },
+  {
+    key: "time_rituals_text",
+    label: "Execution Rituals",
+    subtitle: "Rituels, habitudes et routines d’exécution",
+    placeholder: "Ex: revue du lundi, bloc focus mercredi, bilan vendredi...",
+    tone: "teal",
+  },
+  {
+    key: "time_priorities_text",
+    label: "Priorities",
+    subtitle: "Priorités temporelles et arbitrages importants",
+    placeholder: "Ex: privilégier la progression carrière avant les tâches secondaires...",
+    tone: "purple",
+  },
+  {
+    key: "time_risks_text",
+    label: "Risks",
+    subtitle: "Risques de décrochage, surcharge ou non-exécution",
+    placeholder: "Ex: procrastination, imprévus, fatigue, manque de clarté...",
+    tone: "orange",
   },
 ];
 
@@ -901,6 +992,98 @@ function purposeFormFromItem(item: AdminWorkerPurposeCanvas): PurposeFormState {
   };
 }
 
+function timeFormFromItem(item: AdminWorkerTimeCanvas): TimeFormState {
+  return {
+    worker_id: String(item.worker_id),
+    available_time_text: item.available_time_text ?? "",
+    time_constraints_text: item.time_constraints_text ?? "",
+    time_energy_text: item.time_energy_text ?? "",
+    time_rituals_text: item.time_rituals_text ?? "",
+    time_priorities_text: item.time_priorities_text ?? "",
+    time_risks_text: item.time_risks_text ?? "",
+  };
+}
+
+function getTimeCanvasCompletedNodes(form: TimeFormState): number {
+  return TIME_NODES.reduce((count, node) => {
+    const value = form[node.key] ?? "";
+    return value.trim() ? count + 1 : count;
+  }, 0);
+}
+
+function getTimeCanvasReadinessScore(form: TimeFormState): number {
+  const completedNodes = getTimeCanvasCompletedNodes(form);
+
+  if (completedNodes === 0) {
+    return 0;
+  }
+
+  const baseScore = Math.round((completedNodes / TIME_NODES.length) * 100);
+
+  const hasAvailableTime = Boolean(form.available_time_text.trim());
+  const hasPriorities = Boolean(form.time_priorities_text.trim());
+  const hasConstraints = Boolean(form.time_constraints_text.trim());
+  const hasRisks = Boolean(form.time_risks_text.trim());
+
+  let adjustment = 0;
+
+  if (hasAvailableTime) adjustment += 5;
+  if (hasPriorities) adjustment += 5;
+  if (hasConstraints) adjustment += 3;
+  if (hasRisks) adjustment += 2;
+
+  return Math.min(100, baseScore + adjustment);
+}
+
+function getTimeCanvasReadinessStatus(score: number, completedNodes: number): string {
+  if (completedNodes === 0) return "not_evaluated";
+  if (score >= 80) return "ready";
+  if (score >= 50) return "partially_ready";
+  return "at_risk";
+}
+
+function buildTimeCanvasSummary(form: TimeFormState): string {
+  const completedNodes = getTimeCanvasCompletedNodes(form);
+  const readinessScore = getTimeCanvasReadinessScore(form);
+  const readinessStatus = getTimeCanvasReadinessStatus(readinessScore, completedNodes);
+
+  if (completedNodes === 0) {
+    return "Time Canvas is not evaluated yet because no time execution signal is available.";
+  }
+
+  const parts: string[] = [
+    `Time Canvas readiness score: ${readinessScore}%.`,
+    `Readiness status: ${readinessStatus}.`,
+    `${completedNodes}/${TIME_NODES.length} time execution node(s) completed.`,
+  ];
+
+  if (form.available_time_text.trim()) {
+    parts.push("Available execution time has been captured.");
+  }
+
+  if (form.time_constraints_text.trim()) {
+    parts.push("Time constraints have been identified.");
+  }
+
+  if (form.time_energy_text.trim()) {
+    parts.push("Energy rhythm has been captured.");
+  }
+
+  if (form.time_rituals_text.trim()) {
+    parts.push("Execution rituals or routines have been captured.");
+  }
+
+  if (form.time_priorities_text.trim()) {
+    parts.push("Time priorities have been clarified.");
+  }
+
+  if (form.time_risks_text.trim()) {
+    parts.push("Execution risks have been identified.");
+  }
+
+  return parts.join(" ");
+}
+
 function engagementFormFromItem(item: AdminWorkerEngagement): EngagementFormState {
   return {
     worker_id: String(item.worker_id),
@@ -1145,6 +1328,7 @@ function getCanvasToneStyles(tone: CanvasTone): {
       };
   }
 }
+
 function SavePill({
   state,
   savedAt,
@@ -1202,33 +1386,43 @@ function CoherenceBadge({
   let color = "#475569";
   let background = "rgba(100,116,139,0.14)";
 
-  if (status === "coherent" || status === "balanced") {
-    label = status === "balanced" ? "Balanced" : "Coherent";
+  if (status === "coherent" || status === "balanced" || status === "ready") {
+    label = status === "balanced" ? "Balanced" : status === "ready" ? "Ready" : "Coherent";
     color = "#15803d";
     background = "rgba(34,197,94,0.14)";
   } else if (
     status === "watch" ||
     status === "partially_coherent" ||
+    status === "partially_ready" ||
     status === "dominant" ||
     status === "tension"
   ) {
     label =
       status === "partially_coherent"
         ? "Partially coherent"
-        : status === "dominant"
-          ? "Dominant"
-          : status === "tension"
-            ? "Tension"
-            : "Watch";
+        : status === "partially_ready"
+          ? "Partially ready"
+          : status === "dominant"
+            ? "Dominant"
+            : status === "tension"
+              ? "Tension"
+              : "Watch";
     color = "#b45309";
     background = "rgba(245,158,11,0.14)";
-  } else if (status === "critical" || status === "incoherent" || status === "fragmented") {
+  } else if (
+    status === "critical" ||
+    status === "incoherent" ||
+    status === "fragmented" ||
+    status === "at_risk"
+  ) {
     label =
       status === "fragmented"
         ? "Fragmented"
         : status === "incoherent"
           ? "Incoherent"
-          : "Critical";
+          : status === "at_risk"
+            ? "At risk"
+            : "Critical";
     color = "#b91c1c";
     background = "rgba(239,68,68,0.14)";
   } else if (status === "not_evaluated") {
@@ -1525,7 +1719,6 @@ function CanvasIntentBlock({
     </div>
   );
 }
-
 function PurposeCanvasVisual({
   form,
   onChange,
@@ -1754,6 +1947,83 @@ function PurposeCanvasVisual({
     </div>
   );
 }
+
+function TimeCanvasVisual({
+  form,
+  onChange,
+  readinessScore,
+  readinessStatus,
+  summary,
+}: {
+  form: TimeFormState;
+  onChange: (key: TimeNodeKey, value: string) => void;
+  readinessScore: number;
+  readinessStatus: string;
+  summary: string;
+}) {
+  return (
+    <div className="stack" style={{ gap: 16 }}>
+      <div
+        className="card-soft"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, minmax(180px, 1fr))",
+          gap: 12,
+          alignItems: "stretch",
+        }}
+      >
+        <div className="stack" style={{ gap: 6 }}>
+          <div className="muted">Readiness score</div>
+          <div className="admin-metric-value" style={{ fontSize: 30 }}>
+            {readinessScore}%
+          </div>
+        </div>
+
+        <div className="stack" style={{ gap: 6 }}>
+          <div className="muted">Readiness status</div>
+          <div>
+            <CoherenceBadge status={readinessStatus} />
+          </div>
+        </div>
+
+        <div className="stack" style={{ gap: 6 }}>
+          <div className="muted">Filled blocks</div>
+          <div className="admin-metric-value" style={{ fontSize: 30 }}>
+            {getTimeCanvasCompletedNodes(form)}/{TIME_NODES.length}
+          </div>
+        </div>
+      </div>
+
+      <div className="card-soft stack" style={{ gap: 10 }}>
+        <div className="section-title" style={{ fontSize: 15 }}>
+          Time Canvas reading
+        </div>
+        <div className="muted">{summary}</div>
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(2, minmax(280px, 1fr))",
+          gap: 14,
+        }}
+      >
+        {TIME_NODES.map((node) => (
+          <CanvasTextBlock
+            key={node.key}
+            title={node.label}
+            value={form[node.key]}
+            onChange={(value) => onChange(node.key, value)}
+            minHeight={220}
+            tone={node.tone}
+            placeholder={node.placeholder}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function SignificanceCanvasVisual({
   form,
   onChange,
@@ -1963,6 +2233,17 @@ function AdminWorkersContent() {
   const [purposeSaveState, setPurposeSaveState] = useState<SaveIndicator>("idle");
   const [purposeLastSavedAtLabel, setPurposeLastSavedAtLabel] = useState<string | null>(null);
 
+  const [timeSelectionWorkerId, setTimeSelectionWorkerId] = useState<string>("");
+  const [timeCanvasLoaded, setTimeCanvasLoaded] = useState(false);
+  const [timeLoading, setTimeLoading] = useState(false);
+  const [timeSaving, setTimeSaving] = useState(false);
+  const [editingTimeCanvasId, setEditingTimeCanvasId] = useState<number | null>(null);
+  const [editingTimeCanvas, setEditingTimeCanvas] =
+    useState<AdminWorkerTimeCanvas | null>(null);
+  const [timeForm, setTimeForm] = useState<TimeFormState>(EMPTY_TIME_FORM);
+  const [timeSaveState, setTimeSaveState] = useState<SaveIndicator>("idle");
+  const [timeLastSavedAtLabel, setTimeLastSavedAtLabel] = useState<string | null>(null);
+
   const [significanceSelectionWorkerId, setSignificanceSelectionWorkerId] =
     useState<string>("");
   const [significanceQuestions, setSignificanceQuestions] = useState<
@@ -1986,6 +2267,9 @@ function AdminWorkersContent() {
 
   const purposeAutoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipNextPurposeAutosaveRef = useRef<boolean>(true);
+
+  const timeAutoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const skipNextTimeAutosaveRef = useRef<boolean>(true);
 
   const significanceAutoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipNextSignificanceAutosaveRef = useRef<boolean>(true);
@@ -2015,8 +2299,7 @@ function AdminWorkersContent() {
 
     void load();
   }, []);
-
-  const filteredWorkers = useMemo(() => {
+    const filteredWorkers = useMemo(() => {
     const q = workerSearch.trim().toLowerCase();
 
     return workers.filter((worker) => {
@@ -2094,6 +2377,26 @@ function AdminWorkersContent() {
     engagementSelectionState === "future" &&
     Boolean(editingEngagement?.is_finalized);
 
+  const timeCompletedNodes = useMemo(
+    () => getTimeCanvasCompletedNodes(timeForm),
+    [timeForm],
+  );
+
+  const timeReadinessScore = useMemo(
+    () => getTimeCanvasReadinessScore(timeForm),
+    [timeForm],
+  );
+
+  const timeReadinessStatus = useMemo(
+    () => getTimeCanvasReadinessStatus(timeReadinessScore, timeCompletedNodes),
+    [timeReadinessScore, timeCompletedNodes],
+  );
+
+  const timeSummary = useMemo(
+    () => buildTimeCanvasSummary(timeForm),
+    [timeForm],
+  );
+
   const significanceAnswers = useMemo(
     () => buildSignificanceAnswers(significanceForm, significanceQuestions),
     [significanceForm, significanceQuestions],
@@ -2134,6 +2437,16 @@ function AdminWorkersContent() {
     setPurposeSaveState("saved");
   }
 
+  function stampTimeSavedNow() {
+    setTimeLastSavedAtLabel(
+      new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    );
+    setTimeSaveState("saved");
+  }
+
   function stampSignificanceSavedNow() {
     setSignificanceLastSavedAtLabel(
       new Date().toLocaleTimeString([], {
@@ -2170,9 +2483,11 @@ function AdminWorkersContent() {
 
     setEngagementSelectionWorkerId(String(worker.id));
     setPurposeSelectionWorkerId(String(worker.id));
+    setTimeSelectionWorkerId(String(worker.id));
     setSignificanceSelectionWorkerId(String(worker.id));
   }
-    function resetWorkerForm() {
+
+  function resetWorkerForm() {
     setSelectedWorkerId(null);
     setWorkerForm(EMPTY_WORKER_FORM);
     setConversationWorkerFilter("all");
@@ -2182,9 +2497,11 @@ function AdminWorkersContent() {
     }));
     setEngagementSelectionWorkerId("");
     setPurposeSelectionWorkerId("");
+    setTimeSelectionWorkerId("");
     setSignificanceSelectionWorkerId("");
     resetEngagementCanvas();
     resetPurposeCanvas();
+    resetTimeCanvas();
     resetSignificanceCanvas();
   }
 
@@ -2220,6 +2537,21 @@ function AdminWorkersContent() {
     setPurposeSaveState("idle");
     setPurposeLastSavedAtLabel(null);
     skipNextPurposeAutosaveRef.current = true;
+  }
+
+  function resetTimeCanvas() {
+    if (timeAutoSaveTimerRef.current) {
+      clearTimeout(timeAutoSaveTimerRef.current);
+      timeAutoSaveTimerRef.current = null;
+    }
+
+    setEditingTimeCanvasId(null);
+    setEditingTimeCanvas(null);
+    setTimeForm(EMPTY_TIME_FORM);
+    setTimeCanvasLoaded(false);
+    setTimeSaveState("idle");
+    setTimeLastSavedAtLabel(null);
+    skipNextTimeAutosaveRef.current = true;
   }
 
   function resetSignificanceCanvas() {
@@ -2647,6 +2979,110 @@ function AdminWorkersContent() {
     }
   }
 
+  async function handleLoadTimeCanvas() {
+    if (!timeSelectionWorkerId) {
+      setError("Please select a worker first.");
+      return;
+    }
+
+    setTimeLoading(true);
+    setError(null);
+    setTimeSaveState("idle");
+    setTimeLastSavedAtLabel(null);
+
+    try {
+      const workerId = Number(timeSelectionWorkerId);
+      const matches = await getAdminWorkerTimeCanvases({
+        worker_id: workerId,
+      });
+
+      const existing = matches[0] ?? null;
+
+      if (existing) {
+        setEditingTimeCanvasId(existing.id);
+        setEditingTimeCanvas(existing);
+        setTimeForm(timeFormFromItem(existing));
+      } else {
+        setEditingTimeCanvasId(null);
+        setEditingTimeCanvas(null);
+        setTimeForm({
+          ...EMPTY_TIME_FORM,
+          worker_id: String(workerId),
+        });
+      }
+
+      setTimeCanvasLoaded(true);
+
+      const linkedWorker = workersById.get(workerId);
+      if (linkedWorker) {
+        fillWorkerForm(linkedWorker);
+      }
+
+      skipNextTimeAutosaveRef.current = true;
+    } catch (err) {
+      setTimeCanvasLoaded(false);
+      setEditingTimeCanvasId(null);
+      setEditingTimeCanvas(null);
+      setTimeForm(EMPTY_TIME_FORM);
+      setError(err instanceof Error ? err.message : "Failed to load time canvas.");
+    } finally {
+      setTimeLoading(false);
+    }
+  }
+
+  async function handleSaveTimeCanvas(options?: { silent?: boolean }) {
+    const silent = Boolean(options?.silent);
+
+    if (!timeForm.worker_id || !timeCanvasLoaded) return;
+
+    if (!silent) {
+      setTimeSaving(true);
+    }
+
+    setError(null);
+    setTimeSaveState("saving");
+
+    try {
+      const basePayload = {
+        available_time_text: timeForm.available_time_text.trim() || null,
+        time_constraints_text: timeForm.time_constraints_text.trim() || null,
+        time_energy_text: timeForm.time_energy_text.trim() || null,
+        time_rituals_text: timeForm.time_rituals_text.trim() || null,
+        time_priorities_text: timeForm.time_priorities_text.trim() || null,
+        time_risks_text: timeForm.time_risks_text.trim() || null,
+        readiness_score: timeReadinessScore,
+        readiness_status: timeReadinessStatus,
+        summary_text: timeSummary,
+      };
+
+      if (editingTimeCanvasId) {
+        const payload = basePayload as AdminWorkerTimeCanvasUpdate;
+        const updated = await updateAdminWorkerTimeCanvas(editingTimeCanvasId, payload);
+        setEditingTimeCanvas(updated);
+        setTimeForm(timeFormFromItem(updated));
+        stampTimeSavedNow();
+      } else {
+        const payload = {
+          worker_id: Number(timeForm.worker_id),
+          ...basePayload,
+        } as AdminWorkerTimeCanvasCreate;
+
+        const created = await createAdminWorkerTimeCanvas(payload);
+        setEditingTimeCanvasId(created.id);
+        setEditingTimeCanvas(created);
+        setTimeForm(timeFormFromItem(created));
+        stampTimeSavedNow();
+      }
+    } catch (err) {
+      setTimeSaveState("error");
+      setError(err instanceof Error ? err.message : "Failed to save time canvas.");
+    } finally {
+      if (!silent) {
+        setTimeSaving(false);
+      }
+    }
+  }
+
   async function handleLoadSignificanceCanvas() {
     if (!significanceSelectionWorkerId) {
       setError("Please select a worker first.");
@@ -2822,6 +3258,33 @@ function AdminWorkersContent() {
   }, [purposeForm, purposeCanvasLoaded, viewMode]);
 
   useEffect(() => {
+    if (viewMode !== "time") return;
+    if (!timeCanvasLoaded) return;
+    if (!timeForm.worker_id) return;
+
+    if (skipNextTimeAutosaveRef.current) {
+      skipNextTimeAutosaveRef.current = false;
+      return;
+    }
+
+    setTimeSaveState("typing");
+
+    if (timeAutoSaveTimerRef.current) {
+      clearTimeout(timeAutoSaveTimerRef.current);
+    }
+
+    timeAutoSaveTimerRef.current = setTimeout(() => {
+      void handleSaveTimeCanvas({ silent: true });
+    }, 1200);
+
+    return () => {
+      if (timeAutoSaveTimerRef.current) {
+        clearTimeout(timeAutoSaveTimerRef.current);
+      }
+    };
+  }, [timeForm, timeCanvasLoaded, viewMode, timeReadinessScore, timeReadinessStatus, timeSummary]);
+
+  useEffect(() => {
     if (viewMode !== "significance") return;
     if (!significanceCanvasLoaded) return;
     if (!significanceForm.worker_id) return;
@@ -2873,6 +3336,13 @@ function AdminWorkersContent() {
     }));
   }
 
+  function patchTimeField(key: TimeNodeKey, value: string) {
+    setTimeForm((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  }
+
   function patchSignificanceAnswer(
     questionId: number,
     value: AdminWorkerSignificanceAnswerValue,
@@ -2890,7 +3360,7 @@ function AdminWorkersContent() {
     <AdminShell
       activeHref="/admin/workers"
       title="Manage Workers"
-      subtitle="Worker directory plus off-platform conversation, engagement, purpose, and significance management."
+      subtitle="Worker directory plus off-platform conversation, engagement, purpose, time, and significance management."
       adminEmail={admin?.email ?? null}
     >
       <div className="stack" style={{ gap: 4 }}>
@@ -2939,6 +3409,17 @@ function AdminWorkersContent() {
             }}
           >
             Purpose
+          </button>
+
+          <button
+            className={viewMode === "time" ? "button" : "button ghost"}
+            type="button"
+            onClick={() => {
+              setViewMode("time");
+              resetTimeCanvas();
+            }}
+          >
+            Time
           </button>
 
           <button
@@ -3012,8 +3493,7 @@ function AdminWorkersContent() {
           </div>
         </div>
       </div>
-
-      {error ? (
+            {error ? (
         <div className="card" style={{ color: "var(--danger)" }}>
           {error}
         </div>
@@ -3078,6 +3558,18 @@ function AdminWorkersContent() {
                 }}
               >
                 Open purpose
+              </button>
+
+              <button
+                className="button ghost"
+                type="button"
+                onClick={() => {
+                  setViewMode("time");
+                  setTimeSelectionWorkerId(String(selectedWorker.id));
+                  resetTimeCanvas();
+                }}
+              >
+                Open time
               </button>
 
               <button
@@ -3269,6 +3761,19 @@ function AdminWorkersContent() {
                         }}
                       >
                         Purpose
+                      </button>
+
+                      <button
+                        className="button ghost"
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openWorkerContext(worker, "time");
+                          setTimeSelectionWorkerId(String(worker.id));
+                          resetTimeCanvas();
+                        }}
+                      >
+                        Time
                       </button>
 
                       <button
@@ -3552,7 +4057,9 @@ function AdminWorkersContent() {
                         Subscription status
                       </div>
                       <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                        <SubscriptionStatusBadge status={selectedWorker.active_subscription?.status} />
+                        <SubscriptionStatusBadge
+                          status={selectedWorker.active_subscription?.status}
+                        />
                         <span className="badge">
                           cycle:{" "}
                           {normalizeDisplayLabel(selectedWorker.active_subscription?.billing_cycle)}
@@ -3712,6 +4219,18 @@ function AdminWorkersContent() {
                         className="button ghost"
                         type="button"
                         onClick={() => {
+                          setViewMode("time");
+                          setTimeSelectionWorkerId(String(selectedWorker.id));
+                          resetTimeCanvas();
+                        }}
+                      >
+                        Open time
+                      </button>
+
+                      <button
+                        className="button ghost"
+                        type="button"
+                        onClick={() => {
                           setViewMode("significance");
                           setSignificanceSelectionWorkerId(String(selectedWorker.id));
                           resetSignificanceCanvas();
@@ -3729,6 +4248,819 @@ function AdminWorkersContent() {
               )}
             </div>
           </div>
+        </div>
+      ) : null}
+
+      {viewMode === "conversations" ? (
+        <div className="grid grid-2" style={{ alignItems: "start" }}>
+          <div className="card stack">
+            <div className="section-title">Conversations</div>
+
+            <label className="stack">
+              <strong>Filter by worker</strong>
+              <select
+                className="select"
+                value={conversationWorkerFilter}
+                onChange={(e) => setConversationWorkerFilter(e.target.value)}
+              >
+                <option value="all">All workers</option>
+                {workers.map((worker) => (
+                  <option key={worker.id} value={worker.id}>
+                    #{worker.id} — {worker.display_name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {conversationsLoading ? (
+              <div>Loading conversations...</div>
+            ) : filteredConversations.length === 0 ? (
+              <div className="muted">No conversation found.</div>
+            ) : (
+              <div className="stack" style={{ gap: 10 }}>
+                {filteredConversations.map((item) => {
+                  const worker = workersById.get(item.worker_id);
+
+                  return (
+                    <div key={item.id} className="card-soft stack" style={{ gap: 8 }}>
+                      <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                        <span className="badge">#{item.id}</span>
+                        <span className="badge">{item.source_type}</span>
+                        <span className="badge">worker #{item.worker_id}</span>
+                      </div>
+
+                      <div className="section-title" style={{ fontSize: 16 }}>
+                        {item.title}
+                      </div>
+
+                      <div className="muted">{worker?.display_name || "Unknown worker"}</div>
+
+                      {item.source_label ? (
+                        <div className="muted">Source: {item.source_label}</div>
+                      ) : null}
+
+                      {item.conversation_date ? (
+                        <div className="muted">
+                          Date: {new Date(item.conversation_date).toLocaleString()}
+                        </div>
+                      ) : null}
+
+                      <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                        <button
+                          className="button ghost"
+                          type="button"
+                          onClick={() => fillConversationForm(item)}
+                        >
+                          Edit
+                        </button>
+
+                        {worker ? (
+                          <button
+                            className="button ghost"
+                            type="button"
+                            onClick={() => openWorkerContext(worker)}
+                          >
+                            Use worker context
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="card stack">
+            <div className="section-title">
+              {editingConversationId
+                ? `Edit conversation #${editingConversationId}`
+                : "Add conversation"}
+            </div>
+
+            <form className="stack" onSubmit={handleSaveConversation}>
+              <label className="stack">
+                <strong>Worker</strong>
+                <select
+                  className="select"
+                  value={conversationForm.worker_id}
+                  onChange={(e) =>
+                    setConversationForm((prev) => ({ ...prev, worker_id: e.target.value }))
+                  }
+                  required
+                >
+                  <option value="">Select worker</option>
+                  {workers.map((worker) => (
+                    <option key={worker.id} value={worker.id}>
+                      #{worker.id} — {worker.display_name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="stack">
+                <strong>Title</strong>
+                <input
+                  className="input"
+                  value={conversationForm.title}
+                  onChange={(e) =>
+                    setConversationForm((prev) => ({ ...prev, title: e.target.value }))
+                  }
+                  placeholder="External coaching conversation"
+                  required
+                />
+              </label>
+
+              <div className="grid grid-2">
+                <label className="stack">
+                  <strong>Source type</strong>
+                  <select
+                    className="select"
+                    value={conversationForm.source_type}
+                    onChange={(e) =>
+                      setConversationForm((prev) => ({
+                        ...prev,
+                        source_type: e.target.value as "url" | "upload",
+                      }))
+                    }
+                  >
+                    <option value="url">URL</option>
+                    <option value="upload">Upload</option>
+                  </select>
+                </label>
+
+                <label className="stack">
+                  <strong>Conversation date</strong>
+                  <input
+                    className="input"
+                    type="datetime-local"
+                    value={conversationForm.conversation_date}
+                    onChange={(e) =>
+                      setConversationForm((prev) => ({
+                        ...prev,
+                        conversation_date: e.target.value,
+                      }))
+                    }
+                  />
+                </label>
+              </div>
+
+              <label className="stack">
+                <strong>Source label</strong>
+                <input
+                  className="input"
+                  value={conversationForm.source_label}
+                  onChange={(e) =>
+                    setConversationForm((prev) => ({
+                      ...prev,
+                      source_label: e.target.value,
+                    }))
+                  }
+                  placeholder="Zoom, Teams, YouTube, Upload..."
+                />
+              </label>
+
+              {conversationForm.source_type === "url" ? (
+                <label className="stack">
+                  <strong>Video URL</strong>
+                  <input
+                    className="input"
+                    value={conversationForm.video_url}
+                    onChange={(e) =>
+                      setConversationForm((prev) => ({
+                        ...prev,
+                        video_url: e.target.value,
+                      }))
+                    }
+                    placeholder="https://..."
+                  />
+                </label>
+              ) : (
+                <label className="stack">
+                  <strong>File path</strong>
+                  <input
+                    className="input"
+                    value={conversationForm.file_path}
+                    onChange={(e) =>
+                      setConversationForm((prev) => ({
+                        ...prev,
+                        file_path: e.target.value,
+                      }))
+                    }
+                    placeholder="/uploads/..."
+                  />
+                </label>
+              )}
+
+              <label className="stack">
+                <strong>Transcript</strong>
+                <textarea
+                  className="textarea"
+                  rows={8}
+                  value={conversationForm.transcript}
+                  onChange={(e) =>
+                    setConversationForm((prev) => ({
+                      ...prev,
+                      transcript: e.target.value,
+                    }))
+                  }
+                  placeholder="Paste transcript..."
+                />
+              </label>
+
+              <label className="stack">
+                <strong>Notes</strong>
+                <textarea
+                  className="textarea"
+                  rows={5}
+                  value={conversationForm.notes}
+                  onChange={(e) =>
+                    setConversationForm((prev) => ({
+                      ...prev,
+                      notes: e.target.value,
+                    }))
+                  }
+                  placeholder="Internal notes..."
+                />
+              </label>
+
+              <div className="row" style={{ flexWrap: "wrap" }}>
+                <button className="button" type="submit" disabled={conversationSaving}>
+                  {conversationSaving
+                    ? "Saving..."
+                    : editingConversationId
+                      ? "Save conversation"
+                      : "Create conversation"}
+                </button>
+
+                <button
+                  className="button ghost"
+                  type="button"
+                  onClick={() => resetConversationForm(true)}
+                  disabled={conversationSaving}
+                >
+                  Reset
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
+      {viewMode === "engagements" ? (
+        <div className="card stack" style={{ gap: 16, minWidth: 0 }}>
+          <div className="stack" style={{ gap: 4 }}>
+            <div className="section-title">Engagement Canvas</div>
+            <div className="muted">
+              Capture current and future engagement signals for the worker. Future state can be
+              finalized to become a stronger coaching anchor.
+            </div>
+          </div>
+
+          <div className="card-soft stack" style={{ gap: 12 }}>
+            <div className="grid grid-3" style={{ alignItems: "end" }}>
+              <label className="stack">
+                <strong>Worker</strong>
+                <select
+                  className="select"
+                  value={engagementSelectionWorkerId}
+                  onChange={(e) => {
+                    setEngagementSelectionWorkerId(e.target.value);
+                    resetEngagementCanvas();
+                  }}
+                >
+                  <option value="">Select a worker</option>
+                  {workers.map((worker) => (
+                    <option key={worker.id} value={worker.id}>
+                      #{worker.id} — {worker.display_name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="stack">
+                <strong>State</strong>
+                <select
+                  className="select"
+                  value={engagementSelectionState}
+                  onChange={(e) => {
+                    setEngagementSelectionState(e.target.value as AdminWorkerEngagementState);
+                    resetEngagementCanvas();
+                  }}
+                >
+                  <option value="current">Current state</option>
+                  <option value="future">Future state</option>
+                </select>
+              </label>
+
+              <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                <button
+                  className="button"
+                  type="button"
+                  onClick={() => void handleLoadEngagementCanvas()}
+                  disabled={!engagementSelectionWorkerId || engagementsLoading}
+                >
+                  {engagementsLoading ? "Loading..." : "Load canvas"}
+                </button>
+
+                {engagementCanvasLoaded ? (
+                  <button className="button ghost" type="button" onClick={resetEngagementCanvas}>
+                    Clear canvas
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          </div>
+
+          {!engagementCanvasLoaded ? (
+            <div className="card-soft">
+              <div className="muted">
+                No canvas displayed yet. Select the worker and state, then click{" "}
+                <strong>Load canvas</strong>.
+              </div>
+            </div>
+          ) : (
+            <>
+              <div
+                className="row space-between"
+                style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}
+              >
+                <div className="stack" style={{ gap: 4 }}>
+                  <div className="muted">
+                    Worker #{engagementSelectionWorkerId} — {engagementSelectionState} state
+                  </div>
+
+                  <BusinessIdHint
+                    businessId={
+                      workersById.get(Number(engagementSelectionWorkerId))?.business_id
+                    }
+                  />
+
+                  <SubscriptionPackPriceHint
+                    pack={
+                      workersById.get(Number(engagementSelectionWorkerId))?.subscription_pack
+                    }
+                    subscription={
+                      workersById.get(Number(engagementSelectionWorkerId))?.active_subscription
+                    }
+                  />
+
+                  <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                    {editingEngagement ? (
+                      <>
+                        <CoherenceBadge status={editingEngagement.coherence_status} />
+                        <span className="badge">
+                          {editingEngagement.is_finalized ? "finalized" : "draft"}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="badge">new canvas</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="row" style={{ gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                  <SavePill state={engagementSaveState} savedAt={lastSavedAtLabel} />
+
+                  <button
+                    className="button"
+                    type="button"
+                    onClick={() => void handleSaveEngagement()}
+                    disabled={engagementSaving || isFutureStateLocked}
+                  >
+                    {engagementSaving ? "Saving..." : editingEngagementId ? "Save" : "Create"}
+                  </button>
+
+                  {engagementSelectionState === "future" && editingEngagementId ? (
+                    <button
+                      className="button ghost"
+                      type="button"
+                      onClick={() => void handleFinalizeFutureEngagement()}
+                      disabled={engagementFinalizing || isFutureStateLocked}
+                    >
+                      {engagementFinalizing
+                        ? "Finalizing..."
+                        : isFutureStateLocked
+                          ? "Future confirmed"
+                          : "Confirm future state"}
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+
+              {isFutureStateLocked ? (
+                <div className="card-soft" style={{ color: "#15803d" }}>
+                  This future-state engagement is finalized and locked for editing.
+                </div>
+              ) : null}
+
+              <div className="grid grid-2" style={{ alignItems: "start" }}>
+                <CanvasTextBlock
+                  title="Identity"
+                  tone="blue"
+                  minHeight={220}
+                  value={engagementForm.identity_text}
+                  onChange={(value) => patchEngagementField("identity_text", value)}
+                  disabled={isFutureStateLocked}
+                  placeholder="Who is this worker professionally?"
+                />
+
+                <CanvasTextBlock
+                  title="Purpose"
+                  tone="purple"
+                  minHeight={220}
+                  value={engagementForm.purpose_text}
+                  onChange={(value) => patchEngagementField("purpose_text", value)}
+                  disabled={isFutureStateLocked}
+                  placeholder="What purpose is visible in their work?"
+                />
+
+                <CanvasTextBlock
+                  title="Missions"
+                  tone="teal"
+                  minHeight={220}
+                  value={engagementForm.missions_text}
+                  onChange={(value) => patchEngagementField("missions_text", value)}
+                  disabled={isFutureStateLocked}
+                  placeholder="What missions or responsibilities matter?"
+                />
+
+                <CanvasTextBlock
+                  title="Ambitions"
+                  tone="orange"
+                  minHeight={220}
+                  value={engagementForm.ambitions_text}
+                  onChange={(value) => patchEngagementField("ambitions_text", value)}
+                  disabled={isFutureStateLocked}
+                  placeholder="What ambitions are emerging?"
+                />
+              </div>
+
+              <div className="grid grid-2" style={{ alignItems: "start" }}>
+                <CanvasIntentBlock
+                  title="Career intent"
+                  tone="indigo"
+                  disabled={isFutureStateLocked}
+                  items={[
+                    {
+                      label: "Compensation",
+                      value: engagementForm.career_intent_compensation,
+                      onChange: (value) =>
+                        patchEngagementField("career_intent_compensation", value),
+                    },
+                    {
+                      label: "Role",
+                      value: engagementForm.career_intent_role,
+                      onChange: (value) => patchEngagementField("career_intent_role", value),
+                    },
+                    {
+                      label: "Passion criteria",
+                      value: engagementForm.career_intent_passion_criteria,
+                      onChange: (value) =>
+                        patchEngagementField("career_intent_passion_criteria", value),
+                    },
+                    {
+                      label: "Collaboration profile",
+                      value: engagementForm.career_intent_collaboration_profile,
+                      onChange: (value) =>
+                        patchEngagementField("career_intent_collaboration_profile", value),
+                    },
+                    {
+                      label: "Performance level",
+                      value: engagementForm.career_intent_performance_level,
+                      onChange: (value) =>
+                        patchEngagementField("career_intent_performance_level", value),
+                    },
+                    {
+                      label: "Responsibilities",
+                      value: engagementForm.career_intent_responsibilities,
+                      onChange: (value) =>
+                        patchEngagementField("career_intent_responsibilities", value),
+                    },
+                  ]}
+                />
+
+                <CanvasIntentBlock
+                  title="Talent intent"
+                  tone="green"
+                  disabled={isFutureStateLocked}
+                  items={[
+                    {
+                      label: "Foundations",
+                      value: engagementForm.talent_intent_foundations,
+                      onChange: (value) =>
+                        patchEngagementField("talent_intent_foundations", value),
+                    },
+                    {
+                      label: "Personality",
+                      value: engagementForm.talent_intent_personality,
+                      onChange: (value) =>
+                        patchEngagementField("talent_intent_personality", value),
+                    },
+                    {
+                      label: "Watch",
+                      value: engagementForm.talent_intent_watch,
+                      onChange: (value) => patchEngagementField("talent_intent_watch", value),
+                    },
+                    {
+                      label: "Next level",
+                      value: engagementForm.talent_intent_next_level,
+                      onChange: (value) =>
+                        patchEngagementField("talent_intent_next_level", value),
+                    },
+                    {
+                      label: "Impact niches",
+                      value: engagementForm.talent_intent_impact_niches,
+                      onChange: (value) =>
+                        patchEngagementField("talent_intent_impact_niches", value),
+                    },
+                    {
+                      label: "Social contributions",
+                      value: engagementForm.talent_intent_social_contributions,
+                      onChange: (value) =>
+                        patchEngagementField("talent_intent_social_contributions", value),
+                    },
+                  ]}
+                />
+              </div>
+
+              <div className="grid grid-3" style={{ alignItems: "start" }}>
+                <CanvasTextBlock
+                  title="Vision"
+                  tone="cyan"
+                  minHeight={180}
+                  value={engagementForm.vision_text}
+                  onChange={(value) => patchEngagementField("vision_text", value)}
+                  disabled={isFutureStateLocked}
+                  placeholder="What vision should guide the worker?"
+                />
+
+                <CanvasTextBlock
+                  title="Actions"
+                  tone="amber"
+                  minHeight={180}
+                  value={engagementForm.actions_text}
+                  onChange={(value) => patchEngagementField("actions_text", value)}
+                  disabled={isFutureStateLocked}
+                  placeholder="What actions should be carried?"
+                />
+
+                <CanvasTextBlock
+                  title="Objectives"
+                  tone="rose"
+                  minHeight={180}
+                  value={engagementForm.objectives_text}
+                  onChange={(value) => patchEngagementField("objectives_text", value)}
+                  disabled={isFutureStateLocked}
+                  placeholder="What objectives should be targeted?"
+                />
+              </div>
+            </>
+          )}
+        </div>
+      ) : null}
+
+      {viewMode === "purpose" ? (
+        <div className="card stack" style={{ gap: 16, minWidth: 0 }}>
+          <div className="stack" style={{ gap: 4 }}>
+            <div className="section-title">Purpose Canvas</div>
+            <div className="muted">
+              Capture six purpose signals and let the app compute simple coherence relations.
+            </div>
+          </div>
+
+          <div className="card-soft stack" style={{ gap: 12 }}>
+            <div className="grid grid-3" style={{ alignItems: "end" }}>
+              <label className="stack">
+                <strong>Worker</strong>
+                <select
+                  className="select"
+                  value={purposeSelectionWorkerId}
+                  onChange={(e) => {
+                    setPurposeSelectionWorkerId(e.target.value);
+                    resetPurposeCanvas();
+                  }}
+                >
+                  <option value="">Select a worker</option>
+                  {workers.map((worker) => (
+                    <option key={worker.id} value={worker.id}>
+                      #{worker.id} — {worker.display_name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <div className="stack">
+                <strong>Canvas rule</strong>
+                <div className="muted">
+                  Auto-save is enabled after the canvas is loaded. Relations are recomputed locally.
+                </div>
+              </div>
+
+              <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                <button
+                  className="button"
+                  type="button"
+                  onClick={() => void handleLoadPurposeCanvas()}
+                  disabled={!purposeSelectionWorkerId || purposeLoading}
+                >
+                  {purposeLoading ? "Loading..." : "Load canvas"}
+                </button>
+
+                {purposeCanvasLoaded ? (
+                  <button className="button ghost" type="button" onClick={resetPurposeCanvas}>
+                    Clear canvas
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          </div>
+
+          {!purposeCanvasLoaded ? (
+            <div className="card-soft">
+              <div className="muted">
+                No canvas displayed yet. Select the worker, then click{" "}
+                <strong>Load canvas</strong>.
+              </div>
+            </div>
+          ) : (
+            <>
+              <div
+                className="row space-between"
+                style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}
+              >
+                <div className="stack" style={{ gap: 4 }}>
+                  <div className="muted">Worker #{purposeSelectionWorkerId}</div>
+
+                  <BusinessIdHint
+                    businessId={workersById.get(Number(purposeSelectionWorkerId))?.business_id}
+                  />
+
+                  <SubscriptionPackPriceHint
+                    pack={workersById.get(Number(purposeSelectionWorkerId))?.subscription_pack}
+                    subscription={
+                      workersById.get(Number(purposeSelectionWorkerId))?.active_subscription
+                    }
+                  />
+
+                  <div className="muted">
+                    {editingPurposeCanvas
+                      ? "Existing purpose canvas loaded."
+                      : "No existing purpose canvas found. You are creating a new one."}
+                  </div>
+
+                  {editingPurposeCanvas?.coherence_summary ? (
+                    <div className="muted">{editingPurposeCanvas.coherence_summary}</div>
+                  ) : null}
+
+                  {editingPurposeCanvas?.coherence_status ? (
+                    <CoherenceBadge status={editingPurposeCanvas.coherence_status} />
+                  ) : null}
+                </div>
+
+                <div className="row" style={{ gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                  <SavePill state={purposeSaveState} savedAt={purposeLastSavedAtLabel} />
+
+                  <button
+                    className="button"
+                    type="button"
+                    onClick={() => void handleSavePurposeCanvas()}
+                    disabled={purposeSaving}
+                  >
+                    {purposeSaving ? "Saving..." : editingPurposeCanvasId ? "Save" : "Create"}
+                  </button>
+                </div>
+              </div>
+
+              <PurposeCanvasVisual form={purposeForm} onChange={patchPurposeField} />
+            </>
+          )}
+        </div>
+      ) : null}
+
+      {viewMode === "time" ? (
+        <div className="card stack" style={{ gap: 16, minWidth: 0 }}>
+          <div className="stack" style={{ gap: 4 }}>
+            <div className="section-title">Time Canvas</div>
+            <div className="muted">
+              Capture the worker’s real time availability, constraints, energy windows, focus
+              blocks, recovery needs, and planning rituals. This context is transmitted to the
+              Coach LLM through memory.
+            </div>
+          </div>
+
+          <div className="card-soft stack" style={{ gap: 12 }}>
+            <div className="grid grid-3" style={{ alignItems: "end" }}>
+              <label className="stack">
+                <strong>Worker</strong>
+                <select
+                  className="select"
+                  value={timeSelectionWorkerId}
+                  onChange={(e) => {
+                    setTimeSelectionWorkerId(e.target.value);
+                    resetTimeCanvas();
+                  }}
+                >
+                  <option value="">Select a worker</option>
+                  {workers.map((worker) => (
+                    <option key={worker.id} value={worker.id}>
+                      #{worker.id} — {worker.display_name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <div className="stack">
+                <strong>Canvas rule</strong>
+                <div className="muted">
+                  Auto-save is enabled after the canvas is loaded. Readiness is computed from filled
+                  blocks.
+                </div>
+              </div>
+
+              <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                <button
+                  className="button"
+                  type="button"
+                  onClick={() => void handleLoadTimeCanvas()}
+                  disabled={!timeSelectionWorkerId || timeLoading}
+                >
+                  {timeLoading ? "Loading..." : "Load canvas"}
+                </button>
+
+                {timeCanvasLoaded ? (
+                  <button className="button ghost" type="button" onClick={resetTimeCanvas}>
+                    Clear canvas
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          </div>
+
+          {!timeCanvasLoaded ? (
+            <div className="card-soft">
+              <div className="muted">
+                No canvas displayed yet. Select the worker, then click{" "}
+                <strong>Load canvas</strong>.
+              </div>
+            </div>
+          ) : (
+            <>
+              <div
+                className="row space-between"
+                style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}
+              >
+                <div className="stack" style={{ gap: 4 }}>
+                  <div className="muted">Worker #{timeSelectionWorkerId}</div>
+
+                  <BusinessIdHint
+                    businessId={workersById.get(Number(timeSelectionWorkerId))?.business_id}
+                  />
+
+                  <SubscriptionPackPriceHint
+                    pack={workersById.get(Number(timeSelectionWorkerId))?.subscription_pack}
+                    subscription={
+                      workersById.get(Number(timeSelectionWorkerId))?.active_subscription
+                    }
+                  />
+
+                  <div className="muted">
+                    {editingTimeCanvas
+                      ? "Existing time canvas loaded."
+                      : "No existing time canvas found. You are creating a new one."}
+                  </div>
+
+                  <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                    <span className="badge">readiness: {timeReadinessScore}%</span>
+                    <CoherenceBadge status={timeReadinessStatus} />
+                  </div>
+
+                  {timeSummary ? <div className="muted">{timeSummary}</div> : null}
+                </div>
+
+                <div className="row" style={{ gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                  <SavePill state={timeSaveState} savedAt={timeLastSavedAtLabel} />
+
+                  <button
+                    className="button"
+                    type="button"
+                    onClick={() => void handleSaveTimeCanvas()}
+                    disabled={timeSaving}
+                  >
+                    {timeSaving ? "Saving..." : editingTimeCanvasId ? "Save" : "Create"}
+                  </button>
+                </div>
+              </div>
+
+              <TimeCanvasVisual
+                form={timeForm}
+                onChange={patchTimeField}
+                readinessScore={timeReadinessScore}
+                readinessStatus={timeReadinessStatus}
+                summary={timeSummary}
+              />
+            </>
+          )}
         </div>
       ) : null}
 

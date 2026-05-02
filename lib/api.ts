@@ -82,6 +82,15 @@ import type {
   AdminSubscriptionPlan,
   AdminWorkerSubscriptionSummary,
   AdminWorkerSubscriptionUpdate,
+  AdminWorkerTimeCanvas,
+  AdminWorkerTimeCanvasCreate,
+  AdminWorkerTimeCanvasUpdate,
+  AdminBooking,
+  AdminBookingCreate,
+  AdminBookingUpdate,
+  AdminCalendlySyncRequest,
+  AdminCalendlySyncResponse,
+  AdminCalendlyAvailabilityResponse,
 } from "./types";
 
 export type SupportIssuePayload = {
@@ -331,11 +340,16 @@ async function adminApiFetch<T>(path: string, options: RequestInit = {}): Promis
   }
 
   if (response.status === 403) {
-    if (typeof window !== "undefined") {
-      window.location.href = "/admin/organizations";
+    let message = "You do not have access to this backoffice area.";
+
+    try {
+      const data = await response.json();
+      message = data.detail || JSON.stringify(data);
+    } catch {
+      message = await response.text();
     }
 
-    throw new Error("You do not have access to this backoffice area.");
+    throw new Error(message || "You do not have access to this backoffice area.");
   }
 
   if (!response.ok) {
@@ -1069,6 +1083,65 @@ export async function deleteAdminWorkerSignificanceCanvas(
   );
 }
 
+/* ---------------- ADMIN WORKER TIME CANVASES ---------------- */
+
+export async function getAdminWorkerTimeCanvases(
+  params?: { worker_id?: number },
+): Promise<AdminWorkerTimeCanvas[]> {
+  const search = new URLSearchParams();
+
+  if (params?.worker_id != null) {
+    search.set("worker_id", String(params.worker_id));
+  }
+
+  const query = search.toString();
+
+  return adminApiFetch<AdminWorkerTimeCanvas[]>(
+    `/admin/worker-time-canvases${query ? `?${query}` : ""}`,
+  );
+}
+
+export async function getAdminWorkerTimeCanvas(
+  canvasId: number,
+): Promise<AdminWorkerTimeCanvas> {
+  return adminApiFetch<AdminWorkerTimeCanvas>(
+    `/admin/worker-time-canvases/${canvasId}`,
+  );
+}
+
+export async function createAdminWorkerTimeCanvas(
+  payload: AdminWorkerTimeCanvasCreate,
+): Promise<AdminWorkerTimeCanvas> {
+  return adminApiFetch<AdminWorkerTimeCanvas>("/admin/worker-time-canvases", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateAdminWorkerTimeCanvas(
+  canvasId: number,
+  payload: AdminWorkerTimeCanvasUpdate,
+): Promise<AdminWorkerTimeCanvas> {
+  return adminApiFetch<AdminWorkerTimeCanvas>(
+    `/admin/worker-time-canvases/${canvasId}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function deleteAdminWorkerTimeCanvas(
+  canvasId: number,
+): Promise<{ deleted: boolean }> {
+  return adminApiFetch<{ deleted: boolean }>(
+    `/admin/worker-time-canvases/${canvasId}`,
+    {
+      method: "DELETE",
+    },
+  );
+}
+
 /* ---------------- USER ONBOARDING / PROFILE / CAREER ---------------- */
 
 export type OnboardingPayload = {
@@ -1305,6 +1378,94 @@ export async function getAdminOrganizationWorkerSummary(
 ): Promise<AdminOrganizationWorkerSummary> {
   return adminApiFetch<AdminOrganizationWorkerSummary>(
     `/admin/organizations/${organizationId}/workers/${workerId}/summary`,
+  );
+}
+
+/* ---------------- ADMIN BOOKINGS ---------------- */
+
+export async function getAdminBookings(
+  params?: {
+    worker_id?: number;
+    organization_id?: number;
+    status?: string;
+  },
+): Promise<AdminBooking[]> {
+  const search = new URLSearchParams();
+
+  if (params?.worker_id != null) {
+    search.set("worker_id", String(params.worker_id));
+  }
+
+  if (params?.organization_id != null) {
+    search.set("organization_id", String(params.organization_id));
+  }
+
+  if (params?.status) {
+    search.set("status", params.status);
+  }
+
+  const query = search.toString();
+
+  return adminApiFetch<AdminBooking[]>(`/admin/bookings${query ? `?${query}` : ""}`);
+}
+
+export async function getAdminBooking(bookingId: number): Promise<AdminBooking> {
+  return adminApiFetch<AdminBooking>(`/admin/bookings/${bookingId}`);
+}
+
+export async function createAdminBooking(payload: AdminBookingCreate): Promise<AdminBooking> {
+  return adminApiFetch<AdminBooking>("/admin/bookings", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateAdminBooking(
+  bookingId: number,
+  payload: AdminBookingUpdate,
+): Promise<AdminBooking> {
+  return adminApiFetch<AdminBooking>(`/admin/bookings/${bookingId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteAdminBooking(bookingId: number): Promise<{ deleted: boolean }> {
+  return adminApiFetch<{ deleted: boolean }>(`/admin/bookings/${bookingId}`, {
+    method: "DELETE",
+  });
+}
+
+export async function syncAdminCalendlyBookings(
+  payload: AdminCalendlySyncRequest = {},
+): Promise<AdminCalendlySyncResponse> {
+  return adminApiFetch<AdminCalendlySyncResponse>("/admin/bookings/sync-calendly", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getAdminCalendlyAvailability(params: {
+  start_time: string;
+  end_time: string;
+  organization_id?: number | null;
+  event_type_uri?: string | null;
+}): Promise<AdminCalendlyAvailabilityResponse> {
+  const search = new URLSearchParams();
+
+  search.set("start_time", params.start_time);
+  search.set("end_time", params.end_time);
+
+  if (params.organization_id != null) {
+    search.set("organization_id", String(params.organization_id));
+  }
+
+  if (params.event_type_uri) {
+    search.set("event_type_uri", params.event_type_uri);
+  }
+
+  return adminApiFetch<AdminCalendlyAvailabilityResponse>(
+    `/admin/bookings/calendly-availability?${search.toString()}`,
   );
 }
 

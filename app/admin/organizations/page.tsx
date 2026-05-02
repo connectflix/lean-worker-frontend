@@ -10,6 +10,7 @@ import {
   createAdminWorkerEngagement,
   createAdminWorkerPurposeCanvas,
   createAdminWorkerSignificanceCanvas,
+  createAdminWorkerTimeCanvas,
   createOrResetAdminOrganizationAccessAccount,
   finalizeAdminWorkerEngagement,
   getAdminMe,
@@ -20,12 +21,14 @@ import {
   getAdminWorkerPurposeCanvases,
   getAdminWorkerSignificanceCanvases,
   getAdminWorkerSignificanceQuestions,
+  getAdminWorkerTimeCanvases,
   getAdminWorkers,
   unassignWorkerFromOrganization,
   updateAdminOrganization,
   updateAdminWorkerEngagement,
   updateAdminWorkerPurposeCanvas,
   updateAdminWorkerSignificanceCanvas,
+  updateAdminWorkerTimeCanvas,
 } from "@/lib/api";
 import { clearAdminToken } from "@/lib/admin-auth";
 import type {
@@ -53,6 +56,9 @@ import type {
   AdminWorkerSignificanceDimensionKey,
   AdminWorkerSignificanceQuestion,
   AdminWorkerSignificanceScoreMap,
+  AdminWorkerTimeCanvas,
+  AdminWorkerTimeCanvasCreate,
+  AdminWorkerTimeCanvasUpdate,
 } from "@/lib/types";
 
 type OrganizationFormState = {
@@ -62,6 +68,7 @@ type OrganizationFormState = {
   description: string;
   contact_email: string;
   contact_phone: string;
+  calendly_event_type_uri: string;
   is_active: boolean;
 };
 
@@ -128,6 +135,24 @@ type SignificanceFormState = {
   answers: Record<number, AdminWorkerSignificanceAnswerValue>;
 };
 
+type TimeFormState = {
+  worker_id: string;
+  available_time_text: string;
+  time_constraints_text: string;
+  time_energy_text: string;
+  time_rituals_text: string;
+  time_priorities_text: string;
+  time_risks_text: string;
+};
+
+type TimeNodeKey =
+  | "available_time_text"
+  | "time_constraints_text"
+  | "time_energy_text"
+  | "time_rituals_text"
+  | "time_priorities_text"
+  | "time_risks_text";
+
 type CanvasTone =
   | "blue"
   | "purple"
@@ -149,6 +174,8 @@ type AdminWorkerSignificanceQuestionAnswer = {
 
 type NormalizedSignificanceQuestion = {
   id: number;
+  key: string;
+  order: number;
   text: string;
   answers: AdminWorkerSignificanceQuestionAnswer[];
   options: AdminWorkerSignificanceQuestionAnswer[];
@@ -161,6 +188,7 @@ const EMPTY_FORM: OrganizationFormState = {
   description: "",
   contact_email: "",
   contact_phone: "",
+  calendly_event_type_uri: "",
   is_active: true,
 };
 
@@ -205,6 +233,16 @@ const EMPTY_PURPOSE_FORM: PurposeFormState = {
 const EMPTY_SIGNIFICANCE_FORM: SignificanceFormState = {
   worker_id: "",
   answers: {},
+};
+
+const EMPTY_TIME_FORM: TimeFormState = {
+  worker_id: "",
+  available_time_text: "",
+  time_constraints_text: "",
+  time_energy_text: "",
+  time_rituals_text: "",
+  time_priorities_text: "",
+  time_risks_text: "",
 };
 
 const PURPOSE_NODES: Array<{
@@ -272,6 +310,57 @@ const PURPOSE_NODES: Array<{
   },
 ];
 
+const TIME_NODES: Array<{
+  key: TimeNodeKey;
+  label: string;
+  subtitle: string;
+  placeholder: string;
+  tone: CanvasTone;
+}> = [
+  {
+    key: "available_time_text",
+    label: "Available Time",
+    subtitle: "Temps réellement disponible pour exécuter les actions",
+    placeholder: "Ex: 3 créneaux de 45 minutes par semaine, plutôt le matin...",
+    tone: "blue",
+  },
+  {
+    key: "time_constraints_text",
+    label: "Time Constraints",
+    subtitle: "Contraintes horaires, charge, obligations et limites",
+    placeholder: "Ex: réunions longues, enfants le soir, fatigue après 18h...",
+    tone: "rose",
+  },
+  {
+    key: "time_energy_text",
+    label: "Energy Rhythm",
+    subtitle: "Moments d’énergie haute/basse et rythme naturel",
+    placeholder: "Ex: énergie forte le matin, baisse après déjeuner...",
+    tone: "amber",
+  },
+  {
+    key: "time_rituals_text",
+    label: "Execution Rituals",
+    subtitle: "Rituels, habitudes et routines d’exécution",
+    placeholder: "Ex: revue du lundi, bloc focus mercredi, bilan vendredi...",
+    tone: "teal",
+  },
+  {
+    key: "time_priorities_text",
+    label: "Priorities",
+    subtitle: "Priorités temporelles et arbitrages importants",
+    placeholder: "Ex: privilégier la progression carrière avant les tâches secondaires...",
+    tone: "purple",
+  },
+  {
+    key: "time_risks_text",
+    label: "Risks",
+    subtitle: "Risques de décrochage, surcharge ou non-exécution",
+    placeholder: "Ex: procrastination, imprévus, fatigue, manque de clarté...",
+    tone: "orange",
+  },
+];
+
 const ZERO_SIGNIFICANCE_SCORES: AdminWorkerSignificanceScoreMap = {
   raison: 0,
   metier: 0,
@@ -296,6 +385,8 @@ function makeSignificanceQuestion(params: {
 }): NormalizedSignificanceQuestion {
   return {
     id: params.id,
+    key: String(params.id),
+    order: params.id,
     text: params.text,
     answers: params.answers,
     options: params.answers,
@@ -404,6 +495,7 @@ const DEFAULT_SIGNIFICANCE_QUESTIONS: NormalizedSignificanceQuestion[] = [
     ],
   }),
 ];
+
 function normalizeSignificanceAnswerValue(
   value?: string | null,
 ): AdminWorkerSignificanceAnswerValue {
@@ -428,17 +520,22 @@ function normalizeDisplayLabel(value?: string | null): string {
 function normalizeQuestionAnswers(
   question: AdminWorkerSignificanceQuestion | NormalizedSignificanceQuestion,
 ): AdminWorkerSignificanceQuestionAnswer[] {
-  const rawAnswers = (question.answers ??
-    question.options ??
-    []) as Array<{
-    value?: string | null;
-    label?: string | null;
-    scores?: Partial<AdminWorkerSignificanceScoreMap> | null;
-  }>;
+  const rawAnswers = [
+    ...((question.answers ?? []) as Array<{
+      value?: string | null;
+      label?: string | null;
+      scores?: Partial<AdminWorkerSignificanceScoreMap> | null;
+    }>),
+    ...((question.options ?? []) as Array<{
+      value?: string | null;
+      label?: string | null;
+      scores?: Partial<AdminWorkerSignificanceScoreMap> | null;
+    }>),
+  ];
 
-  const normalizedAnswers: AdminWorkerSignificanceQuestionAnswer[] = rawAnswers.map(
-    (answer) => {
-      const value = normalizeSignificanceAnswerValue(answer.value);
+  const normalizedAnswers = rawAnswers
+    .map((answer): AdminWorkerSignificanceQuestionAnswer => {
+      const value = normalizeSignificanceAnswerValue(answer.value ?? "unknown");
 
       return {
         value,
@@ -448,8 +545,11 @@ function normalizeQuestionAnswers(
           ...(answer.scores || {}),
         },
       };
-    },
-  );
+    })
+    .filter(
+      (answer, index, array) =>
+        array.findIndex((candidate) => candidate.value === answer.value) === index,
+    );
 
   if (normalizedAnswers.length > 0) {
     return normalizedAnswers;
@@ -482,12 +582,19 @@ function normalizeQuestionAnswers(
 function normalizeSignificanceQuestion(
   question: AdminWorkerSignificanceQuestion | NormalizedSignificanceQuestion,
 ): NormalizedSignificanceQuestion {
-  const possibleOrder = (question as { order?: number | null }).order;
-  const normalizedId = Number(question.id ?? possibleOrder ?? 0);
+  const candidate = question as AdminWorkerSignificanceQuestion & {
+    key?: string | null;
+    order?: number | string | null;
+  };
+
+  const normalizedId = Number(candidate.id ?? candidate.order ?? 0);
+  const id = Number.isFinite(normalizedId) && normalizedId > 0 ? normalizedId : 0;
   const normalizedAnswers = normalizeQuestionAnswers(question);
 
   return {
-    id: Number.isFinite(normalizedId) && normalizedId > 0 ? normalizedId : 0,
+    id,
+    key: candidate.key || String(id),
+    order: Number(candidate.order ?? id),
     text: question.text || "Question non renseignée",
     answers: normalizedAnswers,
     options: normalizedAnswers,
@@ -579,7 +686,6 @@ function tokenizePurposeText(value: string): Set<string> {
       .filter((item) => item.length >= 4 && !stopWords.has(item)),
   );
 }
-
 function getPurposeRelationStatus(
   left: string,
   right: string,
@@ -694,6 +800,98 @@ function purposeFormFromItem(item: AdminWorkerPurposeCanvas): PurposeFormState {
   };
 }
 
+function timeFormFromItem(item: AdminWorkerTimeCanvas): TimeFormState {
+  return {
+    worker_id: String(item.worker_id),
+    available_time_text: item.available_time_text || "",
+    time_constraints_text: item.time_constraints_text || "",
+    time_energy_text: item.time_energy_text || "",
+    time_rituals_text: item.time_rituals_text || "",
+    time_priorities_text: item.time_priorities_text || "",
+    time_risks_text: item.time_risks_text || "",
+  };
+}
+
+function getTimeCanvasCompletedNodes(form: TimeFormState): number {
+  return TIME_NODES.reduce((count, node) => {
+    const value = form[node.key] || "";
+    return value.trim() ? count + 1 : count;
+  }, 0);
+}
+
+function getTimeCanvasReadinessScore(form: TimeFormState): number {
+  const completedNodes = getTimeCanvasCompletedNodes(form);
+
+  if (completedNodes === 0) {
+    return 0;
+  }
+
+  const baseScore = Math.round((completedNodes / TIME_NODES.length) * 100);
+
+  const hasAvailableTime = Boolean(form.available_time_text.trim());
+  const hasPriorities = Boolean(form.time_priorities_text.trim());
+  const hasConstraints = Boolean(form.time_constraints_text.trim());
+  const hasRisks = Boolean(form.time_risks_text.trim());
+
+  let adjustment = 0;
+
+  if (hasAvailableTime) adjustment += 5;
+  if (hasPriorities) adjustment += 5;
+  if (hasConstraints) adjustment += 3;
+  if (hasRisks) adjustment += 2;
+
+  return Math.min(100, baseScore + adjustment);
+}
+
+function getTimeCanvasReadinessStatus(score: number, completedNodes: number): string {
+  if (completedNodes === 0) return "not_evaluated";
+  if (score >= 80) return "ready";
+  if (score >= 50) return "partially_ready";
+  return "at_risk";
+}
+
+function buildTimeCanvasSummary(form: TimeFormState): string {
+  const completedNodes = getTimeCanvasCompletedNodes(form);
+  const readinessScore = getTimeCanvasReadinessScore(form);
+  const readinessStatus = getTimeCanvasReadinessStatus(readinessScore, completedNodes);
+
+  if (completedNodes === 0) {
+    return "Time Canvas is not evaluated yet because no time execution signal is available.";
+  }
+
+  const parts: string[] = [
+    `Time Canvas readiness score: ${readinessScore}%.`,
+    `Readiness status: ${readinessStatus}.`,
+    `${completedNodes}/${TIME_NODES.length} time execution node(s) completed.`,
+  ];
+
+  if (form.available_time_text.trim()) {
+    parts.push("Available execution time has been captured.");
+  }
+
+  if (form.time_constraints_text.trim()) {
+    parts.push("Time constraints have been identified.");
+  }
+
+  if (form.time_energy_text.trim()) {
+    parts.push("Energy rhythm has been captured.");
+  }
+
+  if (form.time_rituals_text.trim()) {
+    parts.push("Execution rituals or routines have been captured.");
+  }
+
+  if (form.time_priorities_text.trim()) {
+    parts.push("Time priorities have been clarified.");
+  }
+
+  if (form.time_risks_text.trim()) {
+    parts.push("Execution risks have been identified.");
+  }
+
+  return parts.join(" ");
+}
+
 function engagementFormFromItem(item: AdminWorkerEngagement): EngagementFormState {
   return {
     worker_id: String(item.worker_id),
@@ -723,6 +921,7 @@ function engagementFormFromItem(item: AdminWorkerEngagement): EngagementFormStat
     talent_intent_social_contributions: item.talent_intent_social_contributions || "",
   };
 }
+
 function significanceFormFromItem(item: AdminWorkerSignificanceCanvas): SignificanceFormState {
   const answers: Record<number, AdminWorkerSignificanceAnswerValue> = {};
 
@@ -749,7 +948,7 @@ function buildSignificanceAnswers(
 ): AdminWorkerSignificanceAnswer[] {
   return normalizeSignificanceQuestions(questions).map((question) => {
     const selectedValue = form.answers[question.id] || "unknown";
-    const questionAnswers = normalizeQuestionAnswers(question);
+    const questionAnswers = question.answers;
 
     const option =
       questionAnswers.find((candidate) => candidate.value === selectedValue) ??
@@ -758,6 +957,7 @@ function buildSignificanceAnswers(
 
     return {
       question_id: question.id,
+      question_key: question.key,
       question_text: question.text,
       answer: selectedValue,
       answer_value: selectedValue,
@@ -926,6 +1126,12 @@ function getCanvasToneStyles(tone: CanvasTone): {
         background: "rgba(6,182,212,0.08)",
         title: "#0e7490",
       };
+    default:
+      return {
+        border: "rgba(59,130,246,0.55)",
+        background: "rgba(59,130,246,0.08)",
+        title: "#1d4ed8",
+      };
   }
 }
 
@@ -976,7 +1182,6 @@ function SavePill({
     </span>
   );
 }
-
 function CoherenceBadge({
   status,
 }: {
@@ -986,33 +1191,43 @@ function CoherenceBadge({
   let color = "#475569";
   let background = "rgba(100,116,139,0.14)";
 
-  if (status === "coherent" || status === "balanced") {
-    label = status === "balanced" ? "Balanced" : "Coherent";
+  if (status === "coherent" || status === "balanced" || status === "ready") {
+    label = status === "balanced" ? "Balanced" : status === "ready" ? "Ready" : "Coherent";
     color = "#15803d";
     background = "rgba(34,197,94,0.14)";
   } else if (
     status === "watch" ||
     status === "partially_coherent" ||
+    status === "partially_ready" ||
     status === "dominant" ||
     status === "tension"
   ) {
     label =
       status === "partially_coherent"
         ? "Partially coherent"
-        : status === "dominant"
-          ? "Dominant"
-          : status === "tension"
-            ? "Tension"
-            : "Watch";
+        : status === "partially_ready"
+          ? "Partially ready"
+          : status === "dominant"
+            ? "Dominant"
+            : status === "tension"
+              ? "Tension"
+              : "Watch";
     color = "#b45309";
     background = "rgba(245,158,11,0.14)";
-  } else if (status === "critical" || status === "incoherent" || status === "fragmented") {
+  } else if (
+    status === "critical" ||
+    status === "incoherent" ||
+    status === "fragmented" ||
+    status === "at_risk"
+  ) {
     label =
       status === "fragmented"
         ? "Fragmented"
         : status === "incoherent"
           ? "Incoherent"
-          : "Critical";
+          : status === "at_risk"
+            ? "At risk"
+            : "Critical";
     color = "#b91c1c";
     background = "rgba(239,68,68,0.14)";
   } else if (status === "not_evaluated") {
@@ -1110,6 +1325,7 @@ function CanvasTextBlock({
     </div>
   );
 }
+
 function CanvasIntentBlock({
   title,
   tone,
@@ -1416,6 +1632,82 @@ function PurposeCanvasVisual({
   );
 }
 
+function TimeCanvasVisual({
+  form,
+  onChange,
+  readinessScore,
+  readinessStatus,
+  summary,
+}: {
+  form: TimeFormState;
+  onChange: (key: TimeNodeKey, value: string) => void;
+  readinessScore: number;
+  readinessStatus: string;
+  summary: string;
+}) {
+  return (
+    <div className="stack" style={{ gap: 16 }}>
+      <div
+        className="card-soft"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, minmax(180px, 1fr))",
+          gap: 12,
+          alignItems: "stretch",
+        }}
+      >
+        <div className="stack" style={{ gap: 6 }}>
+          <div className="muted">Readiness score</div>
+          <div className="admin-metric-value" style={{ fontSize: 30 }}>
+            {readinessScore}%
+          </div>
+        </div>
+
+        <div className="stack" style={{ gap: 6 }}>
+          <div className="muted">Readiness status</div>
+          <div>
+            <CoherenceBadge status={readinessStatus} />
+          </div>
+        </div>
+
+        <div className="stack" style={{ gap: 6 }}>
+          <div className="muted">Filled blocks</div>
+          <div className="admin-metric-value" style={{ fontSize: 30 }}>
+            {getTimeCanvasCompletedNodes(form)}/{TIME_NODES.length}
+          </div>
+        </div>
+      </div>
+
+      <div className="card-soft stack" style={{ gap: 10 }}>
+        <div className="section-title" style={{ fontSize: 15 }}>
+          Time Canvas reading
+        </div>
+        <div className="muted">{summary}</div>
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(2, minmax(280px, 1fr))",
+          gap: 14,
+        }}
+      >
+        {TIME_NODES.map((node) => (
+          <CanvasTextBlock
+            key={node.key}
+            title={node.label}
+            value={form[node.key]}
+            onChange={(value) => onChange(node.key, value)}
+            minHeight={220}
+            tone={node.tone}
+            placeholder={node.placeholder}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function SignificanceCanvasVisual({
   form,
   onChange,
@@ -1563,6 +1855,7 @@ function SignificanceCanvasVisual({
     </div>
   );
 }
+
 export default function AdminOrganizationsPage() {
   return (
     <AdminGuard>
@@ -1627,6 +1920,16 @@ function AdminOrganizationsContent() {
   const [purposeSaveState, setPurposeSaveState] = useState<SaveIndicator>("idle");
   const [purposeLastSavedAtLabel, setPurposeLastSavedAtLabel] = useState<string | null>(null);
 
+  const [timeCanvasLoaded, setTimeCanvasLoaded] = useState(false);
+  const [timeLoading, setTimeLoading] = useState(false);
+  const [timeSaving, setTimeSaving] = useState(false);
+  const [editingTimeCanvasId, setEditingTimeCanvasId] = useState<number | null>(null);
+  const [editingTimeCanvas, setEditingTimeCanvas] =
+    useState<AdminWorkerTimeCanvas | null>(null);
+  const [timeForm, setTimeForm] = useState<TimeFormState>(EMPTY_TIME_FORM);
+  const [timeSaveState, setTimeSaveState] = useState<SaveIndicator>("idle");
+  const [timeLastSavedAtLabel, setTimeLastSavedAtLabel] = useState<string | null>(null);
+
   const [significanceQuestions, setSignificanceQuestions] =
     useState<NormalizedSignificanceQuestion[]>(DEFAULT_SIGNIFICANCE_QUESTIONS);
   const [significanceCanvasLoaded, setSignificanceCanvasLoaded] = useState(false);
@@ -1648,6 +1951,9 @@ function AdminOrganizationsContent() {
   const purposeAutoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipNextPurposeAutosaveRef = useRef<boolean>(true);
 
+  const timeAutoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const skipNextTimeAutosaveRef = useRef<boolean>(true);
+
   const significanceAutoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipNextSignificanceAutosaveRef = useRef<boolean>(true);
 
@@ -1659,6 +1965,23 @@ function AdminOrganizationsContent() {
     engagementCanvasLoaded &&
     engagementSelectionState === "future" &&
     Boolean(editingEngagement?.is_finalized);
+
+  const timeCompletedNodes = useMemo(
+    () => getTimeCanvasCompletedNodes(timeForm),
+    [timeForm],
+  );
+
+  const timeReadinessScore = useMemo(
+    () => getTimeCanvasReadinessScore(timeForm),
+    [timeForm],
+  );
+
+  const timeReadinessStatus = useMemo(
+    () => getTimeCanvasReadinessStatus(timeReadinessScore, timeCompletedNodes),
+    [timeReadinessScore, timeCompletedNodes],
+  );
+
+  const timeSummary = useMemo(() => buildTimeCanvasSummary(timeForm), [timeForm]);
 
   const significanceAnswers = useMemo(
     () => buildSignificanceAnswers(significanceForm, significanceQuestions),
@@ -1717,6 +2040,7 @@ function AdminOrganizationsContent() {
             description: detail.organization.description || "",
             contact_email: detail.organization.contact_email || "",
             contact_phone: detail.organization.contact_phone || "",
+            calendly_event_type_uri: detail.organization.calendly_event_type_uri || "",
             is_active: detail.organization.is_active,
           });
           setEditingOrganizationId(detail.organization.id);
@@ -1732,11 +2056,13 @@ function AdminOrganizationsContent() {
             setSelectedWorkerSummary(summary);
             resetEngagementCanvas(firstWorkerId, "current");
             resetPurposeCanvas(firstWorkerId);
+            resetTimeCanvas(firstWorkerId);
             resetSignificanceCanvas(firstWorkerId);
           } else {
             setSelectedWorkerSummary(null);
             resetEngagementCanvas(null, "current");
             resetPurposeCanvas(null);
+            resetTimeCanvas(null);
             resetSignificanceCanvas(null);
           }
         } else {
@@ -1747,6 +2073,7 @@ function AdminOrganizationsContent() {
           setForm(EMPTY_FORM);
           resetEngagementCanvas(null, "current");
           resetPurposeCanvas(null);
+          resetTimeCanvas(null);
           resetSignificanceCanvas(null);
         }
 
@@ -1816,6 +2143,24 @@ function AdminOrganizationsContent() {
     skipNextPurposeAutosaveRef.current = true;
   }
 
+  function resetTimeCanvas(nextWorkerId?: number | null) {
+    if (timeAutoSaveTimerRef.current) {
+      clearTimeout(timeAutoSaveTimerRef.current);
+      timeAutoSaveTimerRef.current = null;
+    }
+
+    setEditingTimeCanvasId(null);
+    setEditingTimeCanvas(null);
+    setTimeForm({
+      ...EMPTY_TIME_FORM,
+      worker_id: nextWorkerId ? String(nextWorkerId) : "",
+    });
+    setTimeCanvasLoaded(false);
+    setTimeSaveState("idle");
+    setTimeLastSavedAtLabel(null);
+    skipNextTimeAutosaveRef.current = true;
+  }
+
   function resetSignificanceCanvas(nextWorkerId?: number | null) {
     if (significanceAutoSaveTimerRef.current) {
       clearTimeout(significanceAutoSaveTimerRef.current);
@@ -1854,6 +2199,16 @@ function AdminOrganizationsContent() {
     setPurposeSaveState("saved");
   }
 
+  function stampTimeSavedNow() {
+    setTimeLastSavedAtLabel(
+      new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    );
+    setTimeSaveState("saved");
+  }
+
   function stampSignificanceSavedNow() {
     setSignificanceLastSavedAtLabel(
       new Date().toLocaleTimeString([], {
@@ -1877,6 +2232,7 @@ function AdminOrganizationsContent() {
     setLeverSortMode("highlighted");
     resetEngagementCanvas(null, "current");
     resetPurposeCanvas(null);
+    resetTimeCanvas(null);
     resetSignificanceCanvas(null);
 
     try {
@@ -1891,6 +2247,7 @@ function AdminOrganizationsContent() {
         description: detail.organization.description || "",
         contact_email: detail.organization.contact_email || "",
         contact_phone: detail.organization.contact_phone || "",
+        calendly_event_type_uri: detail.organization.calendly_event_type_uri || "",
         is_active: detail.organization.is_active,
       });
 
@@ -1904,6 +2261,7 @@ function AdminOrganizationsContent() {
           setSelectedWorkerSummary(summary);
           resetEngagementCanvas(firstWorkerId, "current");
           resetPurposeCanvas(firstWorkerId);
+          resetTimeCanvas(firstWorkerId);
           resetSignificanceCanvas(firstWorkerId);
         } finally {
           setWorkerSummaryLoading(false);
@@ -1927,6 +2285,7 @@ function AdminOrganizationsContent() {
     setLeverSortMode("highlighted");
     resetEngagementCanvas(workerId, engagementSelectionState);
     resetPurposeCanvas(workerId);
+    resetTimeCanvas(workerId);
     resetSignificanceCanvas(workerId);
 
     try {
@@ -1955,6 +2314,7 @@ function AdminOrganizationsContent() {
           description: form.description.trim() || null,
           contact_email: form.contact_email.trim() || null,
           contact_phone: form.contact_phone.trim() || null,
+          calendly_event_type_uri: form.calendly_event_type_uri.trim() || null,
           is_active: form.is_active,
         };
 
@@ -1970,6 +2330,7 @@ function AdminOrganizationsContent() {
           ...prev,
           code: updated.code || "",
           organization_type: updated.organization_type || "agent_flix",
+          calendly_event_type_uri: updated.calendly_event_type_uri || "",
         }));
       } else {
         const payload: AdminOrganizationCreate = {
@@ -1978,6 +2339,7 @@ function AdminOrganizationsContent() {
           description: form.description.trim() || null,
           contact_email: form.contact_email.trim() || null,
           contact_phone: form.contact_phone.trim() || null,
+          calendly_event_type_uri: form.calendly_event_type_uri.trim() || null,
           is_active: form.is_active,
         };
 
@@ -2019,7 +2381,8 @@ function AdminOrganizationsContent() {
       setAccessAccountSaving(false);
     }
   }
-    async function handleAssignWorker() {
+
+  async function handleAssignWorker() {
     if (!isPlatformAdmin || !selectedOrganizationId || !selectedWorkerIdToAssign) return;
 
     setAssigning(true);
@@ -2047,6 +2410,7 @@ function AdminOrganizationsContent() {
       setSelectedWorkerSummary(summary);
       resetEngagementCanvas(assignedWorkerId, "current");
       resetPurposeCanvas(assignedWorkerId);
+      resetTimeCanvas(assignedWorkerId);
       resetSignificanceCanvas(assignedWorkerId);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to assign worker.");
@@ -2076,6 +2440,7 @@ function AdminOrganizationsContent() {
         setSelectedWorkerId(fallbackWorkerId);
         resetEngagementCanvas(fallbackWorkerId, "current");
         resetPurposeCanvas(fallbackWorkerId);
+        resetTimeCanvas(fallbackWorkerId);
         resetSignificanceCanvas(fallbackWorkerId);
 
         if (fallbackWorkerId) {
@@ -2094,8 +2459,7 @@ function AdminOrganizationsContent() {
       setAssigning(false);
     }
   }
-
-  async function handleLoadEngagementCanvas() {
+    async function handleLoadEngagementCanvas() {
     if (!selectedWorkerId) {
       setError("Please select a worker first.");
       return;
@@ -2358,6 +2722,108 @@ function AdminOrganizationsContent() {
     }
   }
 
+  async function handleLoadTimeCanvas() {
+    if (!selectedWorkerId) {
+      setError("Please select a worker first.");
+      return;
+    }
+
+    setTimeLoading(true);
+    setError(null);
+    setTimeSaveState("idle");
+    setTimeLastSavedAtLabel(null);
+
+    try {
+      const matches = await getAdminWorkerTimeCanvases({
+        worker_id: selectedWorkerId,
+      });
+
+      const existing = matches[0] ?? null;
+
+      if (existing) {
+        setEditingTimeCanvasId(existing.id);
+        setEditingTimeCanvas(existing);
+        setTimeForm(timeFormFromItem(existing));
+      } else {
+        setEditingTimeCanvasId(null);
+        setEditingTimeCanvas(null);
+        setTimeForm({
+          ...EMPTY_TIME_FORM,
+          worker_id: String(selectedWorkerId),
+        });
+      }
+
+      setTimeCanvasLoaded(true);
+      skipNextTimeAutosaveRef.current = true;
+    } catch (err) {
+      setTimeCanvasLoaded(false);
+      setEditingTimeCanvasId(null);
+      setEditingTimeCanvas(null);
+      setTimeForm({
+        ...EMPTY_TIME_FORM,
+        worker_id: selectedWorkerId ? String(selectedWorkerId) : "",
+      });
+      setError(err instanceof Error ? err.message : "Failed to load time canvas.");
+    } finally {
+      setTimeLoading(false);
+    }
+  }
+
+  async function handleSaveTimeCanvas(options?: { silent?: boolean }) {
+    const silent = Boolean(options?.silent);
+
+    if (!timeForm.worker_id || !timeCanvasLoaded) return;
+
+    if (!silent) {
+      setTimeSaving(true);
+    }
+
+    setError(null);
+    setTimeSaveState("saving");
+
+    try {
+      const basePayload = {
+        available_time_text: timeForm.available_time_text.trim() || null,
+        time_constraints_text: timeForm.time_constraints_text.trim() || null,
+        time_energy_text: timeForm.time_energy_text.trim() || null,
+        time_rituals_text: timeForm.time_rituals_text.trim() || null,
+        time_priorities_text: timeForm.time_priorities_text.trim() || null,
+        time_risks_text: timeForm.time_risks_text.trim() || null,
+        readiness_score: timeReadinessScore,
+        readiness_status: timeReadinessStatus,
+        summary_text: timeSummary,
+      };
+
+      if (editingTimeCanvasId) {
+        const payload = basePayload as AdminWorkerTimeCanvasUpdate;
+        const updated = await updateAdminWorkerTimeCanvas(editingTimeCanvasId, payload);
+
+        setEditingTimeCanvas(updated);
+        setTimeForm(timeFormFromItem(updated));
+        stampTimeSavedNow();
+      } else {
+        const payload = {
+          worker_id: Number(timeForm.worker_id),
+          ...basePayload,
+        } as AdminWorkerTimeCanvasCreate;
+
+        const created = await createAdminWorkerTimeCanvas(payload);
+
+        setEditingTimeCanvasId(created.id);
+        setEditingTimeCanvas(created);
+        setTimeForm(timeFormFromItem(created));
+        stampTimeSavedNow();
+      }
+    } catch (err) {
+      setTimeSaveState("error");
+      setError(err instanceof Error ? err.message : "Failed to save time canvas.");
+    } finally {
+      if (!silent) {
+        setTimeSaving(false);
+      }
+    }
+  }
+
   async function handleLoadSignificanceCanvas() {
     if (!selectedWorkerId) {
       setError("Please select a worker first.");
@@ -2531,6 +2997,33 @@ function AdminOrganizationsContent() {
   }, [purposeForm, purposeCanvasLoaded]);
 
   useEffect(() => {
+    if (!timeCanvasLoaded) return;
+    if (!timeForm.worker_id) return;
+
+    if (skipNextTimeAutosaveRef.current) {
+      skipNextTimeAutosaveRef.current = false;
+      return;
+    }
+
+    setTimeSaveState("typing");
+
+    if (timeAutoSaveTimerRef.current) {
+      clearTimeout(timeAutoSaveTimerRef.current);
+    }
+
+    timeAutoSaveTimerRef.current = setTimeout(() => {
+      void handleSaveTimeCanvas({ silent: true });
+    }, 1200);
+
+    return () => {
+      if (timeAutoSaveTimerRef.current) {
+        clearTimeout(timeAutoSaveTimerRef.current);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeForm, timeCanvasLoaded, timeReadinessScore, timeReadinessStatus, timeSummary]);
+
+  useEffect(() => {
     if (!significanceCanvasLoaded) return;
     if (!significanceForm.worker_id) return;
 
@@ -2576,6 +3069,13 @@ function AdminOrganizationsContent() {
 
   function patchPurposeField(key: PurposeNodeKey, value: string) {
     setPurposeForm((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  }
+
+  function patchTimeField(key: TimeNodeKey, value: string) {
+    setTimeForm((prev) => ({
       ...prev,
       [key]: value,
     }));
@@ -2696,10 +3196,7 @@ function AdminOrganizationsContent() {
       adminEmail={admin?.email ?? null}
       adminRole={admin?.role ?? "admin"}
     >
-      <div
-        className="row space-between"
-        style={{ alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}
-      >
+      <div className="row space-between" style={{ alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
         <div className="stack" style={{ gap: 4 }}>
           <div className="section-title">Organizations workspace</div>
           <div className="muted">
@@ -2709,7 +3206,7 @@ function AdminOrganizationsContent() {
           </div>
         </div>
 
-        <button className="button ghost" onClick={handleLogout}>
+        <button className="button ghost" type="button" onClick={handleLogout}>
           Log out
         </button>
       </div>
@@ -2730,15 +3227,7 @@ function AdminOrganizationsContent() {
             {organizations.length === 0 ? (
               <div className="muted">No organizations found.</div>
             ) : (
-              <div
-                className="stack"
-                style={{
-                  maxHeight: "52vh",
-                  overflowY: "auto",
-                  paddingRight: 6,
-                  gap: 12,
-                }}
-              >
+              <div className="stack" style={{ maxHeight: "52vh", overflowY: "auto", paddingRight: 6, gap: 12 }}>
                 {organizations.map((organization) => (
                   <button
                     key={organization.id}
@@ -2758,12 +3247,8 @@ function AdminOrganizationsContent() {
                     <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                       <span className="badge">#{organization.id}</span>
                       {organization.code ? <span className="badge">{organization.code}</span> : null}
-                      <span className="badge">
-                        {getOrganizationTypeLabel(organization.organization_type)}
-                      </span>
-                      <span className="badge">
-                        {organization.is_active ? "active" : "inactive"}
-                      </span>
+                      <span className="badge">{getOrganizationTypeLabel(organization.organization_type)}</span>
+                      <span className="badge">{organization.is_active ? "active" : "inactive"}</span>
                     </div>
 
                     <div className="section-title" style={{ fontSize: 16 }}>
@@ -2775,9 +3260,24 @@ function AdminOrganizationsContent() {
                       {getRequiredSubscriptionForOrganizationType(organization.organization_type)}
                     </div>
 
-                    {organization.contact_email ? (
-                      <div className="muted">{organization.contact_email}</div>
-                    ) : null}
+                    {organization.contact_email ? <div className="muted">{organization.contact_email}</div> : null}
+                    {organization.calendly_event_type_uri ? (
+                      <div
+                        className="muted"
+                        style={{
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                        title={organization.calendly_event_type_uri}
+                      >
+                        Calendly event type configured
+                      </div>
+                    ) : (
+                      <div className="muted" style={{ color: "#b45309" }}>
+                        No Calendly event type configured
+                      </div>
+                    )}
                   </button>
                 ))}
               </div>
@@ -2814,14 +3314,9 @@ function AdminOrganizationsContent() {
                     value={form.code || "Generated automatically"}
                     disabled
                     placeholder="Generated automatically"
-                    style={{
-                      cursor: "not-allowed",
-                      background: "rgba(15,23,42,0.04)",
-                    }}
+                    style={{ cursor: "not-allowed", background: "rgba(15,23,42,0.04)" }}
                   />
-                  <div className="muted">
-                    System-generated identifier. It follows the ORG-xxxxxx convention.
-                  </div>
+                  <div className="muted">System-generated identifier. It follows the ORG-xxxxxx convention.</div>
                 </label>
 
                 <label className="stack">
@@ -2848,9 +3343,7 @@ function AdminOrganizationsContent() {
                   <textarea
                     className="textarea"
                     value={form.description}
-                    onChange={(e) =>
-                      setForm((prev) => ({ ...prev, description: e.target.value }))
-                    }
+                    onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
                     disabled={!isPlatformAdmin || detailLoading}
                   />
                 </label>
@@ -2860,9 +3353,7 @@ function AdminOrganizationsContent() {
                   <input
                     className="input"
                     value={form.contact_email}
-                    onChange={(e) =>
-                      setForm((prev) => ({ ...prev, contact_email: e.target.value }))
-                    }
+                    onChange={(e) => setForm((prev) => ({ ...prev, contact_email: e.target.value }))}
                     disabled={!isPlatformAdmin || detailLoading}
                   />
                 </label>
@@ -2872,11 +3363,28 @@ function AdminOrganizationsContent() {
                   <input
                     className="input"
                     value={form.contact_phone}
-                    onChange={(e) =>
-                      setForm((prev) => ({ ...prev, contact_phone: e.target.value }))
-                    }
+                    onChange={(e) => setForm((prev) => ({ ...prev, contact_phone: e.target.value }))}
                     disabled={!isPlatformAdmin || detailLoading}
                   />
+                </label>
+
+                <label className="stack">
+                  <strong>Calendly Event Type URI</strong>
+                  <input
+                    className="input"
+                    value={form.calendly_event_type_uri}
+                    onChange={(e) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        calendly_event_type_uri: e.target.value,
+                      }))
+                    }
+                    disabled={!isPlatformAdmin || detailLoading}
+                    placeholder="https://api.calendly.com/event_types/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                  />
+                  <div className="muted">
+                    Dedicated Calendly event type used to restrict this organization to its own bookings.
+                  </div>
                 </label>
 
                 {isPlatformAdmin ? (
@@ -2885,9 +3393,7 @@ function AdminOrganizationsContent() {
                       <input
                         type="checkbox"
                         checked={form.is_active}
-                        onChange={(e) =>
-                          setForm((prev) => ({ ...prev, is_active: e.target.checked }))
-                        }
+                        onChange={(e) => setForm((prev) => ({ ...prev, is_active: e.target.checked }))}
                         disabled={detailLoading}
                       />
                       <strong>Active</strong>
@@ -2895,11 +3401,7 @@ function AdminOrganizationsContent() {
 
                     <div className="row" style={{ flexWrap: "wrap" }}>
                       <button className="button" type="submit" disabled={saving || detailLoading}>
-                        {saving
-                          ? "Saving..."
-                          : editingOrganizationId
-                            ? "Save organization"
-                            : "Create organization"}
+                        {saving ? "Saving..." : editingOrganizationId ? "Save organization" : "Create organization"}
                       </button>
 
                       <button
@@ -2919,6 +3421,7 @@ function AdminOrganizationsContent() {
                           setLeverSortMode("highlighted");
                           resetEngagementCanvas(null, "current");
                           resetPurposeCanvas(null);
+                          resetTimeCanvas(null);
                           resetSignificanceCanvas(null);
                         }}
                         disabled={detailLoading}
@@ -2928,21 +3431,13 @@ function AdminOrganizationsContent() {
                     </div>
 
                     {editingOrganizationId ? (
-                      <div
-                        className="card-soft stack"
-                        style={{
-                          gap: 10,
-                          border: "1px solid rgba(59,130,246,0.25)",
-                          background: "rgba(59,130,246,0.06)",
-                        }}
-                      >
+                      <div className="card-soft stack" style={{ gap: 10, border: "1px solid rgba(59,130,246,0.25)", background: "rgba(59,130,246,0.06)" }}>
                         <div className="section-title" style={{ fontSize: 15 }}>
                           Organization access account
                         </div>
 
                         <div className="muted">
-                          This creates or resets the organization login account using the contact
-                          email above. The temporary password is shown once.
+                          This creates or resets the organization login account using the contact email above. The temporary password is shown once.
                         </div>
 
                         <button
@@ -2957,9 +3452,7 @@ function AdminOrganizationsContent() {
                             !form.contact_email.trim()
                           }
                         >
-                          {accessAccountSaving
-                            ? "Generating account..."
-                            : "Create / reset organization account"}
+                          {accessAccountSaving ? "Generating account..." : "Create / reset organization account"}
                         </button>
 
                         {!form.contact_email.trim() ? (
@@ -2969,40 +3462,19 @@ function AdminOrganizationsContent() {
                         ) : null}
 
                         {accessAccountResult ? (
-                          <div
-                            className="stack"
-                            style={{
-                              gap: 8,
-                              borderRadius: 14,
-                              padding: 12,
-                              background: "rgba(34,197,94,0.1)",
-                              border: "1px solid rgba(34,197,94,0.25)",
-                            }}
-                          >
-                            <div style={{ fontWeight: 800 }}>
-                              {accessAccountResult.message}
-                            </div>
-
+                          <div className="stack" style={{ gap: 8, borderRadius: 14, padding: 12, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.25)" }}>
+                            <div style={{ fontWeight: 800 }}>{accessAccountResult.message}</div>
                             <div>
                               <strong>Login email:</strong> {accessAccountResult.email}
                             </div>
-
                             <div>
                               <strong>Temporary password:</strong>{" "}
-                              <code
-                                style={{
-                                  padding: "4px 8px",
-                                  borderRadius: 8,
-                                  background: "rgba(15,23,42,0.08)",
-                                }}
-                              >
+                              <code style={{ padding: "4px 8px", borderRadius: 8, background: "rgba(15,23,42,0.08)" }}>
                                 {accessAccountResult.temporary_password}
                               </code>
                             </div>
-
                             <div className="muted">
-                              Share this password securely. It will not be visible again after you
-                              leave this result.
+                              Share this password securely. It will not be visible again after you leave this result.
                             </div>
                           </div>
                         ) : null}
@@ -3019,29 +3491,19 @@ function AdminOrganizationsContent() {
       {selectedOrganization ? (
         <>
           <div className="card stack">
-            <div
-              className="row space-between"
-              style={{ gap: 12, flexWrap: "wrap", alignItems: "center" }}
-            >
+            <div className="row space-between" style={{ gap: 12, flexWrap: "wrap", alignItems: "center" }}>
               <div className="section-title">Assigned workers</div>
               <div className="muted">{assignedWorkers.length} worker(s) assigned</div>
             </div>
 
             <div className="card-soft stack" style={{ gap: 8 }}>
               <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                <span className="badge">{getOrganizationTypeLabel(selectedOrganization.organization_type)}</span>
                 <span className="badge">
-                  {getOrganizationTypeLabel(selectedOrganization.organization_type)}
-                </span>
-                <span className="badge">
-                  required pack:{" "}
-                  {getRequiredSubscriptionForOrganizationType(
-                    selectedOrganization.organization_type,
-                  )}
+                  required pack: {getRequiredSubscriptionForOrganizationType(selectedOrganization.organization_type)}
                 </span>
               </div>
-              <div className="muted">
-                Standard workers can never be assigned to any organization.
-              </div>
+              <div className="muted">Standard workers can never be assigned to any organization.</div>
             </div>
 
             <input
@@ -3083,15 +3545,7 @@ function AdminOrganizationsContent() {
             ) : filteredAssignedWorkers.length === 0 ? (
               <div className="muted">No assigned workers found.</div>
             ) : (
-              <div
-                className="stack"
-                style={{
-                  maxHeight: "56vh",
-                  overflowY: "auto",
-                  paddingRight: 6,
-                  gap: 12,
-                }}
-              >
+              <div className="stack" style={{ maxHeight: "56vh", overflowY: "auto", paddingRight: 6, gap: 12 }}>
                 {filteredAssignedWorkers.map((worker) => {
                   const isSelected = selectedWorkerId === worker.id;
 
@@ -3110,27 +3564,18 @@ function AdminOrganizationsContent() {
                       }}
                       style={{
                         gap: 8,
-                        border: isSelected
-                          ? "1px solid var(--primary)"
-                          : "1px solid var(--border)",
+                        border: isSelected ? "1px solid var(--primary)" : "1px solid var(--border)",
                         cursor: "pointer",
                         textAlign: "left",
                       }}
                     >
-                      <div
-                        className="row space-between"
-                        style={{ gap: 12, flexWrap: "wrap", alignItems: "center" }}
-                      >
+                      <div className="row space-between" style={{ gap: 12, flexWrap: "wrap", alignItems: "center" }}>
                         <div className="stack" style={{ gap: 6 }}>
                           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                             <span className="badge">#{worker.id}</span>
-                            {worker.business_id ? (
-                              <span className="badge">{worker.business_id}</span>
-                            ) : null}
+                            {worker.business_id ? <span className="badge">{worker.business_id}</span> : null}
                             <span className="badge">{worker.subscription_pack}</span>
-                            {worker.current_role ? (
-                              <span className="badge">{worker.current_role}</span>
-                            ) : null}
+                            {worker.current_role ? <span className="badge">{worker.current_role}</span> : null}
                           </div>
 
                           <div className="section-title" style={{ fontSize: 16 }}>
@@ -3162,12 +3607,7 @@ function AdminOrganizationsContent() {
           </div>
 
           <div className="card stack" style={{ gap: 16, minWidth: 0 }}>
-            <div className="stack" style={{ gap: 4 }}>
-              <div className="section-title">Engagement Canvas</div>
-              <div className="muted">
-                Select the worker state, then load the corresponding engagement canvas.
-              </div>
-            </div>
+            <div className="section-title">Engagement Canvas</div>
 
             <div className="card-soft stack" style={{ gap: 12 }}>
               <div className="grid grid-3" style={{ alignItems: "end" }}>
@@ -3215,9 +3655,7 @@ function AdminOrganizationsContent() {
                     <button
                       className="button ghost"
                       type="button"
-                      onClick={() =>
-                        resetEngagementCanvas(selectedWorkerId, engagementSelectionState)
-                      }
+                      onClick={() => resetEngagementCanvas(selectedWorkerId, engagementSelectionState)}
                     >
                       Clear canvas
                     </button>
@@ -3228,22 +3666,15 @@ function AdminOrganizationsContent() {
 
             {!selectedWorkerId ? (
               <div className="card-soft">
-                <div className="muted">
-                  Select a worker in the section above to work on the engagement canvas.
-                </div>
+                <div className="muted">Select a worker above to work on the engagement canvas.</div>
               </div>
             ) : !engagementCanvasLoaded ? (
               <div className="card-soft">
-                <div className="muted">
-                  No canvas displayed yet. Choose the state and click <strong>Load canvas</strong>.
-                </div>
+                <div className="muted">No canvas displayed yet. Choose the state and click <strong>Load canvas</strong>.</div>
               </div>
             ) : (
               <>
-                <div
-                  className="row space-between"
-                  style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}
-                >
+                <div className="row space-between" style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}>
                   <div className="stack" style={{ gap: 4 }}>
                     <div className="muted">
                       Worker #{selectedWorkerId} — state: {engagementSelectionState}
@@ -3253,11 +3684,6 @@ function AdminOrganizationsContent() {
                         ? `Existing canvas loaded (${editingEngagement.status})`
                         : "No existing canvas found. You are creating a new one."}
                     </div>
-                    {isFutureStateLocked ? (
-                      <div className="muted" style={{ color: "var(--danger)" }}>
-                        Future state is confirmed and locked from further modification.
-                      </div>
-                    ) : null}
                   </div>
 
                   <div className="row" style={{ gap: 8, flexWrap: "wrap", alignItems: "center" }}>
@@ -3290,261 +3716,156 @@ function AdminOrganizationsContent() {
                   </div>
                 </div>
 
-                <div
-                  className="card-soft stack"
-                  style={{
-                    gap: 8,
-                    border:
-                      editingEngagement?.coherence_status === "critical"
-                        ? "1px solid rgba(239,68,68,0.35)"
-                        : editingEngagement?.coherence_status === "watch"
-                          ? "1px solid rgba(245,158,11,0.35)"
-                          : "1px solid var(--border)",
-                  }}
-                >
-                  {editingEngagement ? (
-                    <>
-                      <div
-                        className="row"
-                        style={{ gap: 8, flexWrap: "wrap", alignItems: "center" }}
-                      >
-                        <div className="muted">
-                          Status: {editingEngagement.status}
-                          {editingEngagement.is_finalized ? " • finalized" : ""}
-                        </div>
-                        <CoherenceBadge status={editingEngagement.coherence_status} />
-                      </div>
+                <div className="grid grid-2" style={{ alignItems: "start" }}>
+                  <CanvasTextBlock
+                    title="Identity"
+                    value={engagementForm.identity_text}
+                    onChange={(value) => patchEngagementField("identity_text", value)}
+                    minHeight={220}
+                    tone="blue"
+                    disabled={isFutureStateLocked}
+                  />
 
-                      <div className="muted">
-                        {editingEngagement.coherence_summary || "No summary returned yet."}
-                      </div>
+                  <CanvasTextBlock
+                    title="Purpose"
+                    value={engagementForm.purpose_text}
+                    onChange={(value) => patchEngagementField("purpose_text", value)}
+                    minHeight={220}
+                    tone="purple"
+                    disabled={isFutureStateLocked}
+                  />
 
-                      {editingEngagement.coherence_flags?.length ? (
-                        <div className="stack" style={{ gap: 8 }}>
-                          {editingEngagement.coherence_flags.map((flag, index) => (
-                            <div
-                              key={`${flag.code}-${index}`}
-                              style={{
-                                borderRadius: 12,
-                                padding: 10,
-                                background:
-                                  flag.level === "high"
-                                    ? "rgba(239,68,68,0.1)"
-                                    : flag.level === "medium"
-                                      ? "rgba(245,158,11,0.1)"
-                                      : "rgba(59,130,246,0.08)",
-                              }}
-                            >
-                              <div style={{ fontWeight: 700 }}>
-                                {flag.code} — {flag.level}
-                              </div>
-                              <div className="muted">{flag.message}</div>
-                              {flag.related_blocks?.length ? (
-                                <div className="muted">
-                                  Related blocks: {flag.related_blocks.join(", ")}
-                                </div>
-                              ) : null}
-                            </div>
-                          ))}
-                        </div>
-                      ) : null}
-                    </>
-                  ) : (
-                    <div className="muted">
-                      New canvas. Coherence will be evaluated by backend when you save.
-                    </div>
-                  )}
+                  <CanvasTextBlock
+                    title="Missions"
+                    value={engagementForm.missions_text}
+                    onChange={(value) => patchEngagementField("missions_text", value)}
+                    minHeight={220}
+                    tone="teal"
+                    disabled={isFutureStateLocked}
+                  />
+
+                  <CanvasTextBlock
+                    title="Ambitions"
+                    value={engagementForm.ambitions_text}
+                    onChange={(value) => patchEngagementField("ambitions_text", value)}
+                    minHeight={220}
+                    tone="orange"
+                    disabled={isFutureStateLocked}
+                  />
                 </div>
 
-                <div className="stack" style={{ gap: 16 }}>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1.08fr 0.95fr 1.08fr 1fr",
-                      gap: 12,
-                      alignItems: "stretch",
-                    }}
-                  >
-                    <CanvasTextBlock
-                      title="Ambitions"
-                      value={engagementForm.ambitions_text}
-                      onChange={(value) => patchEngagementField("ambitions_text", value)}
-                      minHeight={420}
-                      tone="orange"
-                      placeholder="Ambitions, projection, aspirations..."
-                      disabled={isFutureStateLocked}
-                    />
+                <div className="grid grid-2" style={{ alignItems: "start" }}>
+                  <CanvasIntentBlock
+                    title="Career Intent"
+                    tone="indigo"
+                    disabled={isFutureStateLocked}
+                    items={[
+                      {
+                        label: "Compensation",
+                        value: engagementForm.career_intent_compensation,
+                        onChange: (value) => patchEngagementField("career_intent_compensation", value),
+                      },
+                      {
+                        label: "Role",
+                        value: engagementForm.career_intent_role,
+                        onChange: (value) => patchEngagementField("career_intent_role", value),
+                      },
+                      {
+                        label: "Passion criteria",
+                        value: engagementForm.career_intent_passion_criteria,
+                        onChange: (value) => patchEngagementField("career_intent_passion_criteria", value),
+                      },
+                      {
+                        label: "Collaboration profile",
+                        value: engagementForm.career_intent_collaboration_profile,
+                        onChange: (value) => patchEngagementField("career_intent_collaboration_profile", value),
+                      },
+                      {
+                        label: "Performance level",
+                        value: engagementForm.career_intent_performance_level,
+                        onChange: (value) => patchEngagementField("career_intent_performance_level", value),
+                      },
+                      {
+                        label: "Responsibilities",
+                        value: engagementForm.career_intent_responsibilities,
+                        onChange: (value) => patchEngagementField("career_intent_responsibilities", value),
+                      },
+                    ]}
+                  />
 
-                    <div style={{ display: "grid", gridTemplateRows: "1fr 1fr", gap: 12 }}>
-                      <CanvasTextBlock
-                        title="But"
-                        value={engagementForm.purpose_text}
-                        onChange={(value) => patchEngagementField("purpose_text", value)}
-                        minHeight={204}
-                        tone="purple"
-                        placeholder="But professionnel, raison d’être..."
-                        disabled={isFutureStateLocked}
-                      />
-                      <CanvasTextBlock
-                        title="Missions"
-                        value={engagementForm.missions_text}
-                        onChange={(value) => patchEngagementField("missions_text", value)}
-                        minHeight={204}
-                        tone="amber"
-                        placeholder="Missions clés, apport concret..."
-                        disabled={isFutureStateLocked}
-                      />
-                    </div>
+                  <CanvasIntentBlock
+                    title="Talent Intent"
+                    tone="cyan"
+                    disabled={isFutureStateLocked}
+                    items={[
+                      {
+                        label: "Foundations",
+                        value: engagementForm.talent_intent_foundations,
+                        onChange: (value) => patchEngagementField("talent_intent_foundations", value),
+                      },
+                      {
+                        label: "Personality",
+                        value: engagementForm.talent_intent_personality,
+                        onChange: (value) => patchEngagementField("talent_intent_personality", value),
+                      },
+                      {
+                        label: "Watch",
+                        value: engagementForm.talent_intent_watch,
+                        onChange: (value) => patchEngagementField("talent_intent_watch", value),
+                      },
+                      {
+                        label: "Next level",
+                        value: engagementForm.talent_intent_next_level,
+                        onChange: (value) => patchEngagementField("talent_intent_next_level", value),
+                      },
+                      {
+                        label: "Impact niches",
+                        value: engagementForm.talent_intent_impact_niches,
+                        onChange: (value) => patchEngagementField("talent_intent_impact_niches", value),
+                      },
+                      {
+                        label: "Social contributions",
+                        value: engagementForm.talent_intent_social_contributions,
+                        onChange: (value) => patchEngagementField("talent_intent_social_contributions", value),
+                      },
+                    ]}
+                  />
+                </div>
 
-                    <CanvasTextBlock
-                      title="Identité"
-                      value={engagementForm.identity_text}
-                      onChange={(value) => patchEngagementField("identity_text", value)}
-                      minHeight={420}
-                      tone="blue"
-                      placeholder="Identité professionnelle, singularité, posture..."
-                      disabled={isFutureStateLocked}
-                    />
+                <div className="grid grid-3" style={{ alignItems: "start" }}>
+                  <CanvasTextBlock
+                    title="Vision"
+                    value={engagementForm.vision_text}
+                    onChange={(value) => patchEngagementField("vision_text", value)}
+                    minHeight={180}
+                    tone="green"
+                    disabled={isFutureStateLocked}
+                  />
 
-                    <div style={{ display: "grid", gridTemplateRows: "1fr 1fr", gap: 12 }}>
-                      <CanvasTextBlock
-                        title="Vision"
-                        value={engagementForm.vision_text}
-                        onChange={(value) => patchEngagementField("vision_text", value)}
-                        minHeight={204}
-                        tone="teal"
-                        placeholder="Vision, cap, horizon..."
-                        disabled={isFutureStateLocked}
-                      />
-                      <CanvasTextBlock
-                        title="Actions"
-                        value={engagementForm.actions_text}
-                        onChange={(value) => patchEngagementField("actions_text", value)}
-                        minHeight={204}
-                        tone="green"
-                        placeholder="Actions immédiates et leviers de mouvement..."
-                        disabled={isFutureStateLocked}
-                      />
-                    </div>
+                  <CanvasTextBlock
+                    title="Actions"
+                    value={engagementForm.actions_text}
+                    onChange={(value) => patchEngagementField("actions_text", value)}
+                    minHeight={180}
+                    tone="amber"
+                    disabled={isFutureStateLocked}
+                  />
 
-                    <CanvasTextBlock
-                      title="Objectifs"
-                      value={engagementForm.objectives_text}
-                      onChange={(value) => patchEngagementField("objectives_text", value)}
-                      minHeight={420}
-                      tone="rose"
-                      placeholder="Objectifs à atteindre, résultats recherchés..."
-                      disabled={isFutureStateLocked}
-                    />
-                  </div>
-
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1.05fr 0.95fr",
-                      gap: 12,
-                      alignItems: "stretch",
-                    }}
-                  >
-                    <CanvasIntentBlock
-                      title="Career Intent"
-                      tone="indigo"
-                      disabled={isFutureStateLocked}
-                      items={[
-                        {
-                          label: "1. Rémunération",
-                          value: engagementForm.career_intent_compensation,
-                          onChange: (value) =>
-                            patchEngagementField("career_intent_compensation", value),
-                        },
-                        {
-                          label: "2. Fonction / rôle",
-                          value: engagementForm.career_intent_role,
-                          onChange: (value) => patchEngagementField("career_intent_role", value),
-                        },
-                        {
-                          label: "3. Critères de passion au travail",
-                          value: engagementForm.career_intent_passion_criteria,
-                          onChange: (value) =>
-                            patchEngagementField("career_intent_passion_criteria", value),
-                        },
-                        {
-                          label: "4. Profil des collaborations",
-                          value: engagementForm.career_intent_collaboration_profile,
-                          onChange: (value) =>
-                            patchEngagementField("career_intent_collaboration_profile", value),
-                        },
-                        {
-                          label: "5. Niveau de performance",
-                          value: engagementForm.career_intent_performance_level,
-                          onChange: (value) =>
-                            patchEngagementField("career_intent_performance_level", value),
-                        },
-                        {
-                          label: "6. Responsabilités",
-                          value: engagementForm.career_intent_responsibilities,
-                          onChange: (value) =>
-                            patchEngagementField("career_intent_responsibilities", value),
-                        },
-                      ]}
-                    />
-
-                    <CanvasIntentBlock
-                      title="Talent Intent"
-                      tone="cyan"
-                      disabled={isFutureStateLocked}
-                      items={[
-                        {
-                          label: "1. Les bases",
-                          value: engagementForm.talent_intent_foundations,
-                          onChange: (value) =>
-                            patchEngagementField("talent_intent_foundations", value),
-                        },
-                        {
-                          label: "2. La personnalité",
-                          value: engagementForm.talent_intent_personality,
-                          onChange: (value) =>
-                            patchEngagementField("talent_intent_personality", value),
-                        },
-                        {
-                          label: "3. La veille",
-                          value: engagementForm.talent_intent_watch,
-                          onChange: (value) => patchEngagementField("talent_intent_watch", value),
-                        },
-                        {
-                          label: "4. Le niveau supérieur",
-                          value: engagementForm.talent_intent_next_level,
-                          onChange: (value) =>
-                            patchEngagementField("talent_intent_next_level", value),
-                        },
-                        {
-                          label: "5. Les niches d’impact",
-                          value: engagementForm.talent_intent_impact_niches,
-                          onChange: (value) =>
-                            patchEngagementField("talent_intent_impact_niches", value),
-                        },
-                        {
-                          label: "6. Les contributions sociales",
-                          value: engagementForm.talent_intent_social_contributions,
-                          onChange: (value) =>
-                            patchEngagementField("talent_intent_social_contributions", value),
-                        },
-                      ]}
-                    />
-                  </div>
+                  <CanvasTextBlock
+                    title="Objectives"
+                    value={engagementForm.objectives_text}
+                    onChange={(value) => patchEngagementField("objectives_text", value)}
+                    minHeight={180}
+                    tone="rose"
+                    disabled={isFutureStateLocked}
+                  />
                 </div>
               </>
             )}
           </div>
 
           <div className="card stack" style={{ gap: 16, minWidth: 0 }}>
-            <div className="stack" style={{ gap: 4 }}>
-              <div className="section-title">Purpose Workspace</div>
-              <div className="muted">
-                Fill the six Purpose Canvas nodes during live coaching. Relations are calculated in
-                real time.
-              </div>
-            </div>
+            <div className="section-title">Purpose Workspace</div>
 
             <div className="card-soft stack" style={{ gap: 12 }}>
               <div className="grid grid-3" style={{ alignItems: "end" }}>
@@ -3564,9 +3885,7 @@ function AdminOrganizationsContent() {
 
                 <div className="stack">
                   <strong>Canvas rule</strong>
-                  <div className="muted">
-                    Blue = coherent relation · Red = incoherent relation · Grey = pending
-                  </div>
+                  <div className="muted">Blue = coherent relation · Red = incoherent relation · Grey = pending</div>
                 </div>
 
                 <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
@@ -3580,11 +3899,7 @@ function AdminOrganizationsContent() {
                   </button>
 
                   {purposeCanvasLoaded ? (
-                    <button
-                      className="button ghost"
-                      type="button"
-                      onClick={() => resetPurposeCanvas(selectedWorkerId)}
-                    >
+                    <button className="button ghost" type="button" onClick={() => resetPurposeCanvas(selectedWorkerId)}>
                       Clear canvas
                     </button>
                   ) : null}
@@ -3594,23 +3909,15 @@ function AdminOrganizationsContent() {
 
             {!selectedWorkerId ? (
               <div className="card-soft">
-                <div className="muted">
-                  Select a worker in the section above to work on the Purpose Canvas.
-                </div>
+                <div className="muted">Select a worker above to work on the Purpose Canvas.</div>
               </div>
             ) : !purposeCanvasLoaded ? (
               <div className="card-soft">
-                <div className="muted">
-                  No purpose canvas displayed yet. Select a worker and click{" "}
-                  <strong>Load canvas</strong>.
-                </div>
+                <div className="muted">No purpose canvas displayed yet. Select a worker and click <strong>Load canvas</strong>.</div>
               </div>
             ) : (
               <>
-                <div
-                  className="row space-between"
-                  style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}
-                >
+                <div className="row space-between" style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}>
                   <div className="stack" style={{ gap: 4 }}>
                     <div className="muted">Worker #{selectedWorkerId}</div>
                     <div className="muted">
@@ -3644,12 +3951,9 @@ function AdminOrganizationsContent() {
           </div>
 
           <div className="card stack" style={{ gap: 16, minWidth: 0 }}>
-            <div className="stack" style={{ gap: 4 }}>
-              <div className="section-title">Significance Canvas</div>
-              <div className="muted">
-                Assess how the selected worker currently relates to work across five dimensions:
-                raison, métier, occupation, corvée, and hobby.
-              </div>
+            <div className="section-title">Time Canvas</div>
+            <div className="muted">
+              Capture available time, constraints, energy rhythm, rituals, priorities and execution risks.
             </div>
 
             <div className="card-soft stack" style={{ gap: 12 }}>
@@ -3669,11 +3973,99 @@ function AdminOrganizationsContent() {
                 </label>
 
                 <div className="stack">
-                  <strong>Canvas rule</strong>
-                  <div className="muted">
-                    Each answer contributes to a deterministic score. The backend persists the
-                    questionnaire, scores, dimensions, dominant profile, and summary.
+                  <strong>Readiness</strong>
+                  <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                    <span className="badge">{timeReadinessScore}%</span>
+                    <CoherenceBadge status={timeReadinessStatus} />
                   </div>
+                </div>
+
+                <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                  <button
+                    className="button"
+                    type="button"
+                    onClick={() => void handleLoadTimeCanvas()}
+                    disabled={!selectedWorkerId || timeLoading}
+                  >
+                    {timeLoading ? "Loading..." : "Load canvas"}
+                  </button>
+
+                  {timeCanvasLoaded ? (
+                    <button className="button ghost" type="button" onClick={() => resetTimeCanvas(selectedWorkerId)}>
+                      Clear canvas
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+
+            {!selectedWorkerId ? (
+              <div className="card-soft">
+                <div className="muted">Select a worker above to work on the Time Canvas.</div>
+              </div>
+            ) : !timeCanvasLoaded ? (
+              <div className="card-soft">
+                <div className="muted">No time canvas displayed yet. Select a worker and click <strong>Load canvas</strong>.</div>
+              </div>
+            ) : (
+              <>
+                <div className="row space-between" style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}>
+                  <div className="stack" style={{ gap: 4 }}>
+                    <div className="muted">Worker #{selectedWorkerId}</div>
+                    <div className="muted">
+                      {editingTimeCanvas
+                        ? "Existing time canvas loaded."
+                        : "No existing time canvas found. You are creating a new one."}
+                    </div>
+                    <div className="muted">{timeSummary}</div>
+                  </div>
+
+                  <div className="row" style={{ gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                    <SavePill state={timeSaveState} savedAt={timeLastSavedAtLabel} />
+                    <button
+                      className="button"
+                      type="button"
+                      onClick={() => void handleSaveTimeCanvas()}
+                      disabled={timeSaving}
+                    >
+                      {timeSaving ? "Saving..." : editingTimeCanvasId ? "Save" : "Create"}
+                    </button>
+                  </div>
+                </div>
+
+                <TimeCanvasVisual
+                  form={timeForm}
+                  onChange={patchTimeField}
+                  readinessScore={timeReadinessScore}
+                  readinessStatus={timeReadinessStatus}
+                  summary={timeSummary}
+                />
+              </>
+            )}
+          </div>
+
+          <div className="card stack" style={{ gap: 16, minWidth: 0 }}>
+            <div className="section-title">Significance Canvas</div>
+
+            <div className="card-soft stack" style={{ gap: 12 }}>
+              <div className="grid grid-3" style={{ alignItems: "end" }}>
+                <label className="stack">
+                  <strong>Worker</strong>
+                  <input
+                    className="input"
+                    value={
+                      selectedWorkerSummary?.worker
+                        ? `#${selectedWorkerSummary.worker.id} — ${selectedWorkerSummary.worker.display_name}`
+                        : ""
+                    }
+                    disabled
+                    placeholder="Select a worker above"
+                  />
+                </label>
+
+                <div className="stack">
+                  <strong>Canvas rule</strong>
+                  <div className="muted">Each answer contributes to a deterministic score.</div>
                 </div>
 
                 <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
@@ -3701,23 +4093,15 @@ function AdminOrganizationsContent() {
 
             {!selectedWorkerId ? (
               <div className="card-soft">
-                <div className="muted">
-                  Select a worker in the section above to work on the Significance Canvas.
-                </div>
+                <div className="muted">Select a worker above to work on the Significance Canvas.</div>
               </div>
             ) : !significanceCanvasLoaded ? (
               <div className="card-soft">
-                <div className="muted">
-                  No significance canvas displayed yet. Select a worker and click{" "}
-                  <strong>Load canvas</strong>.
-                </div>
+                <div className="muted">No significance canvas displayed yet. Select a worker and click <strong>Load canvas</strong>.</div>
               </div>
             ) : (
               <>
-                <div
-                  className="row space-between"
-                  style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}
-                >
+                <div className="row space-between" style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}>
                   <div className="stack" style={{ gap: 4 }}>
                     <div className="muted">Worker #{selectedWorkerId}</div>
                     <div className="muted">
@@ -3725,32 +4109,10 @@ function AdminOrganizationsContent() {
                         ? "Existing significance canvas loaded."
                         : "No existing significance canvas found. You are creating a new one."}
                     </div>
-                    {editingSignificanceCanvas?.perception_summary ||
-                    editingSignificanceCanvas?.analysis_summary ? (
-                      <div className="muted">
-                        {editingSignificanceCanvas.perception_summary ||
-                          editingSignificanceCanvas.analysis_summary}
-                      </div>
-                    ) : null}
-
-                    {editingSignificanceCanvas?.dominant_section ||
-                    editingSignificanceCanvas?.dominant_dimension ? (
-                      <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                        <span className="badge">
-                          dominant:{" "}
-                          {editingSignificanceCanvas.dominant_section ||
-                            editingSignificanceCanvas.dominant_dimension}
-                        </span>
-                        <CoherenceBadge status={editingSignificanceCanvas.coherence_status} />
-                      </div>
-                    ) : null}
                   </div>
 
                   <div className="row" style={{ gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                    <SavePill
-                      state={significanceSaveState}
-                      savedAt={significanceLastSavedAtLabel}
-                    />
+                    <SavePill state={significanceSaveState} savedAt={significanceLastSavedAtLabel} />
 
                     <button
                       className="button"
@@ -3843,34 +4205,15 @@ function AdminOrganizationsContent() {
                 <div className="grid grid-2">
                   <div className="card-soft stack">
                     <div className="section-title">Worker profile</div>
-                    <div>
-                      <strong>Name:</strong> {selectedWorkerSummary.worker.display_name}
-                    </div>
-                    <div>
-                      <strong>Email:</strong> {selectedWorkerSummary.worker.email || "—"}
-                    </div>
-                    <div>
-                      <strong>Business ID:</strong>{" "}
-                      {selectedWorkerSummary.worker.business_id || "—"}
-                    </div>
-                    <div>
-                      <strong>Role:</strong> {selectedWorkerSummary.worker.current_role || "—"}
-                    </div>
-                    <div>
-                      <strong>Industry:</strong> {selectedWorkerSummary.worker.industry || "—"}
-                    </div>
-                    <div>
-                      <strong>Language:</strong> {selectedWorkerSummary.worker.language}
-                    </div>
-                    <div>
-                      <strong>Subscription:</strong> {selectedWorkerSummary.worker.subscription_pack}
-                    </div>
-                    <div>
-                      <strong>Profession:</strong> {selectedWorkerSummary.worker.profession || "—"}
-                    </div>
-                    <div>
-                      <strong>Location:</strong> {selectedWorkerSummary.worker.location || "—"}
-                    </div>
+                    <div><strong>Name:</strong> {selectedWorkerSummary.worker.display_name}</div>
+                    <div><strong>Email:</strong> {selectedWorkerSummary.worker.email || "—"}</div>
+                    <div><strong>Business ID:</strong> {selectedWorkerSummary.worker.business_id || "—"}</div>
+                    <div><strong>Role:</strong> {selectedWorkerSummary.worker.current_role || "—"}</div>
+                    <div><strong>Industry:</strong> {selectedWorkerSummary.worker.industry || "—"}</div>
+                    <div><strong>Language:</strong> {selectedWorkerSummary.worker.language}</div>
+                    <div><strong>Subscription:</strong> {selectedWorkerSummary.worker.subscription_pack}</div>
+                    <div><strong>Profession:</strong> {selectedWorkerSummary.worker.profession || "—"}</div>
+                    <div><strong>Location:</strong> {selectedWorkerSummary.worker.location || "—"}</div>
                   </div>
 
                   <div className="card-soft stack">
@@ -3878,30 +4221,12 @@ function AdminOrganizationsContent() {
 
                     {selectedWorkerSummary.career_blueprint ? (
                       <>
-                        <div>
-                          <strong>Identity:</strong>{" "}
-                          {selectedWorkerSummary.career_blueprint.identity_text || "—"}
-                        </div>
-                        <div>
-                          <strong>Vision:</strong>{" "}
-                          {selectedWorkerSummary.career_blueprint.vision_text || "—"}
-                        </div>
-                        <div>
-                          <strong>Talent focus:</strong>{" "}
-                          {selectedWorkerSummary.career_blueprint.talent_focus_text || "—"}
-                        </div>
-                        <div>
-                          <strong>Career focus:</strong>{" "}
-                          {selectedWorkerSummary.career_blueprint.career_focus_text || "—"}
-                        </div>
-                        <div>
-                          <strong>Inspiration person:</strong>{" "}
-                          {selectedWorkerSummary.career_blueprint.inspiration_person || "—"}
-                        </div>
-                        <div>
-                          <strong>Aspiration person:</strong>{" "}
-                          {selectedWorkerSummary.career_blueprint.aspiration_person || "—"}
-                        </div>
+                        <div><strong>Identity:</strong> {selectedWorkerSummary.career_blueprint.identity_text || "—"}</div>
+                        <div><strong>Vision:</strong> {selectedWorkerSummary.career_blueprint.vision_text || "—"}</div>
+                        <div><strong>Talent focus:</strong> {selectedWorkerSummary.career_blueprint.talent_focus_text || "—"}</div>
+                        <div><strong>Career focus:</strong> {selectedWorkerSummary.career_blueprint.career_focus_text || "—"}</div>
+                        <div><strong>Inspiration person:</strong> {selectedWorkerSummary.career_blueprint.inspiration_person || "—"}</div>
+                        <div><strong>Aspiration person:</strong> {selectedWorkerSummary.career_blueprint.aspiration_person || "—"}</div>
                       </>
                     ) : (
                       <div className="muted">No career blueprint available.</div>
@@ -3910,14 +4235,10 @@ function AdminOrganizationsContent() {
                 </div>
 
                 <div className="card-soft stack">
-                  <div
-                    className="row space-between"
-                    style={{ gap: 12, flexWrap: "wrap", alignItems: "center" }}
-                  >
+                  <div className="row space-between" style={{ gap: 12, flexWrap: "wrap", alignItems: "center" }}>
                     <div className="section-title">Levers workspace</div>
                     <div className="muted">
-                      {filteredLevers.length} lever(s) shown / {selectedWorkerSummary.lever_count}{" "}
-                      total
+                      {filteredLevers.length} lever(s) shown / {selectedWorkerSummary.lever_count} total
                     </div>
                   </div>
 
@@ -3961,27 +4282,14 @@ function AdminOrganizationsContent() {
                     {selectedWorkerSummary.sessions.length === 0 ? (
                       <div className="muted">No sessions found.</div>
                     ) : (
-                      <div
-                        className="stack"
-                        style={{ gap: 10, maxHeight: "38vh", overflowY: "auto" }}
-                      >
+                      <div className="stack" style={{ gap: 10, maxHeight: "38vh", overflowY: "auto" }}>
                         {selectedWorkerSummary.sessions.map((session) => (
-                          <div
-                            key={session.session_id}
-                            className="stack"
-                            style={{
-                              gap: 4,
-                              borderTop: "1px solid var(--border)",
-                              paddingTop: 10,
-                            }}
-                          >
+                          <div key={session.session_id} className="stack" style={{ gap: 4, borderTop: "1px solid var(--border)", paddingTop: 10 }}>
                             <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                               <span className="badge">#{session.session_id}</span>
                               <span className="badge">{session.status}</span>
                             </div>
-                            <div className="muted">
-                              {new Date(session.started_at).toLocaleString()}
-                            </div>
+                            <div className="muted">{new Date(session.started_at).toLocaleString()}</div>
                             <div>{session.summary || "No summary available."}</div>
                           </div>
                         ))}
@@ -3995,25 +4303,13 @@ function AdminOrganizationsContent() {
                     {selectedWorkerSummary.recommendations.length === 0 ? (
                       <div className="muted">No recommendations found.</div>
                     ) : (
-                      <div
-                        className="stack"
-                        style={{ gap: 10, maxHeight: "38vh", overflowY: "auto" }}
-                      >
+                      <div className="stack" style={{ gap: 10, maxHeight: "38vh", overflowY: "auto" }}>
                         {selectedWorkerSummary.recommendations.map((recommendation) => {
                           const relatedLevers =
                             relatedLeversByRecommendationId.get(recommendation.id) ?? [];
 
                           return (
-                            <div
-                              key={recommendation.id}
-                              id={`recommendation-${recommendation.id}`}
-                              className="stack"
-                              style={{
-                                gap: 6,
-                                borderTop: "1px solid var(--border)",
-                                paddingTop: 10,
-                              }}
-                            >
+                            <div key={recommendation.id} id={`recommendation-${recommendation.id}`} className="stack" style={{ gap: 6, borderTop: "1px solid var(--border)", paddingTop: 10 }}>
                               <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                                 <span className="badge">#{recommendation.id}</span>
                                 <span className="badge">{recommendation.status}</span>
@@ -4031,10 +4327,7 @@ function AdminOrganizationsContent() {
                                   <div className="muted">Related levers</div>
                                   <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                                     {relatedLevers.map((lever) => (
-                                      <span
-                                        key={`${recommendation.id}-${lever.id}`}
-                                        className="badge"
-                                      >
+                                      <span key={`${recommendation.id}-${lever.id}`} className="badge">
                                         {lever.name}
                                       </span>
                                     ))}
@@ -4054,20 +4347,9 @@ function AdminOrganizationsContent() {
                     {selectedWorkerSummary.artifacts.length === 0 ? (
                       <div className="muted">No artifacts found.</div>
                     ) : (
-                      <div
-                        className="stack"
-                        style={{ gap: 10, maxHeight: "38vh", overflowY: "auto" }}
-                      >
+                      <div className="stack" style={{ gap: 10, maxHeight: "38vh", overflowY: "auto" }}>
                         {selectedWorkerSummary.artifacts.map((artifact) => (
-                          <div
-                            key={artifact.id}
-                            className="stack"
-                            style={{
-                              gap: 4,
-                              borderTop: "1px solid var(--border)",
-                              paddingTop: 10,
-                            }}
-                          >
+                          <div key={artifact.id} className="stack" style={{ gap: 4, borderTop: "1px solid var(--border)", paddingTop: 10 }}>
                             <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                               <span className="badge">#{artifact.id}</span>
                               <span className="badge">{artifact.format}</span>
@@ -4078,9 +4360,7 @@ function AdminOrganizationsContent() {
                             </div>
                             <div className="muted">€{artifact.price_eur}</div>
                             {artifact.error_message ? (
-                              <div style={{ color: "var(--danger)" }}>
-                                {artifact.error_message}
-                              </div>
+                              <div style={{ color: "var(--danger)" }}>{artifact.error_message}</div>
                             ) : null}
                           </div>
                         ))}
@@ -4094,30 +4374,15 @@ function AdminOrganizationsContent() {
                     {filteredLevers.length === 0 ? (
                       <div className="muted">No levers found.</div>
                     ) : (
-                      <div
-                        className="stack"
-                        style={{ gap: 10, maxHeight: "38vh", overflowY: "auto" }}
-                      >
+                      <div className="stack" style={{ gap: 10, maxHeight: "38vh", overflowY: "auto" }}>
                         {filteredLevers.map((lever) => (
-                          <div
-                            key={lever.id}
-                            className="stack"
-                            style={{
-                              gap: 6,
-                              borderTop: "1px solid var(--border)",
-                              paddingTop: 10,
-                            }}
-                          >
+                          <div key={lever.id} className="stack" style={{ gap: 6, borderTop: "1px solid var(--border)", paddingTop: 10 }}>
                             <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                               <span className="badge">#{lever.id}</span>
                               <span className="badge">{lever.category}</span>
-                              <span className="badge">
-                                {lever.is_active ? "active" : "inactive"}
-                              </span>
+                              <span className="badge">{lever.is_active ? "active" : "inactive"}</span>
                               <span className="badge">used {lever.usage_count}x</span>
-                              {lever.is_highlighted ? (
-                                <span className="badge">highlighted</span>
-                              ) : null}
+                              {lever.is_highlighted ? <span className="badge">highlighted</span> : null}
                               {lever.is_default ? <span className="badge">default</span> : null}
                             </div>
 
@@ -4128,8 +4393,7 @@ function AdminOrganizationsContent() {
                             <div>{lever.description}</div>
 
                             <div className="muted">
-                              Provider: {lever.provider_type || "—"} • Paid:{" "}
-                              {lever.is_paid ? "yes" : "no"}
+                              Provider: {lever.provider_type || "—"} • Paid: {lever.is_paid ? "yes" : "no"}
                             </div>
 
                             {lever.price_min_eur != null || lever.price_max_eur != null ? (
@@ -4170,12 +4434,7 @@ function AdminOrganizationsContent() {
 
                             {lever.url ? (
                               <div>
-                                <a
-                                  href={lever.url}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="link-button"
-                                >
+                                <a href={lever.url} target="_blank" rel="noreferrer" className="link-button">
                                   Open lever link
                                 </a>
                               </div>

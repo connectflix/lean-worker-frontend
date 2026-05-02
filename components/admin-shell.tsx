@@ -15,6 +15,7 @@ type AdminShellProps = {
   subtitle?: string;
   adminEmail?: string | null;
   adminRole?: "admin" | "organization";
+  adminOrganizationName?: string | null;
   activeHref?: string;
   children: React.ReactNode;
 };
@@ -26,7 +27,6 @@ const NAV_ITEMS: AdminNavItem[] = [
     section: "overview",
     roles: ["admin"],
   },
-
   {
     label: "Orchestration",
     href: "/admin/orchestration",
@@ -39,7 +39,6 @@ const NAV_ITEMS: AdminNavItem[] = [
     section: "operations",
     roles: ["admin"],
   },
-
   {
     label: "Manage Levers",
     href: "/admin/levers",
@@ -58,7 +57,12 @@ const NAV_ITEMS: AdminNavItem[] = [
     section: "catalog",
     roles: ["admin", "organization"],
   },
-
+  {
+    label: "Manage Bookings",
+    href: "/admin/bookings",
+    section: "catalog",
+    roles: ["admin", "organization"],
+  },
   {
     label: "Change password",
     href: "/admin/change-password",
@@ -79,10 +83,19 @@ export function AdminShell({
   subtitle,
   adminEmail,
   adminRole = "admin",
+  adminOrganizationName = null,
   activeHref = "/admin",
   children,
 }: AdminShellProps) {
-  const sections: AdminNavItem["section"][] = ["overview", "operations", "catalog", "account"];
+  const sections: AdminNavItem["section"][] = [
+    "overview",
+    "operations",
+    "catalog",
+    "account",
+  ];
+
+  const displayName =
+    adminRole === "organization" ? adminOrganizationName || "Organization" : "Admin";
 
   function handleLogout() {
     clearAdminToken();
@@ -148,7 +161,7 @@ export function AdminShell({
 
           <div className="card-soft stack" style={{ gap: 10 }}>
             <div className="section-title" style={{ fontSize: 14 }}>
-              {adminRole === "organization" ? "Organization space" : "Admin space"}
+              {adminRole === "organization" ? displayName : "Admin space"}
             </div>
 
             <div className="muted">
@@ -180,12 +193,22 @@ export function AdminShell({
           <div className="topbar-right">
             <div className="user-pill">
               <span className="avatar-circle">{adminRole === "organization" ? "O" : "A"}</span>
-              <div className="stack" style={{ gap: 0 }}>
-                <span style={{ fontSize: 13, fontWeight: 600 }}>
-                  {adminRole === "organization" ? "Organization" : "Admin"}
+              <div className="stack" style={{ gap: 0, minWidth: 0 }}>
+                <span
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    maxWidth: 220,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                  title={displayName}
+                >
+                  {displayName}
                 </span>
                 <span className="muted" style={{ fontSize: 12 }}>
-                  LeanWorker control
+                  {adminRole === "organization" ? "Organization workspace" : "LeanWorker control"}
                 </span>
               </div>
             </div>
