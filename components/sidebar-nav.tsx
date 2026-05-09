@@ -1,3 +1,4 @@
+// components/sidebar-nav.tsx
 "use client";
 
 import Link from "next/link";
@@ -63,6 +64,7 @@ function NavIcon({
   if (href === "/recommendations") return <ActionListIcon size={16} color={color} />;
   if (href === "/ai-artifacts") return <LayerIcon size={16} color={color} />;
   if (href === "/career-blueprint") return <PathIcon size={16} color={color} />;
+  if (href === "/account/subscription") return <UserCardIcon size={16} color={color} />;
   if (href === "/history") return <BrainIcon size={16} color={color} />;
   if (href === "/admin/quality") return <UserCardIcon size={16} color={color} />;
 
@@ -93,11 +95,15 @@ export function SidebarNav({
     },
     {
       href: "/ai-artifacts",
-      label: uiLanguage === "fr" ? "Guides AI" : "AI Guides",
+      label: uiLanguage === "fr" ? "Guides IA" : "AI Guides",
     },
     {
       href: "/career-blueprint",
       label: uiLanguage === "fr" ? "Blueprint" : "Blueprint",
+    },
+    {
+      href: "/account/subscription",
+      label: uiLanguage === "fr" ? "Abonnement" : "Subscription",
     },
     {
       href: "/history",
@@ -271,7 +277,9 @@ export function SidebarNav({
                         borderRadius: 10,
                         display: "grid",
                         placeItems: "center",
-                        background: active ? "rgba(37,99,235,0.08)" : "rgba(15,23,42,0.04)",
+                        background: active
+                          ? "rgba(37,99,235,0.08)"
+                          : "rgba(15,23,42,0.04)",
                         transition: "all 180ms ease",
                         flexShrink: 0,
                       }}

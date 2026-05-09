@@ -91,6 +91,21 @@ import type {
   AdminCalendlySyncRequest,
   AdminCalendlySyncResponse,
   AdminCalendlyAvailabilityResponse,
+  LearningCourseSummary,
+  LearningCourseDetail,
+  LearningLessonDetail,
+  LearningProgressResponse,
+  LearningProgressSummary,
+  LearningProgressUpdateRequest,
+  LearningLessonExercisesResponse,
+  LearningExerciseSubmissionResponse,
+  LearningExerciseSubmissionUpsertRequest,
+  SubscriptionCheckoutRequest,
+  SubscriptionCheckoutResponse,
+  SubscriptionPlanResponse,
+  SubscriptionChangePackRequest,
+  SubscriptionChangePackResponse,
+  AdminLearningWorkerPerformance,
 } from "./types";
 
 export type SupportIssuePayload = {
@@ -596,6 +611,91 @@ export async function submitSupportCaseFlow(
   });
 }
 
+/* ---------------- LEANWORKER E-LEARNING ---------------- */
+
+export async function getLearningCourses(): Promise<LearningCourseSummary[]> {
+  return apiFetch<LearningCourseSummary[]>("/learning/courses");
+}
+
+export async function getLearningCourseDetail(
+  courseId: number,
+): Promise<LearningCourseDetail> {
+  return apiFetch<LearningCourseDetail>(`/learning/courses/${courseId}`);
+}
+
+export async function getLearningLessonDetail(
+  lessonId: number,
+): Promise<LearningLessonDetail> {
+  return apiFetch<LearningLessonDetail>(`/learning/lessons/${lessonId}`);
+}
+
+export async function getLearningLessonExercises(
+  lessonId: number,
+): Promise<LearningLessonExercisesResponse> {
+  return apiFetch<LearningLessonExercisesResponse>(
+    `/learning/lessons/${lessonId}/exercises`,
+  );
+}
+
+export async function getLearningExerciseSubmission(
+  exerciseId: number,
+): Promise<LearningExerciseSubmissionResponse | null> {
+  return apiFetch<LearningExerciseSubmissionResponse | null>(
+    `/learning/exercises/${exerciseId}/submission`,
+  );
+}
+
+export async function upsertLearningExerciseSubmission(
+  exerciseId: number,
+  payload: LearningExerciseSubmissionUpsertRequest,
+): Promise<LearningExerciseSubmissionResponse> {
+  return apiFetch<LearningExerciseSubmissionResponse>(
+    `/learning/exercises/${exerciseId}/submission`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function updateLearningLessonProgress(
+  lessonId: number,
+  payload: LearningProgressUpdateRequest,
+): Promise<LearningProgressResponse> {
+  return apiFetch<LearningProgressResponse>(`/learning/lessons/${lessonId}/progress`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getLearningProgressSummary(): Promise<LearningProgressSummary> {
+  return apiFetch<LearningProgressSummary>("/learning/progress/summary");
+}
+
+/* ---------------- USER SUBSCRIPTIONS ---------------- */
+
+export async function getSubscriptionPlans(): Promise<SubscriptionPlanResponse[]> {
+  return apiFetch<SubscriptionPlanResponse[]>("/subscriptions/plans");
+}
+
+export async function createSubscriptionCheckoutSession(
+  payload: SubscriptionCheckoutRequest,
+): Promise<SubscriptionCheckoutResponse> {
+  return apiFetch<SubscriptionCheckoutResponse>("/subscriptions/checkout-session", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function changeSubscriptionPack(
+  payload: SubscriptionChangePackRequest,
+): Promise<SubscriptionChangePackResponse> {
+  return apiFetch<SubscriptionChangePackResponse>("/subscriptions/change-pack", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 /* ---------------- ADMIN AUTH ---------------- */
 
 export async function adminLogin(email: string, password: string): Promise<AdminLoginResponse> {
@@ -813,6 +913,26 @@ export async function getAdminWorkers(
   const query = search.toString();
 
   return adminApiFetch<AdminWorker[]>(`/admin/workers${query ? `?${query}` : ""}`);
+}
+
+export async function getAdminLearningWorkersPerformance(
+  params?: { q?: string; worker_id?: number },
+): Promise<AdminLearningWorkerPerformance[]> {
+  const search = new URLSearchParams();
+
+  if (params?.q) {
+    search.set("q", params.q);
+  }
+
+  if (params?.worker_id != null) {
+    search.set("worker_id", String(params.worker_id));
+  }
+
+  const query = search.toString();
+
+  return adminApiFetch<AdminLearningWorkerPerformance[]>(
+    `/admin/learning/workers/performance${query ? `?${query}` : ""}`,
+  );
 }
 
 export async function getAdminWorker(workerId: number): Promise<AdminWorker> {

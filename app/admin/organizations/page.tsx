@@ -75,6 +75,15 @@ type OrganizationFormState = {
 type LeverSortMode = "highlighted" | "most_used" | "name";
 type SaveIndicator = "idle" | "typing" | "saving" | "saved" | "error";
 
+type OrganizationRevenueSummary = {
+  assignedWorkerCount: number;
+  paidWorkerCount: number;
+  grossSubscriptionRevenueExVat: number;
+  organizationRevenueExVat: number;
+  platformRevenueExVat: number;
+  revenueShareRate: number;
+};
+
 type EngagementFormState = {
   worker_id: string;
   state_type: AdminWorkerEngagementState;
@@ -180,6 +189,8 @@ type NormalizedSignificanceQuestion = {
   answers: AdminWorkerSignificanceQuestionAnswer[];
   options: AdminWorkerSignificanceQuestionAnswer[];
 };
+
+const ORGANIZATION_REVENUE_SHARE_RATE = 0.75;
 
 const EMPTY_FORM: OrganizationFormState = {
   name: "",
@@ -496,6 +507,22 @@ const DEFAULT_SIGNIFICANCE_QUESTIONS: NormalizedSignificanceQuestion[] = [
   }),
 ];
 
+
+function getWorkerSubscriptionPaidExVat(worker: AdminWorker): number {
+  const directTotal = Number(worker.subscription_total_paid_eur ?? 0);
+  const activeSubscriptionTotal = Number(worker.active_subscription?.total_paid_eur ?? 0);
+
+  if (Number.isFinite(directTotal) && directTotal > 0) {
+    return directTotal;
+  }
+
+  if (Number.isFinite(activeSubscriptionTotal) && activeSubscriptionTotal > 0) {
+    return activeSubscriptionTotal;
+  }
+
+  return 0;
+}
+
 function normalizeSignificanceAnswerValue(
   value?: string | null,
 ): AdminWorkerSignificanceAnswerValue {
@@ -686,6 +713,7 @@ function tokenizePurposeText(value: string): Set<string> {
       .filter((item) => item.length >= 4 && !stopWords.has(item)),
   );
 }
+
 function getPurposeRelationStatus(
   left: string,
   right: string,
@@ -1182,6 +1210,7 @@ function SavePill({
     </span>
   );
 }
+
 function CoherenceBadge({
   status,
 }: {
@@ -1326,7 +1355,316 @@ function CanvasTextBlock({
   );
 }
 
-function CanvasIntentBlock({
+function EngagementCanvasVisual({
+  form,
+  onChange,
+  disabled = false,
+}: {
+  form: EngagementFormState;
+  onChange: <K extends keyof EngagementFormState>(
+    key: K,
+    value: EngagementFormState[K],
+  ) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="stack" style={{ gap: 14 }}>
+      <div style={{ width: "100%", overflowX: "auto", paddingBottom: 4 }}>
+        <div
+          style={{
+            minWidth: 1180,
+            border: "2px solid rgba(15,23,42,0.78)",
+            borderRadius: 10,
+            overflow: "hidden",
+            background: "#fff",
+            boxShadow: "0 18px 48px rgba(15,23,42,0.10)",
+          }}
+        >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1.05fr 1.4fr 1.4fr 1.1fr 1.05fr",
+              minHeight: 620,
+              borderBottom: "2px solid rgba(15,23,42,0.78)",
+            }}
+          >
+            <div style={{ borderRight: "2px solid rgba(15,23,42,0.78)" }}>
+              <EngagementCanvasCell
+                title="Ambitions"
+                tone="orange"
+                value={form.ambitions_text}
+                onChange={(value) => onChange("ambitions_text", value)}
+                placeholder="Quelles ambitions professionnelles émergent ?"
+                disabled={disabled}
+                minHeight={620}
+              />
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateRows: "1fr 1fr",
+                borderRight: "2px solid rgba(15,23,42,0.78)",
+              }}
+            >
+              <div style={{ borderBottom: "2px solid rgba(15,23,42,0.78)" }}>
+                <EngagementCanvasCell
+                  title="But"
+                  tone="purple"
+                  value={form.purpose_text}
+                  onChange={(value) => onChange("purpose_text", value)}
+                  placeholder="Quel est le but visible dans son travail ?"
+                  disabled={disabled}
+                  minHeight={308}
+                />
+              </div>
+
+              <EngagementCanvasCell
+                title="Missions"
+                tone="teal"
+                value={form.missions_text}
+                onChange={(value) => onChange("missions_text", value)}
+                placeholder="Quelles missions, responsabilités ou contributions sont importantes ?"
+                disabled={disabled}
+                minHeight={308}
+              />
+            </div>
+
+            <div style={{ borderRight: "2px solid rgba(15,23,42,0.78)" }}>
+              <EngagementCanvasCell
+                title="Identité"
+                tone="blue"
+                value={form.identity_text}
+                onChange={(value) => onChange("identity_text", value)}
+                placeholder="Qui est ce worker professionnellement ?"
+                disabled={disabled}
+                minHeight={620}
+              />
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateRows: "1fr 1fr",
+                borderRight: "2px solid rgba(15,23,42,0.78)",
+              }}
+            >
+              <div style={{ borderBottom: "2px solid rgba(15,23,42,0.78)" }}>
+                <EngagementCanvasCell
+                  title="Vision"
+                  tone="cyan"
+                  value={form.vision_text}
+                  onChange={(value) => onChange("vision_text", value)}
+                  placeholder="Quelle vision doit guider le worker ?"
+                  disabled={disabled}
+                  minHeight={308}
+                />
+              </div>
+
+              <EngagementCanvasCell
+                title="Actions"
+                tone="amber"
+                value={form.actions_text}
+                onChange={(value) => onChange("actions_text", value)}
+                placeholder="Quelles actions concrètes doivent être portées ?"
+                disabled={disabled}
+                minHeight={308}
+              />
+            </div>
+
+            <EngagementCanvasCell
+              title="Objectifs"
+              tone="rose"
+              value={form.objectives_text}
+              onChange={(value) => onChange("objectives_text", value)}
+              placeholder="Quels objectifs doivent être ciblés ?"
+              disabled={disabled}
+              minHeight={620}
+            />
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              minHeight: 260,
+            }}
+          >
+            <div style={{ borderRight: "2px solid rgba(15,23,42,0.78)" }}>
+              <EngagementIntentCanvasCell
+                title="Intentions Carrière"
+                tone="indigo"
+                disabled={disabled}
+                items={[
+                  {
+                    label: "Compensation",
+                    value: form.career_intent_compensation,
+                    onChange: (value) => onChange("career_intent_compensation", value),
+                  },
+                  {
+                    label: "Role",
+                    value: form.career_intent_role,
+                    onChange: (value) => onChange("career_intent_role", value),
+                  },
+                  {
+                    label: "Passion criteria",
+                    value: form.career_intent_passion_criteria,
+                    onChange: (value) =>
+                      onChange("career_intent_passion_criteria", value),
+                  },
+                  {
+                    label: "Collaboration profile",
+                    value: form.career_intent_collaboration_profile,
+                    onChange: (value) =>
+                      onChange("career_intent_collaboration_profile", value),
+                  },
+                  {
+                    label: "Performance level",
+                    value: form.career_intent_performance_level,
+                    onChange: (value) =>
+                      onChange("career_intent_performance_level", value),
+                  },
+                  {
+                    label: "Responsibilities",
+                    value: form.career_intent_responsibilities,
+                    onChange: (value) =>
+                      onChange("career_intent_responsibilities", value),
+                  },
+                ]}
+              />
+            </div>
+
+            <EngagementIntentCanvasCell
+              title="Intentions Talent"
+              tone="green"
+              disabled={disabled}
+              items={[
+                {
+                  label: "Foundations",
+                  value: form.talent_intent_foundations,
+                  onChange: (value) => onChange("talent_intent_foundations", value),
+                },
+                {
+                  label: "Personality",
+                  value: form.talent_intent_personality,
+                  onChange: (value) => onChange("talent_intent_personality", value),
+                },
+                {
+                  label: "Watch",
+                  value: form.talent_intent_watch,
+                  onChange: (value) => onChange("talent_intent_watch", value),
+                },
+                {
+                  label: "Next level",
+                  value: form.talent_intent_next_level,
+                  onChange: (value) => onChange("talent_intent_next_level", value),
+                },
+                {
+                  label: "Impact niches",
+                  value: form.talent_intent_impact_niches,
+                  onChange: (value) => onChange("talent_intent_impact_niches", value),
+                },
+                {
+                  label: "Social contributions",
+                  value: form.talent_intent_social_contributions,
+                  onChange: (value) =>
+                    onChange("talent_intent_social_contributions", value),
+                },
+              ]}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="muted" style={{ lineHeight: 1.6 }}>
+        Structure cible respectée : Ambitions, But/Missions, Identité, Vision/Actions,
+        Objectifs, puis Intentions Carrière et Intentions Talent en bas du canvas.
+      </div>
+    </div>
+  );
+}
+
+function EngagementCanvasCell({
+  title,
+  tone,
+  value,
+  onChange,
+  placeholder,
+  minHeight,
+  disabled = false,
+}: {
+  title: string;
+  tone: CanvasTone;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  minHeight: number;
+  disabled?: boolean;
+}) {
+  const toneStyles = getCanvasToneStyles(tone);
+
+  return (
+    <div
+      style={{
+        minHeight,
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        background: `linear-gradient(180deg, ${toneStyles.background}, rgba(255,255,255,0.98) 42%)`,
+      }}
+    >
+      <div
+        style={{
+          padding: "18px 18px 8px",
+          fontSize: 34,
+          lineHeight: 1,
+          fontWeight: 900,
+          letterSpacing: "-0.04em",
+          color: toneStyles.title,
+        }}
+      >
+        {title}
+      </div>
+
+      <div
+        style={{
+          height: 4,
+          width: 56,
+          marginLeft: 18,
+          marginBottom: 6,
+          borderRadius: 999,
+          background: toneStyles.title,
+          opacity: 0.75,
+        }}
+      />
+
+      <textarea
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder || "Saisir ici..."}
+        disabled={disabled}
+        style={{
+          width: "100%",
+          flex: 1,
+          minHeight: 0,
+          resize: "none",
+          border: "none",
+          outline: "none",
+          background: "transparent",
+          color: "#0f172a",
+          font: "inherit",
+          fontSize: 15,
+          lineHeight: 1.55,
+          padding: "10px 18px 18px",
+          cursor: disabled ? "not-allowed" : "text",
+          opacity: disabled ? 0.72 : 1,
+        }}
+      />
+    </div>
+  );
+}
+
+function EngagementIntentCanvasCell({
   title,
   tone,
   items,
@@ -1346,54 +1684,80 @@ function CanvasIntentBlock({
   return (
     <div
       style={{
-        border: `2px solid ${toneStyles.border}`,
-        background: toneStyles.background,
-        borderRadius: 16,
-        padding: 14,
-        minHeight: 320,
+        minHeight: 260,
+        height: "100%",
         display: "flex",
         flexDirection: "column",
-        gap: 12,
-        boxShadow: "0 8px 24px rgba(15,23,42,0.04)",
-        opacity: disabled ? 0.72 : 1,
+        background: `linear-gradient(180deg, ${toneStyles.background}, rgba(255,255,255,0.98) 48%)`,
       }}
     >
       <div
         style={{
-          fontSize: 13,
-          fontWeight: 800,
-          textTransform: "uppercase",
-          letterSpacing: "0.05em",
+          padding: "18px 18px 8px",
+          fontSize: 32,
+          lineHeight: 1,
+          fontWeight: 900,
+          letterSpacing: "-0.04em",
           color: toneStyles.title,
         }}
       >
         {title}
       </div>
 
-      <div className="stack" style={{ gap: 10, flex: 1 }}>
+      <div
+        style={{
+          height: 4,
+          width: 72,
+          marginLeft: 18,
+          marginBottom: 6,
+          borderRadius: 999,
+          background: toneStyles.title,
+          opacity: 0.75,
+        }}
+      />
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+          gap: 10,
+          padding: "10px 18px 18px",
+          flex: 1,
+        }}
+      >
         {items.map((item) => (
-          <label key={item.label} className="stack" style={{ gap: 4 }}>
+          <label key={item.label} className="stack" style={{ gap: 5 }}>
             <span
               style={{
                 fontSize: 12,
-                fontWeight: 700,
+                fontWeight: 800,
                 color: toneStyles.title,
-                opacity: 0.9,
               }}
             >
               {item.label}
             </span>
+
             <textarea
               value={item.value}
-              onChange={(e) => item.onChange(e.target.value)}
-              className="textarea"
-              rows={2}
+              onChange={(event) => item.onChange(event.target.value)}
               disabled={disabled}
+              rows={3}
+              placeholder="Saisir ici..."
               style={{
+                width: "100%",
+                minHeight: 72,
                 resize: "vertical",
-                background: "rgba(255,255,255,0.72)",
-                borderColor: toneStyles.border,
+                border: `1px solid ${toneStyles.border}`,
+                borderRadius: 12,
+                outline: "none",
+                padding: 10,
+                font: "inherit",
+                fontSize: 13,
+                lineHeight: 1.45,
+                background: "rgba(255,255,255,0.82)",
+                color: "#0f172a",
                 cursor: disabled ? "not-allowed" : "text",
+                opacity: disabled ? 0.72 : 1,
               }}
             />
           </label>
@@ -1961,6 +2325,28 @@ function AdminOrganizationsContent() {
   const selectedOrganization =
     organizations.find((item) => item.id === selectedOrganizationId) ?? null;
 
+  const organizationRevenueSummary = useMemo<OrganizationRevenueSummary>(() => {
+    const grossSubscriptionRevenueExVat = assignedWorkers.reduce((total, worker) => {
+      return total + getWorkerSubscriptionPaidExVat(worker);
+    }, 0);
+
+    const paidWorkerCount = assignedWorkers.filter(
+      (worker) => getWorkerSubscriptionPaidExVat(worker) > 0,
+    ).length;
+
+    const organizationRevenueExVat =
+      grossSubscriptionRevenueExVat * ORGANIZATION_REVENUE_SHARE_RATE;
+
+    return {
+      assignedWorkerCount: assignedWorkers.length,
+      paidWorkerCount,
+      grossSubscriptionRevenueExVat,
+      organizationRevenueExVat,
+      platformRevenueExVat: grossSubscriptionRevenueExVat - organizationRevenueExVat,
+      revenueShareRate: ORGANIZATION_REVENUE_SHARE_RATE,
+    };
+  }, [assignedWorkers]);
+
   const isFutureStateLocked =
     engagementCanvasLoaded &&
     engagementSelectionState === "future" &&
@@ -2219,7 +2605,7 @@ function AdminOrganizationsContent() {
     setSignificanceSaveState("saved");
   }
 
-  async function openOrganization(organizationId: number) {
+    async function openOrganization(organizationId: number) {
     setSelectedOrganizationId(organizationId);
     setError(null);
     setAccessAccountResult(null);
@@ -2459,7 +2845,8 @@ function AdminOrganizationsContent() {
       setAssigning(false);
     }
   }
-    async function handleLoadEngagementCanvas() {
+
+  async function handleLoadEngagementCanvas() {
     if (!selectedWorkerId) {
       setError("Please select a worker first.");
       return;
@@ -3187,22 +3574,24 @@ function AdminOrganizationsContent() {
 
     return map;
   }, [selectedWorkerSummary]);
-
-  return (
+    return (
     <AdminShell
       activeHref="/admin/organizations"
       title="Manage Organizations"
-      subtitle="Organization workspace, worker assignment, and scoped access foundation."
+      subtitle="Organization workspace, worker assignment, revenue dashboard, and scoped access foundation."
       adminEmail={admin?.email ?? null}
       adminRole={admin?.role ?? "admin"}
     >
-      <div className="row space-between" style={{ alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
+      <div
+        className="row space-between"
+        style={{ alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}
+      >
         <div className="stack" style={{ gap: 4 }}>
           <div className="section-title">Organizations workspace</div>
           <div className="muted">
             {isPlatformAdmin
-              ? "Create organizations and assign workers to them."
-              : "Access is limited to your organization and its assigned workers."}
+              ? "Create organizations, assign workers, and monitor organization revenue."
+              : "Access is limited to your organization, assigned workers, and organization revenue."}
           </div>
         </div>
 
@@ -3227,7 +3616,10 @@ function AdminOrganizationsContent() {
             {organizations.length === 0 ? (
               <div className="muted">No organizations found.</div>
             ) : (
-              <div className="stack" style={{ maxHeight: "52vh", overflowY: "auto", paddingRight: 6, gap: 12 }}>
+              <div
+                className="stack"
+                style={{ maxHeight: "52vh", overflowY: "auto", paddingRight: 6, gap: 12 }}
+              >
                 {organizations.map((organization) => (
                   <button
                     key={organization.id}
@@ -3247,7 +3639,9 @@ function AdminOrganizationsContent() {
                     <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                       <span className="badge">#{organization.id}</span>
                       {organization.code ? <span className="badge">{organization.code}</span> : null}
-                      <span className="badge">{getOrganizationTypeLabel(organization.organization_type)}</span>
+                      <span className="badge">
+                        {getOrganizationTypeLabel(organization.organization_type)}
+                      </span>
                       <span className="badge">{organization.is_active ? "active" : "inactive"}</span>
                     </div>
 
@@ -3260,7 +3654,10 @@ function AdminOrganizationsContent() {
                       {getRequiredSubscriptionForOrganizationType(organization.organization_type)}
                     </div>
 
-                    {organization.contact_email ? <div className="muted">{organization.contact_email}</div> : null}
+                    {organization.contact_email ? (
+                      <div className="muted">{organization.contact_email}</div>
+                    ) : null}
+
                     {organization.calendly_event_type_uri ? (
                       <div
                         className="muted"
@@ -3316,7 +3713,9 @@ function AdminOrganizationsContent() {
                     placeholder="Generated automatically"
                     style={{ cursor: "not-allowed", background: "rgba(15,23,42,0.04)" }}
                   />
-                  <div className="muted">System-generated identifier. It follows the ORG-xxxxxx convention.</div>
+                  <div className="muted">
+                    System-generated identifier. It follows the ORG-xxxxxx convention.
+                  </div>
                 </label>
 
                 <label className="stack">
@@ -3383,7 +3782,8 @@ function AdminOrganizationsContent() {
                     placeholder="https://api.calendly.com/event_types/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
                   />
                   <div className="muted">
-                    Dedicated Calendly event type used to restrict this organization to its own bookings.
+                    Dedicated Calendly event type used to restrict this organization to its own
+                    bookings.
                   </div>
                 </label>
 
@@ -3393,7 +3793,9 @@ function AdminOrganizationsContent() {
                       <input
                         type="checkbox"
                         checked={form.is_active}
-                        onChange={(e) => setForm((prev) => ({ ...prev, is_active: e.target.checked }))}
+                        onChange={(e) =>
+                          setForm((prev) => ({ ...prev, is_active: e.target.checked }))
+                        }
                         disabled={detailLoading}
                       />
                       <strong>Active</strong>
@@ -3401,7 +3803,11 @@ function AdminOrganizationsContent() {
 
                     <div className="row" style={{ flexWrap: "wrap" }}>
                       <button className="button" type="submit" disabled={saving || detailLoading}>
-                        {saving ? "Saving..." : editingOrganizationId ? "Save organization" : "Create organization"}
+                        {saving
+                          ? "Saving..."
+                          : editingOrganizationId
+                            ? "Save organization"
+                            : "Create organization"}
                       </button>
 
                       <button
@@ -3431,13 +3837,21 @@ function AdminOrganizationsContent() {
                     </div>
 
                     {editingOrganizationId ? (
-                      <div className="card-soft stack" style={{ gap: 10, border: "1px solid rgba(59,130,246,0.25)", background: "rgba(59,130,246,0.06)" }}>
+                      <div
+                        className="card-soft stack"
+                        style={{
+                          gap: 10,
+                          border: "1px solid rgba(59,130,246,0.25)",
+                          background: "rgba(59,130,246,0.06)",
+                        }}
+                      >
                         <div className="section-title" style={{ fontSize: 15 }}>
                           Organization access account
                         </div>
 
                         <div className="muted">
-                          This creates or resets the organization login account using the contact email above. The temporary password is shown once.
+                          This creates or resets the organization login account using the contact
+                          email above. The temporary password is shown once.
                         </div>
 
                         <button
@@ -3452,7 +3866,9 @@ function AdminOrganizationsContent() {
                             !form.contact_email.trim()
                           }
                         >
-                          {accessAccountSaving ? "Generating account..." : "Create / reset organization account"}
+                          {accessAccountSaving
+                            ? "Generating account..."
+                            : "Create / reset organization account"}
                         </button>
 
                         {!form.contact_email.trim() ? (
@@ -3462,19 +3878,35 @@ function AdminOrganizationsContent() {
                         ) : null}
 
                         {accessAccountResult ? (
-                          <div className="stack" style={{ gap: 8, borderRadius: 14, padding: 12, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.25)" }}>
+                          <div
+                            className="stack"
+                            style={{
+                              gap: 8,
+                              borderRadius: 14,
+                              padding: 12,
+                              background: "rgba(34,197,94,0.1)",
+                              border: "1px solid rgba(34,197,94,0.25)",
+                            }}
+                          >
                             <div style={{ fontWeight: 800 }}>{accessAccountResult.message}</div>
                             <div>
                               <strong>Login email:</strong> {accessAccountResult.email}
                             </div>
                             <div>
                               <strong>Temporary password:</strong>{" "}
-                              <code style={{ padding: "4px 8px", borderRadius: 8, background: "rgba(15,23,42,0.08)" }}>
+                              <code
+                                style={{
+                                  padding: "4px 8px",
+                                  borderRadius: 8,
+                                  background: "rgba(15,23,42,0.08)",
+                                }}
+                              >
                                 {accessAccountResult.temporary_password}
                               </code>
                             </div>
                             <div className="muted">
-                              Share this password securely. It will not be visible again after you leave this result.
+                              Share this password securely. It will not be visible again after you
+                              leave this result.
                             </div>
                           </div>
                         ) : null}
@@ -3490,17 +3922,176 @@ function AdminOrganizationsContent() {
 
       {selectedOrganization ? (
         <>
+          <div className="card stack" style={{ gap: 16 }}>
+            <div
+              className="row space-between"
+              style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}
+            >
+              <div className="stack" style={{ gap: 4 }}>
+                <div className="section-title">Organization revenue dashboard</div>
+                <div className="muted">
+                  Revenue is calculated from the total paid subscription amount of assigned workers.
+                  Organization share is 75% ex-VAT.
+                </div>
+              </div>
+
+              <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                <span className="badge">{selectedOrganization.code || `#${selectedOrganization.id}`}</span>
+                <span className="badge">
+                  share rate: {Math.round(organizationRevenueSummary.revenueShareRate * 100)}%
+                </span>
+              </div>
+            </div>
+
+            <div className="admin-kpi-scroll">
+              <div className="admin-kpi-row admin-kpi-row--6">
+                <div className="card-soft stack admin-kpi-card" style={{ gap: 6 }}>
+                  <div className="muted">Assigned workers</div>
+                  <div className="admin-metric-value" style={{ fontSize: 26 }}>
+                    {organizationRevenueSummary.assignedWorkerCount}
+                  </div>
+                </div>
+
+                <div className="card-soft stack admin-kpi-card" style={{ gap: 6 }}>
+                  <div className="muted">Paid workers</div>
+                  <div className="admin-metric-value" style={{ fontSize: 26 }}>
+                    {organizationRevenueSummary.paidWorkerCount}
+                  </div>
+                </div>
+
+                <div className="card-soft stack admin-kpi-card" style={{ gap: 6 }}>
+                  <div className="muted">Gross subscriptions ex-VAT</div>
+                  <div className="admin-metric-value" style={{ fontSize: 24 }}>
+                    {new Intl.NumberFormat("fr-BE", {
+                      style: "currency",
+                      currency: "EUR",
+                    }).format(organizationRevenueSummary.grossSubscriptionRevenueExVat)}
+                  </div>
+                </div>
+
+                <div
+                  className="card-soft stack admin-kpi-card"
+                  style={{
+                    gap: 6,
+                    border: "1px solid rgba(34,197,94,0.3)",
+                    background: "rgba(34,197,94,0.08)",
+                  }}
+                >
+                  <div className="muted">Organization revenue ex-VAT</div>
+                  <div className="admin-metric-value" style={{ fontSize: 24, color: "#15803d" }}>
+                    {new Intl.NumberFormat("fr-BE", {
+                      style: "currency",
+                      currency: "EUR",
+                    }).format(organizationRevenueSummary.organizationRevenueExVat)}
+                  </div>
+                </div>
+
+                <div className="card-soft stack admin-kpi-card" style={{ gap: 6 }}>
+                  <div className="muted">Platform share ex-VAT</div>
+                  <div className="admin-metric-value" style={{ fontSize: 24 }}>
+                    {new Intl.NumberFormat("fr-BE", {
+                      style: "currency",
+                      currency: "EUR",
+                    }).format(organizationRevenueSummary.platformRevenueExVat)}
+                  </div>
+                </div>
+
+                <div className="card-soft stack admin-kpi-card" style={{ gap: 6 }}>
+                  <div className="muted">Calculation rule</div>
+                  <div className="admin-metric-value" style={{ fontSize: 16 }}>
+                    75% organization / 25% platform
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="card-soft stack" style={{ gap: 10 }}>
+              <div className="section-title" style={{ fontSize: 15 }}>
+                Revenue details by assigned worker
+              </div>
+
+              {assignedWorkers.length === 0 ? (
+                <div className="muted">No assigned worker yet. Revenue is currently zero.</div>
+              ) : (
+                <div style={{ width: "100%", overflowX: "auto" }}>
+                  <table
+                    style={{
+                      width: "100%",
+                      borderCollapse: "collapse",
+                      minWidth: 860,
+                    }}
+                  >
+                    <thead>
+                      <tr style={{ textAlign: "left", borderBottom: "1px solid var(--border)" }}>
+                        <th style={{ padding: "10px 8px" }}>Worker</th>
+                        <th style={{ padding: "10px 8px" }}>Business ID</th>
+                        <th style={{ padding: "10px 8px" }}>Pack</th>
+                        <th style={{ padding: "10px 8px" }}>Total paid subscription ex-VAT</th>
+                        <th style={{ padding: "10px 8px" }}>Organization share 75%</th>
+                        <th style={{ padding: "10px 8px" }}>Platform share 25%</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {assignedWorkers.map((worker) => {
+                        const subscriptionPaid = Number(worker.subscription_total_paid_eur ?? 0);
+                        const organizationShare = subscriptionPaid * 0.75;
+                        const platformShare = subscriptionPaid * 0.25;
+
+                        return (
+                          <tr key={worker.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                            <td style={{ padding: "10px 8px" }}>
+                              <div style={{ fontWeight: 800 }}>{worker.display_name}</div>
+                              <div className="muted">{worker.email || "No email"}</div>
+                            </td>
+                            <td style={{ padding: "10px 8px" }}>{worker.business_id || "—"}</td>
+                            <td style={{ padding: "10px 8px" }}>
+                              <span className="badge">{worker.subscription_pack}</span>
+                            </td>
+                            <td style={{ padding: "10px 8px" }}>
+                              {new Intl.NumberFormat("fr-BE", {
+                                style: "currency",
+                                currency: "EUR",
+                              }).format(subscriptionPaid)}
+                            </td>
+                            <td style={{ padding: "10px 8px", fontWeight: 800, color: "#15803d" }}>
+                              {new Intl.NumberFormat("fr-BE", {
+                                style: "currency",
+                                currency: "EUR",
+                              }).format(organizationShare)}
+                            </td>
+                            <td style={{ padding: "10px 8px" }}>
+                              {new Intl.NumberFormat("fr-BE", {
+                                style: "currency",
+                                currency: "EUR",
+                              }).format(platformShare)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="card stack">
-            <div className="row space-between" style={{ gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+            <div
+              className="row space-between"
+              style={{ gap: 12, flexWrap: "wrap", alignItems: "center" }}
+            >
               <div className="section-title">Assigned workers</div>
               <div className="muted">{assignedWorkers.length} worker(s) assigned</div>
             </div>
 
             <div className="card-soft stack" style={{ gap: 8 }}>
               <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                <span className="badge">{getOrganizationTypeLabel(selectedOrganization.organization_type)}</span>
                 <span className="badge">
-                  required pack: {getRequiredSubscriptionForOrganizationType(selectedOrganization.organization_type)}
+                  {getOrganizationTypeLabel(selectedOrganization.organization_type)}
+                </span>
+                <span className="badge">
+                  required pack:{" "}
+                  {getRequiredSubscriptionForOrganizationType(selectedOrganization.organization_type)}
                 </span>
               </div>
               <div className="muted">Standard workers can never be assigned to any organization.</div>
@@ -3545,7 +4136,10 @@ function AdminOrganizationsContent() {
             ) : filteredAssignedWorkers.length === 0 ? (
               <div className="muted">No assigned workers found.</div>
             ) : (
-              <div className="stack" style={{ maxHeight: "56vh", overflowY: "auto", paddingRight: 6, gap: 12 }}>
+              <div
+                className="stack"
+                style={{ maxHeight: "56vh", overflowY: "auto", paddingRight: 6, gap: 12 }}
+              >
                 {filteredAssignedWorkers.map((worker) => {
                   const isSelected = selectedWorkerId === worker.id;
 
@@ -3569,13 +4163,27 @@ function AdminOrganizationsContent() {
                         textAlign: "left",
                       }}
                     >
-                      <div className="row space-between" style={{ gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+                      <div
+                        className="row space-between"
+                        style={{ gap: 12, flexWrap: "wrap", alignItems: "center" }}
+                      >
                         <div className="stack" style={{ gap: 6 }}>
                           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                             <span className="badge">#{worker.id}</span>
-                            {worker.business_id ? <span className="badge">{worker.business_id}</span> : null}
+                            {worker.business_id ? (
+                              <span className="badge">{worker.business_id}</span>
+                            ) : null}
                             <span className="badge">{worker.subscription_pack}</span>
-                            {worker.current_role ? <span className="badge">{worker.current_role}</span> : null}
+                            {worker.current_role ? (
+                              <span className="badge">{worker.current_role}</span>
+                            ) : null}
+                            <span className="badge">
+                              paid{" "}
+                              {new Intl.NumberFormat("fr-BE", {
+                                style: "currency",
+                                currency: "EUR",
+                              }).format(Number(worker.subscription_total_paid_eur ?? 0))}
+                            </span>
                           </div>
 
                           <div className="section-title" style={{ fontSize: 16 }}>
@@ -3670,11 +4278,16 @@ function AdminOrganizationsContent() {
               </div>
             ) : !engagementCanvasLoaded ? (
               <div className="card-soft">
-                <div className="muted">No canvas displayed yet. Choose the state and click <strong>Load canvas</strong>.</div>
+                <div className="muted">
+                  No canvas displayed yet. Choose the state and click <strong>Load canvas</strong>.
+                </div>
               </div>
             ) : (
               <>
-                <div className="row space-between" style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}>
+                <div
+                  className="row space-between"
+                  style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}
+                >
                   <div className="stack" style={{ gap: 4 }}>
                     <div className="muted">
                       Worker #{selectedWorkerId} — state: {engagementSelectionState}
@@ -3716,150 +4329,17 @@ function AdminOrganizationsContent() {
                   </div>
                 </div>
 
-                <div className="grid grid-2" style={{ alignItems: "start" }}>
-                  <CanvasTextBlock
-                    title="Identity"
-                    value={engagementForm.identity_text}
-                    onChange={(value) => patchEngagementField("identity_text", value)}
-                    minHeight={220}
-                    tone="blue"
-                    disabled={isFutureStateLocked}
-                  />
+                {isFutureStateLocked ? (
+                  <div className="card-soft" style={{ color: "#15803d" }}>
+                    This future-state engagement is finalized and locked for editing.
+                  </div>
+                ) : null}
 
-                  <CanvasTextBlock
-                    title="Purpose"
-                    value={engagementForm.purpose_text}
-                    onChange={(value) => patchEngagementField("purpose_text", value)}
-                    minHeight={220}
-                    tone="purple"
-                    disabled={isFutureStateLocked}
-                  />
-
-                  <CanvasTextBlock
-                    title="Missions"
-                    value={engagementForm.missions_text}
-                    onChange={(value) => patchEngagementField("missions_text", value)}
-                    minHeight={220}
-                    tone="teal"
-                    disabled={isFutureStateLocked}
-                  />
-
-                  <CanvasTextBlock
-                    title="Ambitions"
-                    value={engagementForm.ambitions_text}
-                    onChange={(value) => patchEngagementField("ambitions_text", value)}
-                    minHeight={220}
-                    tone="orange"
-                    disabled={isFutureStateLocked}
-                  />
-                </div>
-
-                <div className="grid grid-2" style={{ alignItems: "start" }}>
-                  <CanvasIntentBlock
-                    title="Career Intent"
-                    tone="indigo"
-                    disabled={isFutureStateLocked}
-                    items={[
-                      {
-                        label: "Compensation",
-                        value: engagementForm.career_intent_compensation,
-                        onChange: (value) => patchEngagementField("career_intent_compensation", value),
-                      },
-                      {
-                        label: "Role",
-                        value: engagementForm.career_intent_role,
-                        onChange: (value) => patchEngagementField("career_intent_role", value),
-                      },
-                      {
-                        label: "Passion criteria",
-                        value: engagementForm.career_intent_passion_criteria,
-                        onChange: (value) => patchEngagementField("career_intent_passion_criteria", value),
-                      },
-                      {
-                        label: "Collaboration profile",
-                        value: engagementForm.career_intent_collaboration_profile,
-                        onChange: (value) => patchEngagementField("career_intent_collaboration_profile", value),
-                      },
-                      {
-                        label: "Performance level",
-                        value: engagementForm.career_intent_performance_level,
-                        onChange: (value) => patchEngagementField("career_intent_performance_level", value),
-                      },
-                      {
-                        label: "Responsibilities",
-                        value: engagementForm.career_intent_responsibilities,
-                        onChange: (value) => patchEngagementField("career_intent_responsibilities", value),
-                      },
-                    ]}
-                  />
-
-                  <CanvasIntentBlock
-                    title="Talent Intent"
-                    tone="cyan"
-                    disabled={isFutureStateLocked}
-                    items={[
-                      {
-                        label: "Foundations",
-                        value: engagementForm.talent_intent_foundations,
-                        onChange: (value) => patchEngagementField("talent_intent_foundations", value),
-                      },
-                      {
-                        label: "Personality",
-                        value: engagementForm.talent_intent_personality,
-                        onChange: (value) => patchEngagementField("talent_intent_personality", value),
-                      },
-                      {
-                        label: "Watch",
-                        value: engagementForm.talent_intent_watch,
-                        onChange: (value) => patchEngagementField("talent_intent_watch", value),
-                      },
-                      {
-                        label: "Next level",
-                        value: engagementForm.talent_intent_next_level,
-                        onChange: (value) => patchEngagementField("talent_intent_next_level", value),
-                      },
-                      {
-                        label: "Impact niches",
-                        value: engagementForm.talent_intent_impact_niches,
-                        onChange: (value) => patchEngagementField("talent_intent_impact_niches", value),
-                      },
-                      {
-                        label: "Social contributions",
-                        value: engagementForm.talent_intent_social_contributions,
-                        onChange: (value) => patchEngagementField("talent_intent_social_contributions", value),
-                      },
-                    ]}
-                  />
-                </div>
-
-                <div className="grid grid-3" style={{ alignItems: "start" }}>
-                  <CanvasTextBlock
-                    title="Vision"
-                    value={engagementForm.vision_text}
-                    onChange={(value) => patchEngagementField("vision_text", value)}
-                    minHeight={180}
-                    tone="green"
-                    disabled={isFutureStateLocked}
-                  />
-
-                  <CanvasTextBlock
-                    title="Actions"
-                    value={engagementForm.actions_text}
-                    onChange={(value) => patchEngagementField("actions_text", value)}
-                    minHeight={180}
-                    tone="amber"
-                    disabled={isFutureStateLocked}
-                  />
-
-                  <CanvasTextBlock
-                    title="Objectives"
-                    value={engagementForm.objectives_text}
-                    onChange={(value) => patchEngagementField("objectives_text", value)}
-                    minHeight={180}
-                    tone="rose"
-                    disabled={isFutureStateLocked}
-                  />
-                </div>
+                <EngagementCanvasVisual
+                  form={engagementForm}
+                  onChange={patchEngagementField}
+                  disabled={isFutureStateLocked}
+                />
               </>
             )}
           </div>
@@ -3885,7 +4365,9 @@ function AdminOrganizationsContent() {
 
                 <div className="stack">
                   <strong>Canvas rule</strong>
-                  <div className="muted">Blue = coherent relation · Red = incoherent relation · Grey = pending</div>
+                  <div className="muted">
+                    Blue = coherent relation · Red = incoherent relation · Grey = pending
+                  </div>
                 </div>
 
                 <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
@@ -3899,7 +4381,11 @@ function AdminOrganizationsContent() {
                   </button>
 
                   {purposeCanvasLoaded ? (
-                    <button className="button ghost" type="button" onClick={() => resetPurposeCanvas(selectedWorkerId)}>
+                    <button
+                      className="button ghost"
+                      type="button"
+                      onClick={() => resetPurposeCanvas(selectedWorkerId)}
+                    >
                       Clear canvas
                     </button>
                   ) : null}
@@ -3913,11 +4399,17 @@ function AdminOrganizationsContent() {
               </div>
             ) : !purposeCanvasLoaded ? (
               <div className="card-soft">
-                <div className="muted">No purpose canvas displayed yet. Select a worker and click <strong>Load canvas</strong>.</div>
+                <div className="muted">
+                  No purpose canvas displayed yet. Select a worker and click{" "}
+                  <strong>Load canvas</strong>.
+                </div>
               </div>
             ) : (
               <>
-                <div className="row space-between" style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}>
+                <div
+                  className="row space-between"
+                  style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}
+                >
                   <div className="stack" style={{ gap: 4 }}>
                     <div className="muted">Worker #{selectedWorkerId}</div>
                     <div className="muted">
@@ -3953,7 +4445,8 @@ function AdminOrganizationsContent() {
           <div className="card stack" style={{ gap: 16, minWidth: 0 }}>
             <div className="section-title">Time Canvas</div>
             <div className="muted">
-              Capture available time, constraints, energy rhythm, rituals, priorities and execution risks.
+              Capture available time, constraints, energy rhythm, rituals, priorities and execution
+              risks.
             </div>
 
             <div className="card-soft stack" style={{ gap: 12 }}>
@@ -3991,7 +4484,11 @@ function AdminOrganizationsContent() {
                   </button>
 
                   {timeCanvasLoaded ? (
-                    <button className="button ghost" type="button" onClick={() => resetTimeCanvas(selectedWorkerId)}>
+                    <button
+                      className="button ghost"
+                      type="button"
+                      onClick={() => resetTimeCanvas(selectedWorkerId)}
+                    >
                       Clear canvas
                     </button>
                   ) : null}
@@ -4005,11 +4502,17 @@ function AdminOrganizationsContent() {
               </div>
             ) : !timeCanvasLoaded ? (
               <div className="card-soft">
-                <div className="muted">No time canvas displayed yet. Select a worker and click <strong>Load canvas</strong>.</div>
+                <div className="muted">
+                  No time canvas displayed yet. Select a worker and click{" "}
+                  <strong>Load canvas</strong>.
+                </div>
               </div>
             ) : (
               <>
-                <div className="row space-between" style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}>
+                <div
+                  className="row space-between"
+                  style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}
+                >
                   <div className="stack" style={{ gap: 4 }}>
                     <div className="muted">Worker #{selectedWorkerId}</div>
                     <div className="muted">
@@ -4097,11 +4600,17 @@ function AdminOrganizationsContent() {
               </div>
             ) : !significanceCanvasLoaded ? (
               <div className="card-soft">
-                <div className="muted">No significance canvas displayed yet. Select a worker and click <strong>Load canvas</strong>.</div>
+                <div className="muted">
+                  No significance canvas displayed yet. Select a worker and click{" "}
+                  <strong>Load canvas</strong>.
+                </div>
               </div>
             ) : (
               <>
-                <div className="row space-between" style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}>
+                <div
+                  className="row space-between"
+                  style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}
+                >
                   <div className="stack" style={{ gap: 4 }}>
                     <div className="muted">Worker #{selectedWorkerId}</div>
                     <div className="muted">
@@ -4205,15 +4714,50 @@ function AdminOrganizationsContent() {
                 <div className="grid grid-2">
                   <div className="card-soft stack">
                     <div className="section-title">Worker profile</div>
-                    <div><strong>Name:</strong> {selectedWorkerSummary.worker.display_name}</div>
-                    <div><strong>Email:</strong> {selectedWorkerSummary.worker.email || "—"}</div>
-                    <div><strong>Business ID:</strong> {selectedWorkerSummary.worker.business_id || "—"}</div>
-                    <div><strong>Role:</strong> {selectedWorkerSummary.worker.current_role || "—"}</div>
-                    <div><strong>Industry:</strong> {selectedWorkerSummary.worker.industry || "—"}</div>
-                    <div><strong>Language:</strong> {selectedWorkerSummary.worker.language}</div>
-                    <div><strong>Subscription:</strong> {selectedWorkerSummary.worker.subscription_pack}</div>
-                    <div><strong>Profession:</strong> {selectedWorkerSummary.worker.profession || "—"}</div>
-                    <div><strong>Location:</strong> {selectedWorkerSummary.worker.location || "—"}</div>
+                    <div>
+                      <strong>Name:</strong> {selectedWorkerSummary.worker.display_name}
+                    </div>
+                    <div>
+                      <strong>Email:</strong> {selectedWorkerSummary.worker.email || "—"}
+                    </div>
+                    <div>
+                      <strong>Business ID:</strong>{" "}
+                      {selectedWorkerSummary.worker.business_id || "—"}
+                    </div>
+                    <div>
+                      <strong>Role:</strong> {selectedWorkerSummary.worker.current_role || "—"}
+                    </div>
+                    <div>
+                      <strong>Industry:</strong> {selectedWorkerSummary.worker.industry || "—"}
+                    </div>
+                    <div>
+                      <strong>Language:</strong> {selectedWorkerSummary.worker.language}
+                    </div>
+                    <div>
+                      <strong>Subscription:</strong>{" "}
+                      {selectedWorkerSummary.worker.subscription_pack}
+                    </div>
+                    <div>
+                      <strong>Subscription paid:</strong>{" "}
+                      {new Intl.NumberFormat("fr-BE", {
+                        style: "currency",
+                        currency: "EUR",
+                      }).format(Number(selectedWorkerSummary.worker.subscription_total_paid_eur ?? 0))}
+                    </div>
+                    <div>
+                      <strong>Organization share:</strong>{" "}
+                      {new Intl.NumberFormat("fr-BE", {
+                        style: "currency",
+                        currency: "EUR",
+                      }).format(Number(selectedWorkerSummary.worker.subscription_total_paid_eur ?? 0) * 0.75)}
+                    </div>
+                    <div>
+                      <strong>Profession:</strong>{" "}
+                      {selectedWorkerSummary.worker.profession || "—"}
+                    </div>
+                    <div>
+                      <strong>Location:</strong> {selectedWorkerSummary.worker.location || "—"}
+                    </div>
                   </div>
 
                   <div className="card-soft stack">
@@ -4221,12 +4765,30 @@ function AdminOrganizationsContent() {
 
                     {selectedWorkerSummary.career_blueprint ? (
                       <>
-                        <div><strong>Identity:</strong> {selectedWorkerSummary.career_blueprint.identity_text || "—"}</div>
-                        <div><strong>Vision:</strong> {selectedWorkerSummary.career_blueprint.vision_text || "—"}</div>
-                        <div><strong>Talent focus:</strong> {selectedWorkerSummary.career_blueprint.talent_focus_text || "—"}</div>
-                        <div><strong>Career focus:</strong> {selectedWorkerSummary.career_blueprint.career_focus_text || "—"}</div>
-                        <div><strong>Inspiration person:</strong> {selectedWorkerSummary.career_blueprint.inspiration_person || "—"}</div>
-                        <div><strong>Aspiration person:</strong> {selectedWorkerSummary.career_blueprint.aspiration_person || "—"}</div>
+                        <div>
+                          <strong>Identity:</strong>{" "}
+                          {selectedWorkerSummary.career_blueprint.identity_text || "—"}
+                        </div>
+                        <div>
+                          <strong>Vision:</strong>{" "}
+                          {selectedWorkerSummary.career_blueprint.vision_text || "—"}
+                        </div>
+                        <div>
+                          <strong>Talent focus:</strong>{" "}
+                          {selectedWorkerSummary.career_blueprint.talent_focus_text || "—"}
+                        </div>
+                        <div>
+                          <strong>Career focus:</strong>{" "}
+                          {selectedWorkerSummary.career_blueprint.career_focus_text || "—"}
+                        </div>
+                        <div>
+                          <strong>Inspiration person:</strong>{" "}
+                          {selectedWorkerSummary.career_blueprint.inspiration_person || "—"}
+                        </div>
+                        <div>
+                          <strong>Aspiration person:</strong>{" "}
+                          {selectedWorkerSummary.career_blueprint.aspiration_person || "—"}
+                        </div>
                       </>
                     ) : (
                       <div className="muted">No career blueprint available.</div>
@@ -4235,10 +4797,14 @@ function AdminOrganizationsContent() {
                 </div>
 
                 <div className="card-soft stack">
-                  <div className="row space-between" style={{ gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+                  <div
+                    className="row space-between"
+                    style={{ gap: 12, flexWrap: "wrap", alignItems: "center" }}
+                  >
                     <div className="section-title">Levers workspace</div>
                     <div className="muted">
-                      {filteredLevers.length} lever(s) shown / {selectedWorkerSummary.lever_count} total
+                      {filteredLevers.length} lever(s) shown / {selectedWorkerSummary.lever_count}{" "}
+                      total
                     </div>
                   </div>
 
@@ -4282,9 +4848,16 @@ function AdminOrganizationsContent() {
                     {selectedWorkerSummary.sessions.length === 0 ? (
                       <div className="muted">No sessions found.</div>
                     ) : (
-                      <div className="stack" style={{ gap: 10, maxHeight: "38vh", overflowY: "auto" }}>
+                      <div
+                        className="stack"
+                        style={{ gap: 10, maxHeight: "38vh", overflowY: "auto" }}
+                      >
                         {selectedWorkerSummary.sessions.map((session) => (
-                          <div key={session.session_id} className="stack" style={{ gap: 4, borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+                          <div
+                            key={session.session_id}
+                            className="stack"
+                            style={{ gap: 4, borderTop: "1px solid var(--border)", paddingTop: 10 }}
+                          >
                             <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                               <span className="badge">#{session.session_id}</span>
                               <span className="badge">{session.status}</span>
@@ -4303,13 +4876,25 @@ function AdminOrganizationsContent() {
                     {selectedWorkerSummary.recommendations.length === 0 ? (
                       <div className="muted">No recommendations found.</div>
                     ) : (
-                      <div className="stack" style={{ gap: 10, maxHeight: "38vh", overflowY: "auto" }}>
+                      <div
+                        className="stack"
+                        style={{ gap: 10, maxHeight: "38vh", overflowY: "auto" }}
+                      >
                         {selectedWorkerSummary.recommendations.map((recommendation) => {
                           const relatedLevers =
                             relatedLeversByRecommendationId.get(recommendation.id) ?? [];
 
                           return (
-                            <div key={recommendation.id} id={`recommendation-${recommendation.id}`} className="stack" style={{ gap: 6, borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+                            <div
+                              key={recommendation.id}
+                              id={`recommendation-${recommendation.id}`}
+                              className="stack"
+                              style={{
+                                gap: 6,
+                                borderTop: "1px solid var(--border)",
+                                paddingTop: 10,
+                              }}
+                            >
                               <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                                 <span className="badge">#{recommendation.id}</span>
                                 <span className="badge">{recommendation.status}</span>
@@ -4347,9 +4932,16 @@ function AdminOrganizationsContent() {
                     {selectedWorkerSummary.artifacts.length === 0 ? (
                       <div className="muted">No artifacts found.</div>
                     ) : (
-                      <div className="stack" style={{ gap: 10, maxHeight: "38vh", overflowY: "auto" }}>
+                      <div
+                        className="stack"
+                        style={{ gap: 10, maxHeight: "38vh", overflowY: "auto" }}
+                      >
                         {selectedWorkerSummary.artifacts.map((artifact) => (
-                          <div key={artifact.id} className="stack" style={{ gap: 4, borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+                          <div
+                            key={artifact.id}
+                            className="stack"
+                            style={{ gap: 4, borderTop: "1px solid var(--border)", paddingTop: 10 }}
+                          >
                             <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                               <span className="badge">#{artifact.id}</span>
                               <span className="badge">{artifact.format}</span>
@@ -4374,9 +4966,16 @@ function AdminOrganizationsContent() {
                     {filteredLevers.length === 0 ? (
                       <div className="muted">No levers found.</div>
                     ) : (
-                      <div className="stack" style={{ gap: 10, maxHeight: "38vh", overflowY: "auto" }}>
+                      <div
+                        className="stack"
+                        style={{ gap: 10, maxHeight: "38vh", overflowY: "auto" }}
+                      >
                         {filteredLevers.map((lever) => (
-                          <div key={lever.id} className="stack" style={{ gap: 6, borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+                          <div
+                            key={lever.id}
+                            className="stack"
+                            style={{ gap: 6, borderTop: "1px solid var(--border)", paddingTop: 10 }}
+                          >
                             <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                               <span className="badge">#{lever.id}</span>
                               <span className="badge">{lever.category}</span>
@@ -4393,7 +4992,8 @@ function AdminOrganizationsContent() {
                             <div>{lever.description}</div>
 
                             <div className="muted">
-                              Provider: {lever.provider_type || "—"} • Paid: {lever.is_paid ? "yes" : "no"}
+                              Provider: {lever.provider_type || "—"} • Paid:{" "}
+                              {lever.is_paid ? "yes" : "no"}
                             </div>
 
                             {lever.price_min_eur != null || lever.price_max_eur != null ? (
@@ -4434,7 +5034,12 @@ function AdminOrganizationsContent() {
 
                             {lever.url ? (
                               <div>
-                                <a href={lever.url} target="_blank" rel="noreferrer" className="link-button">
+                                <a
+                                  href={lever.url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="link-button"
+                                >
                                   Open lever link
                                 </a>
                               </div>

@@ -72,6 +72,7 @@ function AuthCallbackContent() {
     async function handleCallback() {
       try {
         const token = searchParams.get("token");
+        const returnTo = searchParams.get("returnTo");
 
         if (!token) {
           if (isMounted) {
@@ -81,7 +82,10 @@ function AuthCallbackContent() {
         }
 
         saveToken(token);
-        await routeUserAfterLogin(router);
+
+        await routeUserAfterLogin(router, {
+          returnTo,
+        });
       } catch (err) {
         if (isMounted) {
           setError(err instanceof Error ? err.message : "Authentication callback failed.");

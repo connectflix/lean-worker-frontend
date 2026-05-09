@@ -13,6 +13,7 @@ import {
   createAdminWorkerSignificanceCanvas,
   createAdminWorkerTimeCanvas,
   finalizeAdminWorkerEngagement,
+  getAdminLearningWorkersPerformance,
   getAdminMe,
   getAdminWorkerConversations,
   getAdminWorkerEngagements,
@@ -29,6 +30,7 @@ import {
   updateAdminWorkerTimeCanvas,
 } from "@/lib/api";
 import type {
+  AdminLearningWorkerPerformance,
   AdminMe,
   AdminWorker,
   AdminWorkerCreate,
@@ -61,7 +63,8 @@ type WorkersViewMode =
   | "engagements"
   | "purpose"
   | "significance"
-  | "time";
+  | "time"
+  | "learning";
 
 type SubscriptionPack = "standard" | "classique" | "flix" | "executif";
 
@@ -1329,6 +1332,14 @@ function getCanvasToneStyles(tone: CanvasTone): {
   }
 }
 
+function getLearningProgressStatus(value: number): "not_started" | "in_progress" | "completed" {
+  const progress = Number(value || 0);
+
+  if (progress >= 100) return "completed";
+  if (progress > 0) return "in_progress";
+  return "not_started";
+}
+
 function SavePill({
   state,
   savedAt,
@@ -1376,7 +1387,6 @@ function SavePill({
     </span>
   );
 }
-
 function CoherenceBadge({
   status,
 }: {
@@ -1425,10 +1435,18 @@ function CoherenceBadge({
             : "Critical";
     color = "#b91c1c";
     background = "rgba(239,68,68,0.14)";
-  } else if (status === "not_evaluated") {
-    label = "Not evaluated";
+  } else if (status === "not_evaluated" || status === "not_started") {
+    label = status === "not_started" ? "Not started" : "Not evaluated";
     color = "#64748b";
     background = "rgba(100,116,139,0.14)";
+  } else if (status === "in_progress") {
+    label = "In progress";
+    color = "#1d4ed8";
+    background = "rgba(59,130,246,0.14)";
+  } else if (status === "completed") {
+    label = "Completed";
+    color = "#15803d";
+    background = "rgba(34,197,94,0.14)";
   }
 
   return (
@@ -1569,6 +1587,50 @@ function SubscriptionPackPriceHint({
       ) : (
         <div className="muted">No persisted subscription details yet.</div>
       )}
+    </div>
+  );
+}
+
+function LearningProgressBar({
+  value,
+  height = 10,
+}: {
+  value: number;
+  height?: number;
+}) {
+  const normalized = Math.min(100, Math.max(0, Number(value || 0)));
+  const status = getLearningProgressStatus(normalized);
+
+  let color = "#64748b";
+  let background = "rgba(100,116,139,0.14)";
+
+  if (status === "completed") {
+    color = "#15803d";
+    background = "rgba(34,197,94,0.14)";
+  } else if (status === "in_progress") {
+    color = "#2563eb";
+    background = "rgba(37,99,235,0.12)";
+  }
+
+  return (
+    <div
+      style={{
+        width: "100%",
+        height,
+        borderRadius: 999,
+        background,
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          width: `${normalized}%`,
+          height: "100%",
+          borderRadius: 999,
+          background: color,
+          transition: "width 180ms ease",
+        }}
+      />
     </div>
   );
 }
@@ -1719,6 +1781,421 @@ function CanvasIntentBlock({
     </div>
   );
 }
+
+function EngagementCanvasVisual({
+  form,
+  onChange,
+  disabled = false,
+}: {
+  form: EngagementFormState;
+  onChange: <K extends keyof EngagementFormState>(
+    key: K,
+    value: EngagementFormState[K],
+  ) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="stack" style={{ gap: 14 }}>
+      <div
+        style={{
+          width: "100%",
+          overflowX: "auto",
+          paddingBottom: 4,
+        }}
+      >
+        <div
+          style={{
+            minWidth: 1180,
+            border: "2px solid rgba(15,23,42,0.78)",
+            borderRadius: 10,
+            overflow: "hidden",
+            background: "#fff",
+            boxShadow: "0 18px 48px rgba(15,23,42,0.10)",
+          }}
+        >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1.05fr 1.4fr 1.4fr 1.1fr 1.05fr",
+              minHeight: 620,
+              borderBottom: "2px solid rgba(15,23,42,0.78)",
+            }}
+          >
+            <div style={{ borderRight: "2px solid rgba(15,23,42,0.78)" }}>
+              <EngagementCanvasCell
+                title="Ambitions"
+                tone="orange"
+                value={form.ambitions_text}
+                onChange={(value) => onChange("ambitions_text", value)}
+                placeholder="Quelles ambitions professionnelles émergent ?"
+                disabled={disabled}
+                minHeight={620}
+              />
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateRows: "1fr 1fr",
+                borderRight: "2px solid rgba(15,23,42,0.78)",
+              }}
+            >
+              <div style={{ borderBottom: "2px solid rgba(15,23,42,0.78)" }}>
+                <EngagementCanvasCell
+                  title="But"
+                  tone="purple"
+                  value={form.purpose_text}
+                  onChange={(value) => onChange("purpose_text", value)}
+                  placeholder="Quel est le but visible dans son travail ?"
+                  disabled={disabled}
+                  minHeight={308}
+                />
+              </div>
+
+              <EngagementCanvasCell
+                title="Missions"
+                tone="teal"
+                value={form.missions_text}
+                onChange={(value) => onChange("missions_text", value)}
+                placeholder="Quelles missions, responsabilités ou contributions sont importantes ?"
+                disabled={disabled}
+                minHeight={308}
+              />
+            </div>
+
+            <div style={{ borderRight: "2px solid rgba(15,23,42,0.78)" }}>
+              <EngagementCanvasCell
+                title="Identité"
+                tone="blue"
+                value={form.identity_text}
+                onChange={(value) => onChange("identity_text", value)}
+                placeholder="Qui est ce worker professionnellement ?"
+                disabled={disabled}
+                minHeight={620}
+              />
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateRows: "1fr 1fr",
+                borderRight: "2px solid rgba(15,23,42,0.78)",
+              }}
+            >
+              <div style={{ borderBottom: "2px solid rgba(15,23,42,0.78)" }}>
+                <EngagementCanvasCell
+                  title="Vision"
+                  tone="cyan"
+                  value={form.vision_text}
+                  onChange={(value) => onChange("vision_text", value)}
+                  placeholder="Quelle vision doit guider le worker ?"
+                  disabled={disabled}
+                  minHeight={308}
+                />
+              </div>
+
+              <EngagementCanvasCell
+                title="Actions"
+                tone="amber"
+                value={form.actions_text}
+                onChange={(value) => onChange("actions_text", value)}
+                placeholder="Quelles actions concrètes doivent être portées ?"
+                disabled={disabled}
+                minHeight={308}
+              />
+            </div>
+
+            <EngagementCanvasCell
+              title="Objectifs"
+              tone="rose"
+              value={form.objectives_text}
+              onChange={(value) => onChange("objectives_text", value)}
+              placeholder="Quels objectifs doivent être ciblés ?"
+              disabled={disabled}
+              minHeight={620}
+            />
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              minHeight: 260,
+            }}
+          >
+            <div style={{ borderRight: "2px solid rgba(15,23,42,0.78)" }}>
+              <EngagementIntentCanvasCell
+                title="Intentions Carrière"
+                tone="indigo"
+                disabled={disabled}
+                items={[
+                  {
+                    label: "Compensation",
+                    value: form.career_intent_compensation,
+                    onChange: (value) => onChange("career_intent_compensation", value),
+                  },
+                  {
+                    label: "Role",
+                    value: form.career_intent_role,
+                    onChange: (value) => onChange("career_intent_role", value),
+                  },
+                  {
+                    label: "Passion criteria",
+                    value: form.career_intent_passion_criteria,
+                    onChange: (value) => onChange("career_intent_passion_criteria", value),
+                  },
+                  {
+                    label: "Collaboration profile",
+                    value: form.career_intent_collaboration_profile,
+                    onChange: (value) =>
+                      onChange("career_intent_collaboration_profile", value),
+                  },
+                  {
+                    label: "Performance level",
+                    value: form.career_intent_performance_level,
+                    onChange: (value) => onChange("career_intent_performance_level", value),
+                  },
+                  {
+                    label: "Responsibilities",
+                    value: form.career_intent_responsibilities,
+                    onChange: (value) => onChange("career_intent_responsibilities", value),
+                  },
+                ]}
+              />
+            </div>
+
+            <EngagementIntentCanvasCell
+              title="Intentions Talent"
+              tone="green"
+              disabled={disabled}
+              items={[
+                {
+                  label: "Foundations",
+                  value: form.talent_intent_foundations,
+                  onChange: (value) => onChange("talent_intent_foundations", value),
+                },
+                {
+                  label: "Personality",
+                  value: form.talent_intent_personality,
+                  onChange: (value) => onChange("talent_intent_personality", value),
+                },
+                {
+                  label: "Watch",
+                  value: form.talent_intent_watch,
+                  onChange: (value) => onChange("talent_intent_watch", value),
+                },
+                {
+                  label: "Next level",
+                  value: form.talent_intent_next_level,
+                  onChange: (value) => onChange("talent_intent_next_level", value),
+                },
+                {
+                  label: "Impact niches",
+                  value: form.talent_intent_impact_niches,
+                  onChange: (value) => onChange("talent_intent_impact_niches", value),
+                },
+                {
+                  label: "Social contributions",
+                  value: form.talent_intent_social_contributions,
+                  onChange: (value) => onChange("talent_intent_social_contributions", value),
+                },
+              ]}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="muted" style={{ lineHeight: 1.6 }}>
+        Structure cible respectée : Ambitions, But/Missions, Identité, Vision/Actions,
+        Objectifs, puis Intentions Carrière et Intentions Talent en bas du canvas.
+      </div>
+    </div>
+  );
+}
+
+function EngagementCanvasCell({
+  title,
+  tone,
+  value,
+  onChange,
+  placeholder,
+  minHeight,
+  disabled = false,
+}: {
+  title: string;
+  tone: CanvasTone;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  minHeight: number;
+  disabled?: boolean;
+}) {
+  const toneStyles = getCanvasToneStyles(tone);
+
+  return (
+    <div
+      style={{
+        minHeight,
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        background: `linear-gradient(180deg, ${toneStyles.background}, rgba(255,255,255,0.98) 42%)`,
+      }}
+    >
+      <div
+        style={{
+          padding: "18px 18px 8px",
+          fontSize: 34,
+          lineHeight: 1,
+          fontWeight: 900,
+          letterSpacing: "-0.04em",
+          color: toneStyles.title,
+        }}
+      >
+        {title}
+      </div>
+
+      <div
+        style={{
+          height: 4,
+          width: 56,
+          marginLeft: 18,
+          marginBottom: 6,
+          borderRadius: 999,
+          background: toneStyles.title,
+          opacity: 0.75,
+        }}
+      />
+
+      <textarea
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder || "Saisir ici..."}
+        disabled={disabled}
+        style={{
+          width: "100%",
+          flex: 1,
+          minHeight: 0,
+          resize: "none",
+          border: "none",
+          outline: "none",
+          background: "transparent",
+          color: "#0f172a",
+          font: "inherit",
+          fontSize: 15,
+          lineHeight: 1.55,
+          padding: "10px 18px 18px",
+          cursor: disabled ? "not-allowed" : "text",
+          opacity: disabled ? 0.72 : 1,
+        }}
+      />
+    </div>
+  );
+}
+
+function EngagementIntentCanvasCell({
+  title,
+  tone,
+  items,
+  disabled = false,
+}: {
+  title: string;
+  tone: CanvasTone;
+  items: Array<{
+    label: string;
+    value: string;
+    onChange: (value: string) => void;
+  }>;
+  disabled?: boolean;
+}) {
+  const toneStyles = getCanvasToneStyles(tone);
+
+  return (
+    <div
+      style={{
+        minHeight: 260,
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        background: `linear-gradient(180deg, ${toneStyles.background}, rgba(255,255,255,0.98) 48%)`,
+      }}
+    >
+      <div
+        style={{
+          padding: "18px 18px 8px",
+          fontSize: 32,
+          lineHeight: 1,
+          fontWeight: 900,
+          letterSpacing: "-0.04em",
+          color: toneStyles.title,
+        }}
+      >
+        {title}
+      </div>
+
+      <div
+        style={{
+          height: 4,
+          width: 72,
+          marginLeft: 18,
+          marginBottom: 6,
+          borderRadius: 999,
+          background: toneStyles.title,
+          opacity: 0.75,
+        }}
+      />
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+          gap: 10,
+          padding: "10px 18px 18px",
+          flex: 1,
+        }}
+      >
+        {items.map((item) => (
+          <label key={item.label} className="stack" style={{ gap: 5 }}>
+            <span
+              style={{
+                fontSize: 12,
+                fontWeight: 800,
+                color: toneStyles.title,
+              }}
+            >
+              {item.label}
+            </span>
+
+            <textarea
+              value={item.value}
+              onChange={(event) => item.onChange(event.target.value)}
+              disabled={disabled}
+              rows={3}
+              placeholder="Saisir ici..."
+              style={{
+                width: "100%",
+                minHeight: 72,
+                resize: "vertical",
+                border: `1px solid ${toneStyles.border}`,
+                borderRadius: 12,
+                outline: "none",
+                padding: 10,
+                font: "inherit",
+                fontSize: 13,
+                lineHeight: 1.45,
+                background: "rgba(255,255,255,0.82)",
+                color: "#0f172a",
+                cursor: disabled ? "not-allowed" : "text",
+                opacity: disabled ? 0.72 : 1,
+              }}
+            />
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function PurposeCanvasVisual({
   form,
   onChange,
@@ -2171,6 +2648,367 @@ function SignificanceCanvasVisual({
   );
 }
 
+function LearningPerformanceView({
+  workers,
+  loading,
+  performanceItems,
+  selectedWorkerId,
+  onSelectWorker,
+  onRefresh,
+}: {
+  workers: AdminWorker[];
+  loading: boolean;
+  performanceItems: AdminLearningWorkerPerformance[];
+  selectedWorkerId: number | null;
+  onSelectWorker: (worker: AdminWorker) => void;
+  onRefresh: () => void;
+}) {
+  const [search, setSearch] = useState("");
+  const [progressFilter, setProgressFilter] = useState<
+    "all" | "not_started" | "in_progress" | "completed"
+  >("all");
+
+  const itemsByWorkerId = useMemo(() => {
+    const map = new Map<number, AdminLearningWorkerPerformance>();
+
+    performanceItems.forEach((item) => {
+      map.set(item.worker_id, item);
+    });
+
+    return map;
+  }, [performanceItems]);
+
+  const mergedItems = useMemo(() => {
+    return workers.map((worker) => {
+      const performance = itemsByWorkerId.get(worker.id);
+
+      return {
+        worker,
+        performance,
+        progressPercent: performance?.overall_progress_percent ?? 0,
+        totalLessons: performance?.total_lessons ?? 0,
+        startedLessons: performance?.started_lessons ?? 0,
+        completedLessons: performance?.completed_lessons ?? 0,
+        totalCourses: performance?.total_courses ?? 0,
+      };
+    });
+  }, [workers, itemsByWorkerId]);
+
+  const filteredItems = useMemo(() => {
+    const q = search.trim().toLowerCase();
+
+    return mergedItems.filter((item) => {
+      const worker = item.worker;
+      const progressStatus = getLearningProgressStatus(item.progressPercent);
+
+      const matchesSearch =
+        !q ||
+        worker.display_name.toLowerCase().includes(q) ||
+        (worker.email || "").toLowerCase().includes(q) ||
+        (worker.business_id || "").toLowerCase().includes(q) ||
+        (worker.profession || "").toLowerCase().includes(q) ||
+        (worker.current_role || "").toLowerCase().includes(q);
+
+      const matchesProgress =
+        progressFilter === "all" || progressStatus === progressFilter;
+
+      return matchesSearch && matchesProgress;
+    });
+  }, [mergedItems, search, progressFilter]);
+
+  const aggregate = useMemo(() => {
+    const totalWorkers = mergedItems.length;
+
+    const averageProgress =
+      totalWorkers > 0
+        ? Math.round(
+            (mergedItems.reduce((sum, item) => sum + item.progressPercent, 0) / totalWorkers) *
+              100,
+          ) / 100
+        : 0;
+
+    const completedWorkers = mergedItems.filter(
+      (item) => getLearningProgressStatus(item.progressPercent) === "completed",
+    ).length;
+
+    const inProgressWorkers = mergedItems.filter(
+      (item) => getLearningProgressStatus(item.progressPercent) === "in_progress",
+    ).length;
+
+    const notStartedWorkers = mergedItems.filter(
+      (item) => getLearningProgressStatus(item.progressPercent) === "not_started",
+    ).length;
+
+    const totalCompletedLessons = mergedItems.reduce(
+      (sum, item) => sum + item.completedLessons,
+      0,
+    );
+
+    const totalLessons = mergedItems.reduce((sum, item) => sum + item.totalLessons, 0);
+
+    return {
+      totalWorkers,
+      averageProgress,
+      completedWorkers,
+      inProgressWorkers,
+      notStartedWorkers,
+      totalCompletedLessons,
+      totalLessons,
+    };
+  }, [mergedItems]);
+
+  return (
+    <div className="card stack" style={{ gap: 16 }}>
+      <div
+        className="row space-between"
+        style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}
+      >
+        <div className="stack" style={{ gap: 4 }}>
+          <div className="section-title">E-learning performance</div>
+          <div className="muted">
+            Suivi admin de la progression des workers dans le programme de formation LeanWorker.
+            La métrique clé est le pourcentage de completion du programme.
+          </div>
+        </div>
+
+        <button className="button ghost" type="button" onClick={onRefresh} disabled={loading}>
+          {loading ? "Refreshing..." : "Refresh learning stats"}
+        </button>
+      </div>
+
+      <div
+        style={{
+          width: "100%",
+          overflowX: "auto",
+          paddingBottom: 4,
+        }}
+      >
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(6, minmax(170px, 1fr))",
+            gap: 14,
+            minWidth: 1080,
+          }}
+        >
+          <div className="card-soft stack" style={{ gap: 6 }}>
+            <div className="muted">Average completion</div>
+            <div className="admin-metric-value" style={{ fontSize: 30 }}>
+              {aggregate.averageProgress}%
+            </div>
+            <LearningProgressBar value={aggregate.averageProgress} />
+          </div>
+
+          <div className="card-soft stack" style={{ gap: 6 }}>
+            <div className="muted">Workers tracked</div>
+            <div className="admin-metric-value" style={{ fontSize: 30 }}>
+              {aggregate.totalWorkers}
+            </div>
+          </div>
+
+          <div className="card-soft stack" style={{ gap: 6 }}>
+            <div className="muted">Completed program</div>
+            <div className="admin-metric-value" style={{ fontSize: 30, color: "#15803d" }}>
+              {aggregate.completedWorkers}
+            </div>
+          </div>
+
+          <div className="card-soft stack" style={{ gap: 6 }}>
+            <div className="muted">In progress</div>
+            <div className="admin-metric-value" style={{ fontSize: 30, color: "#2563eb" }}>
+              {aggregate.inProgressWorkers}
+            </div>
+          </div>
+
+          <div className="card-soft stack" style={{ gap: 6 }}>
+            <div className="muted">Not started</div>
+            <div className="admin-metric-value" style={{ fontSize: 30, color: "#64748b" }}>
+              {aggregate.notStartedWorkers}
+            </div>
+          </div>
+
+          <div className="card-soft stack" style={{ gap: 6 }}>
+            <div className="muted">Lessons completed</div>
+            <div className="admin-metric-value" style={{ fontSize: 30 }}>
+              {aggregate.totalCompletedLessons}/{aggregate.totalLessons}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="card-soft stack" style={{ gap: 12 }}>
+        <div className="grid grid-2">
+          <label className="stack">
+            <strong>Search worker</strong>
+            <input
+              className="input"
+              placeholder="Search by name, email, business ID, role..."
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </label>
+
+          <label className="stack">
+            <strong>Progress status</strong>
+            <select
+              className="select"
+              value={progressFilter}
+              onChange={(event) =>
+                setProgressFilter(
+                  event.target.value as "all" | "not_started" | "in_progress" | "completed",
+                )
+              }
+            >
+              <option value="all">All statuses</option>
+              <option value="not_started">Not started</option>
+              <option value="in_progress">In progress</option>
+              <option value="completed">Completed</option>
+            </select>
+          </label>
+        </div>
+
+        <div className="muted">
+          {loading ? "Loading learning performance..." : `${filteredItems.length} worker(s) shown`}
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="card-soft">Loading learning performance...</div>
+      ) : filteredItems.length === 0 ? (
+        <div className="card-soft muted">No learning performance found for this filter.</div>
+      ) : (
+        <div className="stack" style={{ gap: 12 }}>
+          {filteredItems.map((item) => {
+            const status = getLearningProgressStatus(item.progressPercent);
+
+            return (
+              <div
+                key={item.worker.id}
+                className="card-soft stack"
+                style={{
+                  gap: 10,
+                  border:
+                    selectedWorkerId === item.worker.id
+                      ? "1px solid var(--primary)"
+                      : "1px solid var(--border)",
+                }}
+              >
+                <div
+                  className="row space-between"
+                  style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}
+                >
+                  <div className="stack" style={{ gap: 5 }}>
+                    <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                      <span className="badge">#{item.worker.id}</span>
+                      {item.worker.business_id ? (
+                        <span className="badge">{item.worker.business_id}</span>
+                      ) : null}
+                      <CoherenceBadge status={status} />
+                    </div>
+
+                    <div className="section-title" style={{ fontSize: 16 }}>
+                      {item.worker.display_name}
+                    </div>
+
+                    <div className="muted">{item.worker.email || "No email"}</div>
+
+                    <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                      {item.worker.current_role ? (
+                        <span className="badge">role: {item.worker.current_role}</span>
+                      ) : null}
+                      {item.worker.profession ? (
+                        <span className="badge">profession: {item.worker.profession}</span>
+                      ) : null}
+                      {item.worker.organization_id ? (
+                        <span className="badge">org: {item.worker.organization_id}</span>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <button
+                    className="button ghost"
+                    type="button"
+                    onClick={() => onSelectWorker(item.worker)}
+                  >
+                    Use worker context
+                  </button>
+                </div>
+
+                <div className="grid grid-4">
+                  <div className="stack" style={{ gap: 5 }}>
+                    <div className="muted">Completion</div>
+                    <div className="admin-metric-value" style={{ fontSize: 26 }}>
+                      {item.progressPercent}%
+                    </div>
+                  </div>
+
+                  <div className="stack" style={{ gap: 5 }}>
+                    <div className="muted">Courses</div>
+                    <div className="admin-metric-value" style={{ fontSize: 26 }}>
+                      {item.totalCourses}
+                    </div>
+                  </div>
+
+                  <div className="stack" style={{ gap: 5 }}>
+                    <div className="muted">Started lessons</div>
+                    <div className="admin-metric-value" style={{ fontSize: 26 }}>
+                      {item.startedLessons}
+                    </div>
+                  </div>
+
+                  <div className="stack" style={{ gap: 5 }}>
+                    <div className="muted">Completed lessons</div>
+                    <div className="admin-metric-value" style={{ fontSize: 26 }}>
+                      {item.completedLessons}/{item.totalLessons}
+                    </div>
+                  </div>
+                </div>
+
+                <LearningProgressBar value={item.progressPercent} height={12} />
+
+                {item.performance?.last_activity_at ? (
+                  <div className="muted">
+                    Last learning activity:{" "}
+                    {new Date(item.performance.last_activity_at).toLocaleString()}
+                  </div>
+                ) : (
+                  <div className="muted">No learning activity yet.</div>
+                )}
+
+                {item.performance?.courses?.length ? (
+                  <div className="stack" style={{ gap: 8 }}>
+                    <div className="section-title" style={{ fontSize: 14 }}>
+                      Course details
+                    </div>
+
+                    {item.performance.courses.map((course) => (
+                      <div key={course.course_id} className="card-soft stack" style={{ gap: 8 }}>
+                        <div
+                          className="row space-between"
+                          style={{ gap: 10, flexWrap: "wrap", alignItems: "center" }}
+                        >
+                          <div style={{ fontWeight: 800 }}>{course.course_title}</div>
+                          <span className="badge">{course.progress_percent}%</span>
+                        </div>
+
+                        <LearningProgressBar value={course.progress_percent} />
+
+                        <div className="muted">
+                          {course.completed_lessons}/{course.total_lessons} lessons completed
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdminWorkersPage() {
   return (
     <AdminGuard>
@@ -2192,6 +3030,11 @@ function AdminWorkersContent() {
   const [conversations, setConversations] = useState<AdminWorkerConversation[]>([]);
   const [conversationsLoading, setConversationsLoading] = useState(true);
   const [conversationSaving, setConversationSaving] = useState(false);
+
+  const [learningPerformance, setLearningPerformance] = useState<
+    AdminLearningWorkerPerformance[]
+  >([]);
+  const [learningPerformanceLoading, setLearningPerformanceLoading] = useState(true);
 
   const [viewMode, setViewMode] = useState<WorkersViewMode>("workers");
   const [error, setError] = useState<string | null>(null);
@@ -2274,32 +3117,51 @@ function AdminWorkersContent() {
   const significanceAutoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipNextSignificanceAutosaveRef = useRef<boolean>(true);
 
+  async function loadLearningPerformance() {
+    setLearningPerformanceLoading(true);
+    setError(null);
+
+    try {
+      const data = await getAdminLearningWorkersPerformance();
+      setLearningPerformance(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load learning performance.");
+    } finally {
+      setLearningPerformanceLoading(false);
+    }
+  }
+
   useEffect(() => {
     async function load() {
       try {
-        const [me, workerData, conversationData, questionData] = await Promise.all([
-          getAdminMe(),
-          getAdminWorkers(),
-          getAdminWorkerConversations(),
-          getAdminWorkerSignificanceQuestions(),
-        ]);
+        const [me, workerData, conversationData, questionData, learningData] =
+          await Promise.all([
+            getAdminMe(),
+            getAdminWorkers(),
+            getAdminWorkerConversations(),
+            getAdminWorkerSignificanceQuestions(),
+            getAdminLearningWorkersPerformance(),
+          ]);
 
         setAdmin(me);
         setWorkers(workerData);
         setConversations(conversationData);
         setSignificanceQuestions(normalizeSignificanceQuestions(questionData));
+        setLearningPerformance(learningData);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load workers workspace.");
         setSignificanceQuestions(DEFAULT_SIGNIFICANCE_QUESTIONS);
       } finally {
         setWorkersLoading(false);
         setConversationsLoading(false);
+        setLearningPerformanceLoading(false);
       }
     }
 
     void load();
   }, []);
-    const filteredWorkers = useMemo(() => {
+
+  const filteredWorkers = useMemo(() => {
     const q = workerSearch.trim().toLowerCase();
 
     return workers.filter((worker) => {
@@ -2340,11 +3202,23 @@ function AdminWorkersContent() {
 
   const workersById = useMemo(() => {
     const map = new Map<number, AdminWorker>();
+
     workers.forEach((worker) => {
       map.set(worker.id, worker);
     });
+
     return map;
   }, [workers]);
+
+  const learningPerformanceByWorkerId = useMemo(() => {
+    const map = new Map<number, AdminLearningWorkerPerformance>();
+
+    learningPerformance.forEach((item) => {
+      map.set(item.worker_id, item);
+    });
+
+    return map;
+  }, [learningPerformance]);
 
   const stats = useMemo(() => {
     const totalSpent = workers.reduce((sum, worker) => sum + (worker.total_spent_eur ?? 0), 0);
@@ -2360,6 +3234,18 @@ function AdminWorkersContent() {
       (worker) => worker.active_subscription?.status === "active",
     ).length;
 
+    const totalLearningProgress =
+      workers.length > 0
+        ? Math.round(
+            (workers.reduce((sum, worker) => {
+              const performance = learningPerformanceByWorkerId.get(worker.id);
+              return sum + Number(performance?.overall_progress_percent ?? 0);
+            }, 0) /
+              workers.length) *
+              100,
+          ) / 100
+        : 0;
+
     return {
       totalWorkers: workers.length,
       totalConversations: conversations.length,
@@ -2369,33 +3255,25 @@ function AdminWorkersContent() {
       activeSubscriptions,
       flixWorkers: workers.filter((worker) => worker.subscription_pack === "flix").length,
       executiveWorkers: workers.filter((worker) => worker.subscription_pack === "executif").length,
+      totalLearningProgress,
     };
-  }, [workers, conversations]);
+  }, [workers, conversations, learningPerformanceByWorkerId]);
 
   const isFutureStateLocked =
     engagementCanvasLoaded &&
     engagementSelectionState === "future" &&
     Boolean(editingEngagement?.is_finalized);
 
-  const timeCompletedNodes = useMemo(
-    () => getTimeCanvasCompletedNodes(timeForm),
-    [timeForm],
-  );
+  const timeCompletedNodes = useMemo(() => getTimeCanvasCompletedNodes(timeForm), [timeForm]);
 
-  const timeReadinessScore = useMemo(
-    () => getTimeCanvasReadinessScore(timeForm),
-    [timeForm],
-  );
+  const timeReadinessScore = useMemo(() => getTimeCanvasReadinessScore(timeForm), [timeForm]);
 
   const timeReadinessStatus = useMemo(
     () => getTimeCanvasReadinessStatus(timeReadinessScore, timeCompletedNodes),
     [timeReadinessScore, timeCompletedNodes],
   );
 
-  const timeSummary = useMemo(
-    () => buildTimeCanvasSummary(timeForm),
-    [timeForm],
-  );
+  const timeSummary = useMemo(() => buildTimeCanvasSummary(timeForm), [timeForm]);
 
   const significanceAnswers = useMemo(
     () => buildSignificanceAnswers(significanceForm, significanceQuestions),
@@ -2606,6 +3484,8 @@ function AdminWorkersContent() {
       setWorkerSearch("");
       setWorkerPackFilter("all");
       resetCreateWorkerForm();
+
+      void loadLearningPerformance();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create worker.");
     } finally {
@@ -2653,6 +3533,7 @@ function AdminWorkersContent() {
     });
 
     const linkedWorker = workersById.get(item.worker_id);
+
     if (linkedWorker) {
       fillWorkerForm(linkedWorker);
     }
@@ -2694,6 +3575,7 @@ function AdminWorkersContent() {
       if (editingConversationId) {
         const payload: AdminWorkerConversationUpdate = basePayload;
         const updated = await updateAdminWorkerConversation(editingConversationId, payload);
+
         setConversations((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
         fillConversationForm(updated);
       } else {
@@ -2702,6 +3584,7 @@ function AdminWorkersContent() {
           ...basePayload,
         };
         const created = await createAdminWorkerConversation(payload);
+
         setConversations((prev) => [created, ...prev]);
         resetConversationForm(true);
       }
@@ -2749,6 +3632,7 @@ function AdminWorkersContent() {
       setEngagementCanvasLoaded(true);
 
       const linkedWorker = workersById.get(workerId);
+
       if (linkedWorker) {
         fillWorkerForm(linkedWorker);
       }
@@ -2815,6 +3699,7 @@ function AdminWorkersContent() {
       if (editingEngagementId) {
         const payload: AdminWorkerEngagementUpdate = basePayload;
         const updated = await updateAdminWorkerEngagement(editingEngagementId, payload);
+
         setEditingEngagement(updated);
         setEngagementForm(engagementFormFromItem(updated));
         stampEngagementSavedNow();
@@ -2826,6 +3711,7 @@ function AdminWorkersContent() {
           is_finalized: false,
         };
         const created = await createAdminWorkerEngagement(payload);
+
         setEditingEngagementId(created.id);
         setEditingEngagement(created);
         setEngagementForm(engagementFormFromItem(created));
@@ -2849,6 +3735,7 @@ function AdminWorkersContent() {
 
     try {
       const updated = await finalizeAdminWorkerEngagement(editingEngagementId);
+
       setEditingEngagement(updated);
       setEngagementForm(engagementFormFromItem(updated));
       stampEngagementSavedNow();
@@ -2896,6 +3783,7 @@ function AdminWorkersContent() {
       setPurposeCanvasLoaded(true);
 
       const linkedWorker = workersById.get(workerId);
+
       if (linkedWorker) {
         fillWorkerForm(linkedWorker);
       }
@@ -2954,6 +3842,7 @@ function AdminWorkersContent() {
       if (editingPurposeCanvasId) {
         const payload = basePayload as AdminWorkerPurposeCanvasUpdate;
         const updated = await updateAdminWorkerPurposeCanvas(editingPurposeCanvasId, payload);
+
         setEditingPurposeCanvas(updated);
         setPurposeForm(purposeFormFromItem(updated));
         stampPurposeSavedNow();
@@ -2964,6 +3853,7 @@ function AdminWorkersContent() {
         } as AdminWorkerPurposeCanvasCreate;
 
         const created = await createAdminWorkerPurposeCanvas(payload);
+
         setEditingPurposeCanvasId(created.id);
         setEditingPurposeCanvas(created);
         setPurposeForm(purposeFormFromItem(created));
@@ -3014,6 +3904,7 @@ function AdminWorkersContent() {
       setTimeCanvasLoaded(true);
 
       const linkedWorker = workersById.get(workerId);
+
       if (linkedWorker) {
         fillWorkerForm(linkedWorker);
       }
@@ -3058,6 +3949,7 @@ function AdminWorkersContent() {
       if (editingTimeCanvasId) {
         const payload = basePayload as AdminWorkerTimeCanvasUpdate;
         const updated = await updateAdminWorkerTimeCanvas(editingTimeCanvasId, payload);
+
         setEditingTimeCanvas(updated);
         setTimeForm(timeFormFromItem(updated));
         stampTimeSavedNow();
@@ -3068,6 +3960,7 @@ function AdminWorkersContent() {
         } as AdminWorkerTimeCanvasCreate;
 
         const created = await createAdminWorkerTimeCanvas(payload);
+
         setEditingTimeCanvasId(created.id);
         setEditingTimeCanvas(created);
         setTimeForm(timeFormFromItem(created));
@@ -3118,6 +4011,7 @@ function AdminWorkersContent() {
       setSignificanceCanvasLoaded(true);
 
       const linkedWorker = workersById.get(workerId);
+
       if (linkedWorker) {
         fillWorkerForm(linkedWorker);
       }
@@ -3177,6 +4071,7 @@ function AdminWorkersContent() {
           editingSignificanceCanvasId,
           payload,
         );
+
         setEditingSignificanceCanvas(updated);
         setSignificanceForm(significanceFormFromItem(updated));
         stampSignificanceSavedNow();
@@ -3187,6 +4082,7 @@ function AdminWorkersContent() {
         } as AdminWorkerSignificanceCanvasCreate;
 
         const created = await createAdminWorkerSignificanceCanvas(payload);
+
         setEditingSignificanceCanvasId(created.id);
         setEditingSignificanceCanvas(created);
         setSignificanceForm(significanceFormFromItem(created));
@@ -3360,7 +4256,7 @@ function AdminWorkersContent() {
     <AdminShell
       activeHref="/admin/workers"
       title="Manage Workers"
-      subtitle="Worker directory plus off-platform conversation, engagement, purpose, time, and significance management."
+      subtitle="Worker directory plus off-platform conversation, engagement, purpose, time, significance, and e-learning performance management."
       adminEmail={admin?.email ?? null}
     >
       <div className="stack" style={{ gap: 4 }}>
@@ -3379,6 +4275,14 @@ function AdminWorkersContent() {
             onClick={() => setViewMode("workers")}
           >
             Workers
+          </button>
+
+          <button
+            className={viewMode === "learning" ? "button" : "button ghost"}
+            type="button"
+            onClick={() => setViewMode("learning")}
+          >
+            Learning
           </button>
 
           <button
@@ -3434,19 +4338,13 @@ function AdminWorkersContent() {
           </button>
         </div>
 
-        <div
-          style={{
-            width: "100%",
-            overflowX: "auto",
-            paddingBottom: 4,
-          }}
-        >
+        <div style={{ width: "100%", overflowX: "auto", paddingBottom: 4 }}>
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(6, minmax(180px, 1fr))",
+              gridTemplateColumns: "repeat(7, minmax(180px, 1fr))",
               gap: 16,
-              minWidth: 1180,
+              minWidth: 1360,
             }}
           >
             <div className="card-soft stack" style={{ gap: 6 }}>
@@ -3454,6 +4352,14 @@ function AdminWorkersContent() {
               <div className="admin-metric-value" style={{ fontSize: 28 }}>
                 {stats.totalWorkers}
               </div>
+            </div>
+
+            <div className="card-soft stack" style={{ gap: 6 }}>
+              <div className="muted">Learning completion</div>
+              <div className="admin-metric-value" style={{ fontSize: 28 }}>
+                {stats.totalLearningProgress}%
+              </div>
+              <LearningProgressBar value={stats.totalLearningProgress} />
             </div>
 
             <div className="card-soft stack" style={{ gap: 6 }}>
@@ -3493,7 +4399,8 @@ function AdminWorkersContent() {
           </div>
         </div>
       </div>
-            {error ? (
+
+      {error ? (
         <div className="card" style={{ color: "var(--danger)" }}>
           {error}
         </div>
@@ -3518,9 +4425,43 @@ function AdminWorkersContent() {
                 pack={selectedWorker.subscription_pack}
                 subscription={selectedWorker.active_subscription}
               />
+
+              {learningPerformanceByWorkerId.get(selectedWorker.id) ? (
+                <div className="card-soft stack" style={{ gap: 8 }}>
+                  <div className="section-title" style={{ fontSize: 14 }}>
+                    E-learning progress
+                  </div>
+                  <div className="admin-metric-value" style={{ fontSize: 24 }}>
+                    {
+                      learningPerformanceByWorkerId.get(selectedWorker.id)
+                        ?.overall_progress_percent
+                    }
+                    %
+                  </div>
+                  <LearningProgressBar
+                    value={
+                      learningPerformanceByWorkerId.get(selectedWorker.id)
+                        ?.overall_progress_percent ?? 0
+                    }
+                  />
+                  <div className="muted">
+                    {learningPerformanceByWorkerId.get(selectedWorker.id)?.completed_lessons ?? 0}/
+                    {learningPerformanceByWorkerId.get(selectedWorker.id)?.total_lessons ?? 0}{" "}
+                    lessons completed
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+              <button
+                className="button ghost"
+                type="button"
+                onClick={() => setViewMode("learning")}
+              >
+                Open learning
+              </button>
+
               <button
                 className="button ghost"
                 type="button"
@@ -3592,6 +4533,17 @@ function AdminWorkersContent() {
         </div>
       ) : null}
 
+      {viewMode === "learning" ? (
+        <LearningPerformanceView
+          workers={workers}
+          loading={learningPerformanceLoading}
+          performanceItems={learningPerformance}
+          selectedWorkerId={selectedWorkerId}
+          onSelectWorker={(worker) => openWorkerContext(worker, "learning")}
+          onRefresh={() => void loadLearningPerformance()}
+        />
+      ) : null}
+
       {viewMode === "workers" ? (
         <div className="grid grid-2" style={{ alignItems: "start" }}>
           <div
@@ -3647,154 +4599,187 @@ function AdminWorkersContent() {
                   gap: 14,
                 }}
               >
-                {filteredWorkers.map((worker) => (
-                  <div
-                    key={worker.id}
-                    className="card-soft stack"
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => fillWorkerForm(worker)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        fillWorkerForm(worker);
-                      }
-                    }}
-                    style={{
-                      gap: 8,
-                      textAlign: "left",
-                      cursor: "pointer",
-                      border:
-                        selectedWorkerId === worker.id
-                          ? "1px solid var(--primary)"
-                          : "1px solid var(--border)",
-                      flexShrink: 0,
-                    }}
-                  >
-                    <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                      <span className="badge">#{worker.id}</span>
-                      <span className="badge">{worker.subscription_pack}</span>
-                      <SubscriptionStatusBadge status={worker.active_subscription?.status} />
-                      {worker.is_manually_created ? <span className="badge">manual</span> : null}
-                      {worker.linkedin_linked_at ? (
-                        <span className="badge">linkedin linked</span>
-                      ) : null}
-                      {worker.email_verified ? <span className="badge">verified</span> : null}
-                      {worker.onboarding_completed ? <span className="badge">onboarded</span> : null}
-                    </div>
+                {filteredWorkers.map((worker) => {
+                  const learning = learningPerformanceByWorkerId.get(worker.id);
 
-                    <div className="section-title" style={{ fontSize: 16 }}>
-                      {worker.display_name}
-                    </div>
-
-                    <div className="muted">{worker.email || "No email"}</div>
-
-                    {worker.business_id ? (
+                  return (
+                    <div
+                      key={worker.id}
+                      className="card-soft stack"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => fillWorkerForm(worker)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          fillWorkerForm(worker);
+                        }
+                      }}
+                      style={{
+                        gap: 8,
+                        textAlign: "left",
+                        cursor: "pointer",
+                        border:
+                          selectedWorkerId === worker.id
+                            ? "1px solid var(--primary)"
+                            : "1px solid var(--border)",
+                        flexShrink: 0,
+                      }}
+                    >
                       <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                        <span className="badge">business: {worker.business_id}</span>
+                        <span className="badge">#{worker.id}</span>
+                        <span className="badge">{worker.subscription_pack}</span>
+                        <SubscriptionStatusBadge status={worker.active_subscription?.status} />
+                        {worker.is_manually_created ? <span className="badge">manual</span> : null}
+                        {worker.linkedin_linked_at ? (
+                          <span className="badge">linkedin linked</span>
+                        ) : null}
+                        {worker.email_verified ? <span className="badge">verified</span> : null}
+                        {worker.onboarding_completed ? (
+                          <span className="badge">onboarded</span>
+                        ) : null}
                       </div>
-                    ) : null}
 
-                    <SubscriptionPackPriceHint
-                      pack={worker.subscription_pack}
-                      subscription={worker.active_subscription}
-                      compact
-                    />
+                      <div className="section-title" style={{ fontSize: 16 }}>
+                        {worker.display_name}
+                      </div>
 
-                    <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                      {worker.current_role ? (
-                        <span className="badge">role: {worker.current_role}</span>
+                      <div className="muted">{worker.email || "No email"}</div>
+
+                      {worker.business_id ? (
+                        <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                          <span className="badge">business: {worker.business_id}</span>
+                        </div>
                       ) : null}
-                      {worker.industry ? (
-                        <span className="badge">industry: {worker.industry}</span>
+
+                      {learning ? (
+                        <div className="card-soft stack" style={{ gap: 8 }}>
+                          <div
+                            className="row space-between"
+                            style={{ gap: 8, alignItems: "center" }}
+                          >
+                            <strong>E-learning</strong>
+                            <span className="badge">{learning.overall_progress_percent}%</span>
+                          </div>
+                          <LearningProgressBar value={learning.overall_progress_percent} />
+                          <div className="muted">
+                            {learning.completed_lessons}/{learning.total_lessons} lessons completed
+                          </div>
+                        </div>
                       ) : null}
+
+                      <SubscriptionPackPriceHint
+                        pack={worker.subscription_pack}
+                        subscription={worker.active_subscription}
+                        compact
+                      />
+
+                      <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                        {worker.current_role ? (
+                          <span className="badge">role: {worker.current_role}</span>
+                        ) : null}
+                        {worker.industry ? (
+                          <span className="badge">industry: {worker.industry}</span>
+                        ) : null}
+                      </div>
+
+                      <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                        <span className="badge">
+                          total spent: {formatEur(worker.total_spent_eur)}
+                        </span>
+                        <span className="badge">
+                          subscriptions: {formatEur(worker.subscription_total_paid_eur)}
+                        </span>
+                        <span className="badge">
+                          artifacts: {formatEur(worker.artifacts_spent_eur)}
+                        </span>
+                        <span className="badge">
+                          paid artifacts: {worker.paid_artifacts_count ?? 0}
+                        </span>
+                      </div>
+
+                      <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                        <button
+                          className="button ghost"
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openWorkerContext(worker, "learning");
+                          }}
+                        >
+                          Learning
+                        </button>
+
+                        <button
+                          className="button ghost"
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openWorkerContext(worker, "conversations");
+                          }}
+                        >
+                          Conversations
+                        </button>
+
+                        <button
+                          className="button ghost"
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openWorkerContext(worker, "engagements");
+                            setEngagementSelectionWorkerId(String(worker.id));
+                            resetEngagementCanvas();
+                          }}
+                        >
+                          Engagements
+                        </button>
+
+                        <button
+                          className="button ghost"
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openWorkerContext(worker, "purpose");
+                            setPurposeSelectionWorkerId(String(worker.id));
+                            resetPurposeCanvas();
+                          }}
+                        >
+                          Purpose
+                        </button>
+
+                        <button
+                          className="button ghost"
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openWorkerContext(worker, "time");
+                            setTimeSelectionWorkerId(String(worker.id));
+                            resetTimeCanvas();
+                          }}
+                        >
+                          Time
+                        </button>
+
+                        <button
+                          className="button ghost"
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openWorkerContext(worker, "significance");
+                            setSignificanceSelectionWorkerId(String(worker.id));
+                            resetSignificanceCanvas();
+                          }}
+                        >
+                          Significance
+                        </button>
+                      </div>
+
+                      <div className="muted">
+                        Created {new Date(worker.created_at).toLocaleString()}
+                      </div>
                     </div>
-
-                    <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                      <span className="badge">
-                        total spent: {formatEur(worker.total_spent_eur)}
-                      </span>
-                      <span className="badge">
-                        subscriptions: {formatEur(worker.subscription_total_paid_eur)}
-                      </span>
-                      <span className="badge">
-                        artifacts: {formatEur(worker.artifacts_spent_eur)}
-                      </span>
-                      <span className="badge">
-                        paid artifacts: {worker.paid_artifacts_count ?? 0}
-                      </span>
-                    </div>
-
-                    <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                      <button
-                        className="button ghost"
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openWorkerContext(worker, "conversations");
-                        }}
-                      >
-                        Conversations
-                      </button>
-
-                      <button
-                        className="button ghost"
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openWorkerContext(worker, "engagements");
-                          setEngagementSelectionWorkerId(String(worker.id));
-                          resetEngagementCanvas();
-                        }}
-                      >
-                        Engagements
-                      </button>
-
-                      <button
-                        className="button ghost"
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openWorkerContext(worker, "purpose");
-                          setPurposeSelectionWorkerId(String(worker.id));
-                          resetPurposeCanvas();
-                        }}
-                      >
-                        Purpose
-                      </button>
-
-                      <button
-                        className="button ghost"
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openWorkerContext(worker, "time");
-                          setTimeSelectionWorkerId(String(worker.id));
-                          resetTimeCanvas();
-                        }}
-                      >
-                        Time
-                      </button>
-
-                      <button
-                        className="button ghost"
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openWorkerContext(worker, "significance");
-                          setSignificanceSelectionWorkerId(String(worker.id));
-                          resetSignificanceCanvas();
-                        }}
-                      >
-                        Significance
-                      </button>
-                    </div>
-
-                    <div className="muted">
-                      Created {new Date(worker.created_at).toLocaleString()}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -4174,6 +5159,14 @@ function AdminWorkersContent() {
                         disabled={workersSaving}
                       >
                         {workersSaving ? "Saving..." : "Save worker"}
+                      </button>
+
+                      <button
+                        className="button ghost"
+                        type="button"
+                        onClick={() => setViewMode("learning")}
+                      >
+                        View learning performance
                       </button>
 
                       <button
@@ -4591,15 +5584,11 @@ function AdminWorkersContent() {
                   </div>
 
                   <BusinessIdHint
-                    businessId={
-                      workersById.get(Number(engagementSelectionWorkerId))?.business_id
-                    }
+                    businessId={workersById.get(Number(engagementSelectionWorkerId))?.business_id}
                   />
 
                   <SubscriptionPackPriceHint
-                    pack={
-                      workersById.get(Number(engagementSelectionWorkerId))?.subscription_pack
-                    }
+                    pack={workersById.get(Number(engagementSelectionWorkerId))?.subscription_pack}
                     subscription={
                       workersById.get(Number(engagementSelectionWorkerId))?.active_subscription
                     }
@@ -4654,167 +5643,11 @@ function AdminWorkersContent() {
                 </div>
               ) : null}
 
-              <div className="grid grid-2" style={{ alignItems: "start" }}>
-                <CanvasTextBlock
-                  title="Identity"
-                  tone="blue"
-                  minHeight={220}
-                  value={engagementForm.identity_text}
-                  onChange={(value) => patchEngagementField("identity_text", value)}
-                  disabled={isFutureStateLocked}
-                  placeholder="Who is this worker professionally?"
-                />
-
-                <CanvasTextBlock
-                  title="Purpose"
-                  tone="purple"
-                  minHeight={220}
-                  value={engagementForm.purpose_text}
-                  onChange={(value) => patchEngagementField("purpose_text", value)}
-                  disabled={isFutureStateLocked}
-                  placeholder="What purpose is visible in their work?"
-                />
-
-                <CanvasTextBlock
-                  title="Missions"
-                  tone="teal"
-                  minHeight={220}
-                  value={engagementForm.missions_text}
-                  onChange={(value) => patchEngagementField("missions_text", value)}
-                  disabled={isFutureStateLocked}
-                  placeholder="What missions or responsibilities matter?"
-                />
-
-                <CanvasTextBlock
-                  title="Ambitions"
-                  tone="orange"
-                  minHeight={220}
-                  value={engagementForm.ambitions_text}
-                  onChange={(value) => patchEngagementField("ambitions_text", value)}
-                  disabled={isFutureStateLocked}
-                  placeholder="What ambitions are emerging?"
-                />
-              </div>
-
-              <div className="grid grid-2" style={{ alignItems: "start" }}>
-                <CanvasIntentBlock
-                  title="Career intent"
-                  tone="indigo"
-                  disabled={isFutureStateLocked}
-                  items={[
-                    {
-                      label: "Compensation",
-                      value: engagementForm.career_intent_compensation,
-                      onChange: (value) =>
-                        patchEngagementField("career_intent_compensation", value),
-                    },
-                    {
-                      label: "Role",
-                      value: engagementForm.career_intent_role,
-                      onChange: (value) => patchEngagementField("career_intent_role", value),
-                    },
-                    {
-                      label: "Passion criteria",
-                      value: engagementForm.career_intent_passion_criteria,
-                      onChange: (value) =>
-                        patchEngagementField("career_intent_passion_criteria", value),
-                    },
-                    {
-                      label: "Collaboration profile",
-                      value: engagementForm.career_intent_collaboration_profile,
-                      onChange: (value) =>
-                        patchEngagementField("career_intent_collaboration_profile", value),
-                    },
-                    {
-                      label: "Performance level",
-                      value: engagementForm.career_intent_performance_level,
-                      onChange: (value) =>
-                        patchEngagementField("career_intent_performance_level", value),
-                    },
-                    {
-                      label: "Responsibilities",
-                      value: engagementForm.career_intent_responsibilities,
-                      onChange: (value) =>
-                        patchEngagementField("career_intent_responsibilities", value),
-                    },
-                  ]}
-                />
-
-                <CanvasIntentBlock
-                  title="Talent intent"
-                  tone="green"
-                  disabled={isFutureStateLocked}
-                  items={[
-                    {
-                      label: "Foundations",
-                      value: engagementForm.talent_intent_foundations,
-                      onChange: (value) =>
-                        patchEngagementField("talent_intent_foundations", value),
-                    },
-                    {
-                      label: "Personality",
-                      value: engagementForm.talent_intent_personality,
-                      onChange: (value) =>
-                        patchEngagementField("talent_intent_personality", value),
-                    },
-                    {
-                      label: "Watch",
-                      value: engagementForm.talent_intent_watch,
-                      onChange: (value) => patchEngagementField("talent_intent_watch", value),
-                    },
-                    {
-                      label: "Next level",
-                      value: engagementForm.talent_intent_next_level,
-                      onChange: (value) =>
-                        patchEngagementField("talent_intent_next_level", value),
-                    },
-                    {
-                      label: "Impact niches",
-                      value: engagementForm.talent_intent_impact_niches,
-                      onChange: (value) =>
-                        patchEngagementField("talent_intent_impact_niches", value),
-                    },
-                    {
-                      label: "Social contributions",
-                      value: engagementForm.talent_intent_social_contributions,
-                      onChange: (value) =>
-                        patchEngagementField("talent_intent_social_contributions", value),
-                    },
-                  ]}
-                />
-              </div>
-
-              <div className="grid grid-3" style={{ alignItems: "start" }}>
-                <CanvasTextBlock
-                  title="Vision"
-                  tone="cyan"
-                  minHeight={180}
-                  value={engagementForm.vision_text}
-                  onChange={(value) => patchEngagementField("vision_text", value)}
-                  disabled={isFutureStateLocked}
-                  placeholder="What vision should guide the worker?"
-                />
-
-                <CanvasTextBlock
-                  title="Actions"
-                  tone="amber"
-                  minHeight={180}
-                  value={engagementForm.actions_text}
-                  onChange={(value) => patchEngagementField("actions_text", value)}
-                  disabled={isFutureStateLocked}
-                  placeholder="What actions should be carried?"
-                />
-
-                <CanvasTextBlock
-                  title="Objectives"
-                  tone="rose"
-                  minHeight={180}
-                  value={engagementForm.objectives_text}
-                  onChange={(value) => patchEngagementField("objectives_text", value)}
-                  disabled={isFutureStateLocked}
-                  placeholder="What objectives should be targeted?"
-                />
-              </div>
+              <EngagementCanvasVisual
+                form={engagementForm}
+                onChange={patchEngagementField}
+                disabled={isFutureStateLocked}
+              />
             </>
           )}
         </div>
@@ -4944,8 +5777,8 @@ function AdminWorkersContent() {
             <div className="section-title">Time Canvas</div>
             <div className="muted">
               Capture the worker’s real time availability, constraints, energy windows, focus
-              blocks, recovery needs, and planning rituals. This context is transmitted to the
-              Coach LLM through memory.
+              blocks, recovery needs, and planning rituals. This context is transmitted to the Coach
+              LLM through memory.
             </div>
           </div>
 
@@ -5153,8 +5986,7 @@ function AdminWorkersContent() {
                       workersById.get(Number(significanceSelectionWorkerId))?.subscription_pack
                     }
                     subscription={
-                      workersById.get(Number(significanceSelectionWorkerId))
-                        ?.active_subscription
+                      workersById.get(Number(significanceSelectionWorkerId))?.active_subscription
                     }
                   />
 

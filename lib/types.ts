@@ -1298,9 +1298,22 @@ export type AdminOrganizationAccessAccount = {
   message: string;
 };
 
+export type AdminOrganizationRevenueSummary = {
+  assigned_worker_count: number;
+  paying_worker_count: number;
+
+  gross_subscription_revenue_eur: number;
+  organization_revenue_eur: number;
+  platform_revenue_eur: number;
+
+  organization_revenue_share_percent: number;
+  platform_revenue_share_percent: number;
+};
+
 export type AdminOrganizationDetail = {
   organization: AdminOrganization;
   workers: AdminWorker[];
+  revenue_summary: AdminOrganizationRevenueSummary;
 };
 
 export type AdminOrganizationWorkerLeverSummary = {
@@ -1762,6 +1775,238 @@ export type AdminCustomerExperienceMonitoringResponse = {
   escalate: boolean;
   escalation_reason?: string | null;
   confidence: number;
+};
+
+/* ---------------- LEANWORKER E-LEARNING ---------------- */
+
+export type LearningProgressStatus = "not_started" | "in_progress" | "completed" | string;
+
+export type LearningProgressResponse = {
+  lesson_id: number;
+  status: LearningProgressStatus;
+  progress_percent: number;
+  started_at?: string | null;
+  completed_at?: string | null;
+};
+
+export type LearningExerciseSubmissionStatus =
+  | "draft"
+  | "submitted"
+  | "reviewed"
+  | "completed"
+  | string;
+
+export type LearningExerciseType =
+  | "reflection"
+  | "open_text"
+  | "quiz"
+  | "multiple_choice"
+  | "checklist"
+  | "canvas"
+  | string;
+
+export type LearningExerciseSubmissionResponse = {
+  id: number;
+  exercise_id: number;
+  status: LearningExerciseSubmissionStatus;
+  answer_text?: string | null;
+  answer_json?: unknown[] | Record<string, unknown> | null;
+  score?: number | null;
+  feedback_text?: string | null;
+  submitted_at?: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type LearningExercise = {
+  id: number;
+  lesson_id: number;
+  title: string;
+  instructions?: string | null;
+  exercise_type: LearningExerciseType;
+  options_json?: unknown[] | Record<string, unknown> | null;
+  expected_answer_json?: unknown[] | Record<string, unknown> | null;
+  is_required: boolean;
+  display_order: number;
+  submission?: LearningExerciseSubmissionResponse | null;
+};
+
+export type LearningLessonExercisesResponse = {
+  lesson_id: number;
+  exercises: LearningExercise[];
+};
+
+export type LearningExerciseSubmissionUpsertRequest = {
+  status?: "draft" | "submitted" | "reviewed" | "completed";
+  answer_text?: string | null;
+  answer_json?: unknown[] | Record<string, unknown> | null;
+};
+
+export type LearningLessonSummary = {
+  id: number;
+  chapter_id: number;
+  title: string;
+  description?: string | null;
+  video_url?: string | null;
+  video_provider?: string | null;
+  duration_seconds?: number | null;
+  display_order: number;
+  progress?: LearningProgressResponse | null;
+};
+
+export type LearningChapter = {
+  id: number;
+  course_id: number;
+  title: string;
+  description?: string | null;
+  display_order: number;
+  lessons: LearningLessonSummary[];
+};
+
+export type LearningCourseSummary = {
+  id: number;
+  title: string;
+  subtitle?: string | null;
+  description?: string | null;
+  language: string;
+  level: string;
+  cover_image_url?: string | null;
+  display_order: number;
+  total_lessons: number;
+  completed_lessons: number;
+  progress_percent: number;
+};
+
+export type LearningCourseDetail = {
+  id: number;
+  title: string;
+  subtitle?: string | null;
+  description?: string | null;
+  language: string;
+  level: string;
+  cover_image_url?: string | null;
+  display_order: number;
+  total_lessons: number;
+  completed_lessons: number;
+  progress_percent: number;
+  chapters: LearningChapter[];
+};
+
+export type LearningLessonDetail = {
+  id: number;
+  course_id: number;
+  chapter_id: number;
+  course_title: string;
+  chapter_title: string;
+  title: string;
+  description?: string | null;
+  video_url?: string | null;
+  video_provider?: string | null;
+  duration_seconds?: number | null;
+  display_order: number;
+  progress?: LearningProgressResponse | null;
+  previous_lesson_id?: number | null;
+  next_lesson_id?: number | null;
+};
+
+export type LearningProgressUpdateRequest = {
+  status: "not_started" | "in_progress" | "completed";
+  progress_percent: number;
+};
+
+export type LearningProgressSummary = {
+  total_courses: number;
+  total_lessons: number;
+  started_lessons: number;
+  completed_lessons: number;
+  overall_progress_percent: number;
+};
+
+export type AdminLearningCourseProgress = {
+  course_id: number;
+  course_title: string;
+  total_lessons: number;
+  started_lessons: number;
+  completed_lessons: number;
+  progress_percent: number;
+  status: "not_started" | "in_progress" | "completed" | string;
+};
+
+export type AdminLearningWorkerPerformance = {
+  worker_id: number;
+  worker_display_name: string;
+  worker_email?: string | null;
+  business_id?: string | null;
+
+  total_courses: number;
+  completed_courses: number;
+
+  total_lessons: number;
+  started_lessons: number;
+  completed_lessons: number;
+  in_progress_lessons: number;
+  not_started_lessons: number;
+
+  overall_progress_percent: number;
+  learning_status: "not_started" | "in_progress" | "completed" | string;
+  last_activity_at?: string | null;
+
+  courses: AdminLearningCourseProgress[];
+};
+
+/* ---------------- USER SUBSCRIPTIONS ---------------- */
+
+export type SubscriptionPackKey = "standard" | "classique" | "flix" | "executif";
+
+export type SubscriptionBillingCycle = "free" | "monthly" | "yearly";
+
+export type SubscriptionCheckoutRequest = {
+  pack: SubscriptionPackKey;
+  billing_cycle?: SubscriptionBillingCycle;
+  source?: "elearning" | "worker_app" | string;
+};
+
+export type SubscriptionCheckoutResponse = {
+  checkout_session_id?: string | null;
+  checkout_url: string;
+  pack: string;
+  billing_cycle: SubscriptionBillingCycle | string;
+  source: string;
+  activated_without_payment?: boolean;
+  subscription_id?: number | null;
+};
+
+export type SubscriptionPlanResponse = {
+  pack: SubscriptionPackKey | string;
+  label: string;
+  monthly_price_eur: number;
+  annual_price_eur?: number | null;
+  billing_cycles: string[];
+  is_contact_sales: boolean;
+  description?: string | null;
+};
+
+export type SubscriptionChangePackRequest = {
+  target_pack: SubscriptionPackKey;
+  billing_cycle?: SubscriptionBillingCycle;
+  source?: "worker_app" | "admin" | "elearning" | string;
+};
+
+export type SubscriptionChangePackResponse = {
+  action: "no_change" | "checkout_required" | "activated_without_payment" | string;
+
+  target_pack: string;
+  billing_cycle: SubscriptionBillingCycle | string;
+  source: string;
+  message: string;
+
+  checkout_session_id?: string | null;
+  checkout_url?: string | null;
+
+  subscription_id?: number | null;
+  previous_pack?: string | null;
+  previous_billing_cycle?: string | null;
+  cancelled_stripe_subscription_id?: string | null;
 };
 
 export type AdminRenderableNode = ReactNode;
