@@ -6,7 +6,7 @@ import { clearAdminToken } from "@/lib/admin-auth";
 type AdminNavItem = {
   label: string;
   href: string;
-  section: "overview" | "operations" | "catalog" | "account";
+  section: "overview" | "operations" | "catalog" | "enablement" | "account";
   roles: Array<"admin" | "organization">;
 };
 
@@ -64,6 +64,18 @@ const NAV_ITEMS: AdminNavItem[] = [
     roles: ["admin", "organization"],
   },
   {
+  label: "Coaching Flow",
+  href: "/admin/coaching-flow",
+  section: "enablement",
+  roles: ["admin", "organization"],
+  },
+  {
+    label: "Coaching Guide",
+    href: "/admin/coaching-guide",
+    section: "enablement",
+    roles: ["admin", "organization"],
+  },
+  {
     label: "Change password",
     href: "/admin/change-password",
     section: "account",
@@ -75,6 +87,7 @@ function sectionLabel(section: AdminNavItem["section"]): string {
   if (section === "overview") return "OVERVIEW";
   if (section === "operations") return "OPERATIONS";
   if (section === "catalog") return "CATALOG";
+  if (section === "enablement") return "ENABLEMENT";
   return "ACCOUNT";
 }
 
@@ -91,6 +104,7 @@ export function AdminShell({
     "overview",
     "operations",
     "catalog",
+    "enablement",
     "account",
   ];
 

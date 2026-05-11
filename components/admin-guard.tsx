@@ -8,6 +8,8 @@ import type { AdminMe } from "@/lib/types";
 
 const ORGANIZATION_ALLOWED_PREFIXES = [
   "/admin/organizations",
+  "/admin/coaching-guide",
+  "/admin/coaching-flow",
   "/admin/bookings",
   "/admin/change-password",
 ];
