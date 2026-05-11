@@ -1403,13 +1403,14 @@ function AdminCoachingGuideContent() {
   }, []);
 
   return (
-    <AdminShell
-      activeHref="/admin/coaching-guide"
-      title="Coaching Guide"
-      subtitle="Tree-based digital guide for organization-led worker coaching."
-      adminEmail={admin?.email ?? null}
-      adminRole={admin?.role ?? "admin"}
-    >
+<AdminShell
+  activeHref="/admin/coaching-guide"
+  title="Coaching Guide"
+  subtitle="Tree-based digital guide for organization-led worker coaching."
+  adminEmail={admin?.email ?? null}
+  adminRole={admin?.role ?? "admin"}
+  adminOrganizationName={admin?.organization_name ?? null}
+>
       {error ? (
         <div className="card" style={{ color: "var(--danger)" }}>
           {error}

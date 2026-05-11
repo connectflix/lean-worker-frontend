@@ -842,13 +842,14 @@ function AdminCoachingFlowContent() {
   }, []);
 
   return (
-    <AdminShell
-      activeHref="/admin/coaching-flow"
-      title="Coaching Flow"
-      subtitle="End-to-end visual process for organization-led worker coaching."
-      adminEmail={admin?.email ?? null}
-      adminRole={admin?.role ?? "admin"}
-    >
+        <AdminShell
+        activeHref="/admin/coaching-flow"
+        title="Coaching Flow"
+        subtitle="Visual process flow for end-to-end worker coaching."
+        adminEmail={admin?.email ?? null}
+        adminRole={admin?.role ?? "admin"}
+        adminOrganizationName={admin?.organization_name ?? null}
+        >
       {error ? (
         <div className="card" style={{ color: "var(--danger)" }}>
           {error}

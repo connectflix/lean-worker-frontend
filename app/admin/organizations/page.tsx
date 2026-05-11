@@ -2476,13 +2476,14 @@ const relatedLeversByRecommendationId = useMemo(() => {
   return map;
 }, [selectedWorkerSummary]);
     return (
-  <AdminShell
-    activeHref="/admin/organizations"
-    title="Manage Organizations"
-    subtitle="Organization workspace, worker assignment, revenue dashboard, and scoped access foundation."
-    adminEmail={admin?.email ?? null}
-    adminRole={admin?.role ?? "admin"}
-  >
+<AdminShell
+  activeHref="/admin/organizations"
+  title="Manage Organizations"
+  subtitle="Organization workspace, worker assignment, revenue dashboard, and scoped access foundation."
+  adminEmail={admin?.email ?? null}
+  adminRole={admin?.role ?? "admin"}
+  adminOrganizationName={admin?.organization_name ?? null}
+>
     <div
       className="row space-between"
       style={{ alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}
