@@ -248,7 +248,7 @@ function SessionPageContent() {
       params.set("mode", mode);
       params.set("sessionId", String(created.session_id));
 
-      router.push(`/sessions?${params.toString()}`);
+      router.push(`/session?${params.toString()}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to start session.");
     } finally {
@@ -276,7 +276,7 @@ function SessionPageContent() {
       params.set("sessionId", String(sessionId));
     }
 
-    router.replace(`/sessions?${params.toString()}`);
+    router.replace(`/session?${params.toString()}`);
     setSessionMode(mode);
   }
 
