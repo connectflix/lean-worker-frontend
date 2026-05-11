@@ -31,6 +31,35 @@ import {
   updateAdminWorkerTimeCanvas,
 } from "@/lib/api";
 import { clearAdminToken } from "@/lib/admin-auth";
+import { OrganizationOverviewTab } from "./components/organization-overview-tab";
+import { OrganizationWorkspaceHero } from "./components/organization-workspace-hero";
+import { OrganizationWorkersTab } from "./components/organization-workers-tab";
+import { OrganizationInsightsTab } from "./components/organization-insights-tab";
+import { OrganizationAccessTab } from "./components/organization-access-tab";
+import { OrganizationAdminTab } from "./components/organization-admin-tab";
+import { OrganizationEngagementCanvasTab } from "./components/organization-engagement-canvas-tab";
+import { OrganizationPurposeCanvasTab } from "./components/organization-purpose-canvas-tab";
+import { OrganizationTimeCanvasTab } from "./components/organization-time-canvas-tab";
+import { OrganizationSignificanceCanvasTab } from "./components/organization-significance-canvas-tab";
+import { OrganizationTimeCanvasVisual } from "./components/organization-time-canvas-visual";
+import { OrganizationPurposeCanvasVisual } from "./components/organization-purpose-canvas-visual";
+import { OrganizationEngagementCanvasVisual } from "./components/organization-engagement-canvas-visual";
+import {
+  OrganizationSignificanceCanvasVisual,
+  type NormalizedSignificanceQuestion,
+} from "./components/organization-significance-canvas-visual";
+import {
+  OrganizationCanvasesTab,
+  type OrganizationCanvasTab,
+} from "./components/organization-canvases-tab";
+import {
+  OrganizationRevenueTab,
+  type OrganizationRevenueSummary,
+} from "./components/organization-revenue-tab";
+import {
+  OrganizationWorkspaceTabs,
+  type OrganizationWorkspaceTab,
+} from "./components/organization-workspace-tabs";
 import type {
   AdminMe,
   AdminOrganization,
@@ -75,14 +104,6 @@ type OrganizationFormState = {
 type LeverSortMode = "highlighted" | "most_used" | "name";
 type SaveIndicator = "idle" | "typing" | "saving" | "saved" | "error";
 
-type OrganizationRevenueSummary = {
-  assignedWorkerCount: number;
-  paidWorkerCount: number;
-  grossSubscriptionRevenueExVat: number;
-  organizationRevenueExVat: number;
-  platformRevenueExVat: number;
-  revenueShareRate: number;
-};
 
 type EngagementFormState = {
   worker_id: string;
@@ -173,7 +194,6 @@ type CanvasTone =
   | "green"
   | "cyan";
 
-type SignificanceDimensionDisplay = AdminWorkerSignificanceDimension;
 
 type AdminWorkerSignificanceQuestionAnswer = {
   value: AdminWorkerSignificanceAnswerValue;
@@ -181,14 +201,6 @@ type AdminWorkerSignificanceQuestionAnswer = {
   scores: AdminWorkerSignificanceScoreMap;
 };
 
-type NormalizedSignificanceQuestion = {
-  id: number;
-  key: string;
-  order: number;
-  text: string;
-  answers: AdminWorkerSignificanceQuestionAnswer[];
-  options: AdminWorkerSignificanceQuestionAnswer[];
-};
 
 const ORGANIZATION_REVENUE_SHARE_RATE = 0.75;
 
@@ -1076,1150 +1088,6 @@ function buildSignificanceAnalysisSummary(
   return `Dominant significance pattern: ${dominant.label}. Distribution: ${ranked}.`;
 }
 
-function normalizeCanvasTone(tone?: string | null): CanvasTone {
-  if (
-    tone === "blue" ||
-    tone === "purple" ||
-    tone === "orange" ||
-    tone === "teal" ||
-    tone === "rose" ||
-    tone === "amber" ||
-    tone === "indigo" ||
-    tone === "green" ||
-    tone === "cyan"
-  ) {
-    return tone;
-  }
-
-  return "blue";
-}
-
-function getCanvasToneStyles(tone: CanvasTone): {
-  border: string;
-  background: string;
-  title: string;
-} {
-  switch (tone) {
-    case "blue":
-      return {
-        border: "rgba(59,130,246,0.55)",
-        background: "rgba(59,130,246,0.08)",
-        title: "#1d4ed8",
-      };
-    case "purple":
-      return {
-        border: "rgba(168,85,247,0.55)",
-        background: "rgba(168,85,247,0.08)",
-        title: "#7e22ce",
-      };
-    case "orange":
-      return {
-        border: "rgba(249,115,22,0.55)",
-        background: "rgba(249,115,22,0.08)",
-        title: "#c2410c",
-      };
-    case "teal":
-      return {
-        border: "rgba(20,184,166,0.55)",
-        background: "rgba(20,184,166,0.08)",
-        title: "#0f766e",
-      };
-    case "rose":
-      return {
-        border: "rgba(244,63,94,0.55)",
-        background: "rgba(244,63,94,0.08)",
-        title: "#be123c",
-      };
-    case "amber":
-      return {
-        border: "rgba(245,158,11,0.55)",
-        background: "rgba(245,158,11,0.1)",
-        title: "#b45309",
-      };
-    case "indigo":
-      return {
-        border: "rgba(99,102,241,0.55)",
-        background: "rgba(99,102,241,0.08)",
-        title: "#4338ca",
-      };
-    case "green":
-      return {
-        border: "rgba(34,197,94,0.55)",
-        background: "rgba(34,197,94,0.08)",
-        title: "#15803d",
-      };
-    case "cyan":
-      return {
-        border: "rgba(6,182,212,0.55)",
-        background: "rgba(6,182,212,0.08)",
-        title: "#0e7490",
-      };
-    default:
-      return {
-        border: "rgba(59,130,246,0.55)",
-        background: "rgba(59,130,246,0.08)",
-        title: "#1d4ed8",
-      };
-  }
-}
-
-function SavePill({
-  state,
-  savedAt,
-}: {
-  state: SaveIndicator;
-  savedAt: string | null;
-}) {
-  let label = "Idle";
-  let color = "var(--muted-foreground, #64748b)";
-  let background = "rgba(100,116,139,0.12)";
-
-  if (state === "typing") {
-    label = "Editing…";
-    color = "#92400e";
-    background = "rgba(245,158,11,0.14)";
-  } else if (state === "saving") {
-    label = "Saving…";
-    color = "#1d4ed8";
-    background = "rgba(59,130,246,0.14)";
-  } else if (state === "saved") {
-    label = savedAt ? `Saved ${savedAt}` : "Saved";
-    color = "#15803d";
-    background = "rgba(34,197,94,0.14)";
-  } else if (state === "error") {
-    label = "Save error";
-    color = "#b91c1c";
-    background = "rgba(239,68,68,0.14)";
-  }
-
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-        padding: "8px 10px",
-        borderRadius: 999,
-        fontSize: 12,
-        fontWeight: 700,
-        color,
-        background,
-      }}
-    >
-      {label}
-    </span>
-  );
-}
-
-function CoherenceBadge({
-  status,
-}: {
-  status?: "coherent" | "watch" | "critical" | string | null;
-}) {
-  let label = status || "unknown";
-  let color = "#475569";
-  let background = "rgba(100,116,139,0.14)";
-
-  if (status === "coherent" || status === "balanced" || status === "ready") {
-    label = status === "balanced" ? "Balanced" : status === "ready" ? "Ready" : "Coherent";
-    color = "#15803d";
-    background = "rgba(34,197,94,0.14)";
-  } else if (
-    status === "watch" ||
-    status === "partially_coherent" ||
-    status === "partially_ready" ||
-    status === "dominant" ||
-    status === "tension"
-  ) {
-    label =
-      status === "partially_coherent"
-        ? "Partially coherent"
-        : status === "partially_ready"
-          ? "Partially ready"
-          : status === "dominant"
-            ? "Dominant"
-            : status === "tension"
-              ? "Tension"
-              : "Watch";
-    color = "#b45309";
-    background = "rgba(245,158,11,0.14)";
-  } else if (
-    status === "critical" ||
-    status === "incoherent" ||
-    status === "fragmented" ||
-    status === "at_risk"
-  ) {
-    label =
-      status === "fragmented"
-        ? "Fragmented"
-        : status === "incoherent"
-          ? "Incoherent"
-          : status === "at_risk"
-            ? "At risk"
-            : "Critical";
-    color = "#b91c1c";
-    background = "rgba(239,68,68,0.14)";
-  } else if (status === "not_evaluated") {
-    label = "Not evaluated";
-    color = "#64748b";
-    background = "rgba(100,116,139,0.14)";
-  }
-
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        padding: "8px 10px",
-        borderRadius: 999,
-        fontSize: 12,
-        fontWeight: 800,
-        color,
-        background,
-        textTransform: "uppercase",
-        letterSpacing: "0.04em",
-      }}
-    >
-      {label}
-    </span>
-  );
-}
-
-function CanvasTextBlock({
-  title,
-  value,
-  onChange,
-  minHeight,
-  tone,
-  placeholder,
-  disabled = false,
-}: {
-  title: string;
-  value: string;
-  onChange: (value: string) => void;
-  minHeight: number;
-  tone: CanvasTone;
-  placeholder?: string;
-  disabled?: boolean;
-}) {
-  const toneStyles = getCanvasToneStyles(tone);
-
-  return (
-    <div
-      style={{
-        border: `2px solid ${toneStyles.border}`,
-        background: toneStyles.background,
-        borderRadius: 16,
-        padding: 12,
-        minHeight,
-        display: "flex",
-        flexDirection: "column",
-        gap: 8,
-        boxShadow: "0 8px 24px rgba(15,23,42,0.04)",
-        opacity: disabled ? 0.72 : 1,
-      }}
-    >
-      <div
-        style={{
-          fontSize: 13,
-          fontWeight: 800,
-          textTransform: "uppercase",
-          letterSpacing: "0.05em",
-          color: toneStyles.title,
-        }}
-      >
-        {title}
-      </div>
-
-      <textarea
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder || "Saisir ici..."}
-        disabled={disabled}
-        style={{
-          width: "100%",
-          flex: 1,
-          minHeight: 0,
-          resize: "none",
-          border: "none",
-          outline: "none",
-          background: "transparent",
-          color: "inherit",
-          font: "inherit",
-          fontSize: 15,
-          lineHeight: 1.55,
-          cursor: disabled ? "not-allowed" : "text",
-        }}
-      />
-    </div>
-  );
-}
-
-function EngagementCanvasVisual({
-  form,
-  onChange,
-  disabled = false,
-}: {
-  form: EngagementFormState;
-  onChange: <K extends keyof EngagementFormState>(
-    key: K,
-    value: EngagementFormState[K],
-  ) => void;
-  disabled?: boolean;
-}) {
-  return (
-    <div className="stack" style={{ gap: 14 }}>
-      <div style={{ width: "100%", overflowX: "auto", paddingBottom: 4 }}>
-        <div
-          style={{
-            minWidth: 1180,
-            border: "2px solid rgba(15,23,42,0.78)",
-            borderRadius: 10,
-            overflow: "hidden",
-            background: "#fff",
-            boxShadow: "0 18px 48px rgba(15,23,42,0.10)",
-          }}
-        >
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1.05fr 1.4fr 1.4fr 1.1fr 1.05fr",
-              minHeight: 620,
-              borderBottom: "2px solid rgba(15,23,42,0.78)",
-            }}
-          >
-            <div style={{ borderRight: "2px solid rgba(15,23,42,0.78)" }}>
-              <EngagementCanvasCell
-                title="Ambitions"
-                tone="orange"
-                value={form.ambitions_text}
-                onChange={(value) => onChange("ambitions_text", value)}
-                placeholder="Quelles ambitions professionnelles émergent ?"
-                disabled={disabled}
-                minHeight={620}
-              />
-            </div>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateRows: "1fr 1fr",
-                borderRight: "2px solid rgba(15,23,42,0.78)",
-              }}
-            >
-              <div style={{ borderBottom: "2px solid rgba(15,23,42,0.78)" }}>
-                <EngagementCanvasCell
-                  title="But"
-                  tone="purple"
-                  value={form.purpose_text}
-                  onChange={(value) => onChange("purpose_text", value)}
-                  placeholder="Quel est le but visible dans son travail ?"
-                  disabled={disabled}
-                  minHeight={308}
-                />
-              </div>
-
-              <EngagementCanvasCell
-                title="Missions"
-                tone="teal"
-                value={form.missions_text}
-                onChange={(value) => onChange("missions_text", value)}
-                placeholder="Quelles missions, responsabilités ou contributions sont importantes ?"
-                disabled={disabled}
-                minHeight={308}
-              />
-            </div>
-
-            <div style={{ borderRight: "2px solid rgba(15,23,42,0.78)" }}>
-              <EngagementCanvasCell
-                title="Identité"
-                tone="blue"
-                value={form.identity_text}
-                onChange={(value) => onChange("identity_text", value)}
-                placeholder="Qui est ce worker professionnellement ?"
-                disabled={disabled}
-                minHeight={620}
-              />
-            </div>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateRows: "1fr 1fr",
-                borderRight: "2px solid rgba(15,23,42,0.78)",
-              }}
-            >
-              <div style={{ borderBottom: "2px solid rgba(15,23,42,0.78)" }}>
-                <EngagementCanvasCell
-                  title="Vision"
-                  tone="cyan"
-                  value={form.vision_text}
-                  onChange={(value) => onChange("vision_text", value)}
-                  placeholder="Quelle vision doit guider le worker ?"
-                  disabled={disabled}
-                  minHeight={308}
-                />
-              </div>
-
-              <EngagementCanvasCell
-                title="Actions"
-                tone="amber"
-                value={form.actions_text}
-                onChange={(value) => onChange("actions_text", value)}
-                placeholder="Quelles actions concrètes doivent être portées ?"
-                disabled={disabled}
-                minHeight={308}
-              />
-            </div>
-
-            <EngagementCanvasCell
-              title="Objectifs"
-              tone="rose"
-              value={form.objectives_text}
-              onChange={(value) => onChange("objectives_text", value)}
-              placeholder="Quels objectifs doivent être ciblés ?"
-              disabled={disabled}
-              minHeight={620}
-            />
-          </div>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              minHeight: 260,
-            }}
-          >
-            <div style={{ borderRight: "2px solid rgba(15,23,42,0.78)" }}>
-              <EngagementIntentCanvasCell
-                title="Intentions Carrière"
-                tone="indigo"
-                disabled={disabled}
-                items={[
-                  {
-                    label: "Compensation",
-                    value: form.career_intent_compensation,
-                    onChange: (value) => onChange("career_intent_compensation", value),
-                  },
-                  {
-                    label: "Role",
-                    value: form.career_intent_role,
-                    onChange: (value) => onChange("career_intent_role", value),
-                  },
-                  {
-                    label: "Passion criteria",
-                    value: form.career_intent_passion_criteria,
-                    onChange: (value) =>
-                      onChange("career_intent_passion_criteria", value),
-                  },
-                  {
-                    label: "Collaboration profile",
-                    value: form.career_intent_collaboration_profile,
-                    onChange: (value) =>
-                      onChange("career_intent_collaboration_profile", value),
-                  },
-                  {
-                    label: "Performance level",
-                    value: form.career_intent_performance_level,
-                    onChange: (value) =>
-                      onChange("career_intent_performance_level", value),
-                  },
-                  {
-                    label: "Responsibilities",
-                    value: form.career_intent_responsibilities,
-                    onChange: (value) =>
-                      onChange("career_intent_responsibilities", value),
-                  },
-                ]}
-              />
-            </div>
-
-            <EngagementIntentCanvasCell
-              title="Intentions Talent"
-              tone="green"
-              disabled={disabled}
-              items={[
-                {
-                  label: "Foundations",
-                  value: form.talent_intent_foundations,
-                  onChange: (value) => onChange("talent_intent_foundations", value),
-                },
-                {
-                  label: "Personality",
-                  value: form.talent_intent_personality,
-                  onChange: (value) => onChange("talent_intent_personality", value),
-                },
-                {
-                  label: "Watch",
-                  value: form.talent_intent_watch,
-                  onChange: (value) => onChange("talent_intent_watch", value),
-                },
-                {
-                  label: "Next level",
-                  value: form.talent_intent_next_level,
-                  onChange: (value) => onChange("talent_intent_next_level", value),
-                },
-                {
-                  label: "Impact niches",
-                  value: form.talent_intent_impact_niches,
-                  onChange: (value) => onChange("talent_intent_impact_niches", value),
-                },
-                {
-                  label: "Social contributions",
-                  value: form.talent_intent_social_contributions,
-                  onChange: (value) =>
-                    onChange("talent_intent_social_contributions", value),
-                },
-              ]}
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="muted" style={{ lineHeight: 1.6 }}>
-        Structure cible respectée : Ambitions, But/Missions, Identité, Vision/Actions,
-        Objectifs, puis Intentions Carrière et Intentions Talent en bas du canvas.
-      </div>
-    </div>
-  );
-}
-
-function EngagementCanvasCell({
-  title,
-  tone,
-  value,
-  onChange,
-  placeholder,
-  minHeight,
-  disabled = false,
-}: {
-  title: string;
-  tone: CanvasTone;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  minHeight: number;
-  disabled?: boolean;
-}) {
-  const toneStyles = getCanvasToneStyles(tone);
-
-  return (
-    <div
-      style={{
-        minHeight,
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        background: `linear-gradient(180deg, ${toneStyles.background}, rgba(255,255,255,0.98) 42%)`,
-      }}
-    >
-      <div
-        style={{
-          padding: "18px 18px 8px",
-          fontSize: 34,
-          lineHeight: 1,
-          fontWeight: 900,
-          letterSpacing: "-0.04em",
-          color: toneStyles.title,
-        }}
-      >
-        {title}
-      </div>
-
-      <div
-        style={{
-          height: 4,
-          width: 56,
-          marginLeft: 18,
-          marginBottom: 6,
-          borderRadius: 999,
-          background: toneStyles.title,
-          opacity: 0.75,
-        }}
-      />
-
-      <textarea
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder || "Saisir ici..."}
-        disabled={disabled}
-        style={{
-          width: "100%",
-          flex: 1,
-          minHeight: 0,
-          resize: "none",
-          border: "none",
-          outline: "none",
-          background: "transparent",
-          color: "#0f172a",
-          font: "inherit",
-          fontSize: 15,
-          lineHeight: 1.55,
-          padding: "10px 18px 18px",
-          cursor: disabled ? "not-allowed" : "text",
-          opacity: disabled ? 0.72 : 1,
-        }}
-      />
-    </div>
-  );
-}
-
-function EngagementIntentCanvasCell({
-  title,
-  tone,
-  items,
-  disabled = false,
-}: {
-  title: string;
-  tone: CanvasTone;
-  items: Array<{
-    label: string;
-    value: string;
-    onChange: (value: string) => void;
-  }>;
-  disabled?: boolean;
-}) {
-  const toneStyles = getCanvasToneStyles(tone);
-
-  return (
-    <div
-      style={{
-        minHeight: 260,
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        background: `linear-gradient(180deg, ${toneStyles.background}, rgba(255,255,255,0.98) 48%)`,
-      }}
-    >
-      <div
-        style={{
-          padding: "18px 18px 8px",
-          fontSize: 32,
-          lineHeight: 1,
-          fontWeight: 900,
-          letterSpacing: "-0.04em",
-          color: toneStyles.title,
-        }}
-      >
-        {title}
-      </div>
-
-      <div
-        style={{
-          height: 4,
-          width: 72,
-          marginLeft: 18,
-          marginBottom: 6,
-          borderRadius: 999,
-          background: toneStyles.title,
-          opacity: 0.75,
-        }}
-      />
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-          gap: 10,
-          padding: "10px 18px 18px",
-          flex: 1,
-        }}
-      >
-        {items.map((item) => (
-          <label key={item.label} className="stack" style={{ gap: 5 }}>
-            <span
-              style={{
-                fontSize: 12,
-                fontWeight: 800,
-                color: toneStyles.title,
-              }}
-            >
-              {item.label}
-            </span>
-
-            <textarea
-              value={item.value}
-              onChange={(event) => item.onChange(event.target.value)}
-              disabled={disabled}
-              rows={3}
-              placeholder="Saisir ici..."
-              style={{
-                width: "100%",
-                minHeight: 72,
-                resize: "vertical",
-                border: `1px solid ${toneStyles.border}`,
-                borderRadius: 12,
-                outline: "none",
-                padding: 10,
-                font: "inherit",
-                fontSize: 13,
-                lineHeight: 1.45,
-                background: "rgba(255,255,255,0.82)",
-                color: "#0f172a",
-                cursor: disabled ? "not-allowed" : "text",
-                opacity: disabled ? 0.72 : 1,
-              }}
-            />
-          </label>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function PurposeCanvasVisual({
-  form,
-  onChange,
-}: {
-  form: PurposeFormState;
-  onChange: (key: PurposeNodeKey, value: string) => void;
-}) {
-  const relations = useMemo(() => buildPurposeRelations(form), [form]);
-  const coherenceScore = getPurposeCoherenceScore(relations);
-  const completedRelations = relations.filter((relation) => relation.status !== "pending").length;
-  const coherentRelations = relations.filter((relation) => relation.status === "coherent").length;
-  const incoherentRelations = relations.filter((relation) => relation.status === "incoherent").length;
-
-  function getNodePosition(key: PurposeNodeKey) {
-    return PURPOSE_NODES.find((node) => node.key === key) ?? PURPOSE_NODES[0];
-  }
-
-  function getLineColor(status: PurposeRelationStatus): string {
-    if (status === "coherent") return "#2563eb";
-    if (status === "incoherent") return "#dc2626";
-    return "rgba(100,116,139,0.25)";
-  }
-
-  return (
-    <div className="stack" style={{ gap: 16 }}>
-      <div
-        className="card-soft"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4, minmax(160px, 1fr))",
-          gap: 12,
-          alignItems: "stretch",
-        }}
-      >
-        <div className="stack" style={{ gap: 6 }}>
-          <div className="muted">Global coherence</div>
-          <div className="admin-metric-value" style={{ fontSize: 30 }}>
-            {coherenceScore}%
-          </div>
-        </div>
-
-        <div className="stack" style={{ gap: 6 }}>
-          <div className="muted">Completed relations</div>
-          <div className="admin-metric-value" style={{ fontSize: 30 }}>
-            {completedRelations}/15
-          </div>
-        </div>
-
-        <div className="stack" style={{ gap: 6 }}>
-          <div className="muted">Coherent links</div>
-          <div className="admin-metric-value" style={{ fontSize: 30, color: "#2563eb" }}>
-            {coherentRelations}
-          </div>
-        </div>
-
-        <div className="stack" style={{ gap: 6 }}>
-          <div className="muted">Incoherent links</div>
-          <div className="admin-metric-value" style={{ fontSize: 30, color: "#dc2626" }}>
-            {incoherentRelations}
-          </div>
-        </div>
-      </div>
-
-      <div
-        className="card-soft"
-        style={{
-          position: "relative",
-          minHeight: 860,
-          overflow: "hidden",
-          border: "1px solid rgba(59,130,246,0.2)",
-          background:
-            "radial-gradient(circle at center, rgba(59,130,246,0.08), rgba(255,255,255,0.02) 55%)",
-        }}
-      >
-        <svg
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-          style={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            zIndex: 1,
-            pointerEvents: "none",
-          }}
-        >
-          {relations.map((relation) => {
-            const from = getNodePosition(relation.from);
-            const to = getNodePosition(relation.to);
-
-            return (
-              <line
-                key={`${relation.from}-${relation.to}`}
-                x1={from.x}
-                y1={from.y}
-                x2={to.x}
-                y2={to.y}
-                stroke={getLineColor(relation.status)}
-                strokeWidth={relation.status === "pending" ? 0.35 : 0.7}
-                strokeDasharray={relation.status === "pending" ? "2 2" : "0"}
-                opacity={relation.status === "pending" ? 0.55 : 0.9}
-              />
-            );
-          })}
-        </svg>
-
-        {PURPOSE_NODES.map((node) => {
-          const toneStyles = getCanvasToneStyles(node.tone);
-
-          return (
-            <div
-              key={node.key}
-              style={{
-                position: "absolute",
-                left: `${node.x}%`,
-                top: `${node.y}%`,
-                transform: "translate(-50%, -50%)",
-                zIndex: 2,
-                width: 250,
-                minHeight: 150,
-                borderRadius: 22,
-                border: `2px solid ${toneStyles.border}`,
-                background: "rgba(255,255,255,0.94)",
-                boxShadow: "0 16px 36px rgba(15,23,42,0.13)",
-                padding: 14,
-                display: "flex",
-                flexDirection: "column",
-                gap: 8,
-              }}
-            >
-              <div className="stack" style={{ gap: 2 }}>
-                <div
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 900,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                    color: toneStyles.title,
-                  }}
-                >
-                  {node.label}
-                </div>
-                <div className="muted" style={{ fontSize: 12 }}>
-                  {node.subtitle}
-                </div>
-              </div>
-
-              <textarea
-                value={form[node.key]}
-                onChange={(e) => onChange(node.key, e.target.value)}
-                placeholder={node.placeholder}
-                style={{
-                  width: "100%",
-                  flex: 1,
-                  minHeight: 74,
-                  border: "1px solid var(--border)",
-                  borderRadius: 14,
-                  padding: 10,
-                  resize: "vertical",
-                  outline: "none",
-                  font: "inherit",
-                  fontSize: 13,
-                  lineHeight: 1.45,
-                  background: toneStyles.background,
-                }}
-              />
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="card-soft stack" style={{ gap: 10 }}>
-        <div className="section-title" style={{ fontSize: 15 }}>
-          Relation details
-        </div>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-            gap: 10,
-          }}
-        >
-          {relations.map((relation) => {
-            const from = getNodePosition(relation.from);
-            const to = getNodePosition(relation.to);
-
-            return (
-              <div
-                key={`${relation.from}-${relation.to}-detail`}
-                style={{
-                  borderRadius: 12,
-                  border:
-                    relation.status === "coherent"
-                      ? "1px solid rgba(37,99,235,0.3)"
-                      : relation.status === "incoherent"
-                        ? "1px solid rgba(220,38,38,0.3)"
-                        : "1px solid var(--border)",
-                  padding: 10,
-                  background:
-                    relation.status === "coherent"
-                      ? "rgba(37,99,235,0.07)"
-                      : relation.status === "incoherent"
-                        ? "rgba(220,38,38,0.07)"
-                        : "rgba(100,116,139,0.06)",
-                }}
-              >
-                <div style={{ fontWeight: 800, fontSize: 13 }}>
-                  {from.label} ↔ {to.label}
-                </div>
-                <div className="muted">
-                  {relation.status === "coherent"
-                    ? "Coherent"
-                    : relation.status === "incoherent"
-                      ? "Incoherent"
-                      : "Pending"}
-                </div>
-                <div className="muted" style={{ fontSize: 12 }}>
-                  {relation.reason}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function TimeCanvasVisual({
-  form,
-  onChange,
-  readinessScore,
-  readinessStatus,
-  summary,
-}: {
-  form: TimeFormState;
-  onChange: (key: TimeNodeKey, value: string) => void;
-  readinessScore: number;
-  readinessStatus: string;
-  summary: string;
-}) {
-  return (
-    <div className="stack" style={{ gap: 16 }}>
-      <div
-        className="card-soft"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, minmax(180px, 1fr))",
-          gap: 12,
-          alignItems: "stretch",
-        }}
-      >
-        <div className="stack" style={{ gap: 6 }}>
-          <div className="muted">Readiness score</div>
-          <div className="admin-metric-value" style={{ fontSize: 30 }}>
-            {readinessScore}%
-          </div>
-        </div>
-
-        <div className="stack" style={{ gap: 6 }}>
-          <div className="muted">Readiness status</div>
-          <div>
-            <CoherenceBadge status={readinessStatus} />
-          </div>
-        </div>
-
-        <div className="stack" style={{ gap: 6 }}>
-          <div className="muted">Filled blocks</div>
-          <div className="admin-metric-value" style={{ fontSize: 30 }}>
-            {getTimeCanvasCompletedNodes(form)}/{TIME_NODES.length}
-          </div>
-        </div>
-      </div>
-
-      <div className="card-soft stack" style={{ gap: 10 }}>
-        <div className="section-title" style={{ fontSize: 15 }}>
-          Time Canvas reading
-        </div>
-        <div className="muted">{summary}</div>
-      </div>
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(2, minmax(280px, 1fr))",
-          gap: 14,
-        }}
-      >
-        {TIME_NODES.map((node) => (
-          <CanvasTextBlock
-            key={node.key}
-            title={node.label}
-            value={form[node.key]}
-            onChange={(value) => onChange(node.key, value)}
-            minHeight={220}
-            tone={node.tone}
-            placeholder={node.placeholder}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function SignificanceCanvasVisual({
-  form,
-  onChange,
-  questions,
-  dimensions,
-  analysisSummary,
-}: {
-  form: SignificanceFormState;
-  onChange: (questionId: number, value: AdminWorkerSignificanceAnswerValue) => void;
-  questions: NormalizedSignificanceQuestion[];
-  dimensions: SignificanceDimensionDisplay[];
-  analysisSummary: string;
-}) {
-  const dominant = getDominantSignificanceDimension(dimensions);
-
-  return (
-    <div className="stack" style={{ gap: 16 }}>
-      <div
-        className="card-soft"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(5, minmax(140px, 1fr))",
-          gap: 12,
-          alignItems: "stretch",
-        }}
-      >
-        {dimensions.map((dimension) => {
-          const tone = normalizeCanvasTone(dimension.tone);
-          const toneStyles = getCanvasToneStyles(tone);
-
-          return (
-            <div
-              key={dimension.key}
-              className="stack"
-              style={{
-                gap: 8,
-                border: `1px solid ${toneStyles.border}`,
-                background: toneStyles.background,
-                borderRadius: 14,
-                padding: 12,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 12,
-                  fontWeight: 900,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                  color: toneStyles.title,
-                }}
-              >
-                {dimension.label}
-              </div>
-
-              <div className="admin-metric-value" style={{ fontSize: 28 }}>
-                {dimension.percentage}%
-              </div>
-
-              <div className="muted">score: {dimension.score}</div>
-
-              <div
-                style={{
-                  width: "100%",
-                  height: 8,
-                  borderRadius: 999,
-                  background: "rgba(15,23,42,0.08)",
-                  overflow: "hidden",
-                }}
-              >
-                <div
-                  style={{
-                    width: `${Math.min(100, Math.max(0, dimension.percentage))}%`,
-                    height: "100%",
-                    borderRadius: 999,
-                    background: toneStyles.title,
-                  }}
-                />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      <div
-        className="card-soft stack"
-        style={{
-          gap: 10,
-          border: dominant ? "1px solid rgba(59,130,246,0.25)" : "1px solid var(--border)",
-        }}
-      >
-        <div className="row" style={{ gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-          <div className="section-title" style={{ fontSize: 15 }}>
-            Significance reading
-          </div>
-
-          {dominant ? <span className="badge">dominant: {dominant.label}</span> : null}
-        </div>
-
-        <div className="muted">{analysisSummary}</div>
-      </div>
-
-      <div className="stack" style={{ gap: 12 }}>
-        {questions.map((question) => {
-          const selectedValue = form.answers[question.id] || "unknown";
-          const questionAnswers = question.answers;
-
-          return (
-            <div key={question.id} className="card-soft stack" style={{ gap: 10 }}>
-              <div className="row" style={{ gap: 10, alignItems: "flex-start" }}>
-                <span className="badge">Q{question.id}</span>
-                <div style={{ fontWeight: 800, lineHeight: 1.45 }}>{question.text}</div>
-              </div>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-                  gap: 10,
-                }}
-              >
-                {questionAnswers.map((answer) => {
-                  const isSelected = selectedValue === answer.value;
-
-                  return (
-                    <button
-                      key={`${question.id}-${answer.value}`}
-                      type="button"
-                      onClick={() => onChange(question.id, answer.value)}
-                      className={isSelected ? "button" : "button ghost"}
-                      style={{
-                        justifyContent: "flex-start",
-                        textAlign: "left",
-                        whiteSpace: "normal",
-                      }}
-                    >
-                      {answer.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 export default function AdminOrganizationsPage() {
   return (
     <AdminGuard>
@@ -2251,6 +1119,12 @@ function AdminOrganizationsContent() {
   const [selectedOrganizationId, setSelectedOrganizationId] = useState<number | null>(null);
   const [editingOrganizationId, setEditingOrganizationId] = useState<number | null>(null);
   const [selectedWorkerId, setSelectedWorkerId] = useState<number | null>(null);
+
+  const [activeWorkspaceTab, setActiveWorkspaceTab] =
+    useState<OrganizationWorkspaceTab>("overview");
+
+  const [activeCanvasTab, setActiveCanvasTab] =
+  useState<OrganizationCanvasTab>("engagement");
 
   const [workerSearch, setWorkerSearch] = useState("");
   const [selectedWorkerIdToAssign, setSelectedWorkerIdToAssign] = useState<string>("");
@@ -2607,6 +1481,8 @@ function AdminOrganizationsContent() {
 
     async function openOrganization(organizationId: number) {
     setSelectedOrganizationId(organizationId);
+    setActiveWorkspaceTab("overview");
+    setActiveCanvasTab("engagement");
     setError(null);
     setAccessAccountResult(null);
     setDetailLoading(true);
@@ -2664,6 +1540,8 @@ function AdminOrganizationsContent() {
     if (!selectedOrganizationId) return;
 
     setSelectedWorkerId(workerId);
+    setActiveWorkspaceTab("insights");
+    setActiveCanvasTab("engagement");
     setWorkerSummaryLoading(true);
     setError(null);
     setLeverSearch("");
@@ -2683,6 +1561,27 @@ function AdminOrganizationsContent() {
       setWorkerSummaryLoading(false);
     }
   }
+
+  function handleNewOrganization() {
+  setEditingOrganizationId(null);
+  setActiveWorkspaceTab("organizations");
+  setActiveCanvasTab("engagement");
+  setSelectedOrganizationId(null);
+  setAssignedWorkers([]);
+  setSelectedWorkerId(null);
+  setSelectedWorkerSummary(null);
+  setSelectedWorkerIdToAssign("");
+  setAccessAccountResult(null);
+  setForm(EMPTY_FORM);
+  setLeverSearch("");
+  setLeverCategoryFilter("all");
+  setLeverSortMode("highlighted");
+  setActiveWorkspaceTab("organizations");
+  resetEngagementCanvas(null, "current");
+  resetPurposeCanvas(null);
+  resetTimeCanvas(null);
+  resetSignificanceCanvas(null);
+}
 
   async function handleSaveOrganization(e: React.FormEvent) {
     e.preventDefault();
@@ -2787,6 +1686,8 @@ function AdminOrganizationsContent() {
 
       setSelectedWorkerIdToAssign("");
       setSelectedWorkerId(assignedWorkerId);
+      setActiveCanvasTab("engagement");
+      setActiveWorkspaceTab("insights");
 
       const summary = await getAdminOrganizationWorkerSummary(
         selectedOrganizationId,
@@ -3561,1500 +2462,307 @@ function AdminOrganizationsContent() {
     });
   }, [selectedWorkerSummary, leverSearch, leverCategoryFilter, leverSortMode]);
 
-  const relatedLeversByRecommendationId = useMemo(() => {
-    const map = new Map<number, AdminOrganizationWorkerSummary["levers"]>();
+const relatedLeversByRecommendationId = useMemo(() => {
+  const map = new Map<number, AdminOrganizationWorkerSummary["levers"]>();
 
-    (selectedWorkerSummary?.levers ?? []).forEach((lever) => {
-      lever.recommendation_ids.forEach((recommendationId) => {
-        const current = map.get(recommendationId) ?? [];
-        current.push(lever);
-        map.set(recommendationId, current);
-      });
+  (selectedWorkerSummary?.levers ?? []).forEach((lever) => {
+    lever.recommendation_ids.forEach((recommendationId) => {
+      const current = map.get(recommendationId) ?? [];
+      current.push(lever);
+      map.set(recommendationId, current);
     });
+  });
 
-    return map;
-  }, [selectedWorkerSummary]);
+  return map;
+}, [selectedWorkerSummary]);
     return (
-    <AdminShell
-      activeHref="/admin/organizations"
-      title="Manage Organizations"
-      subtitle="Organization workspace, worker assignment, revenue dashboard, and scoped access foundation."
-      adminEmail={admin?.email ?? null}
-      adminRole={admin?.role ?? "admin"}
+  <AdminShell
+    activeHref="/admin/organizations"
+    title="Manage Organizations"
+    subtitle="Organization workspace, worker assignment, revenue dashboard, and scoped access foundation."
+    adminEmail={admin?.email ?? null}
+    adminRole={admin?.role ?? "admin"}
+  >
+    <div
+      className="row space-between"
+      style={{ alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}
     >
-      <div
-        className="row space-between"
-        style={{ alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}
-      >
-        <div className="stack" style={{ gap: 4 }}>
-          <div className="section-title">Organizations workspace</div>
-          <div className="muted">
-            {isPlatformAdmin
-              ? "Create organizations, assign workers, and monitor organization revenue."
-              : "Access is limited to your organization, assigned workers, and organization revenue."}
-          </div>
+      <div className="stack" style={{ gap: 4 }}>
+        <div className="section-title">Organizations workspace</div>
+        <div className="muted">
+          {isPlatformAdmin
+            ? "Create organizations, assign workers, and monitor organization revenue."
+            : "Access is limited to your organization, assigned workers, and organization revenue."}
         </div>
-
-        <button className="button ghost" type="button" onClick={handleLogout}>
-          Log out
-        </button>
       </div>
 
-      {error ? (
-        <div className="card" style={{ color: "var(--danger)" }}>
-          {error}
-        </div>
-      ) : null}
+      <button className="button ghost" type="button" onClick={handleLogout}>
+        Log out
+      </button>
+    </div>
 
-      {loading ? (
-        <div className="card">Loading organizations...</div>
-      ) : (
-        <div className="grid grid-2">
-          <div className="card stack">
-            <div className="section-title">Organizations</div>
+    {error ? (
+      <div className="card" style={{ color: "var(--danger)" }}>
+        {error}
+      </div>
+    ) : null}
 
-            {organizations.length === 0 ? (
-              <div className="muted">No organizations found.</div>
-            ) : (
-              <div
-                className="stack"
-                style={{ maxHeight: "52vh", overflowY: "auto", paddingRight: 6, gap: 12 }}
-              >
-                {organizations.map((organization) => (
-                  <button
-                    key={organization.id}
-                    type="button"
-                    className="card-soft stack"
-                    onClick={() => void openOrganization(organization.id)}
-                    style={{
-                      gap: 8,
-                      textAlign: "left",
-                      cursor: "pointer",
-                      border:
-                        selectedOrganizationId === organization.id
-                          ? "1px solid var(--primary)"
-                          : "1px solid var(--border)",
-                    }}
-                  >
-                    <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                      <span className="badge">#{organization.id}</span>
-                      {organization.code ? <span className="badge">{organization.code}</span> : null}
-                      <span className="badge">
-                        {getOrganizationTypeLabel(organization.organization_type)}
-                      </span>
-                      <span className="badge">{organization.is_active ? "active" : "inactive"}</span>
-                    </div>
-
-                    <div className="section-title" style={{ fontSize: 16 }}>
-                      {organization.name}
-                    </div>
-
-                    <div className="muted">
-                      Required worker subscription:{" "}
-                      {getRequiredSubscriptionForOrganizationType(organization.organization_type)}
-                    </div>
-
-                    {organization.contact_email ? (
-                      <div className="muted">{organization.contact_email}</div>
-                    ) : null}
-
-                    {organization.calendly_event_type_uri ? (
-                      <div
-                        className="muted"
-                        style={{
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                        title={organization.calendly_event_type_uri}
-                      >
-                        Calendly event type configured
-                      </div>
-                    ) : (
-                      <div className="muted" style={{ color: "#b45309" }}>
-                        No Calendly event type configured
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="card stack">
-            <div className="section-title">
-              {isPlatformAdmin
-                ? editingOrganizationId
-                  ? `Edit organization #${editingOrganizationId}`
-                  : "Create organization"
-                : "Organization profile"}
-            </div>
-
-            {!selectedOrganization && !isPlatformAdmin ? (
-              <div className="muted">No organization linked to this account.</div>
-            ) : (
-              <form onSubmit={handleSaveOrganization} className="stack">
-                <label className="stack">
-                  <strong>Name</strong>
-                  <input
-                    className="input"
-                    value={form.name}
-                    onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-                    disabled={!isPlatformAdmin || detailLoading}
-                  />
-                </label>
-
-                <label className="stack">
-                  <strong>Business ID</strong>
-                  <input
-                    className="input"
-                    value={form.code || "Generated automatically"}
-                    disabled
-                    placeholder="Generated automatically"
-                    style={{ cursor: "not-allowed", background: "rgba(15,23,42,0.04)" }}
-                  />
-                  <div className="muted">
-                    System-generated identifier. It follows the ORG-xxxxxx convention.
-                  </div>
-                </label>
-
-                <label className="stack">
-                  <strong>Organization type</strong>
-                  <select
-                    className="select"
-                    value={form.organization_type}
-                    onChange={(e) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        organization_type: e.target.value as AdminOrganizationType,
-                      }))
-                    }
-                    disabled={!isPlatformAdmin || detailLoading}
-                  >
-                    <option value="agent_flix">agent flix — workers classique only</option>
-                    <option value="agent_premium">agent premium — workers flix only</option>
-                    <option value="agent_de_reve">agent de rêve — workers executif only</option>
-                  </select>
-                </label>
-
-                <label className="stack">
-                  <strong>Description</strong>
-                  <textarea
-                    className="textarea"
-                    value={form.description}
-                    onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-                    disabled={!isPlatformAdmin || detailLoading}
-                  />
-                </label>
-
-                <label className="stack">
-                  <strong>Contact email</strong>
-                  <input
-                    className="input"
-                    value={form.contact_email}
-                    onChange={(e) => setForm((prev) => ({ ...prev, contact_email: e.target.value }))}
-                    disabled={!isPlatformAdmin || detailLoading}
-                  />
-                </label>
-
-                <label className="stack">
-                  <strong>Contact phone</strong>
-                  <input
-                    className="input"
-                    value={form.contact_phone}
-                    onChange={(e) => setForm((prev) => ({ ...prev, contact_phone: e.target.value }))}
-                    disabled={!isPlatformAdmin || detailLoading}
-                  />
-                </label>
-
-                <label className="stack">
-                  <strong>Calendly Event Type URI</strong>
-                  <input
-                    className="input"
-                    value={form.calendly_event_type_uri}
-                    onChange={(e) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        calendly_event_type_uri: e.target.value,
-                      }))
-                    }
-                    disabled={!isPlatformAdmin || detailLoading}
-                    placeholder="https://api.calendly.com/event_types/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                  />
-                  <div className="muted">
-                    Dedicated Calendly event type used to restrict this organization to its own
-                    bookings.
-                  </div>
-                </label>
-
-                {isPlatformAdmin ? (
-                  <>
-                    <label className="row" style={{ gap: 8 }}>
-                      <input
-                        type="checkbox"
-                        checked={form.is_active}
-                        onChange={(e) =>
-                          setForm((prev) => ({ ...prev, is_active: e.target.checked }))
-                        }
-                        disabled={detailLoading}
-                      />
-                      <strong>Active</strong>
-                    </label>
-
-                    <div className="row" style={{ flexWrap: "wrap" }}>
-                      <button className="button" type="submit" disabled={saving || detailLoading}>
-                        {saving
-                          ? "Saving..."
-                          : editingOrganizationId
-                            ? "Save organization"
-                            : "Create organization"}
-                      </button>
-
-                      <button
-                        className="button ghost"
-                        type="button"
-                        onClick={() => {
-                          setEditingOrganizationId(null);
-                          setSelectedOrganizationId(null);
-                          setAssignedWorkers([]);
-                          setSelectedWorkerId(null);
-                          setSelectedWorkerSummary(null);
-                          setSelectedWorkerIdToAssign("");
-                          setAccessAccountResult(null);
-                          setForm(EMPTY_FORM);
-                          setLeverSearch("");
-                          setLeverCategoryFilter("all");
-                          setLeverSortMode("highlighted");
-                          resetEngagementCanvas(null, "current");
-                          resetPurposeCanvas(null);
-                          resetTimeCanvas(null);
-                          resetSignificanceCanvas(null);
-                        }}
-                        disabled={detailLoading}
-                      >
-                        New organization
-                      </button>
-                    </div>
-
-                    {editingOrganizationId ? (
-                      <div
-                        className="card-soft stack"
-                        style={{
-                          gap: 10,
-                          border: "1px solid rgba(59,130,246,0.25)",
-                          background: "rgba(59,130,246,0.06)",
-                        }}
-                      >
-                        <div className="section-title" style={{ fontSize: 15 }}>
-                          Organization access account
-                        </div>
-
-                        <div className="muted">
-                          This creates or resets the organization login account using the contact
-                          email above. The temporary password is shown once.
-                        </div>
-
-                        <button
-                          className="button"
-                          type="button"
-                          onClick={() => void handleCreateOrResetAccessAccount()}
-                          disabled={
-                            accessAccountSaving ||
-                            detailLoading ||
-                            saving ||
-                            !selectedOrganizationId ||
-                            !form.contact_email.trim()
-                          }
-                        >
-                          {accessAccountSaving
-                            ? "Generating account..."
-                            : "Create / reset organization account"}
-                        </button>
-
-                        {!form.contact_email.trim() ? (
-                          <div className="muted" style={{ color: "var(--danger)" }}>
-                            Add a contact email before creating an organization account.
-                          </div>
-                        ) : null}
-
-                        {accessAccountResult ? (
-                          <div
-                            className="stack"
-                            style={{
-                              gap: 8,
-                              borderRadius: 14,
-                              padding: 12,
-                              background: "rgba(34,197,94,0.1)",
-                              border: "1px solid rgba(34,197,94,0.25)",
-                            }}
-                          >
-                            <div style={{ fontWeight: 800 }}>{accessAccountResult.message}</div>
-                            <div>
-                              <strong>Login email:</strong> {accessAccountResult.email}
-                            </div>
-                            <div>
-                              <strong>Temporary password:</strong>{" "}
-                              <code
-                                style={{
-                                  padding: "4px 8px",
-                                  borderRadius: 8,
-                                  background: "rgba(15,23,42,0.08)",
-                                }}
-                              >
-                                {accessAccountResult.temporary_password}
-                              </code>
-                            </div>
-                            <div className="muted">
-                              Share this password securely. It will not be visible again after you
-                              leave this result.
-                            </div>
-                          </div>
-                        ) : null}
-                      </div>
-                    ) : null}
-                  </>
-                ) : null}
-              </form>
-            )}
-          </div>
-        </div>
-      )}
-
-      {selectedOrganization ? (
-        <>
-          <div className="card stack" style={{ gap: 16 }}>
-            <div
-              className="row space-between"
-              style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}
-            >
-              <div className="stack" style={{ gap: 4 }}>
-                <div className="section-title">Organization revenue dashboard</div>
-                <div className="muted">
-                  Revenue is calculated from the total paid subscription amount of assigned workers.
-                  Organization share is 75% ex-VAT.
-                </div>
-              </div>
-
-              <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                <span className="badge">{selectedOrganization.code || `#${selectedOrganization.id}`}</span>
-                <span className="badge">
-                  share rate: {Math.round(organizationRevenueSummary.revenueShareRate * 100)}%
-                </span>
-              </div>
-            </div>
-
-            <div className="admin-kpi-scroll">
-              <div className="admin-kpi-row admin-kpi-row--6">
-                <div className="card-soft stack admin-kpi-card" style={{ gap: 6 }}>
-                  <div className="muted">Assigned workers</div>
-                  <div className="admin-metric-value" style={{ fontSize: 26 }}>
-                    {organizationRevenueSummary.assignedWorkerCount}
-                  </div>
-                </div>
-
-                <div className="card-soft stack admin-kpi-card" style={{ gap: 6 }}>
-                  <div className="muted">Paid workers</div>
-                  <div className="admin-metric-value" style={{ fontSize: 26 }}>
-                    {organizationRevenueSummary.paidWorkerCount}
-                  </div>
-                </div>
-
-                <div className="card-soft stack admin-kpi-card" style={{ gap: 6 }}>
-                  <div className="muted">Gross subscriptions ex-VAT</div>
-                  <div className="admin-metric-value" style={{ fontSize: 24 }}>
-                    {new Intl.NumberFormat("fr-BE", {
-                      style: "currency",
-                      currency: "EUR",
-                    }).format(organizationRevenueSummary.grossSubscriptionRevenueExVat)}
-                  </div>
-                </div>
-
-                <div
-                  className="card-soft stack admin-kpi-card"
-                  style={{
-                    gap: 6,
-                    border: "1px solid rgba(34,197,94,0.3)",
-                    background: "rgba(34,197,94,0.08)",
-                  }}
-                >
-                  <div className="muted">Organization revenue ex-VAT</div>
-                  <div className="admin-metric-value" style={{ fontSize: 24, color: "#15803d" }}>
-                    {new Intl.NumberFormat("fr-BE", {
-                      style: "currency",
-                      currency: "EUR",
-                    }).format(organizationRevenueSummary.organizationRevenueExVat)}
-                  </div>
-                </div>
-
-                <div className="card-soft stack admin-kpi-card" style={{ gap: 6 }}>
-                  <div className="muted">Platform share ex-VAT</div>
-                  <div className="admin-metric-value" style={{ fontSize: 24 }}>
-                    {new Intl.NumberFormat("fr-BE", {
-                      style: "currency",
-                      currency: "EUR",
-                    }).format(organizationRevenueSummary.platformRevenueExVat)}
-                  </div>
-                </div>
-
-                <div className="card-soft stack admin-kpi-card" style={{ gap: 6 }}>
-                  <div className="muted">Calculation rule</div>
-                  <div className="admin-metric-value" style={{ fontSize: 16 }}>
-                    75% organization / 25% platform
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="card-soft stack" style={{ gap: 10 }}>
-              <div className="section-title" style={{ fontSize: 15 }}>
-                Revenue details by assigned worker
-              </div>
-
-              {assignedWorkers.length === 0 ? (
-                <div className="muted">No assigned worker yet. Revenue is currently zero.</div>
-              ) : (
-                <div style={{ width: "100%", overflowX: "auto" }}>
-                  <table
-                    style={{
-                      width: "100%",
-                      borderCollapse: "collapse",
-                      minWidth: 860,
-                    }}
-                  >
-                    <thead>
-                      <tr style={{ textAlign: "left", borderBottom: "1px solid var(--border)" }}>
-                        <th style={{ padding: "10px 8px" }}>Worker</th>
-                        <th style={{ padding: "10px 8px" }}>Business ID</th>
-                        <th style={{ padding: "10px 8px" }}>Pack</th>
-                        <th style={{ padding: "10px 8px" }}>Total paid subscription ex-VAT</th>
-                        <th style={{ padding: "10px 8px" }}>Organization share 75%</th>
-                        <th style={{ padding: "10px 8px" }}>Platform share 25%</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {assignedWorkers.map((worker) => {
-                        const subscriptionPaid = Number(worker.subscription_total_paid_eur ?? 0);
-                        const organizationShare = subscriptionPaid * 0.75;
-                        const platformShare = subscriptionPaid * 0.25;
-
-                        return (
-                          <tr key={worker.id} style={{ borderBottom: "1px solid var(--border)" }}>
-                            <td style={{ padding: "10px 8px" }}>
-                              <div style={{ fontWeight: 800 }}>{worker.display_name}</div>
-                              <div className="muted">{worker.email || "No email"}</div>
-                            </td>
-                            <td style={{ padding: "10px 8px" }}>{worker.business_id || "—"}</td>
-                            <td style={{ padding: "10px 8px" }}>
-                              <span className="badge">{worker.subscription_pack}</span>
-                            </td>
-                            <td style={{ padding: "10px 8px" }}>
-                              {new Intl.NumberFormat("fr-BE", {
-                                style: "currency",
-                                currency: "EUR",
-                              }).format(subscriptionPaid)}
-                            </td>
-                            <td style={{ padding: "10px 8px", fontWeight: 800, color: "#15803d" }}>
-                              {new Intl.NumberFormat("fr-BE", {
-                                style: "currency",
-                                currency: "EUR",
-                              }).format(organizationShare)}
-                            </td>
-                            <td style={{ padding: "10px 8px" }}>
-                              {new Intl.NumberFormat("fr-BE", {
-                                style: "currency",
-                                currency: "EUR",
-                              }).format(platformShare)}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="card stack">
-            <div
-              className="row space-between"
-              style={{ gap: 12, flexWrap: "wrap", alignItems: "center" }}
-            >
-              <div className="section-title">Assigned workers</div>
-              <div className="muted">{assignedWorkers.length} worker(s) assigned</div>
-            </div>
-
-            <div className="card-soft stack" style={{ gap: 8 }}>
-              <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                <span className="badge">
-                  {getOrganizationTypeLabel(selectedOrganization.organization_type)}
-                </span>
-                <span className="badge">
-                  required pack:{" "}
-                  {getRequiredSubscriptionForOrganizationType(selectedOrganization.organization_type)}
-                </span>
-              </div>
-              <div className="muted">Standard workers can never be assigned to any organization.</div>
-            </div>
-
-            <input
-              className="input"
-              placeholder="Search assigned workers..."
-              value={workerSearch}
-              onChange={(e) => setWorkerSearch(e.target.value)}
+    {loading ? (
+      <div className="card">Loading organizations...</div>
+    ) : (
+      <>
+        {selectedOrganization ? (
+          <>
+            <OrganizationWorkspaceHero
+              selectedOrganization={selectedOrganization}
+              selectedWorkerSummary={selectedWorkerSummary}
+              selectedWorkerId={selectedWorkerId}
+              organizationRevenueSummary={organizationRevenueSummary}
+              getOrganizationTypeLabel={getOrganizationTypeLabel}
+              getRequiredSubscriptionForOrganizationType={
+                getRequiredSubscriptionForOrganizationType
+              }
             />
 
-            {isPlatformAdmin ? (
-              <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                <select
-                  className="select"
-                  value={selectedWorkerIdToAssign}
-                  onChange={(e) => setSelectedWorkerIdToAssign(e.target.value)}
-                  disabled={assigning || detailLoading}
-                >
-                  <option value="">Select a compatible worker to assign</option>
-                  {assignableWorkers.map((worker) => (
-                    <option key={worker.id} value={worker.id}>
-                      #{worker.id} — {worker.display_name} — {worker.subscription_pack}
-                    </option>
-                  ))}
-                </select>
+            <OrganizationWorkspaceTabs
+              activeTab={activeWorkspaceTab}
+              onChange={setActiveWorkspaceTab}
+              isPlatformAdmin={isPlatformAdmin}
+              selectedWorkerAvailable={Boolean(selectedWorkerId)}
+            />
 
-                <button
-                  className="button"
-                  type="button"
-                  onClick={() => void handleAssignWorker()}
-                  disabled={assigning || detailLoading || !selectedWorkerIdToAssign}
-                >
-                  {assigning ? "Assigning..." : "Assign worker"}
-                </button>
-              </div>
+            {activeWorkspaceTab === "overview" ? (
+              <OrganizationOverviewTab
+                selectedOrganization={selectedOrganization}
+                selectedWorkerSummary={selectedWorkerSummary}
+                selectedWorkerId={selectedWorkerId}
+                organizationRevenueSummary={organizationRevenueSummary}
+                onNavigate={setActiveWorkspaceTab}
+                getOrganizationTypeLabel={getOrganizationTypeLabel}
+                getRequiredSubscriptionForOrganizationType={
+                  getRequiredSubscriptionForOrganizationType
+                }
+              />
             ) : null}
 
-            {detailLoading ? (
-              <div className="muted">Loading assigned workers...</div>
-            ) : filteredAssignedWorkers.length === 0 ? (
-              <div className="muted">No assigned workers found.</div>
-            ) : (
-              <div
-                className="stack"
-                style={{ maxHeight: "56vh", overflowY: "auto", paddingRight: 6, gap: 12 }}
+            {activeWorkspaceTab === "revenue" ? (
+              <OrganizationRevenueTab
+                selectedOrganization={selectedOrganization}
+                assignedWorkers={assignedWorkers}
+                organizationRevenueSummary={organizationRevenueSummary}
+              />
+            ) : null}
+
+            {activeWorkspaceTab === "workers" ? (
+              <OrganizationWorkersTab
+                selectedOrganization={selectedOrganization}
+                assignedWorkers={assignedWorkers}
+                filteredAssignedWorkers={filteredAssignedWorkers}
+                assignableWorkers={assignableWorkers}
+                selectedWorkerId={selectedWorkerId}
+                selectedWorkerIdToAssign={selectedWorkerIdToAssign}
+                workerSearch={workerSearch}
+                isPlatformAdmin={isPlatformAdmin}
+                assigning={assigning}
+                detailLoading={detailLoading}
+                onWorkerSearchChange={setWorkerSearch}
+                onSelectedWorkerIdToAssignChange={setSelectedWorkerIdToAssign}
+                onAssignWorker={() => void handleAssignWorker()}
+                onUnassignWorker={(workerId) => void handleUnassignWorker(workerId)}
+                onOpenWorker={(workerId) => void openWorker(workerId)}
+                getOrganizationTypeLabel={getOrganizationTypeLabel}
+                getRequiredSubscriptionForOrganizationType={
+                  getRequiredSubscriptionForOrganizationType
+                }
+              />
+            ) : null}
+
+            {activeWorkspaceTab === "canvases" ? (
+              <OrganizationCanvasesTab
+                selectedWorkerId={selectedWorkerId}
+                selectedWorkerSummary={selectedWorkerSummary}
+                activeCanvasTab={activeCanvasTab}
+                onCanvasTabChange={setActiveCanvasTab}
               >
-                {filteredAssignedWorkers.map((worker) => {
-                  const isSelected = selectedWorkerId === worker.id;
-
-                  return (
-                    <div
-                      key={worker.id}
-                      className="card-soft stack"
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => void openWorker(worker.id)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          void openWorker(worker.id);
-                        }
-                      }}
-                      style={{
-                        gap: 8,
-                        border: isSelected ? "1px solid var(--primary)" : "1px solid var(--border)",
-                        cursor: "pointer",
-                        textAlign: "left",
-                      }}
-                    >
-                      <div
-                        className="row space-between"
-                        style={{ gap: 12, flexWrap: "wrap", alignItems: "center" }}
-                      >
-                        <div className="stack" style={{ gap: 6 }}>
-                          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                            <span className="badge">#{worker.id}</span>
-                            {worker.business_id ? (
-                              <span className="badge">{worker.business_id}</span>
-                            ) : null}
-                            <span className="badge">{worker.subscription_pack}</span>
-                            {worker.current_role ? (
-                              <span className="badge">{worker.current_role}</span>
-                            ) : null}
-                            <span className="badge">
-                              paid{" "}
-                              {new Intl.NumberFormat("fr-BE", {
-                                style: "currency",
-                                currency: "EUR",
-                              }).format(Number(worker.subscription_total_paid_eur ?? 0))}
-                            </span>
-                          </div>
-
-                          <div className="section-title" style={{ fontSize: 16 }}>
-                            {worker.display_name}
-                          </div>
-
-                          <div className="muted">{worker.email || "No email"}</div>
-                        </div>
-
-                        {isPlatformAdmin ? (
-                          <button
-                            className="button ghost"
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              void handleUnassignWorker(worker.id);
-                            }}
-                            disabled={assigning}
-                          >
-                            Unassign
-                          </button>
-                        ) : null}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          <div className="card stack" style={{ gap: 16, minWidth: 0 }}>
-            <div className="section-title">Engagement Canvas</div>
-
-            <div className="card-soft stack" style={{ gap: 12 }}>
-              <div className="grid grid-3" style={{ alignItems: "end" }}>
-                <label className="stack">
-                  <strong>Worker</strong>
-                  <input
-                    className="input"
-                    value={
+                {activeCanvasTab === "engagement" ? (
+                  <OrganizationEngagementCanvasTab
+                    selectedWorkerId={selectedWorkerId}
+                    workerDisplayValue={
                       selectedWorkerSummary?.worker
                         ? `#${selectedWorkerSummary.worker.id} — ${selectedWorkerSummary.worker.display_name}`
                         : ""
                     }
-                    disabled
-                    placeholder="Select a worker above"
-                  />
-                </label>
-
-                <label className="stack">
-                  <strong>State</strong>
-                  <select
-                    className="select"
-                    value={engagementSelectionState}
-                    onChange={(e) => {
-                      const nextState = e.target.value as AdminWorkerEngagementState;
+                    engagementSelectionState={engagementSelectionState}
+                    engagementCanvasLoaded={engagementCanvasLoaded}
+                    engagementsLoading={engagementsLoading}
+                    editingEngagement={editingEngagement}
+                    editingEngagementId={editingEngagementId}
+                    engagementSaveState={engagementSaveState}
+                    lastSavedAtLabel={lastSavedAtLabel}
+                    engagementSaving={engagementSaving}
+                    engagementFinalizing={engagementFinalizing}
+                    isFutureStateLocked={isFutureStateLocked}
+                    onStateChange={(nextState) => {
                       resetEngagementCanvas(selectedWorkerId, nextState);
                     }}
-                    disabled={!selectedWorkerId}
+                    onLoadCanvas={() => void handleLoadEngagementCanvas()}
+                    onClearCanvas={() =>
+                      resetEngagementCanvas(selectedWorkerId, engagementSelectionState)
+                    }
+                    onSaveCanvas={() => void handleSaveEngagement()}
+                    onFinalizeFutureState={() => void handleFinalizeFutureEngagement()}
                   >
-                    <option value="current">current</option>
-                    <option value="future">future</option>
-                  </select>
-                </label>
-
-                <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                  <button
-                    className="button"
-                    type="button"
-                    onClick={() => void handleLoadEngagementCanvas()}
-                    disabled={!selectedWorkerId || engagementsLoading}
-                  >
-                    {engagementsLoading ? "Loading..." : "Load canvas"}
-                  </button>
-
-                  {engagementCanvasLoaded ? (
-                    <button
-                      className="button ghost"
-                      type="button"
-                      onClick={() => resetEngagementCanvas(selectedWorkerId, engagementSelectionState)}
-                    >
-                      Clear canvas
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-
-            {!selectedWorkerId ? (
-              <div className="card-soft">
-                <div className="muted">Select a worker above to work on the engagement canvas.</div>
-              </div>
-            ) : !engagementCanvasLoaded ? (
-              <div className="card-soft">
-                <div className="muted">
-                  No canvas displayed yet. Choose the state and click <strong>Load canvas</strong>.
-                </div>
-              </div>
-            ) : (
-              <>
-                <div
-                  className="row space-between"
-                  style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}
-                >
-                  <div className="stack" style={{ gap: 4 }}>
-                    <div className="muted">
-                      Worker #{selectedWorkerId} — state: {engagementSelectionState}
-                    </div>
-                    <div className="muted">
-                      {editingEngagement
-                        ? `Existing canvas loaded (${editingEngagement.status})`
-                        : "No existing canvas found. You are creating a new one."}
-                    </div>
-                  </div>
-
-                  <div className="row" style={{ gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                    <SavePill state={engagementSaveState} savedAt={lastSavedAtLabel} />
-                    <CoherenceBadge status={editingEngagement?.coherence_status} />
-
-                    <button
-                      className="button"
-                      type="button"
-                      onClick={() => void handleSaveEngagement()}
-                      disabled={engagementSaving || isFutureStateLocked}
-                    >
-                      {engagementSaving ? "Saving..." : editingEngagementId ? "Save" : "Create"}
-                    </button>
-
-                    {engagementSelectionState === "future" && editingEngagementId ? (
-                      <button
-                        className="button ghost"
-                        type="button"
-                        onClick={() => void handleFinalizeFutureEngagement()}
-                        disabled={engagementFinalizing || isFutureStateLocked}
-                      >
-                        {engagementFinalizing
-                          ? "Confirming..."
-                          : isFutureStateLocked
-                            ? "Confirmed"
-                            : "Confirm future state"}
-                      </button>
-                    ) : null}
-                  </div>
-                </div>
-
-                {isFutureStateLocked ? (
-                  <div className="card-soft" style={{ color: "#15803d" }}>
-                    This future-state engagement is finalized and locked for editing.
-                  </div>
+                    <OrganizationEngagementCanvasVisual
+                      form={engagementForm}
+                      onChange={patchEngagementField}
+                      disabled={isFutureStateLocked}
+                    />
+                  </OrganizationEngagementCanvasTab>
                 ) : null}
 
-                <EngagementCanvasVisual
-                  form={engagementForm}
-                  onChange={patchEngagementField}
-                  disabled={isFutureStateLocked}
-                />
-              </>
-            )}
-          </div>
-
-          <div className="card stack" style={{ gap: 16, minWidth: 0 }}>
-            <div className="section-title">Purpose Workspace</div>
-
-            <div className="card-soft stack" style={{ gap: 12 }}>
-              <div className="grid grid-3" style={{ alignItems: "end" }}>
-                <label className="stack">
-                  <strong>Worker</strong>
-                  <input
-                    className="input"
-                    value={
+                {activeCanvasTab === "purpose" ? (
+                  <OrganizationPurposeCanvasTab
+                    selectedWorkerId={selectedWorkerId}
+                    workerDisplayValue={
                       selectedWorkerSummary?.worker
                         ? `#${selectedWorkerSummary.worker.id} — ${selectedWorkerSummary.worker.display_name}`
                         : ""
                     }
-                    disabled
-                    placeholder="Select a worker above"
-                  />
-                </label>
-
-                <div className="stack">
-                  <strong>Canvas rule</strong>
-                  <div className="muted">
-                    Blue = coherent relation · Red = incoherent relation · Grey = pending
-                  </div>
-                </div>
-
-                <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                  <button
-                    className="button"
-                    type="button"
-                    onClick={() => void handleLoadPurposeCanvas()}
-                    disabled={!selectedWorkerId || purposeLoading}
+                    purposeCanvasLoaded={purposeCanvasLoaded}
+                    purposeLoading={purposeLoading}
+                    purposeSaving={purposeSaving}
+                    editingPurposeCanvas={editingPurposeCanvas}
+                    editingPurposeCanvasId={editingPurposeCanvasId}
+                    purposeSaveState={purposeSaveState}
+                    purposeLastSavedAtLabel={purposeLastSavedAtLabel}
+                    onLoadCanvas={() => void handleLoadPurposeCanvas()}
+                    onClearCanvas={() => resetPurposeCanvas(selectedWorkerId)}
+                    onSaveCanvas={() => void handleSavePurposeCanvas()}
                   >
-                    {purposeLoading ? "Loading..." : "Load canvas"}
-                  </button>
-
-                  {purposeCanvasLoaded ? (
-                    <button
-                      className="button ghost"
-                      type="button"
-                      onClick={() => resetPurposeCanvas(selectedWorkerId)}
-                    >
-                      Clear canvas
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-
-            {!selectedWorkerId ? (
-              <div className="card-soft">
-                <div className="muted">Select a worker above to work on the Purpose Canvas.</div>
-              </div>
-            ) : !purposeCanvasLoaded ? (
-              <div className="card-soft">
-                <div className="muted">
-                  No purpose canvas displayed yet. Select a worker and click{" "}
-                  <strong>Load canvas</strong>.
-                </div>
-              </div>
-            ) : (
-              <>
-                <div
-                  className="row space-between"
-                  style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}
-                >
-                  <div className="stack" style={{ gap: 4 }}>
-                    <div className="muted">Worker #{selectedWorkerId}</div>
-                    <div className="muted">
-                      {editingPurposeCanvas
-                        ? "Existing purpose canvas loaded."
-                        : "No existing purpose canvas found. You are creating a new one."}
-                    </div>
-                    {editingPurposeCanvas?.coherence_summary ? (
-                      <div className="muted">{editingPurposeCanvas.coherence_summary}</div>
-                    ) : null}
-                  </div>
-
-                  <div className="row" style={{ gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                    <SavePill state={purposeSaveState} savedAt={purposeLastSavedAtLabel} />
-                    <CoherenceBadge status={editingPurposeCanvas?.coherence_status} />
-
-                    <button
-                      className="button"
-                      type="button"
-                      onClick={() => void handleSavePurposeCanvas()}
-                      disabled={purposeSaving}
-                    >
-                      {purposeSaving ? "Saving..." : editingPurposeCanvasId ? "Save" : "Create"}
-                    </button>
-                  </div>
-                </div>
-
-                <PurposeCanvasVisual form={purposeForm} onChange={patchPurposeField} />
-              </>
-            )}
-          </div>
-
-          <div className="card stack" style={{ gap: 16, minWidth: 0 }}>
-            <div className="section-title">Time Canvas</div>
-            <div className="muted">
-              Capture available time, constraints, energy rhythm, rituals, priorities and execution
-              risks.
-            </div>
-
-            <div className="card-soft stack" style={{ gap: 12 }}>
-              <div className="grid grid-3" style={{ alignItems: "end" }}>
-                <label className="stack">
-                  <strong>Worker</strong>
-                  <input
-                    className="input"
-                    value={
-                      selectedWorkerSummary?.worker
-                        ? `#${selectedWorkerSummary.worker.id} — ${selectedWorkerSummary.worker.display_name}`
-                        : ""
-                    }
-                    disabled
-                    placeholder="Select a worker above"
-                  />
-                </label>
-
-                <div className="stack">
-                  <strong>Readiness</strong>
-                  <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                    <span className="badge">{timeReadinessScore}%</span>
-                    <CoherenceBadge status={timeReadinessStatus} />
-                  </div>
-                </div>
-
-                <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                  <button
-                    className="button"
-                    type="button"
-                    onClick={() => void handleLoadTimeCanvas()}
-                    disabled={!selectedWorkerId || timeLoading}
-                  >
-                    {timeLoading ? "Loading..." : "Load canvas"}
-                  </button>
-
-                  {timeCanvasLoaded ? (
-                    <button
-                      className="button ghost"
-                      type="button"
-                      onClick={() => resetTimeCanvas(selectedWorkerId)}
-                    >
-                      Clear canvas
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-
-            {!selectedWorkerId ? (
-              <div className="card-soft">
-                <div className="muted">Select a worker above to work on the Time Canvas.</div>
-              </div>
-            ) : !timeCanvasLoaded ? (
-              <div className="card-soft">
-                <div className="muted">
-                  No time canvas displayed yet. Select a worker and click{" "}
-                  <strong>Load canvas</strong>.
-                </div>
-              </div>
-            ) : (
-              <>
-                <div
-                  className="row space-between"
-                  style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}
-                >
-                  <div className="stack" style={{ gap: 4 }}>
-                    <div className="muted">Worker #{selectedWorkerId}</div>
-                    <div className="muted">
-                      {editingTimeCanvas
-                        ? "Existing time canvas loaded."
-                        : "No existing time canvas found. You are creating a new one."}
-                    </div>
-                    <div className="muted">{timeSummary}</div>
-                  </div>
-
-                  <div className="row" style={{ gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                    <SavePill state={timeSaveState} savedAt={timeLastSavedAtLabel} />
-                    <button
-                      className="button"
-                      type="button"
-                      onClick={() => void handleSaveTimeCanvas()}
-                      disabled={timeSaving}
-                    >
-                      {timeSaving ? "Saving..." : editingTimeCanvasId ? "Save" : "Create"}
-                    </button>
-                  </div>
-                </div>
-
-                <TimeCanvasVisual
-                  form={timeForm}
-                  onChange={patchTimeField}
-                  readinessScore={timeReadinessScore}
-                  readinessStatus={timeReadinessStatus}
-                  summary={timeSummary}
-                />
-              </>
-            )}
-          </div>
-
-          <div className="card stack" style={{ gap: 16, minWidth: 0 }}>
-            <div className="section-title">Significance Canvas</div>
-
-            <div className="card-soft stack" style={{ gap: 12 }}>
-              <div className="grid grid-3" style={{ alignItems: "end" }}>
-                <label className="stack">
-                  <strong>Worker</strong>
-                  <input
-                    className="input"
-                    value={
-                      selectedWorkerSummary?.worker
-                        ? `#${selectedWorkerSummary.worker.id} — ${selectedWorkerSummary.worker.display_name}`
-                        : ""
-                    }
-                    disabled
-                    placeholder="Select a worker above"
-                  />
-                </label>
-
-                <div className="stack">
-                  <strong>Canvas rule</strong>
-                  <div className="muted">Each answer contributes to a deterministic score.</div>
-                </div>
-
-                <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                  <button
-                    className="button"
-                    type="button"
-                    onClick={() => void handleLoadSignificanceCanvas()}
-                    disabled={!selectedWorkerId || significanceLoading}
-                  >
-                    {significanceLoading ? "Loading..." : "Load canvas"}
-                  </button>
-
-                  {significanceCanvasLoaded ? (
-                    <button
-                      className="button ghost"
-                      type="button"
-                      onClick={() => resetSignificanceCanvas(selectedWorkerId)}
-                    >
-                      Clear canvas
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-
-            {!selectedWorkerId ? (
-              <div className="card-soft">
-                <div className="muted">Select a worker above to work on the Significance Canvas.</div>
-              </div>
-            ) : !significanceCanvasLoaded ? (
-              <div className="card-soft">
-                <div className="muted">
-                  No significance canvas displayed yet. Select a worker and click{" "}
-                  <strong>Load canvas</strong>.
-                </div>
-              </div>
-            ) : (
-              <>
-                <div
-                  className="row space-between"
-                  style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}
-                >
-                  <div className="stack" style={{ gap: 4 }}>
-                    <div className="muted">Worker #{selectedWorkerId}</div>
-                    <div className="muted">
-                      {editingSignificanceCanvas
-                        ? "Existing significance canvas loaded."
-                        : "No existing significance canvas found. You are creating a new one."}
-                    </div>
-                  </div>
-
-                  <div className="row" style={{ gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                    <SavePill state={significanceSaveState} savedAt={significanceLastSavedAtLabel} />
-
-                    <button
-                      className="button"
-                      type="button"
-                      onClick={() => void handleSaveSignificanceCanvas()}
-                      disabled={significanceSaving}
-                    >
-                      {significanceSaving
-                        ? "Saving..."
-                        : editingSignificanceCanvasId
-                          ? "Save"
-                          : "Create"}
-                    </button>
-                  </div>
-                </div>
-
-                <SignificanceCanvasVisual
-                  form={significanceForm}
-                  questions={significanceQuestions}
-                  onChange={patchSignificanceAnswer}
-                  dimensions={significanceDimensions}
-                  analysisSummary={significanceAnalysisSummary}
-                />
-              </>
-            )}
-          </div>
-
-          <div className="card stack">
-            <div className="row space-between" style={{ gap: 12, flexWrap: "wrap" }}>
-              <div className="section-title">Worker performance workspace</div>
-              {selectedWorkerSummary?.worker ? (
-                <div className="muted">
-                  Selected worker: {selectedWorkerSummary.worker.display_name}
-                </div>
-              ) : null}
-            </div>
-
-            {workerSummaryLoading ? (
-              <div className="muted">Loading worker summary...</div>
-            ) : !selectedWorkerSummary ? (
-              <div className="muted">Select a worker to view details.</div>
-            ) : (
-              <>
-                <div className="admin-kpi-scroll">
-                  <div className="admin-kpi-row admin-kpi-row--6">
-                    <div className="card-soft stack admin-kpi-card" style={{ gap: 6 }}>
-                      <div className="muted">Sessions</div>
-                      <div className="admin-metric-value" style={{ fontSize: 26 }}>
-                        {selectedWorkerSummary.session_count}
-                      </div>
-                    </div>
-
-                    <div className="card-soft stack admin-kpi-card" style={{ gap: 6 }}>
-                      <div className="muted">External conversations</div>
-                      <div className="admin-metric-value" style={{ fontSize: 26 }}>
-                        {selectedWorkerSummary.external_conversation_count}
-                      </div>
-                    </div>
-
-                    <div className="card-soft stack admin-kpi-card" style={{ gap: 6 }}>
-                      <div className="muted">Recommendations</div>
-                      <div className="admin-metric-value" style={{ fontSize: 26 }}>
-                        {selectedWorkerSummary.recommendation_count}
-                      </div>
-                    </div>
-
-                    <div className="card-soft stack admin-kpi-card" style={{ gap: 6 }}>
-                      <div className="muted">Artifacts</div>
-                      <div className="admin-metric-value" style={{ fontSize: 26 }}>
-                        {selectedWorkerSummary.artifact_count}
-                      </div>
-                    </div>
-
-                    <div className="card-soft stack admin-kpi-card" style={{ gap: 6 }}>
-                      <div className="muted">Levers</div>
-                      <div className="admin-metric-value" style={{ fontSize: 26 }}>
-                        {selectedWorkerSummary.lever_count}
-                      </div>
-                    </div>
-
-                    <div className="card-soft stack admin-kpi-card" style={{ gap: 6 }}>
-                      <div className="muted">Blueprint</div>
-                      <div className="admin-metric-value" style={{ fontSize: 18 }}>
-                        {selectedWorkerSummary.career_blueprint ? "Available" : "Not available"}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-2">
-                  <div className="card-soft stack">
-                    <div className="section-title">Worker profile</div>
-                    <div>
-                      <strong>Name:</strong> {selectedWorkerSummary.worker.display_name}
-                    </div>
-                    <div>
-                      <strong>Email:</strong> {selectedWorkerSummary.worker.email || "—"}
-                    </div>
-                    <div>
-                      <strong>Business ID:</strong>{" "}
-                      {selectedWorkerSummary.worker.business_id || "—"}
-                    </div>
-                    <div>
-                      <strong>Role:</strong> {selectedWorkerSummary.worker.current_role || "—"}
-                    </div>
-                    <div>
-                      <strong>Industry:</strong> {selectedWorkerSummary.worker.industry || "—"}
-                    </div>
-                    <div>
-                      <strong>Language:</strong> {selectedWorkerSummary.worker.language}
-                    </div>
-                    <div>
-                      <strong>Subscription:</strong>{" "}
-                      {selectedWorkerSummary.worker.subscription_pack}
-                    </div>
-                    <div>
-                      <strong>Subscription paid:</strong>{" "}
-                      {new Intl.NumberFormat("fr-BE", {
-                        style: "currency",
-                        currency: "EUR",
-                      }).format(Number(selectedWorkerSummary.worker.subscription_total_paid_eur ?? 0))}
-                    </div>
-                    <div>
-                      <strong>Organization share:</strong>{" "}
-                      {new Intl.NumberFormat("fr-BE", {
-                        style: "currency",
-                        currency: "EUR",
-                      }).format(Number(selectedWorkerSummary.worker.subscription_total_paid_eur ?? 0) * 0.75)}
-                    </div>
-                    <div>
-                      <strong>Profession:</strong>{" "}
-                      {selectedWorkerSummary.worker.profession || "—"}
-                    </div>
-                    <div>
-                      <strong>Location:</strong> {selectedWorkerSummary.worker.location || "—"}
-                    </div>
-                  </div>
-
-                  <div className="card-soft stack">
-                    <div className="section-title">Career blueprint</div>
-
-                    {selectedWorkerSummary.career_blueprint ? (
-                      <>
-                        <div>
-                          <strong>Identity:</strong>{" "}
-                          {selectedWorkerSummary.career_blueprint.identity_text || "—"}
-                        </div>
-                        <div>
-                          <strong>Vision:</strong>{" "}
-                          {selectedWorkerSummary.career_blueprint.vision_text || "—"}
-                        </div>
-                        <div>
-                          <strong>Talent focus:</strong>{" "}
-                          {selectedWorkerSummary.career_blueprint.talent_focus_text || "—"}
-                        </div>
-                        <div>
-                          <strong>Career focus:</strong>{" "}
-                          {selectedWorkerSummary.career_blueprint.career_focus_text || "—"}
-                        </div>
-                        <div>
-                          <strong>Inspiration person:</strong>{" "}
-                          {selectedWorkerSummary.career_blueprint.inspiration_person || "—"}
-                        </div>
-                        <div>
-                          <strong>Aspiration person:</strong>{" "}
-                          {selectedWorkerSummary.career_blueprint.aspiration_person || "—"}
-                        </div>
-                      </>
-                    ) : (
-                      <div className="muted">No career blueprint available.</div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="card-soft stack">
-                  <div
-                    className="row space-between"
-                    style={{ gap: 12, flexWrap: "wrap", alignItems: "center" }}
-                  >
-                    <div className="section-title">Levers workspace</div>
-                    <div className="muted">
-                      {filteredLevers.length} lever(s) shown / {selectedWorkerSummary.lever_count}{" "}
-                      total
-                    </div>
-                  </div>
-
-                  <div className="grid grid-3">
-                    <input
-                      className="input"
-                      placeholder="Search levers by name, category, provider, reason..."
-                      value={leverSearch}
-                      onChange={(e) => setLeverSearch(e.target.value)}
+                    <OrganizationPurposeCanvasVisual
+                      form={purposeForm}
+                      onChange={patchPurposeField}
                     />
+                  </OrganizationPurposeCanvasTab>
+                ) : null}
 
-                    <select
-                      className="select"
-                      value={leverCategoryFilter}
-                      onChange={(e) => setLeverCategoryFilter(e.target.value)}
-                    >
-                      <option value="all">All categories</option>
-                      {leverCategories.map((category) => (
-                        <option key={category} value={category}>
-                          {category}
-                        </option>
-                      ))}
-                    </select>
+                {activeCanvasTab === "time" ? (
+                  <OrganizationTimeCanvasTab
+                    selectedWorkerId={selectedWorkerId}
+                    workerDisplayValue={
+                      selectedWorkerSummary?.worker
+                        ? `#${selectedWorkerSummary.worker.id} — ${selectedWorkerSummary.worker.display_name}`
+                        : ""
+                    }
+                    timeCanvasLoaded={timeCanvasLoaded}
+                    timeLoading={timeLoading}
+                    timeSaving={timeSaving}
+                    editingTimeCanvas={editingTimeCanvas}
+                    editingTimeCanvasId={editingTimeCanvasId}
+                    timeSaveState={timeSaveState}
+                    timeLastSavedAtLabel={timeLastSavedAtLabel}
+                    timeReadinessScore={timeReadinessScore}
+                    timeReadinessStatus={timeReadinessStatus}
+                    timeSummary={timeSummary}
+                    onLoadCanvas={() => void handleLoadTimeCanvas()}
+                    onClearCanvas={() => resetTimeCanvas(selectedWorkerId)}
+                    onSaveCanvas={() => void handleSaveTimeCanvas()}
+                  >
+                    <OrganizationTimeCanvasVisual
+                      form={timeForm}
+                      onChange={patchTimeField}
+                      readinessScore={timeReadinessScore}
+                      readinessStatus={timeReadinessStatus}
+                      summary={timeSummary}
+                    />
+                  </OrganizationTimeCanvasTab>
+                ) : null}
 
-                    <select
-                      className="select"
-                      value={leverSortMode}
-                      onChange={(e) => setLeverSortMode(e.target.value as LeverSortMode)}
-                    >
-                      <option value="highlighted">Sort by highlighted / rank</option>
-                      <option value="most_used">Sort by most used</option>
-                      <option value="name">Sort by name</option>
-                    </select>
-                  </div>
-                </div>
+                {activeCanvasTab === "significance" ? (
+                  <OrganizationSignificanceCanvasTab
+                    selectedWorkerId={selectedWorkerId}
+                    workerDisplayValue={
+                      selectedWorkerSummary?.worker
+                        ? `#${selectedWorkerSummary.worker.id} — ${selectedWorkerSummary.worker.display_name}`
+                        : ""
+                    }
+                    significanceCanvasLoaded={significanceCanvasLoaded}
+                    significanceLoading={significanceLoading}
+                    significanceSaving={significanceSaving}
+                    editingSignificanceCanvas={editingSignificanceCanvas}
+                    editingSignificanceCanvasId={editingSignificanceCanvasId}
+                    significanceSaveState={significanceSaveState}
+                    significanceLastSavedAtLabel={significanceLastSavedAtLabel}
+                    onLoadCanvas={() => void handleLoadSignificanceCanvas()}
+                    onClearCanvas={() => resetSignificanceCanvas(selectedWorkerId)}
+                    onSaveCanvas={() => void handleSaveSignificanceCanvas()}
+                  >
+                    <OrganizationSignificanceCanvasVisual
+                      form={significanceForm}
+                      questions={significanceQuestions}
+                      onChange={patchSignificanceAnswer}
+                      dimensions={significanceDimensions}
+                      analysisSummary={significanceAnalysisSummary}
+                    />
+                  </OrganizationSignificanceCanvasTab>
+                ) : null}
+              </OrganizationCanvasesTab>
+            ) : null}
 
-                <div className="grid grid-4">
-                  <div className="card-soft stack">
-                    <div className="section-title">Sessions</div>
+            {activeWorkspaceTab === "insights" ? (
+              <OrganizationInsightsTab
+                selectedWorkerSummary={selectedWorkerSummary}
+                workerSummaryLoading={workerSummaryLoading}
+                leverSearch={leverSearch}
+                leverCategoryFilter={leverCategoryFilter}
+                leverSortMode={leverSortMode}
+                leverCategories={leverCategories}
+                filteredLevers={filteredLevers}
+                relatedLeversByRecommendationId={relatedLeversByRecommendationId}
+                onLeverSearchChange={setLeverSearch}
+                onLeverCategoryFilterChange={setLeverCategoryFilter}
+                onLeverSortModeChange={setLeverSortMode}
+                onScrollToRecommendation={scrollToRecommendation}
+              />
+            ) : null}
 
-                    {selectedWorkerSummary.sessions.length === 0 ? (
-                      <div className="muted">No sessions found.</div>
-                    ) : (
-                      <div
-                        className="stack"
-                        style={{ gap: 10, maxHeight: "38vh", overflowY: "auto" }}
-                      >
-                        {selectedWorkerSummary.sessions.map((session) => (
-                          <div
-                            key={session.session_id}
-                            className="stack"
-                            style={{ gap: 4, borderTop: "1px solid var(--border)", paddingTop: 10 }}
-                          >
-                            <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                              <span className="badge">#{session.session_id}</span>
-                              <span className="badge">{session.status}</span>
-                            </div>
-                            <div className="muted">{new Date(session.started_at).toLocaleString()}</div>
-                            <div>{session.summary || "No summary available."}</div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+            {activeWorkspaceTab === "access" ? (
+              <OrganizationAccessTab
+                selectedOrganizationId={selectedOrganizationId}
+                contactEmail={form.contact_email}
+                editingOrganizationId={editingOrganizationId}
+                accessAccountSaving={accessAccountSaving}
+                detailLoading={detailLoading}
+                saving={saving}
+                accessAccountResult={accessAccountResult}
+                onCreateOrResetAccessAccount={() =>
+                  void handleCreateOrResetAccessAccount()
+                }
+              />
+            ) : null}
+          </>
+        ) : null}
 
-                  <div className="card-soft stack">
-                    <div className="section-title">Recommendations</div>
-
-                    {selectedWorkerSummary.recommendations.length === 0 ? (
-                      <div className="muted">No recommendations found.</div>
-                    ) : (
-                      <div
-                        className="stack"
-                        style={{ gap: 10, maxHeight: "38vh", overflowY: "auto" }}
-                      >
-                        {selectedWorkerSummary.recommendations.map((recommendation) => {
-                          const relatedLevers =
-                            relatedLeversByRecommendationId.get(recommendation.id) ?? [];
-
-                          return (
-                            <div
-                              key={recommendation.id}
-                              id={`recommendation-${recommendation.id}`}
-                              className="stack"
-                              style={{
-                                gap: 6,
-                                borderTop: "1px solid var(--border)",
-                                paddingTop: 10,
-                              }}
-                            >
-                              <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                                <span className="badge">#{recommendation.id}</span>
-                                <span className="badge">{recommendation.status}</span>
-                                <span className="badge">{recommendation.priority}</span>
-                              </div>
-
-                              <div className="section-title" style={{ fontSize: 15 }}>
-                                {recommendation.title}
-                              </div>
-
-                              <div>{recommendation.description}</div>
-
-                              {relatedLevers.length > 0 ? (
-                                <div className="stack" style={{ gap: 6 }}>
-                                  <div className="muted">Related levers</div>
-                                  <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                                    {relatedLevers.map((lever) => (
-                                      <span key={`${recommendation.id}-${lever.id}`} className="badge">
-                                        {lever.name}
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                              ) : null}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="card-soft stack">
-                    <div className="section-title">Artifacts</div>
-
-                    {selectedWorkerSummary.artifacts.length === 0 ? (
-                      <div className="muted">No artifacts found.</div>
-                    ) : (
-                      <div
-                        className="stack"
-                        style={{ gap: 10, maxHeight: "38vh", overflowY: "auto" }}
-                      >
-                        {selectedWorkerSummary.artifacts.map((artifact) => (
-                          <div
-                            key={artifact.id}
-                            className="stack"
-                            style={{ gap: 4, borderTop: "1px solid var(--border)", paddingTop: 10 }}
-                          >
-                            <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                              <span className="badge">#{artifact.id}</span>
-                              <span className="badge">{artifact.format}</span>
-                              <span className="badge">{artifact.status}</span>
-                            </div>
-                            <div className="section-title" style={{ fontSize: 15 }}>
-                              {artifact.title}
-                            </div>
-                            <div className="muted">€{artifact.price_eur}</div>
-                            {artifact.error_message ? (
-                              <div style={{ color: "var(--danger)" }}>{artifact.error_message}</div>
-                            ) : null}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="card-soft stack">
-                    <div className="section-title">Levers</div>
-
-                    {filteredLevers.length === 0 ? (
-                      <div className="muted">No levers found.</div>
-                    ) : (
-                      <div
-                        className="stack"
-                        style={{ gap: 10, maxHeight: "38vh", overflowY: "auto" }}
-                      >
-                        {filteredLevers.map((lever) => (
-                          <div
-                            key={lever.id}
-                            className="stack"
-                            style={{ gap: 6, borderTop: "1px solid var(--border)", paddingTop: 10 }}
-                          >
-                            <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                              <span className="badge">#{lever.id}</span>
-                              <span className="badge">{lever.category}</span>
-                              <span className="badge">{lever.is_active ? "active" : "inactive"}</span>
-                              <span className="badge">used {lever.usage_count}x</span>
-                              {lever.is_highlighted ? <span className="badge">highlighted</span> : null}
-                              {lever.is_default ? <span className="badge">default</span> : null}
-                            </div>
-
-                            <div className="section-title" style={{ fontSize: 15 }}>
-                              {lever.name}
-                            </div>
-
-                            <div>{lever.description}</div>
-
-                            <div className="muted">
-                              Provider: {lever.provider_type || "—"} • Paid:{" "}
-                              {lever.is_paid ? "yes" : "no"}
-                            </div>
-
-                            {lever.price_min_eur != null || lever.price_max_eur != null ? (
-                              <div className="muted">
-                                Price:{" "}
-                                {lever.price_min_eur != null && lever.price_max_eur != null
-                                  ? `€${lever.price_min_eur} - €${lever.price_max_eur}`
-                                  : lever.price_min_eur != null
-                                    ? `from €${lever.price_min_eur}`
-                                    : `up to €${lever.price_max_eur}`}
-                              </div>
-                            ) : null}
-
-                            {lever.match_reasons.length > 0 ? (
-                              <div className="muted">
-                                Match reasons: {lever.match_reasons.join(" • ")}
-                              </div>
-                            ) : null}
-
-                            {lever.recommendation_ids.length > 0 ? (
-                              <div className="stack" style={{ gap: 6 }}>
-                                <div className="muted">Linked recommendations</div>
-                                <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                                  {lever.recommendation_ids.map((recommendationId) => (
-                                    <button
-                                      key={`${lever.id}-${recommendationId}`}
-                                      type="button"
-                                      className="button ghost"
-                                      style={{ padding: "6px 10px", fontSize: 12 }}
-                                      onClick={() => scrollToRecommendation(recommendationId)}
-                                    >
-                                      Recommendation #{recommendationId}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            ) : null}
-
-                            {lever.url ? (
-                              <div>
-                                <a
-                                  href={lever.url}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="link-button"
-                                >
-                                  Open lever link
-                                </a>
-                              </div>
-                            ) : null}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </>
-      ) : null}
-    </AdminShell>
-  );
+        {isPlatformAdmin && activeWorkspaceTab === "organizations" ? (
+          <OrganizationAdminTab
+            organizations={organizations}
+            selectedOrganizationId={selectedOrganizationId}
+            editingOrganizationId={editingOrganizationId}
+            form={form}
+            saving={saving}
+            detailLoading={detailLoading}
+            onOpenOrganization={(organizationId) => void openOrganization(organizationId)}
+            onSubmit={(event) => void handleSaveOrganization(event)}
+            onFormChange={setForm}
+            onNewOrganization={handleNewOrganization}
+            getOrganizationTypeLabel={getOrganizationTypeLabel}
+            getRequiredSubscriptionForOrganizationType={
+              getRequiredSubscriptionForOrganizationType
+            }
+          />
+        ) : null}
+      </>
+    )}
+  </AdminShell>
+);
 }
