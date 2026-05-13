@@ -84,43 +84,54 @@ export function OrganizationWorkspaceTabs({
     <div
       className="card-soft"
       style={{
-        display: "flex",
-        gap: 8,
-        flexWrap: "wrap",
-        alignItems: "center",
         position: "sticky",
         top: 0,
         zIndex: 10,
         background: "rgba(255,255,255,0.94)",
         backdropFilter: "blur(10px)",
+        overflowX: "auto",
+        overflowY: "hidden",
+        WebkitOverflowScrolling: "touch",
       }}
     >
-      {visibleTabs.map((tab) => {
-        const isActive = activeTab === tab.key;
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          alignItems: "center",
+          flexWrap: "nowrap",
+          minWidth: "max-content",
+          paddingBottom: 2,
+        }}
+      >
+        {visibleTabs.map((tab) => {
+          const isActive = activeTab === tab.key;
 
-        return (
-          <button
-            key={tab.key}
-            type="button"
-            className={isActive ? "button" : "button ghost"}
-            onClick={() => {
-              if (!tab.disabled) {
-                onChange(tab.key);
-              }
-            }}
-            title={tab.description}
-            disabled={tab.disabled}
-            style={{
-              borderRadius: 999,
-              whiteSpace: "nowrap",
-              opacity: tab.disabled ? 0.5 : 1,
-              cursor: tab.disabled ? "not-allowed" : "pointer",
-            }}
-          >
-            {tab.label}
-          </button>
-        );
-      })}
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              className={isActive ? "button" : "button ghost"}
+              onClick={() => {
+                if (!tab.disabled) {
+                  onChange(tab.key);
+                }
+              }}
+              title={tab.description}
+              disabled={tab.disabled}
+              style={{
+                borderRadius: 999,
+                whiteSpace: "nowrap",
+                flexShrink: 0,
+                opacity: tab.disabled ? 0.5 : 1,
+                cursor: tab.disabled ? "not-allowed" : "pointer",
+              }}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -108,6 +108,42 @@ function buildPayloadFromForm(
   };
 }
 
+function ScrollableTextBlock({
+  title,
+  value,
+  maxHeight = 260,
+}: {
+  title: string;
+  value?: string | null;
+  maxHeight?: number;
+}) {
+  if (!value) return null;
+
+  return (
+    <div className="stack" style={{ gap: 6 }}>
+      <strong style={{ fontSize: 12 }}>{title}</strong>
+
+      <div
+        style={{
+          maxHeight,
+          overflowY: "auto",
+          overflowX: "hidden",
+          whiteSpace: "pre-wrap",
+          wordBreak: "break-word",
+          fontSize: 13,
+          lineHeight: 1.55,
+          border: "1px solid var(--border)",
+          borderRadius: 12,
+          padding: 12,
+          background: "rgba(15,23,42,0.03)",
+        }}
+      >
+        {value}
+      </div>
+    </div>
+  );
+}
+
 export function OrganizationConversationsTab({
   selectedWorkerId,
   selectedWorkerSummary,
@@ -176,7 +212,7 @@ export function OrganizationConversationsTab({
   }
 
   return (
-    <div className="stack" style={{ gap: 16 }}>
+    <div className="stack" style={{ gap: 16, minWidth: 0 }}>
       <div
         className="card-soft"
         style={{
@@ -222,10 +258,21 @@ export function OrganizationConversationsTab({
             gridTemplateColumns: "minmax(0, 1.2fr) minmax(360px, 0.8fr)",
             gap: 16,
             alignItems: "start",
+            minWidth: 0,
           }}
         >
-          <div className="stack" style={{ gap: 16 }}>
-            <div className="card">
+          <div
+            className="stack"
+            style={{
+              gap: 16,
+              minWidth: 0,
+              maxHeight: "calc(100vh - 280px)",
+              overflowY: "auto",
+              overflowX: "hidden",
+              paddingRight: 6,
+            }}
+          >
+            <div className="card" style={{ minWidth: 0 }}>
               <div
                 className="row space-between"
                 style={{ alignItems: "flex-start", gap: 12 }}
@@ -239,7 +286,17 @@ export function OrganizationConversationsTab({
                 </div>
               </div>
 
-              <div className="stack" style={{ gap: 10, marginTop: 14 }}>
+              <div
+                className="stack"
+                style={{
+                  gap: 10,
+                  marginTop: 14,
+                  maxHeight: 360,
+                  overflowY: "auto",
+                  overflowX: "hidden",
+                  paddingRight: 6,
+                }}
+              >
                 {coachSessions.length === 0 ? (
                   <div className="muted">No coach session found for this worker.</div>
                 ) : null}
@@ -251,19 +308,27 @@ export function OrganizationConversationsTab({
                     <div
                       key={session.session_id}
                       className="card-soft"
-                      style={{ border: "1px solid var(--border)" }}
+                      style={{ border: "1px solid var(--border)", minWidth: 0 }}
                     >
                       <div
                         className="row space-between"
                         style={{ gap: 12, alignItems: "flex-start" }}
                       >
-                        <div className="stack" style={{ gap: 4 }}>
+                        <div className="stack" style={{ gap: 4, minWidth: 0 }}>
                           <strong>Session #{session.session_id}</strong>
                           <span className="muted">
                             {session.status} · {formatDateTime(session.started_at)}
                           </span>
                           {session.summary ? (
-                            <span style={{ fontSize: 13 }}>{session.summary}</span>
+                            <span
+                              style={{
+                                fontSize: 13,
+                                wordBreak: "break-word",
+                                lineHeight: 1.5,
+                              }}
+                            >
+                              {session.summary}
+                            </span>
                           ) : null}
                         </div>
 
@@ -285,7 +350,9 @@ export function OrganizationConversationsTab({
                             gap: 8,
                             marginTop: 12,
                             maxHeight: 420,
-                            overflow: "auto",
+                            overflowY: "auto",
+                            overflowX: "hidden",
+                            paddingRight: 6,
                           }}
                         >
                           {session.transcript.length === 0 ? (
@@ -315,7 +382,14 @@ export function OrganizationConversationsTab({
                                   {formatDateTime(turn.created_at)}
                                 </span>
                               </div>
-                              <div style={{ whiteSpace: "pre-wrap", fontSize: 13 }}>
+                              <div
+                                style={{
+                                  whiteSpace: "pre-wrap",
+                                  wordBreak: "break-word",
+                                  fontSize: 13,
+                                  lineHeight: 1.55,
+                                }}
+                              >
                                 {turn.text}
                               </div>
                             </div>
@@ -328,14 +402,24 @@ export function OrganizationConversationsTab({
               </div>
             </div>
 
-            <div className="card">
+            <div className="card" style={{ minWidth: 0 }}>
               <div className="section-title">External conversations</div>
               <div className="muted">
                 {externalConversations.length} external conversation
                 {externalConversations.length > 1 ? "s" : ""} captured manually.
               </div>
 
-              <div className="stack" style={{ gap: 10, marginTop: 14 }}>
+              <div
+                className="stack"
+                style={{
+                  gap: 10,
+                  marginTop: 14,
+                  maxHeight: 620,
+                  overflowY: "auto",
+                  overflowX: "hidden",
+                  paddingRight: 6,
+                }}
+              >
                 {externalConversations.length === 0 ? (
                   <div className="muted">
                     No external conversation has been added for this worker yet.
@@ -343,21 +427,22 @@ export function OrganizationConversationsTab({
                 ) : null}
 
                 {externalConversations.map((conversation) => {
-                  const isExpanded =
-                    expandedExternalConversationId === conversation.id;
+                  const isExpanded = expandedExternalConversationId === conversation.id;
 
                   return (
                     <div
                       key={conversation.id}
                       className="card-soft"
-                      style={{ border: "1px solid var(--border)" }}
+                      style={{ border: "1px solid var(--border)", minWidth: 0 }}
                     >
                       <div
                         className="row space-between"
                         style={{ gap: 12, alignItems: "flex-start" }}
                       >
-                        <div className="stack" style={{ gap: 4 }}>
-                          <strong>{conversation.title}</strong>
+                        <div className="stack" style={{ gap: 4, minWidth: 0 }}>
+                          <strong style={{ wordBreak: "break-word" }}>
+                            {conversation.title}
+                          </strong>
                           <span className="muted">
                             {conversation.source_type}
                             {conversation.source_label
@@ -367,7 +452,14 @@ export function OrganizationConversationsTab({
                           </span>
                         </div>
 
-                        <div className="row" style={{ gap: 8 }}>
+                        <div
+                          className="row"
+                          style={{
+                            gap: 8,
+                            flexWrap: "wrap",
+                            justifyContent: "flex-end",
+                          }}
+                        >
                           <button
                             className="button ghost"
                             type="button"
@@ -401,11 +493,11 @@ export function OrganizationConversationsTab({
                       </div>
 
                       {isExpanded ? (
-                        <div className="stack" style={{ gap: 10, marginTop: 12 }}>
+                        <div className="stack" style={{ gap: 12, marginTop: 12 }}>
                           {conversation.video_url ? (
-                            <div>
+                            <div className="stack" style={{ gap: 6 }}>
                               <strong style={{ fontSize: 12 }}>Video URL</strong>
-                              <div style={{ wordBreak: "break-word" }}>
+                              <div style={{ wordBreak: "break-word", fontSize: 13 }}>
                                 <a
                                   href={conversation.video_url}
                                   target="_blank"
@@ -418,31 +510,25 @@ export function OrganizationConversationsTab({
                           ) : null}
 
                           {conversation.file_path ? (
-                            <div>
+                            <div className="stack" style={{ gap: 6 }}>
                               <strong style={{ fontSize: 12 }}>File path</strong>
-                              <div style={{ wordBreak: "break-word" }}>
+                              <div style={{ wordBreak: "break-word", fontSize: 13 }}>
                                 {conversation.file_path}
                               </div>
                             </div>
                           ) : null}
 
-                          {conversation.transcript ? (
-                            <div>
-                              <strong style={{ fontSize: 12 }}>Transcript</strong>
-                              <div style={{ whiteSpace: "pre-wrap", fontSize: 13 }}>
-                                {conversation.transcript}
-                              </div>
-                            </div>
-                          ) : null}
+                          <ScrollableTextBlock
+                            title="Transcript"
+                            value={conversation.transcript}
+                            maxHeight={280}
+                          />
 
-                          {conversation.notes ? (
-                            <div>
-                              <strong style={{ fontSize: 12 }}>Notes</strong>
-                              <div style={{ whiteSpace: "pre-wrap", fontSize: 13 }}>
-                                {conversation.notes}
-                              </div>
-                            </div>
-                          ) : null}
+                          <ScrollableTextBlock
+                            title="Notes"
+                            value={conversation.notes}
+                            maxHeight={220}
+                          />
                         </div>
                       ) : null}
                     </div>
@@ -458,7 +544,19 @@ export function OrganizationConversationsTab({
             ) : null}
           </div>
 
-          <form className="card stack" style={{ gap: 12 }} onSubmit={handleSubmit}>
+          <form
+            className="card stack"
+            style={{
+              gap: 12,
+              minWidth: 0,
+              maxHeight: "calc(100vh - 280px)",
+              overflowY: "auto",
+              overflowX: "hidden",
+              position: "sticky",
+              top: 78,
+            }}
+            onSubmit={handleSubmit}
+          >
             <div>
               <div className="section-title">
                 {editingExternalConversation
@@ -555,6 +653,13 @@ export function OrganizationConversationsTab({
                 onChange={(event) => patchField("transcript", event.target.value)}
                 placeholder="Paste transcript or conversation content..."
                 rows={8}
+                style={{
+                  minHeight: 170,
+                  maxHeight: 260,
+                  overflowY: "auto",
+                  resize: "vertical",
+                  lineHeight: 1.55,
+                }}
               />
             </label>
 
@@ -566,10 +671,28 @@ export function OrganizationConversationsTab({
                 onChange={(event) => patchField("notes", event.target.value)}
                 placeholder="Internal notes, observations, key signals..."
                 rows={5}
+                style={{
+                  minHeight: 120,
+                  maxHeight: 220,
+                  overflowY: "auto",
+                  resize: "vertical",
+                  lineHeight: 1.55,
+                }}
               />
             </label>
 
-            <div className="row" style={{ gap: 8, justifyContent: "flex-end" }}>
+            <div
+              className="row"
+              style={{
+                gap: 8,
+                justifyContent: "flex-end",
+                position: "sticky",
+                bottom: 0,
+                paddingTop: 10,
+                background: "rgba(255,255,255,0.96)",
+                backdropFilter: "blur(10px)",
+              }}
+            >
               {editingExternalConversation ? (
                 <button
                   className="button ghost"
