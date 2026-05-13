@@ -5253,260 +5253,386 @@ function AdminWorkersContent() {
       ) : null}
 
       {viewMode === "conversations" ? (
-        <div className="grid grid-2" style={{ alignItems: "start" }}>
-          <div className="card stack">
-            <div className="section-title">Conversations</div>
+  <div
+    className="grid grid-2"
+    style={{
+      alignItems: "start",
+      minHeight: 0,
+    }}
+  >
+    <div
+      className="card stack"
+      style={{
+        height: "calc(100vh - 310px)",
+        minHeight: 560,
+        overflow: "hidden",
+      }}
+    >
+      <div className="section-title">Conversations</div>
 
-            <label className="stack">
-              <strong>Filter by worker</strong>
-              <select
-                className="select"
-                value={conversationWorkerFilter}
-                onChange={(e) => setConversationWorkerFilter(e.target.value)}
+      <label className="stack">
+        <strong>Filter by worker</strong>
+        <select
+          className="select"
+          value={conversationWorkerFilter}
+          onChange={(e) => setConversationWorkerFilter(e.target.value)}
+        >
+          <option value="all">All workers</option>
+          {workers.map((worker) => (
+            <option key={worker.id} value={worker.id}>
+              #{worker.id} — {worker.display_name}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <div className="muted">
+        {conversationsLoading
+          ? "Loading conversations..."
+          : `${filteredConversations.length} conversation(s) shown`}
+      </div>
+
+      {conversationsLoading ? (
+        <div>Loading conversations...</div>
+      ) : filteredConversations.length === 0 ? (
+        <div className="muted">No conversation found.</div>
+      ) : (
+        <div
+          className="stack"
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: "auto",
+            overflowX: "hidden",
+            paddingRight: 6,
+            gap: 10,
+          }}
+        >
+          {filteredConversations.map((item) => {
+            const worker = workersById.get(item.worker_id);
+            const transcriptPreview = item.transcript?.trim() || "";
+            const notesPreview = item.notes?.trim() || "";
+
+            return (
+              <div
+                key={item.id}
+                className="card-soft stack"
+                style={{
+                  gap: 8,
+                  flexShrink: 0,
+                }}
               >
-                <option value="all">All workers</option>
-                {workers.map((worker) => (
-                  <option key={worker.id} value={worker.id}>
-                    #{worker.id} — {worker.display_name}
-                  </option>
-                ))}
-              </select>
-            </label>
+                <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                  <span className="badge">#{item.id}</span>
+                  <span className="badge">{item.source_type}</span>
+                  <span className="badge">worker #{item.worker_id}</span>
+                </div>
 
-            {conversationsLoading ? (
-              <div>Loading conversations...</div>
-            ) : filteredConversations.length === 0 ? (
-              <div className="muted">No conversation found.</div>
-            ) : (
-              <div className="stack" style={{ gap: 10 }}>
-                {filteredConversations.map((item) => {
-                  const worker = workersById.get(item.worker_id);
+                <div className="section-title" style={{ fontSize: 16 }}>
+                  {item.title}
+                </div>
 
-                  return (
-                    <div key={item.id} className="card-soft stack" style={{ gap: 8 }}>
-                      <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                        <span className="badge">#{item.id}</span>
-                        <span className="badge">{item.source_type}</span>
-                        <span className="badge">worker #{item.worker_id}</span>
-                      </div>
+                <div className="muted">{worker?.display_name || "Unknown worker"}</div>
 
-                      <div className="section-title" style={{ fontSize: 16 }}>
-                        {item.title}
-                      </div>
+                {item.source_label ? (
+                  <div className="muted">Source: {item.source_label}</div>
+                ) : null}
 
-                      <div className="muted">{worker?.display_name || "Unknown worker"}</div>
+                {item.conversation_date ? (
+                  <div className="muted">
+                    Date: {new Date(item.conversation_date).toLocaleString()}
+                  </div>
+                ) : null}
 
-                      {item.source_label ? (
-                        <div className="muted">Source: {item.source_label}</div>
-                      ) : null}
-
-                      {item.conversation_date ? (
-                        <div className="muted">
-                          Date: {new Date(item.conversation_date).toLocaleString()}
-                        </div>
-                      ) : null}
-
-                      <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                        <button
-                          className="button ghost"
-                          type="button"
-                          onClick={() => fillConversationForm(item)}
-                        >
-                          Edit
-                        </button>
-
-                        {worker ? (
-                          <button
-                            className="button ghost"
-                            type="button"
-                            onClick={() => openWorkerContext(worker)}
-                          >
-                            Use worker context
-                          </button>
-                        ) : null}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          <div className="card stack">
-            <div className="section-title">
-              {editingConversationId
-                ? `Edit conversation #${editingConversationId}`
-                : "Add conversation"}
-            </div>
-
-            <form className="stack" onSubmit={handleSaveConversation}>
-              <label className="stack">
-                <strong>Worker</strong>
-                <select
-                  className="select"
-                  value={conversationForm.worker_id}
-                  onChange={(e) =>
-                    setConversationForm((prev) => ({ ...prev, worker_id: e.target.value }))
-                  }
-                  required
-                >
-                  <option value="">Select worker</option>
-                  {workers.map((worker) => (
-                    <option key={worker.id} value={worker.id}>
-                      #{worker.id} — {worker.display_name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="stack">
-                <strong>Title</strong>
-                <input
-                  className="input"
-                  value={conversationForm.title}
-                  onChange={(e) =>
-                    setConversationForm((prev) => ({ ...prev, title: e.target.value }))
-                  }
-                  placeholder="External coaching conversation"
-                  required
-                />
-              </label>
-
-              <div className="grid grid-2">
-                <label className="stack">
-                  <strong>Source type</strong>
-                  <select
-                    className="select"
-                    value={conversationForm.source_type}
-                    onChange={(e) =>
-                      setConversationForm((prev) => ({
-                        ...prev,
-                        source_type: e.target.value as "url" | "upload",
-                      }))
-                    }
+                {transcriptPreview ? (
+                  <div
+                    className="muted"
+                    style={{
+                      maxHeight: 84,
+                      overflowY: "auto",
+                      padding: "8px 10px",
+                      borderRadius: 12,
+                      border: "1px solid var(--border)",
+                      background: "rgba(15,23,42,0.03)",
+                      lineHeight: 1.5,
+                      whiteSpace: "pre-wrap",
+                    }}
                   >
-                    <option value="url">URL</option>
-                    <option value="upload">Upload</option>
-                  </select>
-                </label>
+                    <strong>Transcript preview:</strong>{" "}
+                    {transcriptPreview.length > 420
+                      ? `${transcriptPreview.slice(0, 420)}...`
+                      : transcriptPreview}
+                  </div>
+                ) : null}
 
-                <label className="stack">
-                  <strong>Conversation date</strong>
-                  <input
-                    className="input"
-                    type="datetime-local"
-                    value={conversationForm.conversation_date}
-                    onChange={(e) =>
-                      setConversationForm((prev) => ({
-                        ...prev,
-                        conversation_date: e.target.value,
-                      }))
-                    }
-                  />
-                </label>
+                {notesPreview ? (
+                  <div
+                    className="muted"
+                    style={{
+                      maxHeight: 72,
+                      overflowY: "auto",
+                      padding: "8px 10px",
+                      borderRadius: 12,
+                      border: "1px solid var(--border)",
+                      background: "rgba(15,23,42,0.03)",
+                      lineHeight: 1.5,
+                      whiteSpace: "pre-wrap",
+                    }}
+                  >
+                    <strong>Notes preview:</strong>{" "}
+                    {notesPreview.length > 300
+                      ? `${notesPreview.slice(0, 300)}...`
+                      : notesPreview}
+                  </div>
+                ) : null}
+
+                <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                  <button
+                    className="button ghost"
+                    type="button"
+                    onClick={() => fillConversationForm(item)}
+                  >
+                    Edit
+                  </button>
+
+                  {worker ? (
+                    <button
+                      className="button ghost"
+                      type="button"
+                      onClick={() => openWorkerContext(worker)}
+                    >
+                      Use worker context
+                    </button>
+                  ) : null}
+                </div>
               </div>
-
-              <label className="stack">
-                <strong>Source label</strong>
-                <input
-                  className="input"
-                  value={conversationForm.source_label}
-                  onChange={(e) =>
-                    setConversationForm((prev) => ({
-                      ...prev,
-                      source_label: e.target.value,
-                    }))
-                  }
-                  placeholder="Zoom, Teams, YouTube, Upload..."
-                />
-              </label>
-
-              {conversationForm.source_type === "url" ? (
-                <label className="stack">
-                  <strong>Video URL</strong>
-                  <input
-                    className="input"
-                    value={conversationForm.video_url}
-                    onChange={(e) =>
-                      setConversationForm((prev) => ({
-                        ...prev,
-                        video_url: e.target.value,
-                      }))
-                    }
-                    placeholder="https://..."
-                  />
-                </label>
-              ) : (
-                <label className="stack">
-                  <strong>File path</strong>
-                  <input
-                    className="input"
-                    value={conversationForm.file_path}
-                    onChange={(e) =>
-                      setConversationForm((prev) => ({
-                        ...prev,
-                        file_path: e.target.value,
-                      }))
-                    }
-                    placeholder="/uploads/..."
-                  />
-                </label>
-              )}
-
-              <label className="stack">
-                <strong>Transcript</strong>
-                <textarea
-                  className="textarea"
-                  rows={8}
-                  value={conversationForm.transcript}
-                  onChange={(e) =>
-                    setConversationForm((prev) => ({
-                      ...prev,
-                      transcript: e.target.value,
-                    }))
-                  }
-                  placeholder="Paste transcript..."
-                />
-              </label>
-
-              <label className="stack">
-                <strong>Notes</strong>
-                <textarea
-                  className="textarea"
-                  rows={5}
-                  value={conversationForm.notes}
-                  onChange={(e) =>
-                    setConversationForm((prev) => ({
-                      ...prev,
-                      notes: e.target.value,
-                    }))
-                  }
-                  placeholder="Internal notes..."
-                />
-              </label>
-
-              <div className="row" style={{ flexWrap: "wrap" }}>
-                <button className="button" type="submit" disabled={conversationSaving}>
-                  {conversationSaving
-                    ? "Saving..."
-                    : editingConversationId
-                      ? "Save conversation"
-                      : "Create conversation"}
-                </button>
-
-                <button
-                  className="button ghost"
-                  type="button"
-                  onClick={() => resetConversationForm(true)}
-                  disabled={conversationSaving}
-                >
-                  Reset
-                </button>
-              </div>
-            </form>
-          </div>
+            );
+          })}
         </div>
-      ) : null}
+      )}
+    </div>
+
+    <div
+      className="card stack"
+      style={{
+        height: "calc(100vh - 310px)",
+        minHeight: 560,
+        overflow: "hidden",
+      }}
+    >
+      <div className="section-title">
+        {editingConversationId
+          ? `Edit conversation #${editingConversationId}`
+          : "Add conversation"}
+      </div>
+
+      <form
+        className="stack"
+        onSubmit={handleSaveConversation}
+        style={{
+          flex: 1,
+          minHeight: 0,
+          overflowY: "auto",
+          overflowX: "hidden",
+          paddingRight: 6,
+        }}
+      >
+        <label className="stack">
+          <strong>Worker</strong>
+          <select
+            className="select"
+            value={conversationForm.worker_id}
+            onChange={(e) =>
+              setConversationForm((prev) => ({ ...prev, worker_id: e.target.value }))
+            }
+            required
+          >
+            <option value="">Select worker</option>
+            {workers.map((worker) => (
+              <option key={worker.id} value={worker.id}>
+                #{worker.id} — {worker.display_name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="stack">
+          <strong>Title</strong>
+          <input
+            className="input"
+            value={conversationForm.title}
+            onChange={(e) =>
+              setConversationForm((prev) => ({ ...prev, title: e.target.value }))
+            }
+            placeholder="External coaching conversation"
+            required
+          />
+        </label>
+
+        <div className="grid grid-2">
+          <label className="stack">
+            <strong>Source type</strong>
+            <select
+              className="select"
+              value={conversationForm.source_type}
+              onChange={(e) =>
+                setConversationForm((prev) => ({
+                  ...prev,
+                  source_type: e.target.value as "url" | "upload",
+                }))
+              }
+            >
+              <option value="url">URL</option>
+              <option value="upload">Upload</option>
+            </select>
+          </label>
+
+          <label className="stack">
+            <strong>Conversation date</strong>
+            <input
+              className="input"
+              type="datetime-local"
+              value={conversationForm.conversation_date}
+              onChange={(e) =>
+                setConversationForm((prev) => ({
+                  ...prev,
+                  conversation_date: e.target.value,
+                }))
+              }
+            />
+          </label>
+        </div>
+
+        <label className="stack">
+          <strong>Source label</strong>
+          <input
+            className="input"
+            value={conversationForm.source_label}
+            onChange={(e) =>
+              setConversationForm((prev) => ({
+                ...prev,
+                source_label: e.target.value,
+              }))
+            }
+            placeholder="Zoom, Teams, YouTube, Upload..."
+          />
+        </label>
+
+        {conversationForm.source_type === "url" ? (
+          <label className="stack">
+            <strong>Video URL</strong>
+            <input
+              className="input"
+              value={conversationForm.video_url}
+              onChange={(e) =>
+                setConversationForm((prev) => ({
+                  ...prev,
+                  video_url: e.target.value,
+                }))
+              }
+              placeholder="https://..."
+            />
+          </label>
+        ) : (
+          <label className="stack">
+            <strong>File path</strong>
+            <input
+              className="input"
+              value={conversationForm.file_path}
+              onChange={(e) =>
+                setConversationForm((prev) => ({
+                  ...prev,
+                  file_path: e.target.value,
+                }))
+              }
+              placeholder="/uploads/..."
+            />
+          </label>
+        )}
+
+        <label className="stack">
+          <strong>Transcript</strong>
+          <textarea
+            className="textarea"
+            value={conversationForm.transcript}
+            onChange={(e) =>
+              setConversationForm((prev) => ({
+                ...prev,
+                transcript: e.target.value,
+              }))
+            }
+            placeholder="Paste transcript..."
+            style={{
+              minHeight: 220,
+              maxHeight: 340,
+              overflowY: "auto",
+              resize: "vertical",
+              lineHeight: 1.55,
+              whiteSpace: "pre-wrap",
+            }}
+          />
+          <div className="muted">
+            Long transcripts stay inside this scrollable area to keep the workspace usable.
+          </div>
+        </label>
+
+        <label className="stack">
+          <strong>Notes</strong>
+          <textarea
+            className="textarea"
+            value={conversationForm.notes}
+            onChange={(e) =>
+              setConversationForm((prev) => ({
+                ...prev,
+                notes: e.target.value,
+              }))
+            }
+            placeholder="Internal notes..."
+            style={{
+              minHeight: 140,
+              maxHeight: 240,
+              overflowY: "auto",
+              resize: "vertical",
+              lineHeight: 1.55,
+              whiteSpace: "pre-wrap",
+            }}
+          />
+        </label>
+
+        <div
+          className="row"
+          style={{
+            flexWrap: "wrap",
+            position: "sticky",
+            bottom: 0,
+            zIndex: 5,
+            paddingTop: 10,
+            paddingBottom: 4,
+            background: "rgba(255,255,255,0.94)",
+            backdropFilter: "blur(10px)",
+          }}
+        >
+          <button className="button" type="submit" disabled={conversationSaving}>
+            {conversationSaving
+              ? "Saving..."
+              : editingConversationId
+                ? "Save conversation"
+                : "Create conversation"}
+          </button>
+
+          <button
+            className="button ghost"
+            type="button"
+            onClick={() => resetConversationForm(true)}
+            disabled={conversationSaving}
+          >
+            Reset
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+) : null}
 
       {viewMode === "engagements" ? (
         <div className="card stack" style={{ gap: 16, minWidth: 0 }}>
