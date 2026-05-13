@@ -832,6 +832,14 @@ function formatDateLabel(value?: string | null): string {
   });
 }
 
+function normalizeConversationSourceType(value?: string | null): "url" | "upload" {
+  if (value === "upload") {
+    return "upload";
+  }
+
+  return "url";
+}
+
 function normalizePurposeText(value?: string | null): string {
   return (value || "").trim();
 }
@@ -3523,7 +3531,7 @@ function AdminWorkersContent() {
     setConversationForm({
       worker_id: String(item.worker_id),
       title: item.title,
-      source_type: item.source_type,
+      source_type: normalizeConversationSourceType(item.source_type),
       source_label: item.source_label || "",
       video_url: item.video_url || "",
       file_path: item.file_path || "",
