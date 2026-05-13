@@ -1,3 +1,4 @@
+// app/admin/organizations/components/organization-workspace-tabs.tsx
 "use client";
 
 export type OrganizationWorkspaceTab =
@@ -60,7 +61,7 @@ export function OrganizationWorkspaceTabs({
     {
       key: "conversations",
       label: "Conversations",
-      description: "Review coach sessions and add external worker conversations.",
+      description: "Review coach sessions and manage external worker conversations.",
       disabled: !selectedWorkerAvailable,
     },
     {
@@ -102,7 +103,11 @@ export function OrganizationWorkspaceTabs({
             key={tab.key}
             type="button"
             className={isActive ? "button" : "button ghost"}
-            onClick={() => onChange(tab.key)}
+            onClick={() => {
+              if (!tab.disabled) {
+                onChange(tab.key);
+              }
+            }}
             title={tab.description}
             disabled={tab.disabled}
             style={{
