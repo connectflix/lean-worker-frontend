@@ -569,28 +569,45 @@ export type AdminWorkerSubscriptionUpdate = {
 
 /* ---------------- ADMIN WORKER CONVERSATIONS ---------------- */
 
+export type AdminWorkerConversationSourceType =
+  | "url"
+  | "upload"
+  | "manual"
+  | "meeting"
+  | "video"
+  | "audio"
+  | "note"
+  | string;
+
 export type AdminWorkerConversation = {
   id: number;
   worker_id: number;
+
   title: string;
-  source_type: "url" | "upload";
+  source_type: AdminWorkerConversationSourceType;
   source_label?: string | null;
+
   video_url?: string | null;
   file_path?: string | null;
+
   conversation_date?: string | null;
   transcript?: string | null;
   notes?: string | null;
+
   created_at: string;
   updated_at: string;
 };
 
 export type AdminWorkerConversationCreate = {
   worker_id: number;
+
   title: string;
-  source_type: "url" | "upload";
+  source_type?: AdminWorkerConversationSourceType;
   source_label?: string | null;
+
   video_url?: string | null;
   file_path?: string | null;
+
   conversation_date?: string | null;
   transcript?: string | null;
   notes?: string | null;
@@ -598,10 +615,12 @@ export type AdminWorkerConversationCreate = {
 
 export type AdminWorkerConversationUpdate = {
   title?: string | null;
-  source_type?: "url" | "upload" | null;
+  source_type?: AdminWorkerConversationSourceType | null;
   source_label?: string | null;
+
   video_url?: string | null;
   file_path?: string | null;
+
   conversation_date?: string | null;
   transcript?: string | null;
   notes?: string | null;
@@ -1349,6 +1368,39 @@ export type AdminOrganizationWorkerSummary = {
   recommendation_count: number;
   artifact_count: number;
   lever_count: number;
+};
+
+export type AdminOrganizationWorkerTranscriptTurn = {
+  id: number;
+  speaker: string;
+  text: string;
+  coach_mode?: string | null;
+  coach_intent?: string | null;
+  created_at: string;
+};
+
+export type AdminOrganizationWorkerCoachSessionConversation = {
+  session_id: number;
+  status: string;
+  summary?: string | null;
+  started_at: string;
+  ended_at?: string | null;
+  transcript: AdminOrganizationWorkerTranscriptTurn[];
+};
+
+export type AdminOrganizationWorkerConversations = {
+  worker_id: number;
+
+  coach_sessions: AdminOrganizationWorkerCoachSessionConversation[];
+  external_conversations: AdminWorkerConversation[];
+
+  coach_session_count: number;
+  external_conversation_count: number;
+};
+
+export type AdminOrganizationWorkerConversationDeleteResponse = {
+  deleted: boolean;
+  conversation_id: number;
 };
 
 /* ---------------- ADMIN DASHBOARD / INTELLIGENCE ---------------- */

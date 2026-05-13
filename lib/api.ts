@@ -77,6 +77,8 @@ import type {
   AdminOrganizationDetail,
   AdminOrganizationUpdate,
   AdminOrganizationWorkerSummary,
+  AdminOrganizationWorkerConversations,
+  AdminOrganizationWorkerConversationDeleteResponse,
   AdminOrganizationAccessAccount,
   AdminOrganizationAccessAccountCreate,
   AdminSubscriptionPlan,
@@ -1501,6 +1503,71 @@ export async function getAdminOrganizationWorkerSummary(
   );
 }
 
+export async function getAdminOrganizationWorkerConversations(
+  organizationId: number,
+  workerId: number,
+): Promise<AdminOrganizationWorkerConversations> {
+  return adminApiFetch<AdminOrganizationWorkerConversations>(
+    `/admin/organizations/${organizationId}/workers/${workerId}/conversations`,
+  );
+}
+
+export async function getAdminOrganizationWorkerExternalConversations(
+  organizationId: number,
+  workerId: number,
+): Promise<AdminWorkerConversation[]> {
+  return adminApiFetch<AdminWorkerConversation[]>(
+    `/admin/organizations/${organizationId}/workers/${workerId}/external-conversations`,
+  );
+}
+
+export async function createAdminOrganizationWorkerExternalConversation(
+  organizationId: number,
+  workerId: number,
+  payload: Omit<AdminWorkerConversationCreate, "worker_id"> & {
+    worker_id?: number;
+  },
+): Promise<AdminWorkerConversation> {
+  return adminApiFetch<AdminWorkerConversation>(
+    `/admin/organizations/${organizationId}/workers/${workerId}/external-conversations`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        ...payload,
+        worker_id: payload.worker_id ?? workerId,
+      }),
+    },
+  );
+}
+
+export async function updateAdminOrganizationWorkerExternalConversation(
+  organizationId: number,
+  workerId: number,
+  conversationId: number,
+  payload: AdminWorkerConversationUpdate,
+): Promise<AdminWorkerConversation> {
+  return adminApiFetch<AdminWorkerConversation>(
+    `/admin/organizations/${organizationId}/workers/${workerId}/external-conversations/${conversationId}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function deleteAdminOrganizationWorkerExternalConversation(
+  organizationId: number,
+  workerId: number,
+  conversationId: number,
+): Promise<AdminOrganizationWorkerConversationDeleteResponse> {
+  return adminApiFetch<AdminOrganizationWorkerConversationDeleteResponse>(
+    `/admin/organizations/${organizationId}/workers/${workerId}/external-conversations/${conversationId}`,
+    {
+      method: "DELETE",
+    },
+  );
+}
+
 /* ---------------- ADMIN BOOKINGS ---------------- */
 
 export async function getAdminBookings(
@@ -1637,3 +1704,4 @@ export async function reactivateAdminWorkerSubscription(
     },
   );
 }
+

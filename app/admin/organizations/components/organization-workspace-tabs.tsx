@@ -6,6 +6,7 @@ export type OrganizationWorkspaceTab =
   | "workers"
   | "revenue"
   | "canvases"
+  | "conversations"
   | "insights"
   | "access";
 
@@ -54,6 +55,12 @@ export function OrganizationWorkspaceTabs({
       key: "canvases",
       label: "Canvases",
       description: "Work on engagement, purpose, time, and significance canvases.",
+      disabled: !selectedWorkerAvailable,
+    },
+    {
+      key: "conversations",
+      label: "Conversations",
+      description: "Review coach sessions and add external worker conversations.",
       disabled: !selectedWorkerAvailable,
     },
     {

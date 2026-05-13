@@ -29,6 +29,10 @@ import {
   updateAdminWorkerPurposeCanvas,
   updateAdminWorkerSignificanceCanvas,
   updateAdminWorkerTimeCanvas,
+  createAdminOrganizationWorkerExternalConversation,
+  deleteAdminOrganizationWorkerExternalConversation,
+  getAdminOrganizationWorkerConversations,
+  updateAdminOrganizationWorkerExternalConversation,
 } from "@/lib/api";
 import { clearAdminToken } from "@/lib/admin-auth";
 import { OrganizationOverviewTab } from "./components/organization-overview-tab";
@@ -44,6 +48,7 @@ import { OrganizationSignificanceCanvasTab } from "./components/organization-sig
 import { OrganizationTimeCanvasVisual } from "./components/organization-time-canvas-visual";
 import { OrganizationPurposeCanvasVisual } from "./components/organization-purpose-canvas-visual";
 import { OrganizationEngagementCanvasVisual } from "./components/organization-engagement-canvas-visual";
+import { OrganizationConversationsTab } from "./components/organization-conversations-tab";
 import {
   OrganizationSignificanceCanvasVisual,
   type NormalizedSignificanceQuestion,
@@ -88,6 +93,10 @@ import type {
   AdminWorkerTimeCanvas,
   AdminWorkerTimeCanvasCreate,
   AdminWorkerTimeCanvasUpdate,
+  AdminOrganizationWorkerConversations,
+  AdminWorkerConversation,
+  AdminWorkerConversationCreate,
+  AdminWorkerConversationUpdate,
 } from "@/lib/types";
 
 type OrganizationFormState = {
@@ -1104,13 +1113,21 @@ function AdminOrganizationsContent() {
 
   const [selectedWorkerSummary, setSelectedWorkerSummary] =
     useState<AdminOrganizationWorkerSummary | null>(null);
+  
+  const [selectedWorkerConversations, setSelectedWorkerConversations] =
+    useState<AdminOrganizationWorkerConversations | null>(null);
+
+  const [editingExternalConversation, setEditingExternalConversation] =
+    useState<AdminWorkerConversation | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [workerSummaryLoading, setWorkerSummaryLoading] = useState(false);
+  const [workerConversationsLoading, setWorkerConversationsLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [assigning, setAssigning] = useState(false);
   const [accessAccountSaving, setAccessAccountSaving] = useState(false);
+  const [externalConversationSaving, setExternalConversationSaving] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
   const [accessAccountResult, setAccessAccountResult] =
@@ -1124,7 +1141,7 @@ function AdminOrganizationsContent() {
     useState<OrganizationWorkspaceTab>("overview");
 
   const [activeCanvasTab, setActiveCanvasTab] =
-  useState<OrganizationCanvasTab>("engagement");
+    useState<OrganizationCanvasTab>("engagement");
 
   const [workerSearch, setWorkerSearch] = useState("");
   const [selectedWorkerIdToAssign, setSelectedWorkerIdToAssign] = useState<string>("");
@@ -1439,6 +1456,13 @@ function AdminOrganizationsContent() {
     skipNextSignificanceAutosaveRef.current = true;
   }
 
+  function resetWorkerConversations() {
+    setSelectedWorkerConversations(null);
+    setEditingExternalConversation(null);
+    setWorkerConversationsLoading(false);
+    setExternalConversationSaving(false);
+  }
+
   function stampEngagementSavedNow() {
     setLastSavedAtLabel(
       new Date().toLocaleTimeString([], {
@@ -1496,6 +1520,7 @@ function AdminOrganizationsContent() {
     resetPurposeCanvas(null);
     resetTimeCanvas(null);
     resetSignificanceCanvas(null);
+    resetWorkerConversations();
 
     try {
       const detail = await getAdminOrganizationDetail(organizationId);
@@ -1551,6 +1576,7 @@ function AdminOrganizationsContent() {
     resetPurposeCanvas(workerId);
     resetTimeCanvas(workerId);
     resetSignificanceCanvas(workerId);
+    resetWorkerConversations();
 
     try {
       const summary = await getAdminOrganizationWorkerSummary(selectedOrganizationId, workerId);
@@ -1581,6 +1607,7 @@ function AdminOrganizationsContent() {
   resetPurposeCanvas(null);
   resetTimeCanvas(null);
   resetSignificanceCanvas(null);
+  resetWorkerConversations();
 }
 
   async function handleSaveOrganization(e: React.FormEvent) {
@@ -1699,6 +1726,7 @@ function AdminOrganizationsContent() {
       resetPurposeCanvas(assignedWorkerId);
       resetTimeCanvas(assignedWorkerId);
       resetSignificanceCanvas(assignedWorkerId);
+      resetWorkerConversations();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to assign worker.");
     } finally {
@@ -1729,6 +1757,7 @@ function AdminOrganizationsContent() {
         resetPurposeCanvas(fallbackWorkerId);
         resetTimeCanvas(fallbackWorkerId);
         resetSignificanceCanvas(fallbackWorkerId);
+        resetWorkerConversations();
 
         if (fallbackWorkerId) {
           const summary = await getAdminOrganizationWorkerSummary(
@@ -2229,6 +2258,140 @@ function AdminOrganizationsContent() {
     }
   }
 
+    async function refreshWorkerConversations() {
+    if (!selectedOrganizationId || !selectedWorkerId) return null;
+
+    const conversations = await getAdminOrganizationWorkerConversations(
+      selectedOrganizationId,
+      selectedWorkerId,
+    );
+
+    setSelectedWorkerConversations(conversations);
+    return conversations;
+  }
+
+  async function handleLoadWorkerConversations() {
+    if (!selectedOrganizationId || !selectedWorkerId) {
+      setError("Please select a worker first.");
+      return;
+    }
+
+    setWorkerConversationsLoading(true);
+    setError(null);
+
+    try {
+      await refreshWorkerConversations();
+    } catch (err) {
+      setSelectedWorkerConversations(null);
+      setError(err instanceof Error ? err.message : "Failed to load worker conversations.");
+    } finally {
+      setWorkerConversationsLoading(false);
+    }
+  }
+
+  async function handleCreateExternalConversation(
+    payload: Omit<AdminWorkerConversationCreate, "worker_id">,
+  ) {
+    if (!selectedOrganizationId || !selectedWorkerId) {
+      setError("Please select a worker first.");
+      return;
+    }
+
+    setExternalConversationSaving(true);
+    setError(null);
+
+    try {
+      await createAdminOrganizationWorkerExternalConversation(
+        selectedOrganizationId,
+        selectedWorkerId,
+        payload,
+      );
+
+      await refreshWorkerConversations();
+
+      const summary = await getAdminOrganizationWorkerSummary(
+        selectedOrganizationId,
+        selectedWorkerId,
+      );
+      setSelectedWorkerSummary(summary);
+
+      setEditingExternalConversation(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create external conversation.");
+    } finally {
+      setExternalConversationSaving(false);
+    }
+  }
+
+  async function handleUpdateExternalConversation(
+    conversationId: number,
+    payload: AdminWorkerConversationUpdate,
+  ) {
+    if (!selectedOrganizationId || !selectedWorkerId) {
+      setError("Please select a worker first.");
+      return;
+    }
+
+    setExternalConversationSaving(true);
+    setError(null);
+
+    try {
+      await updateAdminOrganizationWorkerExternalConversation(
+        selectedOrganizationId,
+        selectedWorkerId,
+        conversationId,
+        payload,
+      );
+
+      await refreshWorkerConversations();
+      setEditingExternalConversation(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update external conversation.");
+    } finally {
+      setExternalConversationSaving(false);
+    }
+  }
+
+  async function handleDeleteExternalConversation(conversationId: number) {
+    if (!selectedOrganizationId || !selectedWorkerId) {
+      setError("Please select a worker first.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Delete this external conversation? This action cannot be undone.",
+    );
+
+    if (!confirmed) return;
+
+    setExternalConversationSaving(true);
+    setError(null);
+
+    try {
+      await deleteAdminOrganizationWorkerExternalConversation(
+        selectedOrganizationId,
+        selectedWorkerId,
+        conversationId,
+      );
+
+      await refreshWorkerConversations();
+
+      const summary = await getAdminOrganizationWorkerSummary(
+        selectedOrganizationId,
+        selectedWorkerId,
+      );
+      setSelectedWorkerSummary(summary);
+
+      if (editingExternalConversation?.id === conversationId) {
+        setEditingExternalConversation(null);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete external conversation.");
+    } finally {
+      setExternalConversationSaving(false);
+    }
+  }
+
   useEffect(() => {
     if (!engagementCanvasLoaded) return;
     if (!engagementForm.worker_id) return;
@@ -2708,6 +2871,31 @@ const relatedLeversByRecommendationId = useMemo(() => {
                   </OrganizationSignificanceCanvasTab>
                 ) : null}
               </OrganizationCanvasesTab>
+            ) : null}
+
+            {activeWorkspaceTab === "conversations" ? (
+              <OrganizationConversationsTab
+                selectedWorkerId={selectedWorkerId}
+                selectedWorkerSummary={selectedWorkerSummary}
+                conversations={selectedWorkerConversations}
+                loading={workerConversationsLoading}
+                saving={externalConversationSaving}
+                editingExternalConversation={editingExternalConversation}
+                onLoadConversations={() => void handleLoadWorkerConversations()}
+                onCreateExternalConversation={(payload) =>
+                  void handleCreateExternalConversation(payload)
+                }
+                onUpdateExternalConversation={(conversationId, payload) =>
+                  void handleUpdateExternalConversation(conversationId, payload)
+                }
+                onDeleteExternalConversation={(conversationId) =>
+                  void handleDeleteExternalConversation(conversationId)
+                }
+                onEditExternalConversation={setEditingExternalConversation}
+                onCancelEditExternalConversation={() =>
+                  setEditingExternalConversation(null)
+                }
+              />
             ) : null}
 
             {activeWorkspaceTab === "insights" ? (
