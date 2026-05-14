@@ -524,7 +524,7 @@ export function OrganizationConversationsTab({
                                 }}
                                 title={conversation.video_url}
                               >
-                                Watch conversation
+                                Watch video · {getReadableUrlLabel(conversation.video_url)}
                               </a>
                             </div>
                           ) : null}
