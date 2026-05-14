@@ -61,6 +61,17 @@ function formatDateTime(value?: string | null): string {
   }
 }
 
+function getReadableUrlLabel(value?: string | null): string {
+  if (!value) return "Open link";
+
+  try {
+    const url = new URL(value);
+    return url.hostname.replace(/^www\./, "");
+  } catch {
+    return "Open link";
+  }
+}
+
 function toDateTimeLocalValue(value?: string | null): string {
   if (!value) return "";
 
@@ -497,15 +508,24 @@ export function OrganizationConversationsTab({
                           {conversation.video_url ? (
                             <div className="stack" style={{ gap: 6 }}>
                               <strong style={{ fontSize: 12 }}>Video URL</strong>
-                              <div style={{ wordBreak: "break-word", fontSize: 13 }}>
-                                <a
-                                  href={conversation.video_url}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                >
-                                  {conversation.video_url}
-                                </a>
-                              </div>
+
+                              <a
+                                href={conversation.video_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="button ghost"
+                                style={{
+                                  width: "fit-content",
+                                  maxWidth: "100%",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
+                                  justifyContent: "flex-start",
+                                }}
+                                title={conversation.video_url}
+                              >
+                                Watch conversation
+                              </a>
                             </div>
                           ) : null}
 
