@@ -51,27 +51,73 @@ const EMPTY_FORM: ConversationFormState = {
   notes: "",
 };
 
+function hasExplicitTimezone(value: string): boolean {
+  return /([zZ]|[+-]\d{2}:?\d{2})$/.test(value);
+}
+
+function formatNaiveDateTime(value: string): string | null {
+  const normalizedValue = value.includes("T") ? value : value.replace(" ", "T");
+  const match = normalizedValue.match(
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/,
+  );
+
+  if (!match) return null;
+
+  const [, year, month, day, hour, minute] = match;
+
+  return `${day}/${month}/${year} ${hour}:${minute}`;
+}
+
 function formatDateTime(value?: string | null): string {
   if (!value) return "—";
 
-  try {
-    return new Date(value).toLocaleString();
-  } catch {
+  const normalizedValue = value.includes("T") ? value : value.replace(" ", "T");
+
+  if (!hasExplicitTimezone(normalizedValue)) {
+    const naiveLabel = formatNaiveDateTime(normalizedValue);
+    if (naiveLabel) return naiveLabel;
+  }
+
+  const date = new Date(normalizedValue);
+
+  if (Number.isNaN(date.getTime())) {
     return value;
   }
+
+  return date.toLocaleString("fr-BE", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function toDateTimeLocalValue(value?: string | null): string {
   if (!value) return "";
 
-  const date = new Date(value);
+  const normalizedValue = value.includes("T") ? value : value.replace(" ", "T");
+
+  if (
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(normalizedValue) &&
+    !hasExplicitTimezone(normalizedValue)
+  ) {
+    return normalizedValue.slice(0, 16);
+  }
+
+  const date = new Date(normalizedValue);
 
   if (Number.isNaN(date.getTime())) {
     return "";
   }
 
-  const offsetMs = date.getTimezoneOffset() * 60 * 1000;
-  return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
 function buildFormFromConversation(
@@ -100,9 +146,7 @@ function buildPayloadFromForm(
     source_label: form.source_label.trim() || null,
     video_url: form.video_url.trim() || null,
     file_path: form.file_path.trim() || null,
-    conversation_date: form.conversation_date
-      ? new Date(form.conversation_date).toISOString()
-      : null,
+    conversation_date: form.conversation_date ? `${form.conversation_date}:00` : null,
     transcript: form.transcript.trim() || null,
     notes: form.notes.trim() || null,
   };
@@ -506,7 +550,7 @@ export function OrganizationConversationsTab({
                                 style={{
                                   width: "fit-content",
                                 }}
-                                title={conversation.video_url}
+                                title="Open video in a new tab"
                               >
                                 Watch video
                               </a>
