@@ -61,17 +61,6 @@ function formatDateTime(value?: string | null): string {
   }
 }
 
-function getReadableUrlLabel(value?: string | null): string {
-  if (!value) return "Open link";
-
-  try {
-    const url = new URL(value);
-    return url.hostname.replace(/^www\./, "");
-  } catch {
-    return "Open link";
-  }
-}
-
 function toDateTimeLocalValue(value?: string | null): string {
   if (!value) return "";
 
@@ -507,7 +496,7 @@ export function OrganizationConversationsTab({
                         <div className="stack" style={{ gap: 12, marginTop: 12 }}>
                           {conversation.video_url ? (
                             <div className="stack" style={{ gap: 6 }}>
-                              <strong style={{ fontSize: 12 }}>Video URL</strong>
+                              <strong style={{ fontSize: 12 }}>Video</strong>
 
                               <a
                                 href={conversation.video_url}
@@ -516,15 +505,10 @@ export function OrganizationConversationsTab({
                                 className="button ghost"
                                 style={{
                                   width: "fit-content",
-                                  maxWidth: "100%",
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
-                                  whiteSpace: "nowrap",
-                                  justifyContent: "flex-start",
                                 }}
                                 title={conversation.video_url}
                               >
-                                Watch video · {getReadableUrlLabel(conversation.video_url)}
+                                Watch video
                               </a>
                             </div>
                           ) : null}
