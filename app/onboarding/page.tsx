@@ -8,6 +8,7 @@ import { resolveUiLanguage, type SupportedUiLanguage } from "@/lib/user-locales"
 import {
   BadgePill,
   BrainIcon,
+  CheckCircleIcon,
   PathIcon,
   SparkIcon,
   TargetIcon,
@@ -34,6 +35,91 @@ type FormState = {
 const LEVELS: Level[] = ["Starter", "Junior", "Senior", "Expert", "Master", "Elite"];
 const COACHING_STYLE_OPTIONS_EN = ["empathic", "direct", "structured", "motivational"];
 const COACHING_STYLE_OPTIONS_FR = ["empathique", "direct", "structuré", "motivant"];
+
+function OnboardingShell({ children }: { children: React.ReactNode }) {
+  return (
+    <main
+      style={{
+        minHeight: "100vh",
+        background:
+          "radial-gradient(circle at top left, rgba(255,122,89,0.14), transparent 30%), radial-gradient(circle at bottom right, rgba(88,180,174,0.14), transparent 32%), var(--coach-bg)",
+        padding: 24,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 1040,
+        }}
+      >
+        {children}
+      </div>
+    </main>
+  );
+}
+
+function CoachPanel({
+  children,
+  warm = false,
+}: {
+  children: React.ReactNode;
+  warm?: boolean;
+}) {
+  return (
+    <div
+      className="card stack"
+      style={{
+        gap: 18,
+        borderRadius: 32,
+        border: "1px solid rgba(43,33,24,0.08)",
+        background: warm
+          ? "linear-gradient(135deg, rgba(255,241,220,0.96), rgba(255,255,255,0.92) 55%, rgba(232,248,246,0.82))"
+          : "rgba(255,255,255,0.82)",
+        boxShadow: "0 24px 70px rgba(43,33,24,0.08)",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function SelectableCard({
+  selected,
+  children,
+  onClick,
+}: {
+  selected: boolean;
+  children: React.ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="card stack"
+      onClick={onClick}
+      style={{
+        gap: 10,
+        textAlign: "left",
+        cursor: "pointer",
+        borderRadius: 24,
+        border: selected
+          ? "2px solid var(--coach-accent)"
+          : "1px solid rgba(43,33,24,0.08)",
+        background: selected
+          ? "linear-gradient(135deg, rgba(255,122,89,0.14), rgba(255,255,255,0.86))"
+          : "rgba(255,255,255,0.74)",
+        boxShadow: selected
+          ? "0 16px 36px rgba(255,122,89,0.12)"
+          : "0 10px 28px rgba(43,33,24,0.04)",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
 
 export default function OnboardingPage() {
   return (
@@ -113,6 +199,9 @@ function OnboardingContent() {
         saveError: "Impossible d’enregistrer ton onboarding.",
         welcomeHint:
           "Ces informations serviront à personnaliser ton coach dès les premières sessions.",
+        progress: "Progression",
+        calmSetup: "Configuration calme",
+        personalizedCoach: "Coach personnalisé",
         steps: [
           {
             key: "welcome",
@@ -174,6 +263,9 @@ function OnboardingContent() {
       saveError: "Failed to save onboarding.",
       welcomeHint:
         "These details will help personalize your coach from your very first sessions.",
+      progress: "Progress",
+      calmSetup: "Calm setup",
+      personalizedCoach: "Personalized coach",
       steps: [
         {
           key: "welcome",
@@ -327,6 +419,7 @@ function OnboardingContent() {
   async function handleRetryProfileLoad() {
     setLoadingProfile(true);
     setError(null);
+
     try {
       const me = await getMe();
       setFirstName(me.given_name || me.display_name || "");
@@ -349,46 +442,65 @@ function OnboardingContent() {
     const value = form[horizonKey];
 
     return (
-      <div className="stack" style={{ gap: 14 }}>
+      <div className="stack" style={{ gap: 16 }}>
         <input
           className="input"
           value={value.target_role}
-          onChange={(e) => updateHorizon(horizonKey, "target_role", e.target.value)}
+          onChange={(event) => updateHorizon(horizonKey, "target_role", event.target.value)}
           placeholder={uiLanguage === "fr" ? "Fonction cible" : "Target role"}
           autoFocus
+          style={{
+            minHeight: 52,
+            borderRadius: 18,
+            borderColor: "rgba(43,33,24,0.10)",
+            background: "rgba(255,255,255,0.82)",
+          }}
         />
 
         <input
           className="input"
           value={value.target_compensation}
-          onChange={(e) => updateHorizon(horizonKey, "target_compensation", e.target.value)}
+          onChange={(event) =>
+            updateHorizon(horizonKey, "target_compensation", event.target.value)
+          }
           placeholder={
             uiLanguage === "fr"
               ? "Rémunération cible (optionnel)"
               : "Target compensation (optional)"
           }
+          style={{
+            minHeight: 52,
+            borderRadius: 18,
+            borderColor: "rgba(43,33,24,0.10)",
+            background: "rgba(255,255,255,0.82)",
+          }}
         />
 
         <div className="grid grid-3">
           {LEVELS.map((level) => {
             const selected = value.target_level === level;
+
             return (
-              <button
+              <SelectableCard
                 key={level}
-                type="button"
-                className="card"
+                selected={selected}
                 onClick={() => updateHorizon(horizonKey, "target_level", level)}
-                style={{
-                  textAlign: "center",
-                  border: selected ? "2px solid var(--primary)" : "1px solid var(--border)",
-                  background: selected ? "var(--primary-soft)" : undefined,
-                  cursor: "pointer",
-                }}
               >
-                <div className="section-title" style={{ margin: 0 }}>
-                  {level}
+                <div className="row" style={{ gap: 8, justifyContent: "center" }}>
+                  {selected ? <CheckCircleIcon size={16} /> : <TargetIcon size={16} />}
+                  <div
+                    className="section-title"
+                    style={{
+                      margin: 0,
+                      textAlign: "center",
+                      fontSize: 16,
+                      color: "var(--coach-ink)",
+                    }}
+                  >
+                    {level}
+                  </div>
                 </div>
-              </button>
+              </SelectableCard>
             );
           })}
         </div>
@@ -400,17 +512,40 @@ function OnboardingContent() {
     switch (currentStep.key) {
       case "welcome":
         return (
-          <div className="card-soft">
-            <div className="stack">
-              <div className="row" style={{ gap: 8, alignItems: "center" }}>
-                <SparkIcon />
-                <div className="section-title" style={{ margin: 0 }}>
-                  {uiLanguage === "fr"
-                    ? "Un coaching plus pertinent dès le départ"
-                    : "More relevant coaching from day one"}
-                </div>
+          <div
+            className="card-soft stack"
+            style={{
+              gap: 14,
+              borderRadius: 28,
+              background:
+                "linear-gradient(135deg, rgba(255,122,89,0.12), rgba(255,255,255,0.82) 55%, rgba(88,180,174,0.12))",
+              border: "1px solid rgba(43,33,24,0.08)",
+            }}
+          >
+            <div className="row" style={{ gap: 10, alignItems: "center" }}>
+              <div
+                style={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: 16,
+                  display: "grid",
+                  placeItems: "center",
+                  background: "rgba(255,122,89,0.12)",
+                  color: "var(--coach-accent)",
+                }}
+              >
+                <SparkIcon size={20} />
               </div>
-              <div className="muted">{copy.welcomeHint}</div>
+
+              <div className="section-title" style={{ margin: 0, color: "var(--coach-ink)" }}>
+                {uiLanguage === "fr"
+                  ? "Un coaching plus pertinent dès le départ"
+                  : "More relevant coaching from day one"}
+              </div>
+            </div>
+
+            <div className="muted" style={{ color: "var(--coach-muted)", lineHeight: 1.65 }}>
+              {copy.welcomeHint}
             </div>
           </div>
         );
@@ -420,13 +555,19 @@ function OnboardingContent() {
           <input
             className="input"
             value={form.current_role}
-            onChange={(e) => updateField("current_role", e.target.value)}
+            onChange={(event) => updateField("current_role", event.target.value)}
             placeholder={
               uiLanguage === "fr"
                 ? "Ex. Business Analyst, Product Manager"
                 : "e.g. Business Analyst, Product Manager"
             }
             autoFocus
+            style={{
+              minHeight: 54,
+              borderRadius: 18,
+              borderColor: "rgba(43,33,24,0.10)",
+              background: "rgba(255,255,255,0.82)",
+            }}
           />
         );
 
@@ -435,13 +576,19 @@ function OnboardingContent() {
           <input
             className="input"
             value={form.industry}
-            onChange={(e) => updateField("industry", e.target.value)}
+            onChange={(event) => updateField("industry", event.target.value)}
             placeholder={
               uiLanguage === "fr"
                 ? "Ex. Banque, Tech, Santé"
                 : "e.g. Banking, Tech, Healthcare"
             }
             autoFocus
+            style={{
+              minHeight: 54,
+              borderRadius: 18,
+              borderColor: "rgba(43,33,24,0.10)",
+              background: "rgba(255,255,255,0.82)",
+            }}
           />
         );
 
@@ -450,14 +597,20 @@ function OnboardingContent() {
           <textarea
             className="textarea"
             value={form.main_challenge}
-            onChange={(e) => updateField("main_challenge", e.target.value)}
-            rows={4}
+            onChange={(event) => updateField("main_challenge", event.target.value)}
+            rows={5}
             placeholder={
               uiLanguage === "fr"
                 ? "Ex. J’ai du mal à prioriser et je me sens surchargée"
                 : "e.g. I struggle with prioritization and feel overloaded"
             }
             autoFocus
+            style={{
+              borderRadius: 18,
+              borderColor: "rgba(43,33,24,0.10)",
+              background: "rgba(255,255,255,0.82)",
+              lineHeight: 1.65,
+            }}
           />
         );
 
@@ -476,29 +629,42 @@ function OnboardingContent() {
             {(uiLanguage === "fr" ? COACHING_STYLE_OPTIONS_FR : COACHING_STYLE_OPTIONS_EN).map(
               (option) => {
                 const selected = form.preferred_coaching_style === option;
+
                 return (
-                  <button
+                  <SelectableCard
                     key={option}
-                    type="button"
-                    className="card"
+                    selected={selected}
                     onClick={() => updateField("preferred_coaching_style", option)}
-                    style={{
-                      textAlign: "left",
-                      border: selected ? "2px solid var(--primary)" : "1px solid var(--border)",
-                      background: selected ? "var(--primary-soft)" : undefined,
-                      cursor: "pointer",
-                    }}
                   >
-                    <div className="row" style={{ gap: 8, alignItems: "center" }}>
-                      <BrainIcon size={16} />
+                    <div className="row" style={{ gap: 10, alignItems: "center" }}>
+                      <div
+                        style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 14,
+                          display: "grid",
+                          placeItems: "center",
+                          background: selected
+                            ? "rgba(255,122,89,0.14)"
+                            : "rgba(43,33,24,0.05)",
+                          color: selected ? "var(--coach-accent)" : "var(--coach-muted)",
+                        }}
+                      >
+                        {selected ? <CheckCircleIcon size={16} /> : <BrainIcon size={16} />}
+                      </div>
+
                       <div
                         className="section-title"
-                        style={{ textTransform: "capitalize", margin: 0 }}
+                        style={{
+                          textTransform: "capitalize",
+                          margin: 0,
+                          color: "var(--coach-ink)",
+                        }}
                       >
                         {option}
                       </div>
                     </div>
-                  </button>
+                  </SelectableCard>
                 );
               },
             )}
@@ -512,112 +678,275 @@ function OnboardingContent() {
 
   if (loadingProfile) {
     return (
-      <main className="page">
-        <div className="page-wrap" style={{ maxWidth: 760 }}>
-          <div className="card">{copy.loading}</div>
-        </div>
-      </main>
+      <OnboardingShell>
+        <CoachPanel warm>
+          <div className="row" style={{ gap: 12, alignItems: "center" }}>
+            <div className="loader" />
+            <div className="stack" style={{ gap: 4 }}>
+              <div className="section-title">{copy.loading}</div>
+              <div className="muted" style={{ color: "var(--coach-muted)" }}>
+                {uiLanguage === "fr"
+                  ? "Nous préparons ton espace personnel."
+                  : "We are preparing your personal workspace."}
+              </div>
+            </div>
+          </div>
+        </CoachPanel>
+      </OnboardingShell>
     );
   }
 
   if (error && !firstName && stepIndex === 0) {
     return (
-      <main className="page">
-        <div className="page-wrap" style={{ maxWidth: 760 }}>
-          <div className="card stack">
-            <div className="section-title" style={{ color: "var(--danger)" }}>
-              {copy.loadingErrorTitle}
-            </div>
-            <div className="muted">{copy.loadingErrorBody}</div>
-            <div className="card-soft" style={{ color: "var(--danger)" }}>
-              {error}
-            </div>
-            <div className="row">
-              <button className="button" onClick={() => void handleRetryProfileLoad()}>
-                {copy.retry}
-              </button>
-            </div>
+      <OnboardingShell>
+        <CoachPanel>
+          <div className="section-title" style={{ color: "var(--danger)" }}>
+            {copy.loadingErrorTitle}
           </div>
-        </div>
-      </main>
+
+          <div className="muted" style={{ color: "var(--coach-muted)" }}>
+            {copy.loadingErrorBody}
+          </div>
+
+          <div
+            className="card-soft"
+            style={{
+              color: "var(--danger)",
+              borderRadius: 22,
+              background: "rgba(198,40,40,0.08)",
+              border: "1px solid rgba(198,40,40,0.16)",
+            }}
+          >
+            {error}
+          </div>
+
+          <div className="row">
+            <button
+              className="button"
+              onClick={() => void handleRetryProfileLoad()}
+              type="button"
+              style={{ background: "var(--coach-accent)" }}
+            >
+              {copy.retry}
+            </button>
+          </div>
+        </CoachPanel>
+      </OnboardingShell>
     );
   }
 
   return (
-    <main className="page">
-      <div className="page-wrap" style={{ maxWidth: 760 }}>
-        <div className="card stack">
-          <div className="row space-between" style={{ alignItems: "center" }}>
-            <BadgePill icon={<PathIcon size={14} />}>{copy.badge}</BadgePill>
-            <div className="muted">{copy.stepLabel(stepIndex + 1, totalSteps)}</div>
-          </div>
+    <OnboardingShell>
+      <div
+        className="grid"
+        style={{
+          gridTemplateColumns: "minmax(260px, 0.72fr) minmax(0, 1.28fr)",
+          gap: 22,
+          alignItems: "stretch",
+        }}
+      >
+        <CoachPanel warm>
+          <div className="stack" style={{ gap: 18 }}>
+            <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+              <BadgePill icon={<PathIcon size={14} />}>{copy.badge}</BadgePill>
+              <BadgePill icon={<SparkIcon size={14} />}>{copy.calmSetup}</BadgePill>
+            </div>
 
-          <div
-            style={{
-              width: "100%",
-              height: 8,
-              background: "var(--border)",
-              borderRadius: 999,
-              overflow: "hidden",
-            }}
-          >
             <div
               style={{
-                width: `${progress}%`,
-                height: "100%",
-                background: "var(--primary)",
-                transition: "width 220ms ease",
+                fontSize: 38,
+                lineHeight: 1.04,
+                fontWeight: 950,
+                letterSpacing: "-0.07em",
+                color: "var(--coach-ink)",
               }}
-            />
-          </div>
-        </div>
+            >
+              {uiLanguage === "fr"
+                ? "Construisons ton point de départ."
+                : "Let’s build your starting point."}
+            </div>
 
-        <div className="card stack" style={{ minHeight: 420, justifyContent: "space-between" }}>
-          <div className="stack" style={{ gap: 20 }}>
-            <div className="stack" style={{ gap: 8 }}>
-              <div className="row" style={{ gap: 8, alignItems: "center" }}>
-                <TargetIcon />
-                <h1 className="title" style={{ margin: 0 }}>
-                  {currentStep.title}
-                </h1>
+            <div
+              className="muted"
+              style={{
+                color: "var(--coach-muted)",
+                lineHeight: 1.7,
+              }}
+            >
+              {uiLanguage === "fr"
+                ? "Quelques réponses suffisent pour rendre ton coaching plus précis, plus humain et plus actionnable."
+                : "A few answers are enough to make your coaching sharper, more human, and more actionable."}
+            </div>
+
+            <div
+              className="card-soft stack"
+              style={{
+                gap: 10,
+                borderRadius: 24,
+                background: "rgba(255,255,255,0.64)",
+                border: "1px solid rgba(43,33,24,0.08)",
+              }}
+            >
+              <div className="row space-between" style={{ gap: 12 }}>
+                <span className="muted" style={{ color: "var(--coach-muted)" }}>
+                  {copy.progress}
+                </span>
+                <strong style={{ color: "var(--coach-ink)" }}>{progress}%</strong>
               </div>
-              <p className="subtitle" style={{ margin: 0 }}>
-                {currentStep.subtitle}
-              </p>
+
+              <div
+                style={{
+                  width: "100%",
+                  height: 10,
+                  background: "rgba(43,33,24,0.08)",
+                  borderRadius: 999,
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    width: `${progress}%`,
+                    height: "100%",
+                    background:
+                      "linear-gradient(90deg, var(--coach-accent), var(--coach-calm))",
+                    transition: "width 220ms ease",
+                  }}
+                />
+              </div>
+
+              <div className="muted" style={{ color: "var(--coach-muted)" }}>
+                {copy.stepLabel(stepIndex + 1, totalSteps)}
+              </div>
             </div>
 
-            {renderStepContent()}
-          </div>
+            <div className="stack" style={{ gap: 8 }}>
+              {steps.map((step, index) => {
+                const active = index === stepIndex;
+                const done = index < stepIndex;
 
-          <div className="stack" style={{ gap: 12 }}>
-            {error && <div style={{ color: "var(--danger)" }}>{error}</div>}
-
-            <div className="row space-between" style={{ gap: 12 }}>
-              <button
-                className="button ghost"
-                type="button"
-                onClick={handleBack}
-                disabled={stepIndex === 0 || saving}
-              >
-                {copy.back}
-              </button>
-
-              <button
-                className="button"
-                type="button"
-                onClick={handleNext}
-                disabled={!canContinue() || saving}
-              >
-                {saving
-                  ? copy.saving
-                  : stepIndex === totalSteps - 1
-                    ? copy.finish
-                    : copy.next}
-              </button>
+                return (
+                  <div
+                    key={step.key}
+                    className="row"
+                    style={{
+                      gap: 10,
+                      padding: "8px 10px",
+                      borderRadius: 16,
+                      background: active
+                        ? "rgba(255,122,89,0.12)"
+                        : done
+                          ? "rgba(88,180,174,0.10)"
+                          : "transparent",
+                      color: active ? "var(--coach-accent)" : "var(--coach-muted)",
+                    }}
+                  >
+                    {done ? <CheckCircleIcon size={14} /> : <TargetIcon size={14} />}
+                    <span style={{ fontSize: 13, fontWeight: active ? 800 : 600 }}>
+                      {step.title}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
-        </div>
+        </CoachPanel>
+
+        <CoachPanel>
+          <div
+            className="stack"
+            style={{
+              gap: 24,
+              minHeight: 560,
+              justifyContent: "space-between",
+            }}
+          >
+            <div className="stack" style={{ gap: 22 }}>
+              <div className="stack" style={{ gap: 10 }}>
+                <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                  <BadgePill icon={<TargetIcon size={14} />}>
+                    {copy.stepLabel(stepIndex + 1, totalSteps)}
+                  </BadgePill>
+
+                  <BadgePill icon={<BrainIcon size={14} />}>
+                    {copy.personalizedCoach}
+                  </BadgePill>
+                </div>
+
+                <div
+                  style={{
+                    fontSize: 34,
+                    lineHeight: 1.08,
+                    fontWeight: 950,
+                    letterSpacing: "-0.06em",
+                    color: "var(--coach-ink)",
+                  }}
+                >
+                  {currentStep.title}
+                </div>
+
+                <p
+                  className="subtitle"
+                  style={{
+                    margin: 0,
+                    color: "var(--coach-muted)",
+                    lineHeight: 1.7,
+                    maxWidth: 720,
+                  }}
+                >
+                  {currentStep.subtitle}
+                </p>
+              </div>
+
+              {renderStepContent()}
+            </div>
+
+            <div className="stack" style={{ gap: 14 }}>
+              {error ? (
+                <div
+                  className="card-soft"
+                  style={{
+                    color: "var(--danger)",
+                    borderRadius: 20,
+                    background: "rgba(198,40,40,0.08)",
+                    border: "1px solid rgba(198,40,40,0.16)",
+                  }}
+                >
+                  {error}
+                </div>
+              ) : null}
+
+              <div className="row space-between" style={{ gap: 12, flexWrap: "wrap" }}>
+                <button
+                  className="button ghost"
+                  type="button"
+                  onClick={handleBack}
+                  disabled={stepIndex === 0 || saving}
+                >
+                  {copy.back}
+                </button>
+
+                <button
+                  className="button"
+                  type="button"
+                  onClick={() => void handleNext()}
+                  disabled={!canContinue() || saving}
+                  style={{
+                    background: "var(--coach-accent)",
+                    minHeight: 46,
+                    paddingInline: 22,
+                  }}
+                >
+                  {saving
+                    ? copy.saving
+                    : stepIndex === totalSteps - 1
+                      ? copy.finish
+                      : copy.next}
+                </button>
+              </div>
+            </div>
+          </div>
+        </CoachPanel>
       </div>
-    </main>
+    </OnboardingShell>
   );
 }

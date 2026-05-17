@@ -34,7 +34,6 @@ import {
   getAdminOrganizationWorkerConversations,
   updateAdminOrganizationWorkerExternalConversation,
 } from "@/lib/api";
-import { clearAdminToken } from "@/lib/admin-auth";
 import { OrganizationOverviewTab } from "./components/organization-overview-tab";
 import { OrganizationWorkspaceHero } from "./components/organization-workspace-hero";
 import { OrganizationWorkersTab } from "./components/organization-workers-tab";
@@ -1369,11 +1368,6 @@ function AdminOrganizationsContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function handleLogout() {
-    clearAdminToken();
-    window.location.href = "/admin/login";
-  }
-
   function resetEngagementCanvas(
     nextWorkerId?: number | null,
     nextState?: AdminWorkerEngagementState,
@@ -1588,7 +1582,7 @@ function AdminOrganizationsContent() {
     }
   }
 
-  function handleNewOrganization() {
+function handleNewOrganization() {
   setEditingOrganizationId(null);
   setActiveWorkspaceTab("organizations");
   setActiveCanvasTab("engagement");
@@ -1602,7 +1596,6 @@ function AdminOrganizationsContent() {
   setLeverSearch("");
   setLeverCategoryFilter("all");
   setLeverSortMode("highlighted");
-  setActiveWorkspaceTab("organizations");
   resetEngagementCanvas(null, "current");
   resetPurposeCanvas(null);
   resetTimeCanvas(null);
@@ -2639,31 +2632,63 @@ const relatedLeversByRecommendationId = useMemo(() => {
   return map;
 }, [selectedWorkerSummary]);
     return (
-<AdminShell
-  activeHref="/admin/organizations"
-  title="Manage Organizations"
-  subtitle="Organization workspace, worker assignment, revenue dashboard, and scoped access foundation."
-  adminEmail={admin?.email ?? null}
-  adminRole={admin?.role ?? "admin"}
-  adminOrganizationName={admin?.organization_name ?? null}
->
-    <div
-      className="row space-between"
-      style={{ alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}
+    <AdminShell
+      activeHref="/admin/organizations"
+      title="Manage Organizations"
+      subtitle="Organization workspace, worker assignment, revenue dashboard, and scoped access foundation."
+      adminEmail={admin?.email ?? null}
+      adminRole={admin?.role ?? "admin"}
+      adminOrganizationName={admin?.organization_name ?? null}
     >
-      <div className="stack" style={{ gap: 4 }}>
-        <div className="section-title">Organizations workspace</div>
-        <div className="muted">
-          {isPlatformAdmin
-            ? "Create organizations, assign workers, and monitor organization revenue."
-            : "Access is limited to your organization, assigned workers, and organization revenue."}
+      <div
+        className="card-soft"
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          gap: 14,
+          alignItems: "flex-start",
+          flexWrap: "wrap",
+          background: "var(--admin-surface-muted)",
+          border: "1px solid var(--admin-border)",
+          borderRadius: 18,
+        }}
+      >
+        <div className="stack" style={{ gap: 6 }}>
+          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+            <span className="badge primary">
+              {isPlatformAdmin ? "Platform admin" : "Organization workspace"}
+            </span>
+
+            {selectedOrganization ? (
+              <span className="badge">
+                {selectedOrganization.code || `#${selectedOrganization.id}`}
+              </span>
+            ) : null}
+          </div>
+
+          <div
+            style={{
+              fontSize: 22,
+              fontWeight: 750,
+              lineHeight: 1.15,
+              letterSpacing: "-0.035em",
+            }}
+          >
+            Organizations workspace
+          </div>
+
+          <div className="muted" style={{ maxWidth: 920 }}>
+            {isPlatformAdmin
+              ? "Create organizations, assign compatible workers, monitor organization revenue, and manage scoped access from a single control workspace."
+              : "Access is limited to your organization, assigned workers, revenue visibility, conversations, canvases, and worker insights."}
+          </div>
+        </div>
+
+        <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+          <span className="badge">{organizations.length} organization(s)</span>
+          <span className="badge">{assignedWorkers.length} assigned worker(s)</span>
         </div>
       </div>
-
-      <button className="button ghost" type="button" onClick={handleLogout}>
-        Log out
-      </button>
-    </div>
 
     {error ? (
       <div className="card" style={{ color: "var(--danger)" }}>

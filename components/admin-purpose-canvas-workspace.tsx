@@ -47,48 +47,52 @@ const PURPOSE_NODE_DEFINITIONS: Array<{
   {
     key: "travail",
     title: "Travail",
-    subtitle: "Ce que le worker fait, produit ou porte concrètement dans son activité",
-    placeholder: "Ex: J’aide les équipes à structurer des situations complexes et à avancer.",
+    subtitle: "What the worker concretely does, produces, or carries in their activity.",
+    placeholder: "Ex: I help teams structure complex situations and move forward.",
     x: 50,
     y: 8,
   },
   {
     key: "aspiration",
     title: "Aspiration",
-    subtitle: "Ce vers quoi le worker souhaite évoluer ou tendre",
-    placeholder: "Ex: Je veux évoluer vers un rôle plus stratégique, utile et aligné.",
+    subtitle: "What the worker wants to evolve toward.",
+    placeholder: "Ex: I want to move toward a more strategic, useful, and aligned role.",
     x: 85,
     y: 31,
   },
   {
     key: "inspiration",
     title: "Inspiration",
-    subtitle: "Ce qui nourrit, influence ou élève sa manière de penser et d’agir",
-    placeholder: "Ex: Je suis inspiré par les personnes qui transforment les difficultés en clarté.",
+    subtitle: "What nourishes, influences, or elevates the worker’s way of thinking and acting.",
+    placeholder:
+      "Ex: I am inspired by people who transform difficulty into clarity.",
     x: 72,
     y: 75,
   },
   {
     key: "passion",
     title: "Passion",
-    subtitle: "Ce qui donne de l’énergie, de l’élan et de l’envie",
-    placeholder: "Ex: J’aime accompagner les personnes dans leurs transitions professionnelles.",
+    subtitle: "What gives the worker energy, momentum, and desire.",
+    placeholder:
+      "Ex: I enjoy supporting people through professional transitions.",
     x: 28,
     y: 75,
   },
   {
     key: "vocation",
     title: "Vocation",
-    subtitle: "La contribution profonde que le worker sent devoir porter",
-    placeholder: "Ex: Aider les personnes à retrouver confiance, direction et capacité d’action.",
+    subtitle: "The deeper contribution the worker feels called to carry.",
+    placeholder:
+      "Ex: Helping people regain confidence, direction, and capacity for action.",
     x: 15,
     y: 31,
   },
   {
     key: "formation",
     title: "Formation",
-    subtitle: "Les apprentissages, acquis ou développements nécessaires pour soutenir le chemin",
-    placeholder: "Ex: Développer mes compétences en leadership, coaching et stratégie.",
+    subtitle: "The learning, knowledge, or development needed to support the path.",
+    placeholder:
+      "Ex: Develop my skills in leadership, coaching, and strategy.",
     x: 50,
     y: 45,
   },
@@ -322,8 +326,8 @@ function buildRelationKey(
 }
 
 function getRelationColor(relation?: PurposeCanvasRelation | null): string {
-  if (!relation || relation.status === "pending") return "rgba(100,116,139,0.35)";
-  return relation.is_coherent ? "rgba(37,99,235,0.9)" : "rgba(220,38,38,0.9)";
+  if (!relation || relation.status === "pending") return "rgba(107,114,128,0.32)";
+  return relation.is_coherent ? "rgba(94,106,210,0.92)" : "rgba(198,40,40,0.86)";
 }
 
 function getRelationDash(relation?: PurposeCanvasRelation | null): string | undefined {
@@ -343,25 +347,30 @@ function SavePill({
   savedAt: string | null;
 }) {
   let label = "Idle";
-  let color = "var(--muted-foreground, #64748b)";
-  let background = "rgba(100,116,139,0.12)";
+  let color = "var(--admin-muted)";
+  let background = "rgba(107,114,128,0.10)";
+  let border = "rgba(107,114,128,0.16)";
 
   if (state === "typing") {
     label = "Editing…";
-    color = "#92400e";
-    background = "rgba(245,158,11,0.14)";
+    color = "var(--warning)";
+    background = "var(--warning-soft)";
+    border = "rgba(180,83,9,0.18)";
   } else if (state === "saving") {
     label = "Saving…";
-    color = "#1d4ed8";
-    background = "rgba(59,130,246,0.14)";
+    color = "var(--admin-accent-hover)";
+    background = "var(--admin-accent-soft)";
+    border = "rgba(94,106,210,0.18)";
   } else if (state === "saved") {
     label = savedAt ? `Saved ${savedAt}` : "Saved";
-    color = "#15803d";
-    background = "rgba(34,197,94,0.14)";
+    color = "var(--success)";
+    background = "var(--success-soft)";
+    border = "rgba(21,128,61,0.18)";
   } else if (state === "error") {
     label = "Save error";
-    color = "#b91c1c";
-    background = "rgba(239,68,68,0.14)";
+    color = "var(--danger)";
+    background = "var(--danger-soft)";
+    border = "rgba(198,40,40,0.18)";
   }
 
   return (
@@ -376,6 +385,8 @@ function SavePill({
         fontWeight: 700,
         color,
         background,
+        border: `1px solid ${border}`,
+        whiteSpace: "nowrap",
       }}
     >
       {label}
@@ -397,26 +408,28 @@ function CoherenceScoreCard({
   const normalizedScore = score > 1 ? score / 100 : score;
   const percentage = Math.round(normalizedScore * 100);
 
-  let color = "#15803d";
-  let background = "rgba(34,197,94,0.12)";
+  let color = "var(--success)";
+  let background = "var(--success-soft)";
+  let border = "rgba(21,128,61,0.18)";
 
   if (percentage < 50) {
-    color = "#b91c1c";
-    background = "rgba(239,68,68,0.12)";
+    color = "var(--danger)";
+    background = "var(--danger-soft)";
+    border = "rgba(198,40,40,0.18)";
   } else if (percentage < 75) {
-    color = "#b45309";
-    background = "rgba(245,158,11,0.14)";
+    color = "var(--warning)";
+    background = "var(--warning-soft)";
+    border = "rgba(180,83,9,0.18)";
   }
 
   return (
     <div
+      className="stack"
       style={{
         borderRadius: 18,
         padding: 16,
         background,
-        border: `1px solid ${color}33`,
-        display: "flex",
-        flexDirection: "column",
+        border: `1px solid ${border}`,
         gap: 8,
       }}
     >
@@ -424,10 +437,11 @@ function CoherenceScoreCard({
 
       <div
         style={{
-          fontSize: 34,
-          fontWeight: 900,
+          fontSize: 36,
+          fontWeight: 800,
           color,
-          letterSpacing: "-0.04em",
+          lineHeight: 1,
+          letterSpacing: "-0.045em",
         }}
       >
         {percentage}%
@@ -462,8 +476,8 @@ function PurposeNodeEditor({
         gap: 8,
         padding: 12,
         borderRadius: 16,
-        border: "1px solid rgba(37,99,235,0.22)",
-        background: "rgba(37,99,235,0.05)",
+        border: "1px solid var(--admin-border)",
+        background: "var(--admin-surface-subtle)",
       }}
     >
       <div className="stack" style={{ gap: 2 }}>
@@ -481,7 +495,8 @@ function PurposeNodeEditor({
         placeholder={placeholder}
         style={{
           resize: "vertical",
-          background: "rgba(255,255,255,0.82)",
+          background: "#ffffff",
+          borderColor: "var(--admin-border)",
         }}
       />
     </label>
@@ -532,9 +547,9 @@ function PurposeCanvasGraph({
         minHeight: 560,
         borderRadius: 24,
         overflow: "hidden",
-        border: "1px solid rgba(15,23,42,0.08)",
+        border: "1px solid var(--admin-border)",
         background:
-          "radial-gradient(circle at 50% 45%, rgba(59,130,246,0.09), transparent 35%), linear-gradient(135deg, rgba(248,250,252,1), rgba(239,246,255,0.92))",
+          "radial-gradient(circle at 50% 45%, rgba(94,106,210,0.10), transparent 34%), linear-gradient(135deg, var(--admin-surface-subtle), var(--admin-surface-muted))",
       }}
     >
       <svg
@@ -560,7 +575,7 @@ function PurposeCanvasGraph({
               y1={source.y}
               x2={target.x}
               y2={target.y}
-              stroke={shouldShowStrongLine ? getRelationColor(relation) : "rgba(100,116,139,0.18)"}
+              stroke={shouldShowStrongLine ? getRelationColor(relation) : "rgba(107,114,128,0.16)"}
               strokeWidth={shouldShowStrongLine ? 0.65 : 0.35}
               strokeDasharray={shouldShowStrongLine ? getRelationDash(relation) : "4 6"}
               strokeLinecap="round"
@@ -583,15 +598,15 @@ function PurposeCanvasGraph({
               transform: "translate(-50%, -50%)",
               width: node.key === "formation" ? 190 : 178,
               minHeight: node.key === "formation" ? 130 : 116,
-              borderRadius: 24,
+              borderRadius: 22,
               padding: 14,
               border: isFilled
-                ? "2px solid rgba(37,99,235,0.72)"
-                : "1px solid rgba(100,116,139,0.28)",
-              background: isFilled ? "rgba(255,255,255,0.96)" : "rgba(255,255,255,0.82)",
+                ? "1px solid rgba(94,106,210,0.42)"
+                : "1px solid var(--admin-border)",
+              background: isFilled ? "#ffffff" : "rgba(255,255,255,0.78)",
               boxShadow: isFilled
-                ? "0 18px 38px rgba(37,99,235,0.16)"
-                : "0 10px 24px rgba(15,23,42,0.08)",
+                ? "0 18px 38px rgba(17,24,39,0.10)"
+                : "0 10px 24px rgba(17,24,39,0.06)",
               display: "flex",
               flexDirection: "column",
               gap: 8,
@@ -600,9 +615,9 @@ function PurposeCanvasGraph({
           >
             <div
               style={{
-                fontSize: 13,
-                fontWeight: 900,
-                color: isFilled ? "#1d4ed8" : "#475569",
+                fontSize: 12,
+                fontWeight: 800,
+                color: isFilled ? "var(--admin-accent-hover)" : "var(--admin-muted)",
                 textTransform: "uppercase",
                 letterSpacing: "0.06em",
               }}
@@ -614,7 +629,7 @@ function PurposeCanvasGraph({
               style={{
                 fontSize: 12,
                 lineHeight: 1.45,
-                color: value ? "#0f172a" : "#64748b",
+                color: value ? "var(--admin-ink)" : "var(--admin-muted)",
                 whiteSpace: "pre-wrap",
               }}
             >
@@ -683,7 +698,6 @@ export function AdminPurposeCanvasWorkspace({
   ).length;
 
   const totalCount = relations.filter((relation) => relation.status !== "pending").length;
-
   const filledNodeCount = getFilledNodeCount(form);
 
   function stampSavedNow() {
@@ -826,7 +840,16 @@ export function AdminPurposeCanvasWorkspace({
   }, [form, canvasLoaded, selectionWorkerId]);
 
   return (
-    <div className="card stack" style={{ gap: 16, minWidth: 0 }}>
+    <div
+      className="card stack"
+      style={{
+        gap: 16,
+        minWidth: 0,
+        borderColor: "var(--admin-border)",
+        background: "var(--admin-surface)",
+        boxShadow: "none",
+      }}
+    >
       <div
         className="row space-between"
         style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}
@@ -857,7 +880,14 @@ export function AdminPurposeCanvasWorkspace({
         </div>
       ) : null}
 
-      <div className="card-soft stack" style={{ gap: 12 }}>
+      <div
+        className="card-soft stack"
+        style={{
+          gap: 12,
+          background: "var(--admin-surface-muted)",
+          borderColor: "var(--admin-border)",
+        }}
+      >
         <div className="grid grid-3" style={{ alignItems: "end" }}>
           <label className="stack">
             <strong>Worker</strong>
@@ -917,7 +947,7 @@ export function AdminPurposeCanvasWorkspace({
 
             {canvasLoaded ? (
               <button
-                className="button"
+                className="button secondary"
                 type="button"
                 onClick={() => void handleSaveCanvas()}
                 disabled={saving}
@@ -952,13 +982,25 @@ export function AdminPurposeCanvasWorkspace({
               </div>
 
               <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                <span className="badge" style={{ borderColor: "rgba(37,99,235,0.35)" }}>
-                  Blue = coherent
+                <span
+                  className="badge"
+                  style={{
+                    borderColor: "rgba(94,106,210,0.32)",
+                    color: "var(--admin-accent-hover)",
+                  }}
+                >
+                  Purple = coherent
                 </span>
-                <span className="badge" style={{ borderColor: "rgba(220,38,38,0.35)" }}>
+                <span
+                  className="badge"
+                  style={{
+                    borderColor: "rgba(198,40,40,0.28)",
+                    color: "var(--danger)",
+                  }}
+                >
                   Red = incoherent
                 </span>
-                <span className="badge">Dashed = waiting for evaluation</span>
+                <span className="badge">Dashed = waiting</span>
               </div>
 
               <div className="muted">
@@ -1009,12 +1051,7 @@ export function AdminPurposeCanvasWorkspace({
                 Relation details
               </div>
 
-              <div
-                className="grid grid-3"
-                style={{
-                  alignItems: "stretch",
-                }}
-              >
+              <div className="grid grid-3" style={{ alignItems: "stretch" }}>
                 {relations.map((relation) => (
                   <div
                     key={`${relation.source_node_key}-${relation.target_node_key}`}
@@ -1025,16 +1062,16 @@ export function AdminPurposeCanvasWorkspace({
                       padding: 12,
                       border:
                         relation.status === "pending"
-                          ? "1px solid rgba(100,116,139,0.28)"
+                          ? "1px solid rgba(107,114,128,0.20)"
                           : relation.is_coherent
-                            ? "1px solid rgba(37,99,235,0.28)"
-                            : "1px solid rgba(220,38,38,0.28)",
+                            ? "1px solid rgba(94,106,210,0.24)"
+                            : "1px solid rgba(198,40,40,0.24)",
                       background:
                         relation.status === "pending"
-                          ? "rgba(100,116,139,0.06)"
+                          ? "rgba(107,114,128,0.05)"
                           : relation.is_coherent
-                            ? "rgba(37,99,235,0.06)"
-                            : "rgba(220,38,38,0.06)",
+                            ? "rgba(94,106,210,0.06)"
+                            : "rgba(198,40,40,0.06)",
                     }}
                   >
                     <div style={{ fontWeight: 800 }}>
@@ -1048,10 +1085,10 @@ export function AdminPurposeCanvasWorkspace({
                         fontWeight: 800,
                         color:
                           relation.status === "pending"
-                            ? "#64748b"
+                            ? "var(--admin-muted)"
                             : relation.is_coherent
-                              ? "#1d4ed8"
-                              : "#b91c1c",
+                              ? "var(--admin-accent-hover)"
+                              : "var(--danger)",
                         textTransform: "uppercase",
                         letterSpacing: "0.04em",
                       }}

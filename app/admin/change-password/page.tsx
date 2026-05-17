@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { AdminGuard } from "@/components/admin-guard";
 import { AdminShell } from "@/components/admin-shell";
 import { changeAdminPassword, getAdminMe } from "@/lib/api";
@@ -24,6 +24,64 @@ export default function AdminChangePasswordPage() {
       <AdminChangePasswordContent />
     </AdminGuard>
   );
+}
+
+function normalizeRoleLabel(role?: string | null): string {
+  if (role === "organization") return "Organization account";
+  return "Platform admin";
+}
+
+function getPasswordStrengthLabel(password: string): {
+  label: string;
+  status: "empty" | "weak" | "medium" | "strong";
+  score: number;
+} {
+  if (!password) {
+    return {
+      label: "Not started",
+      status: "empty",
+      score: 0,
+    };
+  }
+
+  let score = 0;
+
+  if (password.length >= 8) score += 35;
+  if (password.length >= 12) score += 20;
+  if (/[A-Z]/.test(password)) score += 15;
+  if (/[0-9]/.test(password)) score += 15;
+  if (/[^A-Za-z0-9]/.test(password)) score += 15;
+
+  const normalizedScore = Math.min(100, score);
+
+  if (normalizedScore >= 75) {
+    return {
+      label: "Strong",
+      status: "strong",
+      score: normalizedScore,
+    };
+  }
+
+  if (normalizedScore >= 50) {
+    return {
+      label: "Medium",
+      status: "medium",
+      score: normalizedScore,
+    };
+  }
+
+  return {
+    label: "Weak",
+    status: "weak",
+    score: normalizedScore,
+  };
+}
+
+function getStrengthColor(status: "empty" | "weak" | "medium" | "strong"): string {
+  if (status === "strong") return "#15803d";
+  if (status === "medium") return "#b45309";
+  if (status === "weak") return "#b91c1c";
+  return "#64748b";
 }
 
 function AdminChangePasswordContent() {
@@ -50,6 +108,11 @@ function AdminChangePasswordContent() {
 
     void load();
   }, []);
+
+  const passwordStrength = useMemo(
+    () => getPasswordStrengthLabel(form.new_password),
+    [form.new_password],
+  );
 
   const validationError = useMemo(() => {
     if (!form.current_password.trim()) {
@@ -79,12 +142,20 @@ function AdminChangePasswordContent() {
     return null;
   }, [form]);
 
+  const canSubmit = !saving && !validationError;
+
   function patchForm<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({
       ...prev,
       [key]: value,
     }));
 
+    setError(null);
+    setSuccessMessage(null);
+  }
+
+  function resetForm() {
+    setForm(EMPTY_FORM);
     setError(null);
     setSuccessMessage(null);
   }
@@ -121,44 +192,109 @@ function AdminChangePasswordContent() {
     <AdminShell
       activeHref="/admin/change-password"
       title="Change password"
-      subtitle="Update your admin or organization account password."
+      subtitle="Update your admin or organization account password securely."
       adminEmail={admin?.email ?? null}
       adminRole={admin?.role ?? "admin"}
+      adminOrganizationName={admin?.organization_name ?? null}
     >
       {loading ? (
-        <div className="card">Loading account information...</div>
+        <div className="card stack" style={{ gap: 12 }}>
+          <div className="section-title">Loading account security...</div>
+          <div className="muted">Preparing your account information.</div>
+        </div>
       ) : (
-        <div className="grid grid-2">
-          <div className="card stack">
-            <div className="section-title">Account security</div>
+        <div className="grid grid-2" style={{ alignItems: "start" }}>
+          <div className="card stack" style={{ gap: 16 }}>
+            <div className="stack" style={{ gap: 6 }}>
+              <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                <span className="badge primary">Account security</span>
+                <span className="badge">{normalizeRoleLabel(admin?.role)}</span>
+              </div>
 
-            <div className="muted">
-              Use this form to update your password. After the change, continue using the new
-              password for future admin logins.
+              <div className="section-title">Secure your backoffice access</div>
+
+              <div className="muted" style={{ lineHeight: 1.65 }}>
+                Use this page to update your password. After a successful change, your new
+                password must be used for future LeanWorker backoffice logins.
+              </div>
             </div>
 
             {admin ? (
-              <div className="card-soft stack" style={{ gap: 8 }}>
-                <div>
-                  <strong>Email:</strong> {admin.email}
+              <div
+                className="card-soft stack"
+                style={{
+                  gap: 10,
+                  background: "rgba(59,130,246,0.06)",
+                  border: "1px solid rgba(59,130,246,0.16)",
+                }}
+              >
+                <div className="section-title" style={{ fontSize: 15 }}>
+                  Current account
                 </div>
-                <div>
-                  <strong>Role:</strong> {admin.role}
-                </div>
-                {admin.organization_id ? (
-                  <div>
-                    <strong>Organization ID:</strong> {admin.organization_id}
+
+                <div className="grid grid-2">
+                  <div className="stack" style={{ gap: 4 }}>
+                    <div className="muted">Email</div>
+                    <strong style={{ wordBreak: "break-word" }}>{admin.email}</strong>
                   </div>
-                ) : null}
+
+                  <div className="stack" style={{ gap: 4 }}>
+                    <div className="muted">Role</div>
+                    <strong>{normalizeRoleLabel(admin.role)}</strong>
+                  </div>
+
+                  {admin.organization_name ? (
+                    <div className="stack" style={{ gap: 4 }}>
+                      <div className="muted">Organization</div>
+                      <strong>{admin.organization_name}</strong>
+                    </div>
+                  ) : null}
+
+                  {admin.organization_id ? (
+                    <div className="stack" style={{ gap: 4 }}>
+                      <div className="muted">Organization ID</div>
+                      <strong>#{admin.organization_id}</strong>
+                    </div>
+                  ) : null}
+                </div>
               </div>
             ) : null}
+
+            <div className="card-soft stack" style={{ gap: 10 }}>
+              <div className="section-title" style={{ fontSize: 15 }}>
+                Password rules
+              </div>
+
+              <div className="muted" style={{ lineHeight: 1.65 }}>
+                Your new password must contain at least 8 characters and must be different from the
+                current password. For stronger protection, use a longer password with uppercase
+                letters, numbers and special characters.
+              </div>
+            </div>
           </div>
 
-          <div className="card stack">
-            <div className="section-title">Change password</div>
+          <div
+            className="card stack"
+            style={{
+              gap: 16,
+              border: "1px solid rgba(15,23,42,0.08)",
+              boxShadow: "0 18px 54px rgba(15,23,42,0.08)",
+            }}
+          >
+            <div className="stack" style={{ gap: 6 }}>
+              <div className="badge primary" style={{ width: "fit-content" }}>
+                Password update
+              </div>
 
-            <form className="stack" onSubmit={handleSubmit}>
-              <label className="stack">
+              <div className="section-title">Change password</div>
+
+              <div className="muted">
+                Enter your current password, then define and confirm the new one.
+              </div>
+            </div>
+
+            <form className="stack" onSubmit={handleSubmit} style={{ gap: 14 }}>
+              <label className="stack" style={{ gap: 6 }}>
                 <strong>Current password</strong>
                 <input
                   className="input"
@@ -167,10 +303,11 @@ function AdminChangePasswordContent() {
                   onChange={(event) => patchForm("current_password", event.target.value)}
                   autoComplete="current-password"
                   disabled={saving}
+                  placeholder="Enter current password"
                 />
               </label>
 
-              <label className="stack">
+              <label className="stack" style={{ gap: 6 }}>
                 <strong>New password</strong>
                 <input
                   className="input"
@@ -179,11 +316,46 @@ function AdminChangePasswordContent() {
                   onChange={(event) => patchForm("new_password", event.target.value)}
                   autoComplete="new-password"
                   disabled={saving}
+                  placeholder="Enter new password"
                 />
-                <div className="muted">Minimum 8 characters.</div>
+
+                <div className="stack" style={{ gap: 6 }}>
+                  <div className="row space-between" style={{ gap: 8 }}>
+                    <div className="muted">Minimum 8 characters.</div>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 800,
+                        color: getStrengthColor(passwordStrength.status),
+                      }}
+                    >
+                      {passwordStrength.label}
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      width: "100%",
+                      height: 8,
+                      borderRadius: 999,
+                      background: "rgba(100,116,139,0.14)",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${passwordStrength.score}%`,
+                        height: "100%",
+                        borderRadius: 999,
+                        background: getStrengthColor(passwordStrength.status),
+                        transition: "width 180ms ease",
+                      }}
+                    />
+                  </div>
+                </div>
               </label>
 
-              <label className="stack">
+              <label className="stack" style={{ gap: 6 }}>
                 <strong>Confirm new password</strong>
                 <input
                   className="input"
@@ -194,11 +366,32 @@ function AdminChangePasswordContent() {
                   }
                   autoComplete="new-password"
                   disabled={saving}
+                  placeholder="Confirm new password"
                 />
               </label>
 
+              {validationError && !error ? (
+                <div
+                  className="card-soft"
+                  style={{
+                    color: "#92400e",
+                    background: "rgba(245,158,11,0.10)",
+                    border: "1px solid rgba(245,158,11,0.22)",
+                  }}
+                >
+                  {validationError}
+                </div>
+              ) : null}
+
               {error ? (
-                <div className="card-soft" style={{ color: "var(--danger)" }}>
+                <div
+                  className="card-soft"
+                  style={{
+                    color: "var(--danger)",
+                    background: "rgba(239,68,68,0.10)",
+                    border: "1px solid rgba(239,68,68,0.22)",
+                  }}
+                >
                   {error}
                 </div>
               ) : null}
@@ -216,12 +409,15 @@ function AdminChangePasswordContent() {
                 </div>
               ) : null}
 
-              <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
-                <button
-                  className="button"
-                  type="submit"
-                  disabled={saving || Boolean(validationError)}
-                >
+              <div
+                className="row"
+                style={{
+                  flexWrap: "wrap",
+                  gap: 8,
+                  paddingTop: 4,
+                }}
+              >
+                <button className="button" type="submit" disabled={!canSubmit}>
                   {saving ? "Updating password..." : "Update password"}
                 </button>
 
@@ -229,11 +425,7 @@ function AdminChangePasswordContent() {
                   className="button ghost"
                   type="button"
                   disabled={saving}
-                  onClick={() => {
-                    setForm(EMPTY_FORM);
-                    setError(null);
-                    setSuccessMessage(null);
-                  }}
+                  onClick={resetForm}
                 >
                   Clear
                 </button>

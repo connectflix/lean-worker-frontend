@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { SidebarNav } from "@/components/sidebar-nav";
 import { Topbar } from "@/components/topbar";
 import { useCurrentUser } from "@/components/user-context";
@@ -19,9 +20,9 @@ export function WorkspaceShell({
   title: string;
   firstName?: string | null;
   isAdmin?: boolean;
-  left?: React.ReactNode;
-  center: React.ReactNode;
-  right?: React.ReactNode;
+  left?: ReactNode;
+  center: ReactNode;
+  right?: ReactNode;
   layout?: "workspace" | "page";
 }) {
   const { user } = useCurrentUser();
@@ -40,24 +41,72 @@ export function WorkspaceShell({
   })();
 
   return (
-    <div className="app-shell">
+    <div
+      className="app-shell coach-app-shell"
+      style={{
+        background:
+          "radial-gradient(circle at top left, rgba(255,122,89,0.10), transparent 30%), radial-gradient(circle at bottom right, rgba(88,180,174,0.10), transparent 34%), var(--coach-bg)",
+      }}
+    >
       <SidebarNav uiLanguage={uiLanguage} isAdmin={isAdmin} />
 
-      <div className="main-shell">
+      <div
+        className="main-shell"
+        style={{
+          borderRadius: 32,
+          border: "1px solid rgba(43,33,24,0.08)",
+          background:
+            "linear-gradient(180deg, rgba(255,255,255,0.78), rgba(255,248,239,0.90))",
+          boxShadow: "0 24px 70px rgba(43,33,24,0.08)",
+        }}
+      >
         <Topbar
           uiLanguage={uiLanguage}
           title={title}
           firstName={resolvedFirstName}
         />
 
-        <main className="content-area">
+        <main
+          className="content-area"
+          style={{
+            background:
+              "radial-gradient(circle at 8% 8%, rgba(255,122,89,0.06), transparent 26%), radial-gradient(circle at 92% 18%, rgba(88,180,174,0.06), transparent 28%)",
+          }}
+        >
           {layout === "page" ? (
             <div className="page-wrap">{center}</div>
           ) : (
             <div className={workspaceLayoutClassName}>
-              {left ? <aside className="workspace-left">{left}</aside> : null}
-              <section className="workspace-center">{center}</section>
-              {right ? <aside className="workspace-right">{right}</aside> : null}
+              {left ? (
+                <aside
+                  className="workspace-left"
+                  style={{
+                    minWidth: 0,
+                  }}
+                >
+                  {left}
+                </aside>
+              ) : null}
+
+              <section
+                className="workspace-center"
+                style={{
+                  minWidth: 0,
+                }}
+              >
+                {center}
+              </section>
+
+              {right ? (
+                <aside
+                  className="workspace-right"
+                  style={{
+                    minWidth: 0,
+                  }}
+                >
+                  {right}
+                </aside>
+              ) : null}
             </div>
           )}
         </main>

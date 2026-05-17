@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type CSSProperties,
+} from "react";
 import { AdminGuard } from "@/components/admin-guard";
 import { AdminShell } from "@/components/admin-shell";
 import {
@@ -171,7 +177,10 @@ function isWithinRange(date: Date, start: Date, end: Date): boolean {
   return date.getTime() >= start.getTime() && date.getTime() <= end.getTime();
 }
 
-function getCalendarRange(viewMode: CalendarViewMode, anchorDate: Date): { start: Date; end: Date } {
+function getCalendarRange(
+  viewMode: CalendarViewMode,
+  anchorDate: Date,
+): { start: Date; end: Date } {
   if (viewMode === "day") {
     return {
       start: startOfDay(anchorDate),
@@ -439,6 +448,48 @@ function sourceTone(source?: string | null): CSSProperties {
   };
 }
 
+function KpiCard({
+  label,
+  value,
+  tone = "default",
+}: {
+  label: string;
+  value: number | string;
+  tone?: "default" | "success" | "warning" | "danger" | "primary";
+}) {
+  const toneStyle: CSSProperties =
+    tone === "success"
+      ? {
+          border: "1px solid rgba(34,197,94,0.22)",
+          background: "rgba(34,197,94,0.08)",
+        }
+      : tone === "danger"
+        ? {
+            border: "1px solid rgba(239,68,68,0.22)",
+            background: "rgba(239,68,68,0.08)",
+          }
+        : tone === "warning"
+          ? {
+              border: "1px solid rgba(245,158,11,0.22)",
+              background: "rgba(245,158,11,0.08)",
+            }
+          : tone === "primary"
+            ? {
+                border: "1px solid rgba(59,130,246,0.22)",
+                background: "rgba(59,130,246,0.08)",
+              }
+            : {};
+
+  return (
+    <div className="card-soft stack admin-kpi-card" style={{ gap: 7, ...toneStyle }}>
+      <div className="muted">{label}</div>
+      <div className="admin-metric-value" style={{ fontSize: 30 }}>
+        {value}
+      </div>
+    </div>
+  );
+}
+
 function CalendarSlotCard({ slot, compact = false }: { slot: CalendarSlot; compact?: boolean }) {
   const isBooked = slot.status === "booked";
 
@@ -454,6 +505,7 @@ function CalendarSlotCard({ slot, compact = false }: { slot: CalendarSlot; compa
         padding: compact ? "5px 7px" : "8px 10px",
         minWidth: 0,
         overflow: "hidden",
+        boxShadow: "0 8px 20px rgba(15,23,42,0.04)",
       }}
     >
       <div
@@ -511,7 +563,7 @@ function DayCalendar({ day, slots }: { day: Date; slots: CalendarSlot[] }) {
             border: "1px solid rgba(15,23,42,0.08)",
             borderRadius: 16,
             overflow: "hidden",
-            background: "rgba(255,255,255,0.6)",
+            background: "rgba(255,255,255,0.74)",
           }}
         >
           <div>
@@ -592,7 +644,7 @@ function WeekCalendar({ start, slots }: { start: Date; slots: CalendarSlot[] }) 
             border: "1px solid rgba(15,23,42,0.08)",
             borderRadius: 16,
             overflow: "hidden",
-            background: "rgba(255,255,255,0.6)",
+            background: "rgba(255,255,255,0.74)",
           }}
         >
           <div
@@ -600,6 +652,7 @@ function WeekCalendar({ start, slots }: { start: Date; slots: CalendarSlot[] }) 
               padding: 10,
               borderRight: "1px solid rgba(15,23,42,0.08)",
               borderBottom: "1px solid rgba(15,23,42,0.08)",
+              background: "rgba(248,250,252,0.8)",
             }}
           />
 
@@ -612,6 +665,7 @@ function WeekCalendar({ start, slots }: { start: Date; slots: CalendarSlot[] }) 
                 borderBottom: "1px solid rgba(15,23,42,0.08)",
                 fontWeight: 800,
                 fontSize: 13,
+                background: "rgba(248,250,252,0.8)",
               }}
             >
               {formatDayLabel(day)}
@@ -703,7 +757,7 @@ function MonthCalendar({ anchorDate, slots }: { anchorDate: Date; slots: Calenda
           border: "1px solid rgba(15,23,42,0.08)",
           borderRadius: 16,
           overflow: "hidden",
-          background: "rgba(255,255,255,0.6)",
+          background: "rgba(255,255,255,0.74)",
         }}
       >
         {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((label) => (
@@ -718,6 +772,7 @@ function MonthCalendar({ anchorDate, slots }: { anchorDate: Date; slots: Calenda
               borderBottom: "1px solid rgba(15,23,42,0.08)",
               textTransform: "uppercase",
               letterSpacing: "0.04em",
+              background: "rgba(248,250,252,0.8)",
             }}
           >
             {label}
@@ -775,7 +830,8 @@ function MonthCalendar({ anchorDate, slots }: { anchorDate: Date; slots: Calenda
 function AdminBookingsContent() {
   const [admin, setAdmin] = useState<AdminMe | null>(null);
   const [bookings, setBookings] = useState<AdminBooking[]>([]);
-  const [availability, setAvailability] = useState<AdminCalendlyAvailabilityResponse | null>(null);
+  const [availability, setAvailability] =
+    useState<AdminCalendlyAvailabilityResponse | null>(null);
 
   const [statusFilter, setStatusFilter] = useState<BookingStatusFilter>("all");
   const [calendarView, setCalendarView] = useState<CalendarViewMode>("week");
@@ -788,7 +844,11 @@ function AdminBookingsContent() {
   const [availabilityError, setAvailabilityError] = useState<string | null>(null);
   const [syncResult, setSyncResult] = useState<AdminCalendlySyncResponse | null>(null);
 
-  async function loadBookings() {
+  const calendarRange = useMemo(() => {
+    return getCalendarRange(calendarView, anchorDate);
+  }, [calendarView, anchorDate]);
+
+  const loadBookings = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -805,9 +865,9 @@ function AdminBookingsContent() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [statusFilter]);
 
-  async function loadAvailability() {
+  const loadAvailability = useCallback(async () => {
     const range = getCalendarRange(calendarView, anchorDate);
 
     setAvailabilityLoading(true);
@@ -828,7 +888,7 @@ function AdminBookingsContent() {
     } finally {
       setAvailabilityLoading(false);
     }
-  }
+  }, [anchorDate, calendarView]);
 
   async function handleSyncCalendly() {
     setSyncing(true);
@@ -852,15 +912,13 @@ function AdminBookingsContent() {
 
   useEffect(() => {
     void loadBookings();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter]);
+  }, [loadBookings]);
 
   useEffect(() => {
     if (admin?.role === "organization") {
       void loadAvailability();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [admin?.role, calendarView, anchorDate]);
+  }, [admin?.role, loadAvailability]);
 
   const counters = useMemo(() => {
     return {
@@ -881,10 +939,6 @@ function AdminBookingsContent() {
       return rightDate - leftDate;
     });
   }, [bookings]);
-
-  const calendarRange = useMemo(() => {
-    return getCalendarRange(calendarView, anchorDate);
-  }, [calendarView, anchorDate]);
 
   const calendarSlots = useMemo<CalendarSlot[]>(() => {
     const bookedSlots = bookings.reduce<CalendarSlot[]>((acc, booking) => {
@@ -993,160 +1047,39 @@ function AdminBookingsContent() {
       adminOrganizationName={admin?.organization_name ?? null}
     >
       <div className="stack" style={{ gap: 18 }}>
-        <div className="card stack" style={{ gap: 8 }}>
-          <div className="section-title">Worker ↔ Organization meetings</div>
-          <div className="muted">
-            This workspace centralizes appointments created through Calendly and links them back
-            to LeanWorker workers and their assigned organizations.
-          </div>
-        </div>
-
         <div
+          className="card stack"
           style={{
-            width: "100%",
-            overflowX: "auto",
-            paddingBottom: 4,
+            gap: 14,
+            border: "1px solid rgba(59,130,246,0.16)",
+            background:
+              "linear-gradient(135deg, rgba(59,130,246,0.08), rgba(255,255,255,0.96) 58%, rgba(34,197,94,0.06))",
           }}
         >
           <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(5, minmax(170px, 1fr))",
-              gap: 14,
-              minWidth: 920,
-            }}
+            className="row space-between"
+            style={{ gap: 14, flexWrap: "wrap", alignItems: "flex-start" }}
           >
-            <div className="card stack">
-              <div className="muted">Total bookings</div>
-              <div className="admin-metric-value">{counters.total}</div>
-            </div>
-
-            <div className="card stack">
-              <div className="muted">Confirmed</div>
-              <div className="admin-metric-value">{counters.confirmed}</div>
-            </div>
-
-            <div className="card stack">
-              <div className="muted">Completed</div>
-              <div className="admin-metric-value">{counters.completed}</div>
-            </div>
-
-            <div className="card stack">
-              <div className="muted">Cancelled</div>
-              <div className="admin-metric-value">{counters.cancelled}</div>
-            </div>
-
-            <div className="card stack">
-              <div className="muted">Calendly synced</div>
-              <div className="admin-metric-value">{counters.calendly}</div>
-            </div>
-          </div>
-        </div>
-
-        {isOrganization ? (
-          <div className="card stack" style={{ gap: 14 }}>
-            <div className="row space-between" style={{ gap: 12, flexWrap: "wrap" }}>
-              <div className="stack" style={{ gap: 4 }}>
-                <div className="section-title">Calendar availability</div>
-                <div className="muted">
-                  View occupied bookings and available Calendly slots for your organization.
-                </div>
-              </div>
-
+            <div className="stack" style={{ gap: 6, maxWidth: 860 }}>
               <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                <button className="button ghost" type="button" onClick={goToPreviousPeriod}>
-                  Previous
-                </button>
-
-                <button
-                  className="button ghost"
-                  type="button"
-                  onClick={() => setAnchorDate(new Date())}
-                >
-                  Today
-                </button>
-
-                <button className="button ghost" type="button" onClick={goToNextPeriod}>
-                  Next
-                </button>
-
-                <select
-                  className="input"
-                  value={calendarView}
-                  onChange={(event) => setCalendarView(event.target.value as CalendarViewMode)}
-                  style={{ minWidth: 150 }}
-                >
-                  <option value="day">Day</option>
-                  <option value="week">Week</option>
-                  <option value="month">Month</option>
-                </select>
-
-                <button
-                  className="button ghost"
-                  type="button"
-                  onClick={() => void loadAvailability()}
-                  disabled={availabilityLoading}
-                >
-                  {availabilityLoading ? "Loading..." : "Refresh slots"}
-                </button>
-              </div>
-            </div>
-
-            <div className="row space-between" style={{ gap: 12, flexWrap: "wrap" }}>
-              <div className="section-title" style={{ fontSize: 16 }}>
-                {getCalendarTitle(calendarView, anchorDate)}
-              </div>
-
-              <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                <span className="badge primary">Calendly sync</span>
                 <span className="badge">
-                  booked: {calendarSlots.filter((item) => item.status === "booked").length}
-                </span>
-                <span className="badge">
-                  available: {calendarSlots.filter((item) => item.status === "available").length}
+                  {isOrganization ? "Organization calendar" : "Platform bookings"}
                 </span>
               </div>
-            </div>
 
-            {availabilityError ? (
-              <div className="card-soft" style={{ color: "var(--danger)" }}>
-                {availabilityError}
+              <div className="section-title" style={{ fontSize: 24 }}>
+                Worker ↔ Organization meetings
               </div>
-            ) : null}
 
-            {calendarView === "day" ? (
-              <DayCalendar day={anchorDate} slots={calendarSlots} />
-            ) : calendarView === "week" ? (
-              <WeekCalendar start={anchorDate} slots={calendarSlots} />
-            ) : (
-              <MonthCalendar anchorDate={anchorDate} slots={calendarSlots} />
-            )}
-          </div>
-        ) : null}
-
-        <div className="card stack">
-          <div className="row space-between" style={{ gap: 12, flexWrap: "wrap" }}>
-            <div className="stack" style={{ gap: 4 }}>
-              <div className="section-title">Bookings</div>
-              <div className="muted">
-                Filter, refresh, and synchronize meetings from Calendly.
+              <div className="muted" style={{ lineHeight: 1.6 }}>
+                Centralize appointments created through Calendly, link them back to LeanWorker
+                workers and organizations, and monitor available slots from the organization
+                workspace.
               </div>
             </div>
 
             <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-              <select
-                className="input"
-                value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value as BookingStatusFilter)}
-                style={{ minWidth: 180 }}
-              >
-                <option value="all">All statuses</option>
-                <option value="requested">Requested</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="no_show">No show</option>
-              </select>
-
               <button
                 className="button ghost"
                 type="button"
@@ -1186,13 +1119,164 @@ function AdminBookingsContent() {
               </div>
             </div>
           ) : null}
+        </div>
+
+        <div className="admin-kpi-scroll">
+          <div className="admin-kpi-row admin-kpi-row--5">
+            <KpiCard label="Total bookings" value={counters.total} tone="primary" />
+            <KpiCard label="Confirmed" value={counters.confirmed} tone="success" />
+            <KpiCard label="Completed" value={counters.completed} />
+            <KpiCard label="Cancelled" value={counters.cancelled} tone="danger" />
+            <KpiCard label="Calendly synced" value={counters.calendly} />
+          </div>
+        </div>
+
+        {error ? (
+          <div className="card-soft" style={{ color: "var(--danger)" }}>
+            {error}
+          </div>
+        ) : null}
+
+        {isOrganization ? (
+          <div className="card stack" style={{ gap: 14 }}>
+            <div
+              className="row space-between"
+              style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}
+            >
+              <div className="stack" style={{ gap: 4 }}>
+                <div className="section-title">Calendar availability</div>
+                <div className="muted">
+                  View occupied bookings and available Calendly slots for your organization.
+                </div>
+              </div>
+
+              <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                <button className="button ghost" type="button" onClick={goToPreviousPeriod}>
+                  Previous
+                </button>
+
+                <button
+                  className="button ghost"
+                  type="button"
+                  onClick={() => setAnchorDate(new Date())}
+                >
+                  Today
+                </button>
+
+                <button className="button ghost" type="button" onClick={goToNextPeriod}>
+                  Next
+                </button>
+
+                <select
+                  className="select"
+                  value={calendarView}
+                  onChange={(event) => setCalendarView(event.target.value as CalendarViewMode)}
+                  style={{ minWidth: 150 }}
+                >
+                  <option value="day">Day</option>
+                  <option value="week">Week</option>
+                  <option value="month">Month</option>
+                </select>
+
+                <button
+                  className="button ghost"
+                  type="button"
+                  onClick={() => void loadAvailability()}
+                  disabled={availabilityLoading}
+                >
+                  {availabilityLoading ? "Loading..." : "Refresh slots"}
+                </button>
+              </div>
+            </div>
+
+            <div
+              className="card-soft row space-between"
+              style={{
+                gap: 12,
+                flexWrap: "wrap",
+                alignItems: "center",
+                background: "rgba(248,250,252,0.78)",
+              }}
+            >
+              <div className="section-title" style={{ fontSize: 16 }}>
+                {getCalendarTitle(calendarView, anchorDate)}
+              </div>
+
+              <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                <span className="badge">
+                  booked: {calendarSlots.filter((item) => item.status === "booked").length}
+                </span>
+                <span className="badge">
+                  available: {calendarSlots.filter((item) => item.status === "available").length}
+                </span>
+              </div>
+            </div>
+
+            {availabilityError ? (
+              <div className="card-soft" style={{ color: "var(--danger)" }}>
+                {availabilityError}
+              </div>
+            ) : null}
+
+            {calendarView === "day" ? (
+              <DayCalendar day={anchorDate} slots={calendarSlots} />
+            ) : calendarView === "week" ? (
+              <WeekCalendar start={anchorDate} slots={calendarSlots} />
+            ) : (
+              <MonthCalendar anchorDate={anchorDate} slots={calendarSlots} />
+            )}
+          </div>
+        ) : null}
+
+        <div className="card stack" style={{ gap: 14 }}>
+          <div
+            className="row space-between"
+            style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}
+          >
+            <div className="stack" style={{ gap: 4 }}>
+              <div className="section-title">Bookings</div>
+              <div className="muted">
+                Filter, refresh, and synchronize meetings from Calendly.
+              </div>
+            </div>
+
+            <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+              <select
+                className="select"
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value as BookingStatusFilter)}
+                style={{ minWidth: 180 }}
+              >
+                <option value="all">All statuses</option>
+                <option value="requested">Requested</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+                <option value="no_show">No show</option>
+              </select>
+
+              <button
+                className="button ghost"
+                type="button"
+                onClick={() => void loadBookings()}
+                disabled={loading || syncing}
+              >
+                Refresh
+              </button>
+
+              <button
+                className="button"
+                type="button"
+                onClick={() => void handleSyncCalendly()}
+                disabled={loading || syncing}
+              >
+                {syncing ? "Syncing..." : "Sync Calendly"}
+              </button>
+            </div>
+          </div>
 
           {loading ? (
             <div className="card-soft">Loading bookings...</div>
-          ) : error ? (
-            <div className="card-soft" style={{ color: "var(--danger)" }}>
-              {error}
-            </div>
           ) : sortedBookings.length === 0 ? (
             <div className="card-soft stack">
               <strong>No bookings yet.</strong>
@@ -1214,12 +1298,20 @@ function AdminBookingsContent() {
               }}
             >
               {sortedBookings.map((booking) => (
-                <div key={booking.id} className="card-soft stack" style={{ gap: 12 }}>
+                <div
+                  key={booking.id}
+                  className="card-soft stack"
+                  style={{
+                    gap: 12,
+                    border: "1px solid rgba(15,23,42,0.08)",
+                    background: "rgba(255,255,255,0.86)",
+                  }}
+                >
                   <div
                     className="row space-between"
                     style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}
                   >
-                    <div className="stack" style={{ gap: 7 }}>
+                    <div className="stack" style={{ gap: 7, minWidth: 0 }}>
                       <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                         <span className="badge">#{booking.id}</span>
                         <span style={statusTone(booking.status)}>
@@ -1238,11 +1330,21 @@ function AdminBookingsContent() {
                       </div>
 
                       {booking.description ? (
-                        <div className="muted">{booking.description}</div>
+                        <div className="muted" style={{ lineHeight: 1.55 }}>
+                          {booking.description}
+                        </div>
                       ) : null}
                     </div>
 
-                    <div className="stack" style={{ gap: 4, textAlign: "right", minWidth: 210 }}>
+                    <div
+                      className="card-soft stack"
+                      style={{
+                        gap: 4,
+                        textAlign: "right",
+                        minWidth: 220,
+                        background: "rgba(248,250,252,0.9)",
+                      }}
+                    >
                       <div className="muted">Meeting time</div>
                       <strong>{formatDateTime(booking.starts_at)}</strong>
                       {booking.ends_at ? (
@@ -1346,7 +1448,9 @@ function AdminBookingsContent() {
                       }}
                     >
                       <strong>Notes</strong>
-                      <div className="muted">{booking.notes}</div>
+                      <div className="muted" style={{ marginTop: 4, lineHeight: 1.55 }}>
+                        {booking.notes}
+                      </div>
                     </div>
                   ) : null}
                 </div>

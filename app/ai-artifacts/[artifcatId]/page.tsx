@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { AuthGuard } from "@/components/auth-guard";
@@ -48,12 +48,53 @@ function formatArtifactStatus(status: string, uiLanguage: "fr" | "en"): string {
 }
 
 function formatPrice(price: number): string {
-  return `${price}€`;
+  try {
+    return new Intl.NumberFormat("fr-BE", {
+      style: "currency",
+      currency: "EUR",
+      minimumFractionDigits: price % 1 === 0 ? 0 : 2,
+      maximumFractionDigits: 2,
+    }).format(price);
+  } catch {
+    return `${price}€`;
+  }
 }
 
 function getStatusIcon(status: string) {
   if (status === "completed") return <CheckCircleIcon size={14} />;
   return <ClockIcon size={14} />;
+}
+
+function getStatusTone(status: string) {
+  if (status === "completed") {
+    return {
+      background: "rgba(88,180,174,0.12)",
+      borderColor: "rgba(88,180,174,0.20)",
+      color: "var(--coach-calm)",
+    };
+  }
+
+  if (status === "failed") {
+    return {
+      background: "rgba(198,40,40,0.08)",
+      borderColor: "rgba(198,40,40,0.16)",
+      color: "var(--danger)",
+    };
+  }
+
+  if (status === "generating" || status === "paid") {
+    return {
+      background: "rgba(255,122,89,0.12)",
+      borderColor: "rgba(255,122,89,0.20)",
+      color: "var(--coach-accent)",
+    };
+  }
+
+  return {
+    background: "rgba(43,33,24,0.05)",
+    borderColor: "rgba(43,33,24,0.08)",
+    color: "var(--coach-muted)",
+  };
 }
 
 function formatDuration(seconds: number): string {
@@ -75,9 +116,9 @@ function parseArtifactIdFromSources(
   params: ReturnType<typeof useParams>,
   pathname: string | null,
 ): number | null {
-  const rawFromParams = normalizeRouteParam(
-    params?.artifactId as string | string[] | undefined,
-  );
+  const rawFromParams =
+    normalizeRouteParam(params?.artifactId as string | string[] | undefined) ??
+    normalizeRouteParam(params?.artifcatId as string | string[] | undefined);
 
   if (rawFromParams) {
     const parsed = Number(rawFromParams);
@@ -127,10 +168,8 @@ function localizeArtifactSubtitle(
   const normalized = subtitle.trim();
 
   const knownTranslations: Record<string, string> = {
-    "Personalized AI-generated mini e-book":
-      "Mini e-book personnalisé généré par IA",
-    "Personalized AI-generated mini audiobook":
-      "Mini audiobook personnalisé généré par IA",
+    "Personalized AI-generated mini e-book": "Mini e-book personnalisé généré par IA",
+    "Personalized AI-generated mini audiobook": "Mini audiobook personnalisé généré par IA",
   };
 
   return knownTranslations[normalized] ?? subtitle;
@@ -152,6 +191,45 @@ function hasPurposeCanvasContext(artifact: AIArtifactResponse | null): boolean {
   return Boolean(extractPurposeCanvasContext(artifact));
 }
 
+function DetailInfoCard({
+  title,
+  children,
+  icon,
+}: {
+  title: string;
+  children: React.ReactNode;
+  icon?: React.ReactNode;
+}) {
+  return (
+    <div
+      className="card-soft stack"
+      style={{
+        gap: 8,
+        borderRadius: 24,
+        background: "rgba(255,248,239,0.68)",
+        border: "1px solid rgba(43,33,24,0.08)",
+      }}
+    >
+      <div className="row" style={{ gap: 8, alignItems: "center" }}>
+        {icon}
+        <div className="section-title" style={{ fontSize: 16 }}>
+          {title}
+        </div>
+      </div>
+
+      <div
+        style={{
+          whiteSpace: "pre-wrap",
+          lineHeight: 1.7,
+          color: "var(--coach-ink)",
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
 function PremiumAudioPlayer({
   src,
   uiLanguage,
@@ -169,7 +247,7 @@ function PremiumAudioPlayer({
   const [duration, setDuration] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(1);
 
-  function loadSavedPosition() {
+  const loadSavedPosition = useCallback(() => {
     try {
       const raw = localStorage.getItem(storageKey);
       if (!raw) return 0;
@@ -177,15 +255,18 @@ function PremiumAudioPlayer({
     } catch {
       return 0;
     }
-  }
+  }, [storageKey]);
 
-  function savePosition(time: number) {
-    try {
-      localStorage.setItem(storageKey, String(time));
-    } catch {
-      // Ignore storage failures.
-    }
-  }
+  const savePosition = useCallback(
+    (time: number) => {
+      try {
+        localStorage.setItem(storageKey, String(time));
+      } catch {
+        // Ignore storage failures.
+      }
+    },
+    [storageKey],
+  );
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -241,7 +322,7 @@ function PremiumAudioPlayer({
       audio.removeEventListener("pause", onPause);
       audio.removeEventListener("play", onPlay);
     };
-  }, [src, storageKey]);
+  }, [src, storageKey, loadSavedPosition, savePosition]);
 
   async function togglePlay() {
     const audio = audioRef.current;
@@ -286,7 +367,15 @@ function PremiumAudioPlayer({
     duration > 0 ? Math.min(100, Math.max(0, (currentTime / duration) * 100)) : 0;
 
   return (
-    <div className="card-soft stack" style={{ gap: 14 }}>
+    <div
+      className="card-soft stack"
+      style={{
+        gap: 16,
+        borderRadius: 28,
+        background: "linear-gradient(135deg, rgba(255,255,255,0.82), rgba(232,248,246,0.72))",
+        border: "1px solid rgba(43,33,24,0.08)",
+      }}
+    >
       <audio ref={audioRef} preload="metadata" src={src} />
 
       <div className="stack" style={{ gap: 4 }}>
@@ -294,10 +383,10 @@ function PremiumAudioPlayer({
           {uiLanguage === "fr" ? "Lecteur audio" : "Audio player"}
         </div>
 
-        <div className="muted">
+        <div className="muted" style={{ color: "var(--coach-muted)" }}>
           {uiLanguage === "fr"
-            ? "Écoute directement ton mini audiobook."
-            : "Listen directly to your mini audiobook."}
+            ? "Écoute directement ton mini audiobook et reprends automatiquement là où tu t’es arrêté."
+            : "Listen directly to your mini audiobook and resume where you left off."}
         </div>
       </div>
 
@@ -307,7 +396,7 @@ function PremiumAudioPlayer({
           onClick={() => void togglePlay()}
           type="button"
           disabled={!isReady}
-          style={{ minWidth: 110 }}
+          style={{ minWidth: 120, background: "var(--coach-accent)" }}
         >
           {isPlaying ? "Pause" : uiLanguage === "fr" ? "Lecture" : "Play"}
         </button>
@@ -331,7 +420,7 @@ function PremiumAudioPlayer({
         </button>
 
         <select
-          className="input"
+          className="select"
           value={playbackRate}
           onChange={(event) => changeRate(Number(event.target.value))}
           style={{ width: 110 }}
@@ -354,13 +443,19 @@ function PremiumAudioPlayer({
           value={Math.min(currentTime, duration || 0)}
           onChange={(event) => seekTo(Number(event.target.value))}
           disabled={!isReady}
-          style={{ width: "100%", accentColor: "var(--primary)" }}
+          style={{ width: "100%", accentColor: "var(--coach-accent)" }}
         />
 
         <div className="row space-between">
-          <span className="muted">{formatDuration(currentTime)}</span>
-          <span className="muted">{progressPercent.toFixed(0)}%</span>
-          <span className="muted">{formatDuration(duration)}</span>
+          <span className="muted" style={{ color: "var(--coach-muted)" }}>
+            {formatDuration(currentTime)}
+          </span>
+          <span className="muted" style={{ color: "var(--coach-muted)" }}>
+            {progressPercent.toFixed(0)}%
+          </span>
+          <span className="muted" style={{ color: "var(--coach-muted)" }}>
+            {formatDuration(duration)}
+          </span>
         </div>
       </div>
     </div>
@@ -396,44 +491,46 @@ function AIArtifactDetailContent() {
   const [supportSuccess, setSupportSuccess] = useState<string | null>(null);
   const [supportError, setSupportError] = useState<string | null>(null);
 
-  async function loadArtifact(showRefreshing = false) {
-    try {
-      if (showRefreshing) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
+  const loadArtifact = useCallback(
+    async (showRefreshing = false) => {
+      try {
+        if (showRefreshing) {
+          setRefreshing(true);
+        } else {
+          setLoading(true);
+        }
 
-      setError(null);
+        setError(null);
 
-      if (artifactId == null) {
-        throw new Error(
-          uiLanguage === "fr"
-            ? "Identifiant d’artefact introuvable dans l’URL."
-            : "Artifact identifier could not be resolved from the URL.",
+        if (artifactId == null) {
+          throw new Error(
+            uiLanguage === "fr"
+              ? "Identifiant d’artefact introuvable dans l’URL."
+              : "Artifact identifier could not be resolved from the URL.",
+          );
+        }
+
+        const artifactData = await getAIArtifact(artifactId);
+        setArtifact(artifactData);
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : uiLanguage === "fr"
+              ? "Impossible de charger l’artefact."
+              : "Unable to load artifact.",
         );
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
-
-      const artifactData = await getAIArtifact(artifactId);
-      setArtifact(artifactData);
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : uiLanguage === "fr"
-            ? "Impossible de charger l’artefact."
-            : "Unable to load artifact.",
-      );
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }
+    },
+    [artifactId, uiLanguage],
+  );
 
   useEffect(() => {
     void loadArtifact();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [artifactId, pathname, uiLanguage]);
+  }, [loadArtifact]);
 
   useEffect(() => {
     setShowAudioScript(false);
@@ -444,15 +541,15 @@ function AIArtifactDetailContent() {
     [artifact?.audio_url],
   );
 
-  const canPlayAudio = useMemo(() => Boolean(resolvedAudioUrl), [resolvedAudioUrl]);
+  const canPlayAudio = Boolean(resolvedAudioUrl);
+
   const purposeCanvasAvailable = useMemo(
     () => hasPurposeCanvasContext(artifact),
     [artifact],
   );
 
   const outlineSections = Array.isArray(
-    (artifact?.outline_json as { sections?: Array<{ title?: string }> } | undefined)
-      ?.sections,
+    (artifact?.outline_json as { sections?: Array<{ title?: string }> } | undefined)?.sections,
   )
     ? ((artifact?.outline_json as { sections?: Array<{ title?: string }> }).sections ?? [])
     : [];
@@ -525,9 +622,25 @@ function AIArtifactDetailContent() {
 
   if (loadingLanguage) {
     return (
-      <main className="page">
+      <main
+        className="page"
+        style={{
+          minHeight: "100vh",
+          background: "var(--coach-bg)",
+          padding: 24,
+        }}
+      >
         <div className="page-wrap">
-          <div className="card">{copy.common.loading}</div>
+          <div
+            className="card"
+            style={{
+              borderRadius: 28,
+              border: "1px solid rgba(43,33,24,0.08)",
+              background: "rgba(255,255,255,0.78)",
+            }}
+          >
+            {copy.common.loading}
+          </div>
         </div>
       </main>
     );
@@ -539,19 +652,34 @@ function AIArtifactDetailContent() {
       title={uiLanguage === "fr" ? "Détail du guide IA" : "AI Guide Details"}
     >
       {loading ? (
-        <div className="card stack">
+        <div
+          className="card stack"
+          style={{
+            borderRadius: 28,
+            border: "1px solid rgba(43,33,24,0.08)",
+            background: "rgba(255,255,255,0.78)",
+            boxShadow: "0 18px 48px rgba(43,33,24,0.06)",
+          }}
+        >
           <div className="section-title">
             {uiLanguage === "fr" ? "Chargement du guide IA" : "Loading AI guide"}
           </div>
 
-          <div className="muted">
+          <div className="muted" style={{ color: "var(--coach-muted)" }}>
             {uiLanguage === "fr"
               ? "Nous récupérons ton contenu généré."
               : "We are retrieving your generated content."}
           </div>
         </div>
       ) : error ? (
-        <div className="card stack">
+        <div
+          className="card stack"
+          style={{
+            borderRadius: 28,
+            border: "1px solid rgba(198,40,40,0.16)",
+            background: "rgba(255,255,255,0.78)",
+          }}
+        >
           <div className="section-title" style={{ color: "var(--danger)" }}>
             {uiLanguage === "fr"
               ? "Impossible de charger le guide IA"
@@ -561,7 +689,12 @@ function AIArtifactDetailContent() {
           <div className="muted">{error}</div>
 
           <div className="row" style={{ flexWrap: "wrap", gap: 10 }}>
-            <button className="button" onClick={() => void loadArtifact()} type="button">
+            <button
+              className="button"
+              onClick={() => void loadArtifact()}
+              type="button"
+              style={{ background: "var(--coach-accent)" }}
+            >
               {uiLanguage === "fr" ? "Réessayer" : "Try again"}
             </button>
 
@@ -575,98 +708,153 @@ function AIArtifactDetailContent() {
           </div>
         </div>
       ) : !artifact ? (
-        <div className="card stack">
+        <div
+          className="card stack"
+          style={{
+            borderRadius: 28,
+            border: "1px solid rgba(43,33,24,0.08)",
+            background: "rgba(255,255,255,0.78)",
+          }}
+        >
           <div className="section-title">
             {uiLanguage === "fr" ? "Artefact introuvable" : "Artifact not found"}
           </div>
 
-          <div className="muted">
+          <div className="muted" style={{ color: "var(--coach-muted)" }}>
             {uiLanguage === "fr"
               ? "Le guide demandé n’existe pas ou n’est plus accessible."
               : "The requested guide does not exist or is no longer accessible."}
           </div>
         </div>
       ) : (
-        <>
-          <div className="card stack">
-            <div className="row space-between" style={{ alignItems: "flex-start", gap: 16 }}>
-              <div className="stack" style={{ gap: 6 }}>
-                <div className="section-title">{artifact.title}</div>
+        <div className="stack" style={{ gap: 18 }}>
+          <div
+            className="card stack"
+            style={{
+              gap: 20,
+              position: "relative",
+              overflow: "hidden",
+              borderRadius: 32,
+              border: "1px solid rgba(43,33,24,0.08)",
+              background:
+                "linear-gradient(135deg, rgba(255,241,220,0.96), rgba(255,255,255,0.92) 52%, rgba(232,248,246,0.88))",
+              boxShadow: "0 22px 60px rgba(43,33,24,0.07)",
+            }}
+          >
+            <div
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                right: -110,
+                top: -130,
+                width: 310,
+                height: 310,
+                borderRadius: 999,
+                background: "rgba(255,122,89,0.16)",
+              }}
+            />
 
-                <div className="muted">{formatArtifactType(artifact.format, uiLanguage)}</div>
+            <div
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                left: "46%",
+                bottom: -150,
+                width: 340,
+                height: 340,
+                borderRadius: 999,
+                background: "rgba(88,180,174,0.14)",
+              }}
+            />
+
+            <div
+              className="row space-between"
+              style={{
+                alignItems: "flex-start",
+                gap: 18,
+                flexWrap: "wrap",
+                position: "relative",
+              }}
+            >
+              <div className="stack" style={{ gap: 14, maxWidth: 920 }}>
+                <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
+                  <span
+                    className="badge"
+                    style={{
+                      background: "rgba(255,122,89,0.12)",
+                      borderColor: "rgba(255,122,89,0.20)",
+                      color: "var(--coach-accent)",
+                      fontWeight: 850,
+                    }}
+                  >
+                    {formatArtifactType(artifact.format, uiLanguage)}
+                  </span>
+
+                  <span
+                    className="badge"
+                    style={{
+                      ...getStatusTone(artifact.status),
+                      fontWeight: 850,
+                    }}
+                  >
+                    {getStatusIcon(artifact.status)}
+                    {formatArtifactStatus(artifact.status, uiLanguage)}
+                  </span>
+                </div>
+
+                <div
+                  style={{
+                    fontSize: 44,
+                    lineHeight: 1.02,
+                    fontWeight: 950,
+                    letterSpacing: "-0.07em",
+                    color: "var(--coach-ink)",
+                  }}
+                >
+                  {artifact.title}
+                </div>
 
                 {artifact.subtitle ? (
-                  <div className="muted">
+                  <p
+                    className="subtitle"
+                    style={{
+                      maxWidth: 760,
+                      color: "var(--coach-muted)",
+                      fontSize: 16,
+                      lineHeight: 1.7,
+                    }}
+                  >
                     {localizeArtifactSubtitle(artifact.subtitle, uiLanguage)}
-                  </div>
+                  </p>
                 ) : null}
               </div>
 
-              <BadgePill icon={getStatusIcon(artifact.status)}>
-                {formatArtifactStatus(artifact.status, uiLanguage)}
-              </BadgePill>
-            </div>
-
-            <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
-              <BadgePill icon={<LayerIcon size={14} />}>
-                {formatPrice(artifact.price_eur)}
-              </BadgePill>
-
-              <BadgePill icon={<ClockIcon size={14} />}>
-                {uiLanguage === "fr" ? "Mis à jour" : "Updated"}{" "}
-                {new Date(artifact.updated_at).toLocaleString()}
-              </BadgePill>
-
-              {artifact.estimated_effort_score != null ? (
-                <BadgePill icon={<TargetIcon size={14} />}>
-                  {uiLanguage === "fr"
-                    ? `Effort ${artifact.estimated_effort_score}/5`
-                    : `Effort ${artifact.estimated_effort_score}/5`}
+              <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
+                <BadgePill icon={<LayerIcon size={14} />}>
+                  {formatPrice(artifact.price_eur)}
                 </BadgePill>
-              ) : null}
+
+                <BadgePill icon={<ClockIcon size={14} />}>
+                  {uiLanguage === "fr" ? "Mis à jour" : "Updated"}{" "}
+                  {new Date(artifact.updated_at).toLocaleDateString()}
+                </BadgePill>
+
+                {artifact.estimated_effort_score != null ? (
+                  <BadgePill icon={<TargetIcon size={14} />}>
+                    {`Effort ${artifact.estimated_effort_score}/5`}
+                  </BadgePill>
+                ) : null}
+              </div>
             </div>
 
-            {artifact.goal ? (
-              <div className="card-soft stack" style={{ gap: 6 }}>
-                <div className="section-title">
-                  {uiLanguage === "fr" ? "Objectif" : "Goal"}
-                </div>
-
-                <div style={{ whiteSpace: "pre-wrap" }}>{artifact.goal}</div>
-              </div>
-            ) : null}
-
-            {artifact.target_action ? (
-              <div className="card-soft stack" style={{ gap: 6 }}>
-                <div className="section-title">
-                  {uiLanguage === "fr" ? "Action ciblée" : "Target action"}
-                </div>
-
-                <div style={{ whiteSpace: "pre-wrap" }}>{artifact.target_action}</div>
-              </div>
-            ) : null}
-
-            {purposeCanvasAvailable ? (
-              <div className="card-soft stack" style={{ gap: 8 }}>
-                <div className="section-title">
-                  {uiLanguage === "fr"
-                    ? "Personnalisation Purpose Canvas"
-                    : "Purpose Canvas personalization"}
-                </div>
-
-                <div className="muted">
-                  {uiLanguage === "fr"
-                    ? "Ce guide a été enrichi avec ton Purpose Canvas : Travail, Aspiration, Inspiration, Passion, Vocation et Formation."
-                    : "This guide was enriched with your Purpose Canvas: Travail, Aspiration, Inspiration, Passion, Vocation, and Formation."}
-                </div>
-              </div>
-            ) : null}
-
-            {artifact.error_message ? (
-              <div style={{ color: "var(--danger)" }}>{artifact.error_message}</div>
-            ) : null}
-
-            <div className="row" style={{ flexWrap: "wrap", gap: 10 }}>
+            <div
+              className="row"
+              style={{
+                flexWrap: "wrap",
+                gap: 10,
+                position: "relative",
+              }}
+            >
               <button
                 className="button ghost"
                 onClick={() => void loadArtifact(true)}
@@ -689,6 +877,10 @@ function AIArtifactDetailContent() {
                 className="button secondary"
                 onClick={() => router.push("/ai-artifacts")}
                 type="button"
+                style={{
+                  color: "var(--coach-accent)",
+                  borderColor: "rgba(255,122,89,0.28)",
+                }}
               >
                 {uiLanguage === "fr" ? "Retour à mes guides IA" : "Back to my AI guides"}
               </button>
@@ -711,82 +903,167 @@ function AIArtifactDetailContent() {
                     : "Report an issue"}
               </button>
             </div>
-
-            {supportSuccess ? (
-              <div className="card-soft" style={{ color: "var(--success, #15803d)" }}>
-                {supportSuccess}
-              </div>
-            ) : null}
-
-            {supportError ? (
-              <div className="card-soft" style={{ color: "var(--danger)" }}>
-                {supportError}
-              </div>
-            ) : null}
-
-            {supportOpen ? (
-              <div className="card-soft stack" style={{ gap: 10 }}>
-                <div className="section-title">
-                  {uiLanguage === "fr" ? "Décrire le problème" : "Describe the issue"}
-                </div>
-
-                <div className="muted">
-                  {uiLanguage === "fr"
-                    ? "Utilise ce formulaire seulement si le problème persiste. LeanWorker tente déjà de détecter certains incidents automatiquement."
-                    : "Use this form only if the issue persists. LeanWorker already tries to detect some incidents automatically."}
-                </div>
-
-                <textarea
-                  className="input"
-                  value={supportMessage}
-                  onChange={(event) => setSupportMessage(event.target.value)}
-                  placeholder={supportPlaceholder}
-                  rows={5}
-                  style={{ width: "100%", resize: "vertical" }}
-                />
-
-                <div className="row" style={{ flexWrap: "wrap", gap: 10 }}>
-                  <button
-                    className="button"
-                    type="button"
-                    onClick={() => void handleSubmitSupport()}
-                    disabled={supportSubmitting}
-                  >
-                    {supportSubmitting
-                      ? uiLanguage === "fr"
-                        ? "Envoi..."
-                        : "Sending..."
-                      : uiLanguage === "fr"
-                        ? "Envoyer"
-                        : "Send"}
-                  </button>
-
-                  <button
-                    className="button ghost"
-                    type="button"
-                    onClick={() => {
-                      setSupportOpen(false);
-                      setSupportMessage("");
-                      setSupportError(null);
-                    }}
-                    disabled={supportSubmitting}
-                  >
-                    {uiLanguage === "fr" ? "Annuler" : "Cancel"}
-                  </button>
-                </div>
-              </div>
-            ) : null}
           </div>
 
-          <div className="card stack">
-            <div className="row" style={{ alignItems: "center", gap: 8 }}>
+          {(artifact.goal || artifact.target_action || purposeCanvasAvailable || artifact.error_message) ? (
+            <div className="grid grid-2">
+              {artifact.goal ? (
+                <DetailInfoCard
+                  title={uiLanguage === "fr" ? "Objectif" : "Goal"}
+                  icon={<TargetIcon size={16} />}
+                >
+                  {artifact.goal}
+                </DetailInfoCard>
+              ) : null}
+
+              {artifact.target_action ? (
+                <DetailInfoCard
+                  title={uiLanguage === "fr" ? "Action ciblée" : "Target action"}
+                  icon={<CheckCircleIcon size={16} />}
+                >
+                  {artifact.target_action}
+                </DetailInfoCard>
+              ) : null}
+
+              {purposeCanvasAvailable ? (
+                <DetailInfoCard
+                  title={
+                    uiLanguage === "fr"
+                      ? "Personnalisation Purpose Canvas"
+                      : "Purpose Canvas personalization"
+                  }
+                  icon={<SparkIcon size={16} />}
+                >
+                  {uiLanguage === "fr"
+                    ? "Ce guide a été enrichi avec ton Purpose Canvas : Travail, Aspiration, Inspiration, Passion, Vocation et Formation."
+                    : "This guide was enriched with your Purpose Canvas: Travail, Aspiration, Inspiration, Passion, Vocation, and Formation."}
+                </DetailInfoCard>
+              ) : null}
+
+              {artifact.error_message ? (
+                <div
+                  className="card-soft"
+                  style={{
+                    borderRadius: 24,
+                    background: "rgba(198,40,40,0.08)",
+                    border: "1px solid rgba(198,40,40,0.16)",
+                    color: "var(--danger)",
+                    lineHeight: 1.7,
+                  }}
+                >
+                  {artifact.error_message}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          {supportSuccess ? (
+            <div
+              className="card-soft"
+              style={{
+                borderRadius: 24,
+                color: "var(--success, #15803d)",
+                background: "rgba(88,180,174,0.10)",
+                border: "1px solid rgba(88,180,174,0.18)",
+              }}
+            >
+              {supportSuccess}
+            </div>
+          ) : null}
+
+          {supportError ? (
+            <div
+              className="card-soft"
+              style={{
+                borderRadius: 24,
+                color: "var(--danger)",
+                background: "rgba(198,40,40,0.08)",
+                border: "1px solid rgba(198,40,40,0.16)",
+              }}
+            >
+              {supportError}
+            </div>
+          ) : null}
+
+          {supportOpen ? (
+            <div
+              className="card-soft stack"
+              style={{
+                gap: 12,
+                borderRadius: 28,
+                background: "rgba(255,255,255,0.78)",
+                border: "1px solid rgba(43,33,24,0.08)",
+              }}
+            >
+              <div className="section-title">
+                {uiLanguage === "fr" ? "Décrire le problème" : "Describe the issue"}
+              </div>
+
+              <div className="muted" style={{ color: "var(--coach-muted)" }}>
+                {uiLanguage === "fr"
+                  ? "Utilise ce formulaire seulement si le problème persiste. LeanWorker tente déjà de détecter certains incidents automatiquement."
+                  : "Use this form only if the issue persists. LeanWorker already tries to detect some incidents automatically."}
+              </div>
+
+              <textarea
+                className="textarea"
+                value={supportMessage}
+                onChange={(event) => setSupportMessage(event.target.value)}
+                placeholder={supportPlaceholder}
+                rows={5}
+              />
+
+              <div className="row" style={{ flexWrap: "wrap", gap: 10 }}>
+                <button
+                  className="button"
+                  type="button"
+                  onClick={() => void handleSubmitSupport()}
+                  disabled={supportSubmitting}
+                  style={{ background: "var(--coach-accent)" }}
+                >
+                  {supportSubmitting
+                    ? uiLanguage === "fr"
+                      ? "Envoi..."
+                      : "Sending..."
+                    : uiLanguage === "fr"
+                      ? "Envoyer"
+                      : "Send"}
+                </button>
+
+                <button
+                  className="button ghost"
+                  type="button"
+                  onClick={() => {
+                    setSupportOpen(false);
+                    setSupportMessage("");
+                    setSupportError(null);
+                  }}
+                  disabled={supportSubmitting}
+                >
+                  {uiLanguage === "fr" ? "Annuler" : "Cancel"}
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          <div
+            className="card stack"
+            style={{
+              gap: 16,
+              borderRadius: 32,
+              border: "1px solid rgba(43,33,24,0.08)",
+              background: "rgba(255,255,255,0.78)",
+              boxShadow: "0 18px 48px rgba(43,33,24,0.06)",
+            }}
+          >
+            <div className="row" style={{ alignItems: "center", gap: 10 }}>
               <SparkIcon />
               <div className="section-title">
                 {uiLanguage === "fr" ? "Résultat disponible" : "Available result"}
               </div>
             </div>
 
-            <div className="muted">
+            <div className="muted" style={{ color: "var(--coach-muted)", lineHeight: 1.65 }}>
               {artifact.format === "ebook"
                 ? uiLanguage === "fr"
                   ? "Cet achat correspond à un mini e-book uniquement."
@@ -797,7 +1074,16 @@ function AIArtifactDetailContent() {
             </div>
 
             {artifact.status !== "completed" ? (
-              <div className="card-soft">
+              <div
+                className="card-soft"
+                style={{
+                  borderRadius: 24,
+                  background: "rgba(255,248,239,0.74)",
+                  border: "1px solid rgba(43,33,24,0.08)",
+                  color: "var(--coach-muted)",
+                  lineHeight: 1.65,
+                }}
+              >
                 {artifact.status === "pending_payment"
                   ? uiLanguage === "fr"
                     ? "Le paiement n’est pas encore confirmé pour ce guide."
@@ -840,28 +1126,37 @@ function AIArtifactDetailContent() {
             ) : null}
 
             {artifact.status === "completed" &&
-              artifact.format === "ebook" &&
-              !artifact.content_markdown && (
-                <div className="muted">
-                  {uiLanguage === "fr"
-                    ? "Le mini e-book est prêt, mais son contenu détaillé n’est pas encore affichable ici."
-                    : "The mini e-book is ready, but its detailed content is not yet displayable here."}
-                </div>
-              )}
+            artifact.format === "ebook" &&
+            !artifact.content_markdown ? (
+              <div className="muted" style={{ color: "var(--coach-muted)" }}>
+                {uiLanguage === "fr"
+                  ? "Le mini e-book est prêt, mais son contenu détaillé n’est pas encore affichable ici."
+                  : "The mini e-book is ready, but its detailed content is not yet displayable here."}
+              </div>
+            ) : null}
 
             {artifact.status === "completed" &&
-              artifact.format === "audiobook" &&
-              !canPlayAudio && (
-                <div className="muted">
-                  {uiLanguage === "fr"
-                    ? "Le mini audiobook est prêt, mais le fichier audio n’est pas encore lisible ici."
-                    : "The mini audiobook is ready, but the audio file is not yet playable here."}
-                </div>
-              )}
+            artifact.format === "audiobook" &&
+            !canPlayAudio ? (
+              <div className="muted" style={{ color: "var(--coach-muted)" }}>
+                {uiLanguage === "fr"
+                  ? "Le mini audiobook est prêt, mais le fichier audio n’est pas encore lisible ici."
+                  : "The mini audiobook is ready, but the audio file is not yet playable here."}
+              </div>
+            ) : null}
           </div>
 
           {artifact.format === "audiobook" && artifact.audio_script_text ? (
-            <div className="card stack">
+            <div
+              className="card stack"
+              style={{
+                gap: 16,
+                borderRadius: 28,
+                border: "1px solid rgba(43,33,24,0.08)",
+                background: "rgba(255,255,255,0.78)",
+                boxShadow: "0 18px 48px rgba(43,33,24,0.06)",
+              }}
+            >
               <div className="row space-between" style={{ alignItems: "center", gap: 12 }}>
                 <div className="section-title">
                   {uiLanguage === "fr" ? "Script audio" : "Audio script"}
@@ -883,11 +1178,20 @@ function AIArtifactDetailContent() {
               </div>
 
               {showAudioScript ? (
-                <div style={{ whiteSpace: "pre-wrap", lineHeight: 1.7 }}>
+                <div
+                  className="card-soft"
+                  style={{
+                    whiteSpace: "pre-wrap",
+                    lineHeight: 1.8,
+                    borderRadius: 24,
+                    background: "rgba(255,248,239,0.68)",
+                    border: "1px solid rgba(43,33,24,0.08)",
+                  }}
+                >
                   {artifact.audio_script_text}
                 </div>
               ) : (
-                <div className="muted">
+                <div className="muted" style={{ color: "var(--coach-muted)" }}>
                   {uiLanguage === "fr"
                     ? "Le script est masqué par défaut. Tu peux l’ouvrir si besoin."
                     : "The script is hidden by default. You can open it if needed."}
@@ -895,7 +1199,7 @@ function AIArtifactDetailContent() {
               )}
             </div>
           ) : null}
-        </>
+        </div>
       )}
     </AppShell>
   );

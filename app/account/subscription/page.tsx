@@ -1,15 +1,21 @@
 // app/account/subscription/page.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
 import { useCurrentUser } from "@/components/user-context";
-import {
-  changeSubscriptionPack,
-  getSubscriptionPlans,
-} from "@/lib/api";
+import { changeSubscriptionPack, getSubscriptionPlans } from "@/lib/api";
 import { useUiLanguage } from "@/lib/use-ui-language";
+import {
+  BadgePill,
+  CheckCircleIcon,
+  ClockIcon,
+  LayerIcon,
+  SparkIcon,
+  TargetIcon,
+  UserCardIcon,
+} from "@/components/ui-flat-icons";
 import type {
   Me,
   SubscriptionBillingCycle,
@@ -32,7 +38,7 @@ type PackPresentation = {
   name: string;
   subtitleFr: string;
   subtitleEn: string;
-  tone: "neutral" | "primary" | "premium" | "executive";
+  tone: "neutral" | "warm" | "calm" | "premium";
 };
 
 const PACK_PRESENTATION: Record<SubscriptionPackKey, PackPresentation> = {
@@ -48,23 +54,48 @@ const PACK_PRESENTATION: Record<SubscriptionPackKey, PackPresentation> = {
     name: "Classique",
     subtitleFr: "Pour structurer votre trajectoire avec accompagnement.",
     subtitleEn: "For structuring your trajectory with support.",
-    tone: "primary",
+    tone: "warm",
   },
   flix: {
     key: "flix",
     name: "Flix",
     subtitleFr: "Pour accélérer votre transformation professionnelle.",
     subtitleEn: "For accelerating your professional transformation.",
-    tone: "premium",
+    tone: "calm",
   },
   executif: {
     key: "executif",
     name: "Exécutif",
     subtitleFr: "Accompagnement stratégique sur mesure.",
     subtitleEn: "Tailored strategic support.",
-    tone: "executive",
+    tone: "premium",
   },
 };
+
+function CoachSectionCard({
+  children,
+  warm = false,
+}: {
+  children: ReactNode;
+  warm?: boolean;
+}) {
+  return (
+    <section
+      className="card stack"
+      style={{
+        gap: 18,
+        borderRadius: 30,
+        border: "1px solid rgba(43,33,24,0.08)",
+        background: warm
+          ? "linear-gradient(135deg, rgba(255,241,220,0.96), rgba(255,255,255,0.92) 55%, rgba(232,248,246,0.82))"
+          : "rgba(255,255,255,0.80)",
+        boxShadow: "0 22px 60px rgba(43,33,24,0.07)",
+      }}
+    >
+      {children}
+    </section>
+  );
+}
 
 function isSubscriptionPackKey(value: unknown): value is SubscriptionPackKey {
   return (
@@ -94,6 +125,7 @@ function formatPrice(
 
   if (cycle === "yearly") {
     const amount = Number(plan.annual_price_eur ?? 0);
+
     return `${amount.toLocaleString("fr-BE", {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
@@ -115,9 +147,9 @@ function getPlanCycleOptions(plan: SubscriptionPlanResponse): SubscriptionBillin
     return ["free"];
   }
 
-  const normalized = cycles.filter((cycle): cycle is SubscriptionBillingCycle =>
-    cycle === "monthly" || cycle === "yearly" || cycle === "free",
-  );
+  const normalized = cycles.filter((cycle): cycle is SubscriptionBillingCycle => {
+    return cycle === "monthly" || cycle === "yearly" || cycle === "free";
+  });
 
   return normalized.length > 0 ? normalized : ["monthly"];
 }
@@ -125,6 +157,7 @@ function getPlanCycleOptions(plan: SubscriptionPlanResponse): SubscriptionBillin
 function getCycleLabel(cycle: SubscriptionBillingCycle, uiLanguage: "fr" | "en"): string {
   if (cycle === "free") return uiLanguage === "fr" ? "Gratuit" : "Free";
   if (cycle === "yearly") return uiLanguage === "fr" ? "Annuel" : "Yearly";
+
   return uiLanguage === "fr" ? "Mensuel" : "Monthly";
 }
 
@@ -148,10 +181,7 @@ function getActionLabel(
   return uiLanguage === "fr" ? "Changer de pack" : "Change plan";
 }
 
-function getPackFeatures(
-  pack: SubscriptionPackKey,
-  uiLanguage: "fr" | "en",
-): string[] {
+function getPackFeatures(pack: SubscriptionPackKey, uiLanguage: "fr" | "en"): string[] {
   if (uiLanguage === "fr") {
     if (pack === "standard") {
       return [
@@ -227,6 +257,46 @@ function getPackFeatures(
   ];
 }
 
+function getPackToneStyle(tone: PackPresentation["tone"], active = false) {
+  if (tone === "calm") {
+    return {
+      iconColor: "var(--coach-calm)",
+      softBg: "rgba(88,180,174,0.12)",
+      border: "rgba(88,180,174,0.22)",
+      gradient: "linear-gradient(135deg, rgba(232,248,246,0.94), rgba(255,255,255,0.92))",
+      activeGlow: "0 18px 44px rgba(88,180,174,0.13)",
+    };
+  }
+
+  if (tone === "premium") {
+    return {
+      iconColor: "#9a6a19",
+      softBg: "rgba(214,179,106,0.14)",
+      border: "rgba(214,179,106,0.24)",
+      gradient: "linear-gradient(135deg, rgba(255,246,224,0.94), rgba(255,255,255,0.92))",
+      activeGlow: "0 18px 44px rgba(154,106,25,0.12)",
+    };
+  }
+
+  if (tone === "warm") {
+    return {
+      iconColor: "var(--coach-accent)",
+      softBg: "rgba(255,122,89,0.13)",
+      border: "rgba(255,122,89,0.24)",
+      gradient: "linear-gradient(135deg, rgba(255,241,220,0.96), rgba(255,255,255,0.92))",
+      activeGlow: "0 18px 44px rgba(255,122,89,0.13)",
+    };
+  }
+
+  return {
+    iconColor: active ? "var(--coach-accent)" : "var(--coach-muted)",
+    softBg: active ? "rgba(255,122,89,0.12)" : "rgba(43,33,24,0.05)",
+    border: active ? "rgba(255,122,89,0.20)" : "rgba(43,33,24,0.08)",
+    gradient: "rgba(255,255,255,0.78)",
+    activeGlow: "0 18px 44px rgba(43,33,24,0.07)",
+  };
+}
+
 export default function SubscriptionPage() {
   return (
     <AuthGuard>
@@ -261,6 +331,81 @@ function SubscriptionContent() {
   }, [typedUser?.subscription_pack]);
 
   const activePresentation = getPackPresentation(activePack);
+  const activeTone = getPackToneStyle(activePresentation.tone, true);
+
+  const labels = useMemo(() => {
+    if (uiLanguage === "fr") {
+      return {
+        loading: "Chargement...",
+        shellTitle: "Mon abonnement",
+        heroBadge: "Abonnement LeanWorker",
+        heroTitle: "Choisis le niveau d’accompagnement qui soutient ton rythme.",
+        heroSubtitle:
+          "Ton abonnement définit l’intensité de ton espace LeanWorker : coaching, Career Blueprint, recommandations, guides IA et leviers d’action.",
+        activePlan: "Pack actif",
+        currentlyActive: "Actuellement activé",
+        updatedTitle: "Abonnement mis à jour",
+        errorTitle: "Action impossible",
+        loadingPlans: "Chargement des packs...",
+        choosePlan: "Choisissez votre pack",
+        choosePlanText:
+          "Tu peux changer de pack selon ton niveau d’engagement, ton besoin de clarté et ton rythme de transformation.",
+        refresh: "Rafraîchir",
+        current: "Actuel",
+        recommended: "Recommandé",
+        processing: "Traitement...",
+        qualificationRequired: "Sur qualification",
+        guideTitle: "Comment fonctionne le changement de pack ?",
+        upgrade: "Upgrade",
+        upgradeText:
+          "Pour passer vers un pack payant ou supérieur, tu es redirigé vers Stripe pour confirmer le paiement.",
+        downgrade: "Downgrade",
+        downgradeText:
+          "Le passage vers Standard est immédiat et active le pack gratuit.",
+        security: "Sécurité",
+        securityText:
+          "Les paiements et changements payants sont confirmés par webhook Stripe avant activation.",
+        coachingAccess: "Accès coaching",
+        pathSupport: "Soutien de trajectoire",
+        executionLevers: "Leviers d’action",
+      };
+    }
+
+    return {
+      loading: "Loading...",
+      shellTitle: "My subscription",
+      heroBadge: "LeanWorker subscription",
+      heroTitle: "Choose the support level that matches your pace.",
+      heroSubtitle:
+        "Your subscription defines the intensity of your LeanWorker space: coaching, Career Blueprint, recommendations, AI guides, and action levers.",
+      activePlan: "Active plan",
+      currentlyActive: "Currently active",
+      updatedTitle: "Subscription updated",
+      errorTitle: "Action failed",
+      loadingPlans: "Loading subscription plans...",
+      choosePlan: "Choose your plan",
+      choosePlanText:
+        "You can change your plan based on your commitment level, clarity needs, and transformation pace.",
+      refresh: "Refresh",
+      current: "Current",
+      recommended: "Recommended",
+      processing: "Processing...",
+      qualificationRequired: "Qualification required",
+      guideTitle: "How does plan change work?",
+      upgrade: "Upgrade",
+      upgradeText:
+        "To move to a paid or higher plan, you are redirected to Stripe to confirm payment.",
+      downgrade: "Downgrade",
+      downgradeText:
+        "Switching to Standard is immediate and activates the free plan.",
+      security: "Security",
+      securityText:
+        "Payments and paid changes are confirmed by Stripe webhook before activation.",
+      coachingAccess: "Coaching access",
+      pathSupport: "Trajectory support",
+      executionLevers: "Action levers",
+    };
+  }, [uiLanguage]);
 
   async function loadPlans() {
     setLoading(true);
@@ -346,54 +491,105 @@ function SubscriptionContent() {
 
   if (loadingLanguage) {
     return (
-      <main className="page">
+      <main
+        className="page"
+        style={{
+          minHeight: "100vh",
+          background: "var(--coach-bg)",
+          padding: 24,
+        }}
+      >
         <div className="page-wrap">
-          <div className="card">
-            {uiLanguage === "fr" ? "Chargement..." : "Loading..."}
-          </div>
+          <CoachSectionCard>
+            <div className="section-title">{labels.loading}</div>
+          </CoachSectionCard>
         </div>
       </main>
     );
   }
 
   return (
-    <AppShell
-      uiLanguage={uiLanguage}
-      title={uiLanguage === "fr" ? "Mon abonnement" : "My subscription"}
-    >
+    <AppShell uiLanguage={uiLanguage} title={labels.shellTitle}>
       <div className="stack" style={{ gap: 18 }}>
         <section
           className="card stack"
           style={{
-            gap: 18,
+            gap: 20,
+            position: "relative",
+            overflow: "hidden",
+            borderRadius: 32,
+            border: "1px solid rgba(43,33,24,0.08)",
             background:
-              "radial-gradient(circle at top left, rgba(37,99,235,0.10), transparent 34%), linear-gradient(135deg, rgba(255,255,255,0.98), rgba(248,250,252,0.96))",
+              "linear-gradient(135deg, rgba(255,241,220,0.96), rgba(255,255,255,0.92) 52%, rgba(232,248,246,0.88))",
+            boxShadow: "0 22px 60px rgba(43,33,24,0.07)",
           }}
         >
-          <div className="row space-between" style={{ gap: 18, flexWrap: "wrap" }}>
-            <div className="stack" style={{ gap: 10, maxWidth: 760 }}>
-              <span className="badge">
-                {uiLanguage === "fr" ? "Abonnement LeanWorker" : "LeanWorker subscription"}
-              </span>
+          <div
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              right: -110,
+              top: -130,
+              width: 310,
+              height: 310,
+              borderRadius: 999,
+              background: "rgba(255,122,89,0.16)",
+            }}
+          />
+
+          <div
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              left: "46%",
+              bottom: -150,
+              width: 340,
+              height: 340,
+              borderRadius: 999,
+              background: "rgba(88,180,174,0.14)",
+            }}
+          />
+
+          <div
+            className="row space-between"
+            style={{
+              gap: 18,
+              flexWrap: "wrap",
+              alignItems: "stretch",
+              position: "relative",
+            }}
+          >
+            <div className="stack" style={{ gap: 14, maxWidth: 820 }}>
+              <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
+                <BadgePill icon={<LayerIcon size={14} />}>{labels.heroBadge}</BadgePill>
+                <BadgePill icon={<SparkIcon size={14} />}>{labels.coachingAccess}</BadgePill>
+                <BadgePill icon={<TargetIcon size={14} />}>{labels.pathSupport}</BadgePill>
+              </div>
 
               <h1
-                className="title"
                 style={{
                   margin: 0,
-                  fontSize: 40,
-                  lineHeight: 1.05,
-                  letterSpacing: "-0.04em",
+                  maxWidth: 900,
+                  fontSize: 44,
+                  lineHeight: 1.02,
+                  fontWeight: 950,
+                  letterSpacing: "-0.07em",
+                  color: "var(--coach-ink)",
                 }}
               >
-                {uiLanguage === "fr"
-                  ? "Gérez votre niveau d’accompagnement."
-                  : "Manage your support level."}
+                {labels.heroTitle}
               </h1>
 
-              <p className="muted" style={{ fontSize: 16, lineHeight: 1.7 }}>
-                {uiLanguage === "fr"
-                  ? "Votre abonnement détermine le niveau d’accès à l’accompagnement humain et technologique LeanWorker : conversations, Career Blueprint, Adaptive Coach, recommandations et leviers."
-                  : "Your subscription defines your access level to LeanWorker’s human and technology-enabled support: conversations, Career Blueprint, Adaptive Coach, recommendations, and levers."}
+              <p
+                className="subtitle"
+                style={{
+                  maxWidth: 760,
+                  color: "var(--coach-muted)",
+                  fontSize: 16,
+                  lineHeight: 1.7,
+                }}
+              >
+                {labels.heroSubtitle}
               </p>
             </div>
 
@@ -401,98 +597,120 @@ function SubscriptionContent() {
               className="card-soft stack"
               style={{
                 minWidth: 280,
-                gap: 10,
-                border: "1px solid rgba(37,99,235,0.18)",
+                maxWidth: 360,
+                gap: 12,
+                borderRadius: 28,
+                background: "rgba(255,255,255,0.78)",
+                border: `1px solid ${activeTone.border}`,
+                boxShadow: activeTone.activeGlow,
               }}
             >
-              <div className="muted">
-                {uiLanguage === "fr" ? "Pack actif" : "Active plan"}
+              <div
+                style={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: 16,
+                  display: "grid",
+                  placeItems: "center",
+                  color: activeTone.iconColor,
+                  background: activeTone.softBg,
+                  border: `1px solid ${activeTone.border}`,
+                }}
+              >
+                <UserCardIcon size={18} />
               </div>
 
-              <div className="admin-metric-value">{activePresentation.name}</div>
+              <div className="muted" style={{ color: "var(--coach-muted)" }}>
+                {labels.activePlan}
+              </div>
 
-              <div className="muted">
+              <div
+                style={{
+                  fontSize: 36,
+                  lineHeight: 1,
+                  fontWeight: 950,
+                  letterSpacing: "-0.06em",
+                  color: "var(--coach-ink)",
+                }}
+              >
+                {activePresentation.name}
+              </div>
+
+              <div className="muted" style={{ color: "var(--coach-muted)", lineHeight: 1.6 }}>
                 {uiLanguage === "fr"
                   ? activePresentation.subtitleFr
                   : activePresentation.subtitleEn}
               </div>
 
-              <span className="badge" style={{ alignSelf: "flex-start" }}>
-                {uiLanguage === "fr" ? "Actuellement activé" : "Currently active"}
-              </span>
+              <BadgePill icon={<CheckCircleIcon size={14} />}>
+                {labels.currentlyActive}
+              </BadgePill>
             </div>
           </div>
         </section>
 
         {message ? (
-          <section
-            className="card stack"
-            style={{
-              gap: 8,
-              border: "1px solid rgba(16,185,129,0.22)",
-              background:
-                "linear-gradient(135deg, rgba(16,185,129,0.08), rgba(255,255,255,0.96))",
-            }}
-          >
-            <div className="section-title">
-              {uiLanguage === "fr" ? "Abonnement mis à jour" : "Subscription updated"}
+          <CoachSectionCard>
+            <div className="row" style={{ gap: 10, alignItems: "center" }}>
+              <CheckCircleIcon />
+              <div className="section-title" style={{ color: "var(--success)" }}>
+                {labels.updatedTitle}
+              </div>
             </div>
 
-            <div className="muted">{message.message}</div>
-          </section>
+            <div className="muted" style={{ color: "var(--coach-muted)" }}>
+              {message.message}
+            </div>
+          </CoachSectionCard>
         ) : null}
 
         {error ? (
-          <section
-            className="card stack"
-            style={{
-              gap: 8,
-              border: "1px solid rgba(239,68,68,0.22)",
-            }}
-          >
+          <CoachSectionCard>
             <div className="section-title" style={{ color: "var(--danger)" }}>
-              {uiLanguage === "fr" ? "Action impossible" : "Action failed"}
+              {labels.errorTitle}
             </div>
 
-            <div className="muted">{error}</div>
-          </section>
+            <div className="muted" style={{ color: "var(--coach-muted)" }}>
+              {error}
+            </div>
+          </CoachSectionCard>
         ) : null}
 
         {loading ? (
-          <div className="card-soft">
-            {uiLanguage === "fr"
-              ? "Chargement des packs..."
-              : "Loading subscription plans..."}
-          </div>
+          <CoachSectionCard>
+            <div className="row" style={{ gap: 12, alignItems: "center" }}>
+              <div className="loader" />
+              <div className="muted" style={{ color: "var(--coach-muted)" }}>
+                {labels.loadingPlans}
+              </div>
+            </div>
+          </CoachSectionCard>
         ) : (
-          <section className="card stack" style={{ gap: 16 }}>
+          <CoachSectionCard>
             <div className="row space-between" style={{ gap: 12, flexWrap: "wrap" }}>
-              <div className="stack" style={{ gap: 4 }}>
-                <div className="section-title">
-                  {uiLanguage === "fr"
-                    ? "Choisissez votre pack"
-                    : "Choose your plan"}
-                </div>
+              <div className="stack" style={{ gap: 6 }}>
+                <div className="section-title">{labels.choosePlan}</div>
 
-                <div className="muted">
-                  {uiLanguage === "fr"
-                    ? "Vous pouvez changer de pack selon votre niveau d’engagement et votre besoin d’accompagnement."
-                    : "You can change your plan depending on your commitment level and support needs."}
+                <div className="muted" style={{ color: "var(--coach-muted)", lineHeight: 1.65 }}>
+                  {labels.choosePlanText}
                 </div>
               </div>
 
               <button className="button ghost" type="button" onClick={() => void loadPlans()}>
-                {uiLanguage === "fr" ? "Rafraîchir" : "Refresh"}
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                  <ClockIcon size={14} />
+                  {labels.refresh}
+                </span>
               </button>
             </div>
 
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(4, minmax(240px, 1fr))",
+                gridTemplateColumns: "repeat(4, minmax(250px, 1fr))",
                 gap: 14,
                 overflowX: "auto",
-                paddingBottom: 4,
+                paddingBottom: 6,
               }}
             >
               {plans.map((plan) => {
@@ -502,6 +720,7 @@ function SubscriptionContent() {
 
                 const pack = plan.pack;
                 const presentation = getPackPresentation(pack);
+                const toneStyle = getPackToneStyle(presentation.tone, pack === activePack);
                 const isActive = pack === activePack;
                 const cycleOptions = getPlanCycleOptions(plan);
                 const selectedCycle =
@@ -516,52 +735,86 @@ function SubscriptionContent() {
                     key={pack}
                     className="card-soft stack"
                     style={{
-                      gap: 14,
-                      minHeight: 520,
+                      gap: 16,
+                      minHeight: 540,
+                      borderRadius: 28,
                       border: isActive
-                        ? "1px solid rgba(37,99,235,0.32)"
-                        : "1px solid rgba(15,23,42,0.08)",
-                      background: isActive
-                        ? "linear-gradient(180deg, rgba(37,99,235,0.08), rgba(255,255,255,0.96))"
-                        : undefined,
+                        ? `2px solid ${toneStyle.border}`
+                        : "1px solid rgba(43,33,24,0.08)",
+                      background: isActive ? toneStyle.gradient : "rgba(255,255,255,0.70)",
+                      boxShadow: isActive
+                        ? toneStyle.activeGlow
+                        : "0 12px 34px rgba(43,33,24,0.05)",
                     }}
                   >
                     <div className="row space-between" style={{ gap: 8 }}>
-                      <span
-                        className="badge"
-                        style={{
-                          background: isActive
-                            ? "rgba(37,99,235,0.12)"
-                            : "rgba(15,23,42,0.05)",
-                          color: isActive ? "#2563eb" : undefined,
-                        }}
+                      <BadgePill
+                        icon={
+                          isActive ? (
+                            <CheckCircleIcon size={14} />
+                          ) : (
+                            <LayerIcon size={14} />
+                          )
+                        }
                       >
-                        {isActive
-                          ? uiLanguage === "fr"
-                            ? "Actuel"
-                            : "Current"
-                          : presentation.name}
-                      </span>
+                        {isActive ? labels.current : presentation.name}
+                      </BadgePill>
 
                       {pack === "classique" ? (
-                        <span className="badge">
-                          {uiLanguage === "fr" ? "Recommandé" : "Recommended"}
-                        </span>
+                        <BadgePill icon={<SparkIcon size={14} />}>
+                          {labels.recommended}
+                        </BadgePill>
                       ) : null}
                     </div>
 
-                    <div className="stack" style={{ gap: 6 }}>
-                      <h2 className="section-title" style={{ fontSize: 24 }}>
+                    <div
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 17,
+                        display: "grid",
+                        placeItems: "center",
+                        color: toneStyle.iconColor,
+                        background: toneStyle.softBg,
+                        border: `1px solid ${toneStyle.border}`,
+                      }}
+                    >
+                      <TargetIcon size={18} />
+                    </div>
+
+                    <div className="stack" style={{ gap: 7 }}>
+                      <h2
+                        className="section-title"
+                        style={{
+                          fontSize: 25,
+                          color: "var(--coach-ink)",
+                        }}
+                      >
                         {presentation.name}
                       </h2>
 
-                      <div className="muted" style={{ minHeight: 44, lineHeight: 1.55 }}>
+                      <div
+                        className="muted"
+                        style={{
+                          minHeight: 48,
+                          color: "var(--coach-muted)",
+                          lineHeight: 1.55,
+                        }}
+                      >
                         {uiLanguage === "fr"
                           ? presentation.subtitleFr
                           : presentation.subtitleEn}
                       </div>
 
-                      <div className="title" style={{ fontSize: 24, margin: 0 }}>
+                      <div
+                        style={{
+                          fontSize: 28,
+                          lineHeight: 1,
+                          fontWeight: 950,
+                          letterSpacing: "-0.055em",
+                          color: "var(--coach-ink)",
+                        }}
+                      >
                         {formatPrice(plan, selectedCycle, uiLanguage)}
                       </div>
                     </div>
@@ -572,14 +825,14 @@ function SubscriptionContent() {
                           <button
                             key={cycle}
                             type="button"
-                            className={
-                              selectedCycle === cycle ? "button secondary" : "button ghost"
-                            }
+                            className={selectedCycle === cycle ? "button" : "button ghost"}
                             style={{
-                              minHeight: 34,
-                              padding: "8px 10px",
-                              borderRadius: 12,
+                              minHeight: 36,
+                              padding: "8px 12px",
+                              borderRadius: 999,
                               fontSize: 13,
+                              background:
+                                selectedCycle === cycle ? "var(--coach-accent)" : undefined,
                             }}
                             onClick={() =>
                               setSelectedCycles((previous) => ({
@@ -593,35 +846,39 @@ function SubscriptionContent() {
                         ))}
                       </div>
                     ) : (
-                      <span className="badge" style={{ alignSelf: "flex-start" }}>
+                      <BadgePill icon={<ClockIcon size={14} />}>
                         {getCycleLabel(selectedCycle, uiLanguage)}
-                      </span>
+                      </BadgePill>
                     )}
 
                     {plan.description ? (
-                      <p className="muted" style={{ lineHeight: 1.65 }}>
+                      <p
+                        className="muted"
+                        style={{
+                          margin: 0,
+                          color: "var(--coach-muted)",
+                          lineHeight: 1.65,
+                        }}
+                      >
                         {plan.description}
                       </p>
                     ) : null}
 
-                    <div className="stack" style={{ gap: 8 }}>
+                    <div className="stack" style={{ gap: 9 }}>
                       {getPackFeatures(pack, uiLanguage).map((feature) => (
                         <div
                           key={feature}
                           className="row"
-                          style={{ gap: 8, alignItems: "flex-start" }}
+                          style={{ gap: 9, alignItems: "flex-start" }}
                         >
-                          <span
+                          <CheckCircleIcon size={15} color={toneStyle.iconColor} />
+                          <div
+                            className="muted"
                             style={{
-                              width: 9,
-                              height: 9,
-                              marginTop: 7,
-                              borderRadius: 999,
-                              background: isActive ? "#2563eb" : "#10b981",
-                              flexShrink: 0,
+                              color: "var(--coach-muted)",
+                              lineHeight: 1.45,
                             }}
-                          />
-                          <div className="muted" style={{ lineHeight: 1.45 }}>
+                          >
                             {feature}
                           </div>
                         </div>
@@ -633,69 +890,85 @@ function SubscriptionContent() {
                       type="button"
                       disabled={isActive || isContactSales || isChanging}
                       onClick={() => void handleChangePack(plan)}
-                      style={{ marginTop: "auto", width: "100%" }}
+                      style={{
+                        marginTop: "auto",
+                        width: "100%",
+                        minHeight: 46,
+                        background: isActive ? undefined : "var(--coach-accent)",
+                        color: isActive ? "var(--coach-accent)" : undefined,
+                        borderColor: isActive ? "rgba(255,122,89,0.28)" : undefined,
+                      }}
                     >
                       {isChanging
-                        ? uiLanguage === "fr"
-                          ? "Traitement..."
-                          : "Processing..."
+                        ? labels.processing
                         : isContactSales
-                          ? uiLanguage === "fr"
-                            ? "Sur qualification"
-                            : "Qualification required"
+                          ? labels.qualificationRequired
                           : getActionLabel(pack, activePack, uiLanguage)}
                     </button>
                   </article>
                 );
               })}
             </div>
-          </section>
+          </CoachSectionCard>
         )}
 
-        <section
-          className="card stack"
-          style={{
-            gap: 12,
-            border: "1px solid rgba(16,185,129,0.20)",
-            background:
-              "linear-gradient(135deg, rgba(16,185,129,0.08), rgba(37,99,235,0.06))",
-          }}
-        >
-          <div className="section-title">
-            {uiLanguage === "fr"
-              ? "Comment fonctionne le changement de pack ?"
-              : "How does plan change work?"}
+        <CoachSectionCard warm>
+          <div className="row" style={{ gap: 10, alignItems: "center" }}>
+            <SparkIcon />
+            <div className="section-title">{labels.guideTitle}</div>
           </div>
 
           <div className="grid grid-3">
-            <div className="card-soft stack" style={{ gap: 8 }}>
-              <strong>{uiLanguage === "fr" ? "Upgrade" : "Upgrade"}</strong>
-              <div className="muted" style={{ lineHeight: 1.6 }}>
-                {uiLanguage === "fr"
-                  ? "Pour passer vers un pack payant ou supérieur, vous êtes redirigé vers Stripe pour confirmer le paiement."
-                  : "To move to a paid or higher plan, you are redirected to Stripe to confirm payment."}
-              </div>
-            </div>
+            {[
+              {
+                title: labels.upgrade,
+                text: labels.upgradeText,
+                icon: <TargetIcon size={16} />,
+              },
+              {
+                title: labels.downgrade,
+                text: labels.downgradeText,
+                icon: <LayerIcon size={16} />,
+              },
+              {
+                title: labels.security,
+                text: labels.securityText,
+                icon: <CheckCircleIcon size={16} />,
+              },
+            ].map((item) => (
+              <div
+                key={item.title}
+                className="card-soft stack"
+                style={{
+                  gap: 10,
+                  borderRadius: 24,
+                  background: "rgba(255,255,255,0.70)",
+                  border: "1px solid rgba(43,33,24,0.08)",
+                }}
+              >
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 14,
+                    display: "grid",
+                    placeItems: "center",
+                    color: "var(--coach-accent)",
+                    background: "rgba(255,122,89,0.12)",
+                  }}
+                >
+                  {item.icon}
+                </div>
 
-            <div className="card-soft stack" style={{ gap: 8 }}>
-              <strong>{uiLanguage === "fr" ? "Downgrade" : "Downgrade"}</strong>
-              <div className="muted" style={{ lineHeight: 1.6 }}>
-                {uiLanguage === "fr"
-                  ? "Le passage vers Standard est immédiat et active le pack gratuit."
-                  : "Switching to Standard is immediate and activates the free plan."}
-              </div>
-            </div>
+                <strong style={{ color: "var(--coach-ink)" }}>{item.title}</strong>
 
-            <div className="card-soft stack" style={{ gap: 8 }}>
-              <strong>{uiLanguage === "fr" ? "Sécurité" : "Security"}</strong>
-              <div className="muted" style={{ lineHeight: 1.6 }}>
-                {uiLanguage === "fr"
-                  ? "Les paiements et changements payants sont confirmés par webhook Stripe avant activation."
-                  : "Payments and paid changes are confirmed by Stripe webhook before activation."}
+                <div className="muted" style={{ color: "var(--coach-muted)", lineHeight: 1.6 }}>
+                  {item.text}
+                </div>
               </div>
-            </div>
+            ))}
           </div>
-        </section>
+        </CoachSectionCard>
       </div>
     </AppShell>
   );

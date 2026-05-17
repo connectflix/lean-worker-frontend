@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { AdminGuard } from "@/components/admin-guard";
 import { AdminShell } from "@/components/admin-shell";
 import {
-  getAdminMe,
   adminOrchestrationRun,
+  getAdminMe,
   getAdminOrchestrationRunDetail,
   getAdminOrchestrationRuns,
 } from "@/lib/api";
@@ -80,10 +81,8 @@ const SAMPLE_CASES: {
     input_payload: {
       support_summary:
         "Hausse de tickets sur des paiements réussis sans déblocage effectif du contenu.",
-      tech_ops_summary:
-        "Erreurs intermittentes sur le callback LinkedIn en production.",
-      business_ops_summary:
-        "Chute récente du funnel preview → checkout.",
+      tech_ops_summary: "Erreurs intermittentes sur le callback LinkedIn en production.",
+      business_ops_summary: "Chute récente du funnel preview → checkout.",
       customer_experience_summary:
         "Plusieurs utilisateurs semblent frustrés par des réponses du coach perçues comme insuffisamment pertinentes.",
       customer_experience_signal_type: "coach_signal",
@@ -92,8 +91,7 @@ const SAMPLE_CASES: {
       customer_experience_context: {
         issue: "coach_relevance",
       },
-      founder_notes:
-        "Je veux une vue de pilotage claire pour aujourd’hui.",
+      founder_notes: "Je veux une vue de pilotage claire pour aujourd’hui.",
       context: {
         day: "today",
       },
@@ -161,12 +159,17 @@ function prettyJson(value: unknown): string {
 
 function parseJsonObject(value: string): Record<string, unknown> {
   const trimmed = value.trim();
-  if (!trimmed) return {};
+
+  if (!trimmed) {
+    return {};
+  }
 
   const parsed = JSON.parse(trimmed);
+
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
     throw new Error("Le JSON doit être un objet.");
   }
+
   return parsed as Record<string, unknown>;
 }
 
@@ -182,22 +185,95 @@ function getStatusColor(status: string): string {
   return "var(--success, #15803d)";
 }
 
+function getStatusBackground(status: string): string {
+  if (status === "failed") return "rgba(220,38,38,0.10)";
+  if (status === "partial") return "rgba(245,158,11,0.12)";
+  return "rgba(21,128,61,0.10)";
+}
+
 function isCriticalRun(run: AdminOrchestrationRunSummary): boolean {
   const escalations = run.escalations ?? [];
   const haystack = escalations.join(" | ").toLowerCase();
 
+  if (run.status === "failed") return true;
   if (haystack.includes("founder")) return true;
   if (haystack.includes("critical")) return true;
   if (haystack.includes("p1")) return true;
-  if (run.status === "failed") return true;
 
   return false;
+}
+
+function normalizeScenarioLabel(value: string): string {
+  return value
+    .replaceAll("_", " ")
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function StatusPill({ status }: { status: string }) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        borderRadius: 999,
+        padding: "5px 10px",
+        fontSize: 12,
+        fontWeight: 850,
+        color: getStatusColor(status),
+        background: getStatusBackground(status),
+        border: `1px solid ${getStatusColor(status)}22`,
+        textTransform: "uppercase",
+        letterSpacing: "0.04em",
+      }}
+    >
+      {formatRunStatus(status)}
+    </span>
+  );
+}
+
+function CriticalPill({ critical }: { critical: boolean }) {
+  if (!critical) {
+    return null;
+  }
+
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        borderRadius: 999,
+        padding: "5px 10px",
+        fontSize: 12,
+        fontWeight: 900,
+        color: "var(--danger)",
+        background: "rgba(220,38,38,0.10)",
+        border: "1px solid rgba(220,38,38,0.22)",
+        textTransform: "uppercase",
+        letterSpacing: "0.04em",
+      }}
+    >
+      Critical
+    </span>
+  );
 }
 
 export default function AdminOrchestrationPage() {
   return (
     <AdminGuard>
-      <AdminOrchestrationContent />
+      <Suspense
+        fallback={
+          <main className="page">
+            <div className="container">
+              <div className="card">Loading orchestration workspace...</div>
+            </div>
+          </main>
+        }
+      >
+        <AdminOrchestrationContent />
+      </Suspense>
     </AdminGuard>
   );
 }
@@ -214,9 +290,7 @@ function AdminOrchestrationContent() {
   const [inputPayloadText, setInputPayloadText] = useState(
     prettyJson(SAMPLE_CASES[0].input_payload),
   );
-  const [optionsText, setOptionsText] = useState(
-    prettyJson(SAMPLE_CASES[0].options),
-  );
+  const [optionsText, setOptionsText] = useState(prettyJson(SAMPLE_CASES[0].options));
   const [result, setResult] = useState<AdminOrchestrationResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -224,26 +298,30 @@ function AdminOrchestrationContent() {
   const [runs, setRuns] = useState<AdminOrchestrationRunSummary[]>([]);
   const [runsLoading, setRunsLoading] = useState(true);
   const [runsError, setRunsError] = useState<string | null>(null);
+
   const [selectedRunId, setSelectedRunId] = useState<number | null>(null);
-  const [selectedRunDetail, setSelectedRunDetail] = useState<AdminOrchestrationRunDetail | null>(null);
+  const [selectedRunDetail, setSelectedRunDetail] =
+    useState<AdminOrchestrationRunDetail | null>(null);
   const [runDetailLoading, setRunDetailLoading] = useState(false);
   const [runDetailError, setRunDetailError] = useState<string | null>(null);
+
   const [runFilter, setRunFilter] = useState<RunFilterMode>("all");
 
   const preopenedRunId = useMemo(() => {
     const rawRun = searchParams.get("run");
+
     if (!rawRun) return null;
+
     const parsed = Number(rawRun);
+
     return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
   }, [searchParams]);
 
   useEffect(() => {
     async function loadAdminAndRuns() {
       try {
-        const [me, data] = await Promise.all([
-          getAdminMe(),
-          getAdminOrchestrationRuns(100),
-        ]);
+        const [me, data] = await Promise.all([getAdminMe(), getAdminOrchestrationRuns(100)]);
+
         setAdmin(me);
         setRuns(data);
       } catch (err) {
@@ -307,12 +385,14 @@ function AdminOrchestrationContent() {
 
   useEffect(() => {
     if (!preopenedRunId) return;
+
     setSelectedRunId(preopenedRunId);
     void loadRunDetail(preopenedRunId);
   }, [preopenedRunId]);
 
   function applySample(index: number) {
     const sample = SAMPLE_CASES[index];
+
     if (!sample) return;
 
     setScenario(sample.scenario);
@@ -352,6 +432,7 @@ function AdminOrchestrationContent() {
     if (runFilter === "all") return runs;
     if (runFilter === "failed") return runs.filter((run) => run.status === "failed");
     if (runFilter === "partial") return runs.filter((run) => run.status === "partial");
+
     return runs.filter((run) => isCriticalRun(run));
   }, [runs, runFilter]);
 
@@ -371,7 +452,10 @@ function AdminOrchestrationContent() {
 
   const failedCount = runs.filter((run) => run.status === "failed").length;
   const partialCount = runs.filter((run) => run.status === "partial").length;
+  const successCount = runs.filter((run) => run.status === "success").length;
   const criticalCount = runs.filter((run) => isCriticalRun(run)).length;
+
+  const latestRun = runs[0] ?? null;
 
   return (
     <AdminShell
@@ -380,72 +464,208 @@ function AdminOrchestrationContent() {
       subtitle="Production monitoring by default, with an optional test console when needed."
       adminEmail={admin?.email ?? null}
     >
-      <div className="card stack">
-        <div className="row space-between" style={{ gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
-          <div className="stack" style={{ gap: 4 }}>
-            <div className="section-title">Orchestration modes</div>
-            <div className="muted">
-              Production mode focuses on real incidents and operational review. Test mode exposes the manual console only when explicitly needed.
-            </div>
-          </div>
+      <div className="stack" style={{ gap: 18 }}>
+        <div
+          className="card stack"
+          style={{
+            gap: 16,
+            border: "1px solid rgba(59,130,246,0.18)",
+            background:
+              "linear-gradient(135deg, rgba(15,23,42,0.98), rgba(30,41,59,0.96))",
+            color: "white",
+            overflow: "hidden",
+            position: "relative",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              right: -100,
+              top: -120,
+              width: 290,
+              height: 290,
+              borderRadius: 999,
+              background: "rgba(59,130,246,0.22)",
+              filter: "blur(4px)",
+            }}
+          />
 
-          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-            <button
-              className={viewMode === "production" ? "button" : "button ghost"}
-              type="button"
-              onClick={() => setViewMode("production")}
-            >
-              Production mode
-            </button>
-            <button
-              className={viewMode === "test" ? "button secondary" : "button ghost"}
-              type="button"
-              onClick={() => setViewMode("test")}
-            >
-              Test mode
-            </button>
-            <a className="button ghost" href="/admin/agent-reports">
-              Agent Reports
-            </a>
-          </div>
-        </div>
+          <div
+            style={{
+              position: "absolute",
+              left: "48%",
+              bottom: -130,
+              width: 310,
+              height: 310,
+              borderRadius: 999,
+              background: "rgba(20,184,166,0.16)",
+              filter: "blur(6px)",
+            }}
+          />
 
-        {viewMode === "production" ? (
-          <div className="card-soft stack" style={{ gap: 8 }}>
-            <div className="section-title" style={{ fontSize: 15 }}>
-              Production mode active
-            </div>
-            <div className="muted">
-              The manual orchestration console is hidden. You are currently reviewing live runs, alerts, and operational details.
-            </div>
-          </div>
-        ) : (
-          <div className="card-soft stack" style={{ gap: 8 }}>
-            <div className="section-title" style={{ fontSize: 15 }}>
-              Test mode active
-            </div>
-            <div className="muted">
-              The manual console is visible below for controlled testing, payload simulation, and orchestration validation.
-            </div>
-          </div>
-        )}
-      </div>
+          <div
+            className="row space-between"
+            style={{
+              gap: 12,
+              alignItems: "flex-start",
+              flexWrap: "wrap",
+              position: "relative",
+            }}
+          >
+            <div className="stack" style={{ gap: 10, maxWidth: 920 }}>
+              <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                <span
+                  style={{
+                    borderRadius: 999,
+                    padding: "8px 12px",
+                    background: "rgba(255,255,255,0.12)",
+                    fontSize: 12,
+                    fontWeight: 900,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                  }}
+                >
+                  Orchestration Control
+                </span>
 
-      {viewMode === "test" ? (
-        <div className="grid grid-2">
-          <div className="card stack">
-            <div className="row space-between" style={{ gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
-              <div className="stack" style={{ gap: 4 }}>
-                <div className="section-title">Manual test console</div>
-                <div className="muted">
-                  Launch a scenario manually to test or inspect orchestration behavior.
-                </div>
+                <span
+                  style={{
+                    borderRadius: 999,
+                    padding: "8px 12px",
+                    background:
+                      viewMode === "production"
+                        ? "rgba(21,128,61,0.28)"
+                        : "rgba(245,158,11,0.24)",
+                    fontSize: 12,
+                    fontWeight: 900,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                  }}
+                >
+                  {viewMode === "production" ? "Production mode" : "Test mode"}
+                </span>
+              </div>
+
+              <div
+                style={{
+                  fontSize: 34,
+                  lineHeight: 1.08,
+                  fontWeight: 950,
+                  letterSpacing: "-0.05em",
+                }}
+              >
+                Monitor orchestration runs, incidents and founder-level alerts.
+              </div>
+
+              <div
+                style={{
+                  maxWidth: 940,
+                  lineHeight: 1.7,
+                  color: "rgba(255,255,255,0.74)",
+                }}
+              >
+                Production mode keeps the workspace focused on operational review. Test mode exposes
+                the manual scenario console for controlled validation.
               </div>
             </div>
 
-            <div className="stack">
-              <label className="stack" style={{ gap: 6 }}>
+            <div className="row" style={{ gap: 8, flexWrap: "wrap", position: "relative" }}>
+              <button
+                className={viewMode === "production" ? "button" : "button ghost"}
+                type="button"
+                onClick={() => setViewMode("production")}
+              >
+                Production mode
+              </button>
+
+              <button
+                className={viewMode === "test" ? "button secondary" : "button ghost"}
+                type="button"
+                onClick={() => setViewMode("test")}
+              >
+                Test mode
+              </button>
+
+              <Link className="button ghost" href="/admin/agent-reports">
+                Agent Reports
+              </Link>
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
+              gap: 10,
+              position: "relative",
+            }}
+          >
+            {[
+              { label: "Total runs", value: runs.length },
+              { label: "Success", value: successCount },
+              { label: "Partial", value: partialCount },
+              { label: "Failed", value: failedCount },
+              { label: "Critical", value: criticalCount },
+            ].map((metric) => (
+              <div
+                key={metric.label}
+                style={{
+                  borderRadius: 16,
+                  padding: 12,
+                  background: "rgba(255,255,255,0.10)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                }}
+              >
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.62)" }}>
+                  {metric.label}
+                </div>
+
+                <div style={{ marginTop: 4, fontSize: 24, fontWeight: 950 }}>
+                  {metric.value}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {latestRun ? (
+            <div
+              style={{
+                position: "relative",
+                borderRadius: 16,
+                padding: 12,
+                background: "rgba(255,255,255,0.08)",
+                border: "1px solid rgba(255,255,255,0.12)",
+              }}
+            >
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.62)" }}>
+                Latest run
+              </div>
+              <div style={{ marginTop: 4, fontWeight: 850 }}>
+                #{latestRun.id} · {normalizeScenarioLabel(latestRun.scenario)} ·{" "}
+                {new Date(latestRun.created_at).toLocaleString()}
+              </div>
+            </div>
+          ) : null}
+        </div>
+
+        {viewMode === "test" ? (
+          <div className="grid grid-2" style={{ alignItems: "start" }}>
+            <div className="card stack" style={{ gap: 16 }}>
+              <div
+                className="row space-between"
+                style={{ gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}
+              >
+                <div className="stack" style={{ gap: 4 }}>
+                  <div className="section-title">Manual test console</div>
+                  <div className="muted">
+                    Launch a scenario manually to test or inspect orchestration behavior.
+                  </div>
+                </div>
+              </div>
+
+              <div className="card-soft stack" style={{ gap: 12 }}>
                 <span className="muted">Quick samples</span>
+
                 <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                   {SAMPLE_CASES.map((sample, index) => (
                     <button
@@ -458,7 +678,7 @@ function AdminOrchestrationContent() {
                     </button>
                   ))}
                 </div>
-              </label>
+              </div>
 
               <div className="grid grid-2">
                 <label className="stack" style={{ gap: 6 }}>
@@ -466,7 +686,9 @@ function AdminOrchestrationContent() {
                   <select
                     className="select"
                     value={scenario}
-                    onChange={(e) => setScenario(e.target.value as AdminOrchestrationScenario)}
+                    onChange={(event) =>
+                      setScenario(event.target.value as AdminOrchestrationScenario)
+                    }
                   >
                     {SCENARIOS.map((item) => (
                       <option key={item} value={item}>
@@ -481,7 +703,7 @@ function AdminOrchestrationContent() {
                   <select
                     className="select"
                     value={language}
-                    onChange={(e) => setLanguage(e.target.value)}
+                    onChange={(event) => setLanguage(event.target.value)}
                   >
                     <option value="fr">Français</option>
                     <option value="en">English</option>
@@ -494,9 +716,14 @@ function AdminOrchestrationContent() {
                 <textarea
                   className="textarea"
                   value={inputPayloadText}
-                  onChange={(e) => setInputPayloadText(e.target.value)}
+                  onChange={(event) => setInputPayloadText(event.target.value)}
                   rows={14}
-                  style={{ fontFamily: "monospace" }}
+                  style={{
+                    fontFamily:
+                      "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                    fontSize: 13,
+                    lineHeight: 1.55,
+                  }}
                 />
               </label>
 
@@ -505,18 +732,33 @@ function AdminOrchestrationContent() {
                 <textarea
                   className="textarea"
                   value={optionsText}
-                  onChange={(e) => setOptionsText(e.target.value)}
+                  onChange={(event) => setOptionsText(event.target.value)}
                   rows={8}
-                  style={{ fontFamily: "monospace" }}
+                  style={{
+                    fontFamily:
+                      "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                    fontSize: 13,
+                    lineHeight: 1.55,
+                  }}
                 />
               </label>
 
               <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
-                <button className="button" onClick={() => void handleRun()} type="button">
+                <button
+                  className="button"
+                  onClick={() => void handleRun()}
+                  type="button"
+                  disabled={loading}
+                >
                   {loading ? "Exécution..." : "Lancer le scénario"}
                 </button>
 
-                <button className="button ghost" onClick={() => void refreshRuns()} type="button">
+                <button
+                  className="button ghost"
+                  onClick={() => void refreshRuns()}
+                  type="button"
+                  disabled={runsLoading}
+                >
                   Rafraîchir les runs
                 </button>
               </div>
@@ -527,19 +769,336 @@ function AdminOrchestrationContent() {
                 </div>
               ) : null}
             </div>
+
+            <div
+              className="card stack"
+              style={{
+                gap: 14,
+                position: "sticky",
+                top: 96,
+              }}
+            >
+              <div className="section-title">Immediate test result</div>
+
+              {result ? (
+                <div className="stack" style={{ gap: 10 }}>
+                  <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                    <span className="badge">{result.scenario}</span>
+                    <StatusPill status={result.status} />
+                    <span className="badge">confidence {result.confidence.toFixed(2)}</span>
+                  </div>
+
+                  <pre
+                    style={{
+                      margin: 0,
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                      borderRadius: 14,
+                      padding: 12,
+                      background: "rgba(15,23,42,0.04)",
+                      border: "1px solid var(--border)",
+                      overflowX: "auto",
+                      maxHeight: "62vh",
+                    }}
+                  >
+                    {prettyJson(result)}
+                  </pre>
+                </div>
+              ) : (
+                <div className="muted">Aucun résultat de test affiché pour le moment.</div>
+              )}
+            </div>
+          </div>
+        ) : null}
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "minmax(0, 1fr) minmax(360px, 0.9fr)",
+            gap: 18,
+            alignItems: "start",
+          }}
+        >
+          <div className="card stack" style={{ gap: 16, minWidth: 0 }}>
+            <div
+              className="row space-between"
+              style={{ alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}
+            >
+              <div className="stack" style={{ gap: 4 }}>
+                <div className="section-title">Recent incidents and alerts</div>
+                <div className="muted">Filter recent runs by operational risk level.</div>
+              </div>
+
+              <button
+                className="button ghost"
+                type="button"
+                onClick={() => void refreshRuns()}
+                disabled={runsLoading}
+              >
+                {runsLoading ? "Refreshing..." : "Refresh runs"}
+              </button>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(4, minmax(140px, 1fr))",
+                gap: 10,
+              }}
+            >
+              <button
+                className="card-soft stack"
+                type="button"
+                onClick={() => setRunFilter("all")}
+                style={{
+                  gap: 6,
+                  cursor: "pointer",
+                  textAlign: "left",
+                  border:
+                    runFilter === "all" ? "1px solid var(--primary)" : "1px solid var(--border)",
+                }}
+              >
+                <div className="muted">All</div>
+                <div className="admin-metric-value" style={{ fontSize: 24 }}>
+                  {runs.length}
+                </div>
+              </button>
+
+              <button
+                className="card-soft stack"
+                type="button"
+                onClick={() => setRunFilter("failed")}
+                style={{
+                  gap: 6,
+                  cursor: "pointer",
+                  textAlign: "left",
+                  border:
+                    runFilter === "failed"
+                      ? "1px solid var(--primary)"
+                      : "1px solid var(--border)",
+                }}
+              >
+                <div className="muted">Failed</div>
+                <div
+                  className="admin-metric-value"
+                  style={{ fontSize: 24, color: "var(--danger)" }}
+                >
+                  {failedCount}
+                </div>
+              </button>
+
+              <button
+                className="card-soft stack"
+                type="button"
+                onClick={() => setRunFilter("partial")}
+                style={{
+                  gap: 6,
+                  cursor: "pointer",
+                  textAlign: "left",
+                  border:
+                    runFilter === "partial"
+                      ? "1px solid var(--primary)"
+                      : "1px solid var(--border)",
+                }}
+              >
+                <div className="muted">Partial</div>
+                <div
+                  className="admin-metric-value"
+                  style={{ fontSize: 24, color: "var(--warning, #b45309)" }}
+                >
+                  {partialCount}
+                </div>
+              </button>
+
+              <button
+                className="card-soft stack"
+                type="button"
+                onClick={() => setRunFilter("critical")}
+                style={{
+                  gap: 6,
+                  cursor: "pointer",
+                  textAlign: "left",
+                  border:
+                    runFilter === "critical"
+                      ? "1px solid var(--primary)"
+                      : "1px solid var(--border)",
+                }}
+              >
+                <div className="muted">Critical</div>
+                <div
+                  className="admin-metric-value"
+                  style={{ fontSize: 24, color: "var(--danger)" }}
+                >
+                  {criticalCount}
+                </div>
+              </button>
+            </div>
+
+            {runsLoading ? (
+              <div className="card-soft">Chargement des runs...</div>
+            ) : runsError ? (
+              <div className="card-soft" style={{ color: "var(--danger)" }}>
+                {runsError}
+              </div>
+            ) : filteredRuns.length === 0 ? (
+              <div className="card-soft muted">Aucun run correspondant à ce filtre.</div>
+            ) : (
+              <div
+                className="stack"
+                style={{
+                  gap: 10,
+                  maxHeight: "62vh",
+                  overflowY: "auto",
+                  paddingRight: 4,
+                }}
+              >
+                {filteredRuns.map((run) => {
+                  const escalations = run.escalations ?? [];
+                  const critical = isCriticalRun(run);
+                  const isSelected = selectedRunId === run.id;
+                  const isPreopened = preopenedRunId === run.id;
+
+                  return (
+                    <button
+                      key={run.id}
+                      ref={isPreopened ? preopenedRunRef : null}
+                      type="button"
+                      className="card-soft stack"
+                      onClick={() => {
+                        setSelectedRunId(run.id);
+                        void loadRunDetail(run.id);
+                      }}
+                      style={{
+                        gap: 9,
+                        textAlign: "left",
+                        cursor: "pointer",
+                        border: isSelected
+                          ? isPreopened
+                            ? "2px solid var(--danger)"
+                            : "1px solid var(--primary)"
+                          : "1px solid var(--border)",
+                        background: isPreopened
+                          ? "linear-gradient(180deg, rgba(254,242,242,0.95), rgba(255,255,255,0.98))"
+                          : undefined,
+                        boxShadow: isPreopened ? "0 0 0 3px rgba(220,38,38,0.08)" : undefined,
+                      }}
+                    >
+                      <div
+                        className="row space-between"
+                        style={{ gap: 12, alignItems: "center", flexWrap: "wrap" }}
+                      >
+                        <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                          <span className="badge">#{run.id}</span>
+                          <span className="badge">{normalizeScenarioLabel(run.scenario)}</span>
+                          <StatusPill status={run.status} />
+                          <CriticalPill critical={critical} />
+
+                          {isPreopened ? (
+                            <span
+                              style={{
+                                borderRadius: 999,
+                                padding: "5px 10px",
+                                color: "var(--danger)",
+                                background: "rgba(220,38,38,0.12)",
+                                fontWeight: 850,
+                                fontSize: 12,
+                              }}
+                            >
+                              Opened
+                            </span>
+                          ) : null}
+                        </div>
+
+                        <div className="muted">{new Date(run.created_at).toLocaleString()}</div>
+                      </div>
+
+                      <div className="row space-between" style={{ gap: 12, flexWrap: "wrap" }}>
+                        <div className="muted">
+                          confidence {Number(run.confidence ?? 0).toFixed(2)}
+                        </div>
+
+                        <div className="muted">
+                          {escalations.length > 0
+                            ? `${escalations.length} escalation(s)`
+                            : "No escalation"}
+                        </div>
+                      </div>
+
+                      {escalations.length > 0 ? (
+                        <div
+                          className="muted"
+                          style={{
+                            color: critical ? "var(--danger)" : "var(--text)",
+                            lineHeight: 1.5,
+                          }}
+                        >
+                          {escalations[0]}
+                        </div>
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
-          <div className="card stack">
-            <div className="section-title">Immediate test result</div>
+          <div
+            className="card stack"
+            style={{
+              gap: 14,
+              minWidth: 0,
+              position: "sticky",
+              top: 96,
+            }}
+          >
+            <div className="row space-between" style={{ gap: 12, flexWrap: "wrap" }}>
+              <div className="section-title">Selected run detail</div>
 
-            {result ? (
+              {selectedRunDetail ? (
+                <Link
+                  className="button ghost"
+                  href={`/admin/agent-reports?status=critical&run=${selectedRunDetail.id}`}
+                >
+                  Open in Agent Reports
+                </Link>
+              ) : null}
+            </div>
+
+            {!selectedRunId ? (
+              <div className="card-soft muted">
+                Sélectionne un run dans la liste pour voir son détail.
+              </div>
+            ) : runDetailLoading ? (
+              <div className="card-soft">Chargement du détail...</div>
+            ) : runDetailError ? (
+              <div className="card-soft" style={{ color: "var(--danger)" }}>
+                {runDetailError}
+              </div>
+            ) : !selectedRunDetail ? (
+              <div className="card-soft muted">Aucun détail disponible.</div>
+            ) : (
               <div className="stack" style={{ gap: 10 }}>
                 <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                  <span className="badge">{result.scenario}</span>
-                  <span className="badge" style={{ color: getStatusColor(result.status) }}>
-                    {result.status}
+                  <span className="badge">#{selectedRunDetail.id}</span>
+                  <span className="badge">
+                    {normalizeScenarioLabel(selectedRunDetail.scenario)}
                   </span>
-                  <span className="badge">confidence {result.confidence.toFixed(2)}</span>
+                  <StatusPill status={selectedRunDetail.status} />
+
+                  {preopenedRunId === selectedRunDetail.id ? (
+                    <span
+                      style={{
+                        borderRadius: 999,
+                        padding: "5px 10px",
+                        color: "var(--danger)",
+                        background: "rgba(220,38,38,0.12)",
+                        fontWeight: 850,
+                        fontSize: 12,
+                      }}
+                    >
+                      Preopened from dashboard
+                    </span>
+                  ) : null}
                 </div>
 
                 <pre
@@ -547,236 +1106,24 @@ function AdminOrchestrationContent() {
                     margin: 0,
                     whiteSpace: "pre-wrap",
                     wordBreak: "break-word",
-                    borderRadius: 12,
+                    borderRadius: 14,
                     padding: 12,
-                    background: "var(--panel)",
+                    background: "rgba(15,23,42,0.04)",
                     border: "1px solid var(--border)",
                     overflowX: "auto",
+                    maxHeight: "62vh",
+                    fontFamily:
+                      "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                    fontSize: 12,
+                    lineHeight: 1.55,
                   }}
                 >
-                  {prettyJson(result)}
+                  {prettyJson(selectedRunDetail)}
                 </pre>
               </div>
-            ) : (
-              <div className="muted">Aucun résultat de test affiché pour le moment.</div>
             )}
           </div>
         </div>
-      ) : null}
-
-      <div className="card stack">
-        <div className="row space-between" style={{ alignItems: "flex-start", gap: 12 }}>
-          <div className="stack" style={{ gap: 4 }}>
-            <div className="section-title">Recent incidents and alerts</div>
-            <div className="muted">
-              Filter recent runs by operational risk level.
-            </div>
-          </div>
-
-          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-            <button
-              className={runFilter === "all" ? "button" : "button ghost"}
-              type="button"
-              onClick={() => setRunFilter("all")}
-            >
-              Tous ({runs.length})
-            </button>
-            <button
-              className={runFilter === "failed" ? "button" : "button ghost"}
-              type="button"
-              onClick={() => setRunFilter("failed")}
-            >
-              Failed ({failedCount})
-            </button>
-            <button
-              className={runFilter === "partial" ? "button" : "button ghost"}
-              type="button"
-              onClick={() => setRunFilter("partial")}
-            >
-              Partial ({partialCount})
-            </button>
-            <button
-              className={runFilter === "critical" ? "button" : "button ghost"}
-              type="button"
-              onClick={() => setRunFilter("critical")}
-            >
-              Founder / Critical ({criticalCount})
-            </button>
-          </div>
-        </div>
-
-        {runsLoading ? (
-          <div className="muted">Chargement des runs...</div>
-        ) : runsError ? (
-          <div className="card-soft" style={{ color: "var(--danger)" }}>
-            {runsError}
-          </div>
-        ) : filteredRuns.length === 0 ? (
-          <div className="muted">Aucun run correspondant à ce filtre.</div>
-        ) : (
-          <div
-            className="stack"
-            style={{
-              gap: 10,
-              maxHeight: "52vh",
-              overflowY: "auto",
-              paddingRight: 4,
-            }}
-          >
-            {filteredRuns.map((run) => {
-              const escalations = run.escalations ?? [];
-              const critical = isCriticalRun(run);
-              const isSelected = selectedRunId === run.id;
-              const isPreopened = preopenedRunId === run.id;
-
-              return (
-                <button
-                  key={run.id}
-                  ref={isPreopened ? preopenedRunRef : null}
-                  type="button"
-                  className="card-soft stack"
-                  onClick={() => {
-                    setSelectedRunId(run.id);
-                    void loadRunDetail(run.id);
-                  }}
-                  style={{
-                    gap: 8,
-                    textAlign: "left",
-                    cursor: "pointer",
-                    border: isSelected
-                      ? isPreopened
-                        ? "2px solid var(--danger)"
-                        : "1px solid var(--primary)"
-                      : "1px solid var(--border)",
-                    background: isPreopened
-                      ? "linear-gradient(180deg, rgba(254,242,242,0.95), rgba(255,255,255,0.98))"
-                      : undefined,
-                    boxShadow: isPreopened
-                      ? "0 0 0 3px rgba(220,38,38,0.08)"
-                      : undefined,
-                  }}
-                >
-                  <div className="row space-between" style={{ gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-                    <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                      <span className="badge">#{run.id}</span>
-                      <span className="badge">{run.scenario}</span>
-                      <span
-                        className="badge"
-                        style={{ color: getStatusColor(run.status) }}
-                      >
-                        {formatRunStatus(run.status)}
-                      </span>
-                      {critical ? (
-                        <span
-                          style={{
-                            borderRadius: 999,
-                            padding: "4px 10px",
-                            color: "var(--danger)",
-                            background: "rgba(220,38,38,0.08)",
-                          }}
-                        >
-                          critical
-                        </span>
-                      ) : null}
-                      {isPreopened ? (
-                        <span
-                          style={{
-                            borderRadius: 999,
-                            padding: "4px 10px",
-                            color: "var(--danger)",
-                            background: "rgba(220,38,38,0.12)",
-                            fontWeight: 700,
-                          }}
-                        >
-                          opened
-                        </span>
-                      ) : null}
-                    </div>
-
-                    <div className="muted">
-                      {new Date(run.created_at).toLocaleString()}
-                    </div>
-                  </div>
-
-                  <div className="row space-between" style={{ gap: 12, flexWrap: "wrap" }}>
-                    <div className="muted">
-                      confidence {Number(run.confidence ?? 0).toFixed(2)}
-                    </div>
-
-                    <div className="muted">
-                      {escalations.length > 0
-                        ? `${escalations.length} escalation(s)`
-                        : "No escalation"}
-                    </div>
-                  </div>
-
-                  {escalations.length > 0 ? (
-                    <div className="muted" style={{ color: critical ? "var(--danger)" : "var(--text)" }}>
-                      {escalations[0]}
-                    </div>
-                  ) : null}
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      <div className="card stack">
-        <div className="section-title">Selected run detail</div>
-
-        {!selectedRunId ? (
-          <div className="muted">
-            Sélectionne un run dans la liste ci-dessus pour voir son détail.
-          </div>
-        ) : runDetailLoading ? (
-          <div className="muted">Chargement du détail...</div>
-        ) : runDetailError ? (
-          <div className="card-soft" style={{ color: "var(--danger)" }}>
-            {runDetailError}
-          </div>
-        ) : !selectedRunDetail ? (
-          <div className="muted">Aucun détail disponible.</div>
-        ) : (
-          <div className="stack" style={{ gap: 10 }}>
-            <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-              <span className="badge">#{selectedRunDetail.id}</span>
-              <span className="badge">{selectedRunDetail.scenario}</span>
-              <span className="badge" style={{ color: getStatusColor(selectedRunDetail.status) }}>
-                {selectedRunDetail.status}
-              </span>
-              {preopenedRunId === selectedRunDetail.id ? (
-                <span
-                  style={{
-                    borderRadius: 999,
-                    padding: "4px 10px",
-                    color: "var(--danger)",
-                    background: "rgba(220,38,38,0.12)",
-                    fontWeight: 700,
-                  }}
-                >
-                  preopened from dashboard
-                </span>
-              ) : null}
-            </div>
-
-            <pre
-              style={{
-                margin: 0,
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-                borderRadius: 12,
-                padding: 12,
-                background: "var(--panel)",
-                border: "1px solid var(--border)",
-                overflowX: "auto",
-                maxHeight: "60vh",
-              }}
-            >
-              {prettyJson(selectedRunDetail)}
-            </pre>
-          </div>
-        )}
       </div>
     </AdminShell>
   );

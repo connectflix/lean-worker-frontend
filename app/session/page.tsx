@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AuthGuard } from "@/components/auth-guard";
 import { ConversationPanel } from "@/components/conversation-panel";
@@ -47,10 +47,220 @@ type CareerGap = {
   key_gap_summary?: string | null;
 };
 
+function CoachCard({
+  children,
+  warm = false,
+  style,
+}: {
+  children: ReactNode;
+  warm?: boolean;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <div
+      className="card stack"
+      style={{
+        gap: 16,
+        borderRadius: 28,
+        border: "1px solid rgba(43,33,24,0.08)",
+        background: warm
+          ? "linear-gradient(135deg, rgba(255,241,220,0.94), rgba(255,255,255,0.92))"
+          : "rgba(255,255,255,0.78)",
+        boxShadow: "0 18px 48px rgba(43,33,24,0.06)",
+        ...style,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function SoftIconFrame({
+  children,
+  tone = "warm",
+}: {
+  children: ReactNode;
+  tone?: "warm" | "calm" | "neutral";
+}) {
+  const background =
+    tone === "calm"
+      ? "rgba(88,180,174,0.12)"
+      : tone === "neutral"
+        ? "rgba(43,33,24,0.06)"
+        : "rgba(255,122,89,0.13)";
+
+  const color =
+    tone === "calm"
+      ? "var(--coach-calm)"
+      : tone === "neutral"
+        ? "var(--coach-muted)"
+        : "var(--coach-accent)";
+
+  const border =
+    tone === "calm"
+      ? "1px solid rgba(88,180,174,0.20)"
+      : tone === "neutral"
+        ? "1px solid rgba(43,33,24,0.08)"
+        : "1px solid rgba(255,122,89,0.22)";
+
+  return (
+    <span
+      style={{
+        width: 42,
+        height: 42,
+        borderRadius: 16,
+        display: "grid",
+        placeItems: "center",
+        background,
+        color,
+        border,
+        flexShrink: 0,
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+function ModeChoiceCard({
+  title,
+  description,
+  detail,
+  tag,
+  icon,
+  buttonLabel,
+  loadingLabel,
+  loading,
+  disabled,
+  tone,
+  onClick,
+}: {
+  title: string;
+  description: string;
+  detail: string;
+  tag: string;
+  icon: ReactNode;
+  buttonLabel: string;
+  loadingLabel: string;
+  loading: boolean;
+  disabled: boolean;
+  tone: "warm" | "calm";
+  onClick: () => void;
+}) {
+  const isWarm = tone === "warm";
+
+  return (
+    <div
+      className="card-soft stack"
+      style={{
+        gap: 16,
+        padding: 22,
+        minHeight: 300,
+        borderRadius: 28,
+        border: isWarm
+          ? "1px solid rgba(255,122,89,0.18)"
+          : "1px solid rgba(88,180,174,0.18)",
+        background: isWarm
+          ? "linear-gradient(180deg, rgba(255,248,239,0.94), rgba(255,255,255,0.86))"
+          : "linear-gradient(180deg, rgba(232,248,246,0.92), rgba(255,255,255,0.86))",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.72)",
+      }}
+    >
+      <div className="row space-between" style={{ gap: 12, alignItems: "center" }}>
+        <div className="row" style={{ gap: 10, alignItems: "center", minWidth: 0 }}>
+          <SoftIconFrame tone={tone}>{icon}</SoftIconFrame>
+
+          <div
+            className="section-title"
+            style={{
+              margin: 0,
+              fontSize: 22,
+              color: "var(--coach-ink)",
+            }}
+          >
+            {title}
+          </div>
+        </div>
+
+        <span
+          className="badge"
+          style={{
+            background: isWarm ? "rgba(255,122,89,0.12)" : "rgba(88,180,174,0.12)",
+            borderColor: isWarm ? "rgba(255,122,89,0.20)" : "rgba(88,180,174,0.20)",
+            color: isWarm ? "var(--coach-accent)" : "var(--coach-calm)",
+            fontWeight: 850,
+          }}
+        >
+          {tag}
+        </span>
+      </div>
+
+      <div
+        className="muted"
+        style={{
+          color: "var(--coach-muted)",
+          fontSize: 15,
+          lineHeight: 1.7,
+        }}
+      >
+        {description}
+      </div>
+
+      <div
+        className="muted"
+        style={{
+          fontSize: 14,
+          lineHeight: 1.6,
+          color: "var(--coach-muted)",
+          paddingTop: 12,
+          borderTop: "1px solid rgba(43,33,24,0.08)",
+        }}
+      >
+        {detail}
+      </div>
+
+      <div style={{ marginTop: "auto", paddingTop: 6 }}>
+        <button
+          className="button"
+          onClick={onClick}
+          type="button"
+          disabled={disabled}
+          style={{
+            width: "100%",
+            minHeight: 48,
+            background: isWarm ? "var(--coach-accent)" : "var(--coach-calm)",
+          }}
+        >
+          {loading ? loadingLabel : buttonLabel}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function SessionPage() {
   return (
     <AuthGuard>
-      <SessionPageContent />
+      <Suspense
+        fallback={
+          <main
+            className="page"
+            style={{
+              minHeight: "100vh",
+              background: "var(--coach-bg)",
+              padding: 24,
+            }}
+          >
+            <div className="page-wrap">
+              <CoachCard warm>
+                <div className="section-title">Loading coaching workspace...</div>
+              </CoachCard>
+            </div>
+          </main>
+        }
+      >
+        <SessionPageContent />
+      </Suspense>
     </AuthGuard>
   );
 }
@@ -58,6 +268,7 @@ export default function SessionPage() {
 function SessionPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const searchParamsKey = searchParams.toString();
   const { user } = useCurrentUser();
 
   const [uiLanguage, setUiLanguage] = useState<SupportedUiLanguage>("en");
@@ -79,62 +290,6 @@ function SessionPageContent() {
       }),
     );
   }, [user]);
-
-  const searchParamsKey = searchParams.toString();
-
-  async function loadSessionPage() {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const modeParam = searchParams.get("mode");
-      setSessionMode(modeParam === "voice" ? "voice" : "written");
-
-      const sessionIdParam = searchParams.get("sessionId");
-      let resolvedSessionId: number | null = null;
-
-      if (sessionIdParam) {
-        const parsed = Number(sessionIdParam);
-        if (!Number.isNaN(parsed) && parsed > 0) {
-          resolvedSessionId = parsed;
-        }
-      }
-
-      if (!resolvedSessionId) {
-        const openSession = await getCurrentOpenSession();
-        if (openSession?.session_id) {
-          resolvedSessionId = openSession.session_id;
-        }
-      }
-
-      if (!resolvedSessionId) {
-        setSessionId(null);
-        setCareerGap(null);
-        setRecommendations([]);
-        setCoachMode(undefined);
-        setCoachIntent(undefined);
-        return;
-      }
-
-      setSessionId(resolvedSessionId);
-
-      const [gap, recs] = await Promise.all([getCareerGap(), getRecommendations()]);
-
-      setCareerGap(gap);
-      setRecommendations(recs);
-      setCoachMode(undefined);
-      setCoachIntent(undefined);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load coaching session.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    void loadSessionPage();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParamsKey]);
 
   const copy = useMemo(
     () =>
@@ -158,7 +313,7 @@ function SessionPageContent() {
               "Même cockpit de coaching, avec conversation écrite au centre.",
             voiceMode: "Session vocale",
             voiceModeText:
-              "Même cockpit de coaching, avec orb et interaction voix-only au centre.",
+              "Même cockpit de coaching, avec interaction voix-only au centre.",
             writtenModeEmptyText:
               "Pour clarifier, structurer, prendre du recul et garder une trace écrite de l’échange.",
             voiceModeEmptyText:
@@ -206,7 +361,7 @@ function SessionPageContent() {
               "Same coaching cockpit, with written conversation in the center.",
             voiceMode: "Voice session",
             voiceModeText:
-              "Same coaching cockpit, with orb and voice-only interaction in the center.",
+              "Same coaching cockpit, with voice-only interaction in the center.",
             writtenModeEmptyText:
               "Best for clarifying, structuring, stepping back, and keeping a written trace of the exchange.",
             voiceModeEmptyText:
@@ -237,6 +392,60 @@ function SessionPageContent() {
           },
     [uiLanguage],
   );
+
+  const loadSessionPage = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const params = new URLSearchParams(searchParamsKey);
+      const modeParam = params.get("mode");
+      setSessionMode(modeParam === "voice" ? "voice" : "written");
+
+      const sessionIdParam = params.get("sessionId");
+      let resolvedSessionId: number | null = null;
+
+      if (sessionIdParam) {
+        const parsed = Number(sessionIdParam);
+        if (!Number.isNaN(parsed) && parsed > 0) {
+          resolvedSessionId = parsed;
+        }
+      }
+
+      if (!resolvedSessionId) {
+        const openSession = await getCurrentOpenSession();
+        if (openSession?.session_id) {
+          resolvedSessionId = openSession.session_id;
+        }
+      }
+
+      if (!resolvedSessionId) {
+        setSessionId(null);
+        setCareerGap(null);
+        setRecommendations([]);
+        setCoachMode(undefined);
+        setCoachIntent(undefined);
+        return;
+      }
+
+      setSessionId(resolvedSessionId);
+
+      const [gap, recs] = await Promise.all([getCareerGap(), getRecommendations()]);
+
+      setCareerGap(gap);
+      setRecommendations(recs);
+      setCoachMode(undefined);
+      setCoachIntent(undefined);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load coaching session.");
+    } finally {
+      setLoading(false);
+    }
+  }, [searchParamsKey]);
+
+  useEffect(() => {
+    void loadSessionPage();
+  }, [loadSessionPage]);
 
   async function handleStartSession(mode: SessionMode) {
     try {
@@ -269,7 +478,7 @@ function SessionPageContent() {
   }
 
   function navigateToMode(mode: SessionMode) {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParamsKey);
     params.set("mode", mode);
 
     if (sessionId) {
@@ -282,26 +491,28 @@ function SessionPageContent() {
 
   const modeSwitcher =
     !loading && !error && sessionId ? (
-      <div
-        className="card stack"
-        style={{
-          gap: 16,
-          background:
-            "linear-gradient(180deg, rgba(255,255,255,0.92), rgba(248,250,252,0.94))",
-        }}
-      >
-        <div className="row" style={{ gap: 8, alignItems: "center" }}>
-          <SessionIcon />
+      <CoachCard warm>
+        <div className="row" style={{ gap: 10, alignItems: "center" }}>
+          <SoftIconFrame tone="warm">
+            <SessionIcon size={18} />
+          </SoftIconFrame>
           <div className="section-title">{copy.chooseMode}</div>
         </div>
 
-        <div className="muted">{copy.chooseModeText}</div>
+        <div className="muted" style={{ color: "var(--coach-muted)", lineHeight: 1.65 }}>
+          {copy.chooseModeText}
+        </div>
 
         <div className="grid grid-1" style={{ gap: 10 }}>
           <button
             className={sessionMode === "written" ? "button" : "button ghost"}
             onClick={() => navigateToMode("written")}
             type="button"
+            style={
+              sessionMode === "written"
+                ? { background: "var(--coach-accent)" }
+                : undefined
+            }
           >
             {copy.writtenMode}
           </button>
@@ -310,32 +521,49 @@ function SessionPageContent() {
             className={sessionMode === "voice" ? "button" : "button ghost"}
             onClick={() => navigateToMode("voice")}
             type="button"
+            style={
+              sessionMode === "voice"
+                ? { background: "var(--coach-calm)" }
+                : undefined
+            }
           >
             {copy.voiceMode}
           </button>
         </div>
 
-        <div className="card-soft stack" style={{ gap: 8 }}>
+        <div
+          className="card-soft stack"
+          style={{
+            gap: 8,
+            borderRadius: 22,
+            background: "rgba(255,255,255,0.66)",
+            border: "1px solid rgba(43,33,24,0.08)",
+          }}
+        >
           <strong>{copy.modeCardTitle}</strong>
-          <div style={{ fontWeight: 600 }}>
+          <div style={{ fontWeight: 700, color: "var(--coach-ink)" }}>
             {sessionMode === "written" ? copy.writtenMode : copy.voiceMode}
           </div>
-          <div className="muted">
+          <div className="muted" style={{ color: "var(--coach-muted)" }}>
             {sessionMode === "written" ? copy.writtenModeText : copy.voiceModeText}
           </div>
         </div>
-      </div>
+      </CoachCard>
     ) : null;
 
   const activeContextCard =
     !loading && !error && sessionId ? (
-      <div className="card stack">
-        <div className="row" style={{ gap: 8, alignItems: "center" }}>
-          <BrainIcon />
+      <CoachCard>
+        <div className="row" style={{ gap: 10, alignItems: "center" }}>
+          <SoftIconFrame tone="calm">
+            <BrainIcon size={18} />
+          </SoftIconFrame>
           <div className="section-title">{copy.activeContext}</div>
         </div>
 
-        <div className="muted">{copy.activeContextText}</div>
+        <div className="muted" style={{ color: "var(--coach-muted)", lineHeight: 1.65 }}>
+          {copy.activeContextText}
+        </div>
 
         <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
           <BadgePill icon={<TargetIcon size={14} />}>
@@ -357,7 +585,16 @@ function SessionPageContent() {
           <BadgePill icon={<SessionIcon size={14} />}>{copy.memoryActive}</BadgePill>
         </div>
 
-        <div className="card-soft muted" style={{ lineHeight: 1.55 }}>
+        <div
+          className="card-soft muted"
+          style={{
+            lineHeight: 1.6,
+            color: "var(--coach-muted)",
+            borderRadius: 22,
+            background: "rgba(255,248,239,0.72)",
+            border: "1px solid rgba(43,33,24,0.08)",
+          }}
+        >
           {copy.activeContextPurpose}
         </div>
 
@@ -370,28 +607,41 @@ function SessionPageContent() {
             {copy.viewHistory}
           </button>
         </div>
-      </div>
+      </CoachCard>
     ) : null;
 
   const fallbackCenter = loading ? (
-    <div className="card stack">
-      <div className="section-title">{copy.loading}</div>
-      <div className="muted">
-        {uiLanguage === "fr"
-          ? "Nous préparons ton espace de coaching."
-          : "We are preparing your coaching workspace."}
+    <CoachCard warm>
+      <div className="row" style={{ gap: 12, alignItems: "center" }}>
+        <SoftIconFrame tone="warm">
+          <SparkIcon size={18} />
+        </SoftIconFrame>
+
+        <div className="stack" style={{ gap: 4 }}>
+          <div className="section-title">{copy.loading}</div>
+          <div className="muted" style={{ color: "var(--coach-muted)" }}>
+            {uiLanguage === "fr"
+              ? "Nous préparons ton espace de coaching."
+              : "We are preparing your coaching workspace."}
+          </div>
+        </div>
       </div>
-    </div>
+    </CoachCard>
   ) : error ? (
-    <div className="card stack">
+    <CoachCard>
       <div className="section-title" style={{ color: "var(--danger)" }}>
         {copy.sessionErrorTitle}
       </div>
-      <div className="muted">{error}</div>
+
+      <div className="muted" style={{ color: "var(--coach-muted)" }}>
+        {error}
+      </div>
+
       <div className="row" style={{ flexWrap: "wrap", gap: 10 }}>
         <button className="button" onClick={() => void loadSessionPage()} type="button">
           {copy.retry}
         </button>
+
         <button
           className="button ghost"
           onClick={() => router.push("/dashboard")}
@@ -400,61 +650,119 @@ function SessionPageContent() {
           {copy.backToDashboard}
         </button>
       </div>
-    </div>
+    </CoachCard>
   ) : !sessionId ? (
     <div
       style={{
         width: "100%",
-        maxWidth: 1120,
+        maxWidth: 1140,
         margin: "40px auto",
       }}
     >
-      <div
-        className="card stack"
+      <CoachCard
+        warm
         style={{
           gap: 28,
           padding: 32,
-          background:
-            "linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.99))",
+          overflow: "hidden",
+          position: "relative",
         }}
       >
-        <div className="stack" style={{ gap: 14 }}>
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            right: -110,
+            top: -130,
+            width: 310,
+            height: 310,
+            borderRadius: 999,
+            background: "rgba(255,122,89,0.14)",
+          }}
+        />
+
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            left: "46%",
+            bottom: -150,
+            width: 340,
+            height: 340,
+            borderRadius: 999,
+            background: "rgba(88,180,174,0.13)",
+          }}
+        />
+
+        <div className="stack" style={{ gap: 16, position: "relative" }}>
           <div className="row" style={{ gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-            <BadgePill icon={<SparkIcon size={14} />}>{copy.premiumTag}</BadgePill>
+            <span
+              className="badge"
+              style={{
+                background: "rgba(255,122,89,0.12)",
+                borderColor: "rgba(255,122,89,0.20)",
+                color: "var(--coach-accent)",
+                fontWeight: 850,
+              }}
+            >
+              {copy.premiumTag}
+            </span>
           </div>
 
           <div
             className="row space-between"
             style={{ gap: 20, alignItems: "flex-start", flexWrap: "wrap" }}
           >
-            <div className="stack" style={{ gap: 10, maxWidth: 720 }}>
+            <div className="stack" style={{ gap: 12, maxWidth: 760 }}>
               <div
-                className="section-title"
-                style={{ fontSize: 30, lineHeight: 1.15 }}
+                style={{
+                  fontSize: 42,
+                  lineHeight: 1.04,
+                  fontWeight: 950,
+                  letterSpacing: "-0.07em",
+                  color: "var(--coach-ink)",
+                }}
               >
                 {copy.noSession}
               </div>
 
               <div
                 className="muted"
-                style={{ fontSize: 16, lineHeight: 1.65 }}
+                style={{
+                  fontSize: 16,
+                  lineHeight: 1.75,
+                  color: "var(--coach-muted)",
+                }}
               >
                 {copy.noSessionText}
               </div>
 
               <div
                 className="muted"
-                style={{ fontSize: 14, lineHeight: 1.55 }}
+                style={{
+                  fontSize: 14,
+                  lineHeight: 1.6,
+                  color: "var(--coach-muted)",
+                }}
               >
                 {copy.noSessionHint}
               </div>
             </div>
 
-            <div className="card-soft stack" style={{ gap: 8, minWidth: 220 }}>
+            <div
+              className="card-soft stack"
+              style={{
+                gap: 8,
+                minWidth: 230,
+                borderRadius: 24,
+                background: "rgba(255,255,255,0.66)",
+                border: "1px solid rgba(43,33,24,0.08)",
+              }}
+            >
               <div className="section-title" style={{ fontSize: 15 }}>
                 {copy.whyTitle}
               </div>
-              <div className="muted" style={{ fontSize: 14 }}>
+              <div className="muted" style={{ fontSize: 14, color: "var(--coach-muted)" }}>
                 {copy.chooseModeText}
               </div>
             </div>
@@ -467,107 +775,36 @@ function SessionPageContent() {
             gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
             gap: 18,
             alignItems: "stretch",
+            position: "relative",
           }}
         >
-          <div
-            className="card-soft stack"
-            style={{
-              gap: 16,
-              padding: 22,
-              minHeight: 280,
-              border: "1px solid var(--border)",
-              borderRadius: 24,
-            }}
-          >
-            <div className="row space-between" style={{ gap: 12, alignItems: "center" }}>
-              <div className="row" style={{ gap: 10, alignItems: "center" }}>
-                <SessionIcon />
-                <div className="section-title" style={{ margin: 0, fontSize: 22 }}>
-                  {copy.writtenMode}
-                </div>
-              </div>
+          <ModeChoiceCard
+            title={copy.writtenMode}
+            description={copy.writtenModeEmptyText}
+            detail={copy.writtenModeText}
+            tag={copy.writtenTag}
+            icon={<SessionIcon size={18} />}
+            buttonLabel={copy.writtenMode}
+            loadingLabel={copy.launchingWritten}
+            loading={launchingMode === "written"}
+            disabled={launchingMode !== null}
+            tone="warm"
+            onClick={() => void handleStartSession("written")}
+          />
 
-              <BadgePill icon={<SparkIcon size={14} />}>{copy.writtenTag}</BadgePill>
-            </div>
-
-            <div className="muted" style={{ fontSize: 15, lineHeight: 1.65 }}>
-              {copy.writtenModeEmptyText}
-            </div>
-
-            <div
-              className="muted"
-              style={{
-                fontSize: 14,
-                lineHeight: 1.55,
-                paddingTop: 10,
-                borderTop: "1px solid var(--border)",
-              }}
-            >
-              {copy.writtenModeText}
-            </div>
-
-            <div style={{ marginTop: "auto", paddingTop: 6 }}>
-              <button
-                className="button"
-                onClick={() => void handleStartSession("written")}
-                type="button"
-                disabled={launchingMode !== null}
-                style={{ width: "100%" }}
-              >
-                {launchingMode === "written" ? copy.launchingWritten : copy.writtenMode}
-              </button>
-            </div>
-          </div>
-
-          <div
-            className="card-soft stack"
-            style={{
-              gap: 16,
-              padding: 22,
-              minHeight: 280,
-              border: "1px solid var(--border)",
-              borderRadius: 24,
-            }}
-          >
-            <div className="row space-between" style={{ gap: 12, alignItems: "center" }}>
-              <div className="row" style={{ gap: 10, alignItems: "center" }}>
-                <BrainIcon />
-                <div className="section-title" style={{ margin: 0, fontSize: 22 }}>
-                  {copy.voiceMode}
-                </div>
-              </div>
-
-              <BadgePill icon={<SparkIcon size={14} />}>{copy.voiceTag}</BadgePill>
-            </div>
-
-            <div className="muted" style={{ fontSize: 15, lineHeight: 1.65 }}>
-              {copy.voiceModeEmptyText}
-            </div>
-
-            <div
-              className="muted"
-              style={{
-                fontSize: 14,
-                lineHeight: 1.55,
-                paddingTop: 10,
-                borderTop: "1px solid var(--border)",
-              }}
-            >
-              {copy.voiceModeText}
-            </div>
-
-            <div style={{ marginTop: "auto", paddingTop: 6 }}>
-              <button
-                className="button"
-                onClick={() => void handleStartSession("voice")}
-                type="button"
-                disabled={launchingMode !== null}
-                style={{ width: "100%" }}
-              >
-                {launchingMode === "voice" ? copy.launchingVoice : copy.voiceMode}
-              </button>
-            </div>
-          </div>
+          <ModeChoiceCard
+            title={copy.voiceMode}
+            description={copy.voiceModeEmptyText}
+            detail={copy.voiceModeText}
+            tag={copy.voiceTag}
+            icon={<BrainIcon size={18} />}
+            buttonLabel={copy.voiceMode}
+            loadingLabel={copy.launchingVoice}
+            loading={launchingMode === "voice"}
+            disabled={launchingMode !== null}
+            tone="calm"
+            onClick={() => void handleStartSession("voice")}
+          />
         </div>
 
         <div
@@ -576,6 +813,7 @@ function SessionPageContent() {
             flexWrap: "wrap",
             gap: 10,
             justifyContent: "flex-start",
+            position: "relative",
           }}
         >
           <button
@@ -596,7 +834,7 @@ function SessionPageContent() {
             {copy.viewDashboard}
           </button>
         </div>
-      </div>
+      </CoachCard>
     </div>
   ) : null;
 
@@ -634,15 +872,35 @@ function SessionPageContent() {
   const center =
     sessionId && sessionMode === "voice" ? (
       <div className="session-cockpit-column">
-        <div className="card stack" style={{ flexShrink: 0 }}>
-          <div className="row" style={{ gap: 8, alignItems: "center" }}>
-            <SessionIcon />
-            <div className="section-title">{copy.voiceHeadline}</div>
-          </div>
-          <div className="muted">{copy.voiceLead}</div>
-        </div>
+        <CoachCard
+          warm
+          style={{
+            flexShrink: 0,
+            borderRadius: 28,
+          }}
+        >
+          <div className="row" style={{ gap: 10, alignItems: "center" }}>
+            <SoftIconFrame tone="calm">
+              <SessionIcon size={18} />
+            </SoftIconFrame>
 
-        <div className="chat-surface">
+            <div className="stack" style={{ gap: 4 }}>
+              <div className="section-title">{copy.voiceHeadline}</div>
+              <div className="muted" style={{ color: "var(--coach-muted)" }}>
+                {copy.voiceLead}
+              </div>
+            </div>
+          </div>
+        </CoachCard>
+
+        <div
+          className="chat-surface"
+          style={{
+            borderRadius: 32,
+            border: "1px solid rgba(43,33,24,0.08)",
+            boxShadow: "0 18px 48px rgba(43,33,24,0.06)",
+          }}
+        >
           <VoiceSessionPanel
             key={`voice-${sessionId}-${uiLanguage}`}
             sessionId={sessionId}
@@ -654,15 +912,35 @@ function SessionPageContent() {
       </div>
     ) : sessionId ? (
       <div className="session-cockpit-column">
-        <div className="card stack" style={{ flexShrink: 0 }}>
-          <div className="row" style={{ gap: 8, alignItems: "center" }}>
-            <SessionIcon />
-            <div className="section-title">{copy.writtenHeadline}</div>
-          </div>
-          <div className="muted">{copy.writtenLead}</div>
-        </div>
+        <CoachCard
+          warm
+          style={{
+            flexShrink: 0,
+            borderRadius: 28,
+          }}
+        >
+          <div className="row" style={{ gap: 10, alignItems: "center" }}>
+            <SoftIconFrame tone="warm">
+              <SessionIcon size={18} />
+            </SoftIconFrame>
 
-        <div className="chat-surface">
+            <div className="stack" style={{ gap: 4 }}>
+              <div className="section-title">{copy.writtenHeadline}</div>
+              <div className="muted" style={{ color: "var(--coach-muted)" }}>
+                {copy.writtenLead}
+              </div>
+            </div>
+          </div>
+        </CoachCard>
+
+        <div
+          className="chat-surface"
+          style={{
+            borderRadius: 32,
+            border: "1px solid rgba(43,33,24,0.08)",
+            boxShadow: "0 18px 48px rgba(43,33,24,0.06)",
+          }}
+        >
           <ConversationPanel
             key={`written-${sessionId}-${uiLanguage}`}
             sessionId={sessionId}

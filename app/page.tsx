@@ -26,38 +26,167 @@ function LeanWorkerLogo() {
     >
       <div
         style={{
-          width: 52,
-          height: 52,
-          borderRadius: 16,
+          width: 54,
+          height: 54,
+          borderRadius: 18,
           display: "grid",
           placeItems: "center",
           background:
-            "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(16,185,129,0.14))",
-          border: "1px solid rgba(37,99,235,0.18)",
-          boxShadow: "0 10px 30px rgba(15,23,42,0.08)",
-          fontWeight: 800,
+            "linear-gradient(135deg, rgba(255,122,89,0.20), rgba(88,180,174,0.16))",
+          border: "1px solid rgba(43,33,24,0.08)",
+          boxShadow:
+            "0 14px 34px rgba(43,33,24,0.08), inset 0 1px 0 rgba(255,255,255,0.75)",
+          fontWeight: 950,
           fontSize: 22,
-          letterSpacing: "-0.04em",
+          letterSpacing: "-0.055em",
+          color: "var(--coach-ink)",
         }}
       >
-        <span
-          style={{
-            background: "linear-gradient(135deg, #2563eb, #10b981)",
-            WebkitBackgroundClip: "text",
-            color: "transparent",
-          }}
-        >
-          LW
-        </span>
+        LW
       </div>
 
       <div className="stack" style={{ gap: 2 }}>
-        <div className="title" style={{ fontSize: 28, margin: 0, lineHeight: 1 }}>
+        <div
+          style={{
+            fontSize: 28,
+            lineHeight: 1,
+            fontWeight: 950,
+            letterSpacing: "-0.06em",
+            color: "var(--coach-ink)",
+          }}
+        >
           LeanWorker
         </div>
-        <div className="muted" style={{ fontSize: 13 }}>
+
+        <div
+          className="muted"
+          style={{
+            fontSize: 13,
+            color: "var(--coach-muted)",
+          }}
+        >
           Career intelligence amplified
         </div>
+      </div>
+    </div>
+  );
+}
+
+function SoftFeatureCard({
+  icon,
+  title,
+  body,
+  tone = "warm",
+}: {
+  icon: React.ReactNode;
+  title: string;
+  body: string;
+  tone?: "warm" | "calm" | "neutral";
+}) {
+  const iconStyle =
+    tone === "calm"
+      ? {
+          background: "rgba(88,180,174,0.12)",
+          color: "var(--coach-calm)",
+          border: "1px solid rgba(88,180,174,0.20)",
+        }
+      : tone === "neutral"
+        ? {
+            background: "rgba(43,33,24,0.05)",
+            color: "var(--coach-muted)",
+            border: "1px solid rgba(43,33,24,0.08)",
+          }
+        : {
+            background: "rgba(255,122,89,0.12)",
+            color: "var(--coach-accent)",
+            border: "1px solid rgba(255,122,89,0.20)",
+          };
+
+  return (
+    <div
+      className="card-soft stack"
+      style={{
+        gap: 12,
+        minHeight: 154,
+        borderRadius: 26,
+        background: "rgba(255,255,255,0.68)",
+        border: "1px solid rgba(43,33,24,0.08)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.74)",
+      }}
+    >
+      <div
+        style={{
+          width: 38,
+          height: 38,
+          borderRadius: 15,
+          display: "grid",
+          placeItems: "center",
+          ...iconStyle,
+        }}
+      >
+        {icon}
+      </div>
+
+      <div className="stack" style={{ gap: 6 }}>
+        <div
+          className="section-title"
+          style={{
+            margin: 0,
+            color: "var(--coach-ink)",
+          }}
+        >
+          {title}
+        </div>
+
+        <div
+          className="muted"
+          style={{
+            color: "var(--coach-muted)",
+            lineHeight: 1.6,
+          }}
+        >
+          {body}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BulletLine({
+  children,
+  tone = "warm",
+}: {
+  children: React.ReactNode;
+  tone?: "warm" | "calm" | "neutral";
+}) {
+  const background =
+    tone === "calm"
+      ? "var(--coach-calm)"
+      : tone === "neutral"
+        ? "rgba(43,33,24,0.42)"
+        : "var(--coach-accent)";
+
+  return (
+    <div className="row" style={{ gap: 10, alignItems: "center" }}>
+      <div
+        style={{
+          width: 10,
+          height: 10,
+          borderRadius: 999,
+          background,
+          flexShrink: 0,
+          boxShadow: "0 0 0 5px rgba(255,255,255,0.70)",
+        }}
+      />
+
+      <div
+        className="muted"
+        style={{
+          color: "var(--coach-muted)",
+          lineHeight: 1.5,
+        }}
+      >
+        {children}
       </div>
     </div>
   );
@@ -107,9 +236,9 @@ export default function HomePage() {
         ? {
             eyebrow: "Plateforme de coaching carrière",
             heroTitle:
-              "Clarifie ta trajectoire. Transforme tes sessions en mouvement concret.",
+              "Clarifie ta trajectoire. Avance sans te perdre dans le bruit.",
             heroSubtitle:
-              "LeanWorker t’aide à comprendre ce que tu vis au travail, à relier tes enjeux à ta trajectoire, et à transformer chaque session en actions utiles.",
+              "LeanWorker t’aide à comprendre ce que tu vis au travail, à relier tes enjeux à ta trajectoire, puis à transformer tes sessions en actions utiles, réalistes et personnalisées.",
             checkingSession: "Vérification de ta session en cours...",
             checkingSessionBody:
               "Préparation de ton espace, de ta mémoire et de tes sessions.",
@@ -143,14 +272,17 @@ export default function HomePage() {
             secureAccess: "Accès sécurisé",
             bullet1: "Onboarding guidé et contextualisé",
             bullet2: "Expérience écrite et vocale",
-            bullet3: "Guides IA monétisables",
+            bullet3: "Guides IA personnalisés",
+            previewTitle: "Ton espace personnel",
+            previewBody:
+              "Un environnement calme pour réfléchir, décider, agir et suivre ta progression dans le temps.",
           }
         : {
             eyebrow: "Career coaching platform",
             heroTitle:
-              "Clarify your trajectory. Turn every session into concrete movement.",
+              "Clarify your trajectory. Move forward without getting lost in the noise.",
             heroSubtitle:
-              "LeanWorker helps you understand what is happening at work, connect your challenges to your trajectory, and turn each session into useful action.",
+              "LeanWorker helps you understand what is happening at work, connect your challenges to your trajectory, and turn your sessions into useful, realistic, personalized action.",
             checkingSession: "Checking your current session...",
             checkingSessionBody:
               "Preparing your workspace, memory, and sessions.",
@@ -184,7 +316,10 @@ export default function HomePage() {
             secureAccess: "Secure access",
             bullet1: "Guided and contextualized onboarding",
             bullet2: "Written and voice experience",
-            bullet3: "Monetizable AI guides",
+            bullet3: "Personalized AI guides",
+            previewTitle: "Your personal space",
+            previewBody:
+              "A calm environment to reflect, decide, act, and track your progress over time.",
           },
     [uiLanguage],
   );
@@ -193,12 +328,16 @@ export default function HomePage() {
     return (
       <main
         className="page"
+        translate="no"
+        suppressHydrationWarning
         style={{
           minHeight: "100vh",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           padding: "40px 20px",
+          background:
+            "radial-gradient(circle at 18% 12%, rgba(255,122,89,0.16), transparent 30%), radial-gradient(circle at 82% 78%, rgba(88,180,174,0.14), transparent 32%), var(--coach-bg)",
         }}
       >
         <div style={{ width: "100%", maxWidth: 760 }}>
@@ -206,17 +345,41 @@ export default function HomePage() {
             className="card stack center"
             style={{
               textAlign: "center",
-              minHeight: 280,
+              minHeight: 320,
               justifyContent: "center",
               gap: 16,
+              borderRadius: 32,
+              border: "1px solid rgba(43,33,24,0.08)",
+              background: "rgba(255,255,255,0.78)",
+              boxShadow: "0 24px 70px rgba(43,33,24,0.08)",
             }}
           >
             <LeanWorkerLogo />
+
             <BadgePill icon={<SparkIcon size={14} />}>{copy.eyebrow}</BadgePill>
-            <div className="title" style={{ margin: 0 }}>
+
+            <div
+              style={{
+                fontSize: 30,
+                lineHeight: 1.1,
+                fontWeight: 900,
+                letterSpacing: "-0.055em",
+                color: "var(--coach-ink)",
+              }}
+            >
               {copy.checkingSession}
             </div>
-            <div className="muted">{copy.checkingSessionBody}</div>
+
+            <div
+              className="muted"
+              style={{
+                color: "var(--coach-muted)",
+              }}
+            >
+              {copy.checkingSessionBody}
+            </div>
+
+            <div className="loader" />
           </div>
         </div>
       </main>
@@ -226,13 +389,15 @@ export default function HomePage() {
   return (
     <main
       className="page"
+      translate="no"
+      suppressHydrationWarning
       style={{
         minHeight: "100vh",
         display: "flex",
         alignItems: "center",
         padding: "40px 20px",
         background:
-          "radial-gradient(circle at top, rgba(37,99,235,0.06), transparent 38%), linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(248,250,252,1) 100%)",
+          "radial-gradient(circle at 12% 8%, rgba(255,122,89,0.18), transparent 32%), radial-gradient(circle at 88% 18%, rgba(88,180,174,0.14), transparent 28%), radial-gradient(circle at 60% 92%, rgba(255,241,220,0.80), transparent 34%), var(--coach-bg)",
       }}
     >
       <div
@@ -246,7 +411,7 @@ export default function HomePage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1.15fr 0.85fr",
+            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
             gap: 22,
             alignItems: "stretch",
           }}
@@ -258,23 +423,76 @@ export default function HomePage() {
               minHeight: 640,
               padding: 32,
               gap: 28,
+              position: "relative",
+              overflow: "hidden",
+              borderRadius: 34,
+              border: "1px solid rgba(43,33,24,0.08)",
+              background:
+                "linear-gradient(135deg, rgba(255,241,220,0.94), rgba(255,255,255,0.86) 54%, rgba(232,248,246,0.86))",
+              boxShadow: "0 24px 70px rgba(43,33,24,0.08)",
             }}
           >
-            <div className="stack" style={{ gap: 18 }}>
-              <div className="row space-between" style={{ alignItems: "center", gap: 12 }}>
+            <div
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                right: -120,
+                top: -130,
+                width: 330,
+                height: 330,
+                borderRadius: 999,
+                background: "rgba(255,122,89,0.16)",
+              }}
+            />
+
+            <div
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                left: "42%",
+                bottom: -150,
+                width: 360,
+                height: 360,
+                borderRadius: 999,
+                background: "rgba(88,180,174,0.14)",
+              }}
+            />
+
+            <div className="stack" style={{ gap: 18, position: "relative" }}>
+              <div
+                className="row space-between"
+                style={{
+                  alignItems: "center",
+                  gap: 12,
+                  flexWrap: "wrap",
+                }}
+              >
                 <LeanWorkerLogo />
-                <BadgePill icon={<SparkIcon size={14} />}>{copy.eyebrow}</BadgePill>
+
+                <span
+                  className="badge"
+                  style={{
+                    background: "rgba(255,122,89,0.12)",
+                    borderColor: "rgba(255,122,89,0.20)",
+                    color: "var(--coach-accent)",
+                    fontWeight: 850,
+                  }}
+                >
+                  <SparkIcon size={14} />
+                  {copy.eyebrow}
+                </span>
               </div>
 
-              <div className="stack" style={{ gap: 14 }}>
+              <div className="stack" style={{ gap: 16 }}>
                 <h1
-                  className="title"
                   style={{
                     margin: 0,
-                    fontSize: 44,
-                    lineHeight: 1.05,
-                    letterSpacing: "-0.04em",
-                    maxWidth: 760,
+                    fontSize: "clamp(38px, 5vw, 62px)",
+                    lineHeight: 0.98,
+                    letterSpacing: "-0.08em",
+                    maxWidth: 840,
+                    fontWeight: 950,
+                    color: "var(--coach-ink)",
                   }}
                 >
                   {copy.heroTitle}
@@ -284,9 +502,10 @@ export default function HomePage() {
                   className="subtitle"
                   style={{
                     margin: 0,
-                    maxWidth: 720,
+                    maxWidth: 760,
                     fontSize: 18,
-                    lineHeight: 1.6,
+                    lineHeight: 1.7,
+                    color: "var(--coach-muted)",
                   }}
                 >
                   {copy.heroSubtitle}
@@ -303,56 +522,70 @@ export default function HomePage() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
                 gap: 14,
+                position: "relative",
               }}
             >
-              <div className="card-soft stack" style={{ gap: 10, minHeight: 150 }}>
-                <div className="row" style={{ gap: 8, alignItems: "center" }}>
-                  <BrainIcon size={16} />
-                  <div className="section-title" style={{ margin: 0 }}>
-                    {copy.card1Title}
-                  </div>
-                </div>
-                <div className="muted">{copy.card1Body}</div>
-              </div>
+              <SoftFeatureCard
+                icon={<BrainIcon size={18} />}
+                title={copy.card1Title}
+                body={copy.card1Body}
+                tone="warm"
+              />
 
-              <div className="card-soft stack" style={{ gap: 10, minHeight: 150 }}>
-                <div className="row" style={{ gap: 8, alignItems: "center" }}>
-                  <PathIcon size={16} />
-                  <div className="section-title" style={{ margin: 0 }}>
-                    {copy.card2Title}
-                  </div>
-                </div>
-                <div className="muted">{copy.card2Body}</div>
-              </div>
+              <SoftFeatureCard
+                icon={<PathIcon size={18} />}
+                title={copy.card2Title}
+                body={copy.card2Body}
+                tone="calm"
+              />
 
-              <div className="card-soft stack" style={{ gap: 10, minHeight: 150 }}>
-                <div className="row" style={{ gap: 8, alignItems: "center" }}>
-                  <TargetIcon size={16} />
-                  <div className="section-title" style={{ margin: 0 }}>
-                    {copy.card3Title}
-                  </div>
-                </div>
-                <div className="muted">{copy.card3Body}</div>
-              </div>
+              <SoftFeatureCard
+                icon={<TargetIcon size={18} />}
+                title={copy.card3Title}
+                body={copy.card3Body}
+                tone="warm"
+              />
 
-              <div className="card-soft stack" style={{ gap: 10, minHeight: 150 }}>
-                <div className="row" style={{ gap: 8, alignItems: "center" }}>
-                  <SparkIcon size={16} />
-                  <div className="section-title" style={{ margin: 0 }}>
-                    {copy.card4Title}
-                  </div>
-                </div>
-                <div className="muted">{copy.card4Body}</div>
-              </div>
+              <SoftFeatureCard
+                icon={<SparkIcon size={18} />}
+                title={copy.card4Title}
+                body={copy.card4Body}
+                tone="neutral"
+              />
             </div>
 
-            <div className="card-soft stack" style={{ gap: 8 }}>
-              <div className="section-title" style={{ margin: 0 }}>
+            <div
+              className="card-soft stack"
+              style={{
+                gap: 8,
+                position: "relative",
+                borderRadius: 26,
+                background: "rgba(255,255,255,0.68)",
+                border: "1px solid rgba(43,33,24,0.08)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.74)",
+              }}
+            >
+              <div
+                className="section-title"
+                style={{
+                  margin: 0,
+                  color: "var(--coach-ink)",
+                }}
+              >
                 {copy.secondaryTitle}
               </div>
-              <div className="muted">{copy.secondaryBody}</div>
+
+              <div
+                className="muted"
+                style={{
+                  color: "var(--coach-muted)",
+                  lineHeight: 1.6,
+                }}
+              >
+                {copy.secondaryBody}
+              </div>
             </div>
           </section>
 
@@ -363,40 +596,114 @@ export default function HomePage() {
               minHeight: 640,
               padding: 32,
               gap: 24,
-              border: "1px solid rgba(37,99,235,0.10)",
-              boxShadow: "0 20px 60px rgba(15,23,42,0.08)",
+              position: "relative",
+              overflow: "hidden",
+              borderRadius: 34,
+              border: "1px solid rgba(43,33,24,0.08)",
+              background: "rgba(255,255,255,0.82)",
+              boxShadow: "0 24px 70px rgba(43,33,24,0.08)",
             }}
           >
-            <div className="stack" style={{ gap: 14 }}>
-              <BadgePill icon={<SparkIcon size={14} />}>
-                {copy.secureAccess}
-              </BadgePill>
+            <div
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                right: -90,
+                top: -90,
+                width: 240,
+                height: 240,
+                borderRadius: 999,
+                background: "rgba(255,122,89,0.12)",
+              }}
+            />
 
-              <div className="stack" style={{ gap: 8 }}>
-                <div className="title" style={{ fontSize: 30, margin: 0, lineHeight: 1.1 }}>
+            <div
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                left: -100,
+                bottom: -90,
+                width: 260,
+                height: 260,
+                borderRadius: 999,
+                background: "rgba(88,180,174,0.12)",
+              }}
+            />
+
+            <div className="stack" style={{ gap: 14, position: "relative" }}>
+              <span
+                className="badge"
+                style={{
+                  width: "fit-content",
+                  background: "rgba(88,180,174,0.12)",
+                  borderColor: "rgba(88,180,174,0.20)",
+                  color: "var(--coach-calm)",
+                  fontWeight: 850,
+                }}
+              >
+                <SparkIcon size={14} />
+                {copy.secureAccess}
+              </span>
+
+              <div className="stack" style={{ gap: 10 }}>
+                <div
+                  style={{
+                    fontSize: 34,
+                    lineHeight: 1.04,
+                    fontWeight: 950,
+                    letterSpacing: "-0.065em",
+                    color: "var(--coach-ink)",
+                  }}
+                >
                   {copy.panelTitle}
                 </div>
-                <div className="subtitle" style={{ margin: 0 }}>
+
+                <div
+                  className="subtitle"
+                  style={{
+                    margin: 0,
+                    color: "var(--coach-muted)",
+                    lineHeight: 1.65,
+                  }}
+                >
                   {copy.panelBody}
                 </div>
               </div>
             </div>
 
-            <div className="stack" style={{ gap: 16 }}>
+            <div className="stack" style={{ gap: 16, position: "relative" }}>
               <div
                 className="card-soft stack"
                 style={{
                   gap: 14,
-                  padding: 20,
+                  padding: 22,
+                  borderRadius: 28,
                   background:
-                    "linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,250,252,0.96))",
+                    "linear-gradient(180deg, rgba(255,248,239,0.90), rgba(255,255,255,0.78))",
+                  border: "1px solid rgba(43,33,24,0.08)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.74)",
                 }}
               >
                 <div className="stack" style={{ gap: 6 }}>
-                  <div className="section-title" style={{ margin: 0 }}>
+                  <div
+                    className="section-title"
+                    style={{
+                      margin: 0,
+                      color: "var(--coach-ink)",
+                    }}
+                  >
                     {uiLanguage === "fr" ? "Connexion LinkedIn" : "LinkedIn sign in"}
                   </div>
-                  <div className="muted">{copy.panelHint}</div>
+
+                  <div
+                    className="muted"
+                    style={{
+                      color: "var(--coach-muted)",
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    {copy.panelHint}
+                  </div>
                 </div>
 
                 <button
@@ -406,60 +713,76 @@ export default function HomePage() {
                   type="button"
                   style={{
                     width: "100%",
-                    minHeight: 50,
+                    minHeight: 52,
                     fontSize: 16,
+                    background: "var(--coach-accent)",
+                    boxShadow: "0 14px 30px rgba(255,122,89,0.22)",
                   }}
                 >
                   {loading ? copy.ctaLoading : copy.cta}
                 </button>
 
-                {error && <div style={{ color: "var(--danger)" }}>{error}</div>}
+                {error ? (
+                  <div
+                    className="card-soft"
+                    style={{
+                      color: "var(--danger)",
+                      background: "rgba(198,40,40,0.08)",
+                      border: "1px solid rgba(198,40,40,0.16)",
+                      borderRadius: 18,
+                    }}
+                  >
+                    {error}
+                  </div>
+                ) : null}
               </div>
 
-              <div className="stack" style={{ gap: 10 }}>
-                <div className="row" style={{ gap: 10, alignItems: "center" }}>
-                  <div
-                    style={{
-                      width: 10,
-                      height: 10,
-                      borderRadius: 999,
-                      background: "#10b981",
-                      flexShrink: 0,
-                    }}
-                  />
-                  <div className="muted">{copy.bullet1}</div>
-                </div>
-
-                <div className="row" style={{ gap: 10, alignItems: "center" }}>
-                  <div
-                    style={{
-                      width: 10,
-                      height: 10,
-                      borderRadius: 999,
-                      background: "#2563eb",
-                      flexShrink: 0,
-                    }}
-                  />
-                  <div className="muted">{copy.bullet2}</div>
-                </div>
-
-                <div className="row" style={{ gap: 10, alignItems: "center" }}>
-                  <div
-                    style={{
-                      width: 10,
-                      height: 10,
-                      borderRadius: 999,
-                      background: "#7c3aed",
-                      flexShrink: 0,
-                    }}
-                  />
-                  <div className="muted">{copy.bullet3}</div>
-                </div>
+              <div className="stack" style={{ gap: 11 }}>
+                <BulletLine tone="warm">{copy.bullet1}</BulletLine>
+                <BulletLine tone="calm">{copy.bullet2}</BulletLine>
+                <BulletLine tone="neutral">{copy.bullet3}</BulletLine>
               </div>
             </div>
 
-            <div className="muted" style={{ fontSize: 13, lineHeight: 1.6 }}>
-              {copy.bottomNote}
+            <div
+              className="card-soft stack"
+              style={{
+                gap: 8,
+                position: "relative",
+                borderRadius: 26,
+                background: "rgba(232,248,246,0.62)",
+                border: "1px solid rgba(88,180,174,0.18)",
+              }}
+            >
+              <div
+                className="section-title"
+                style={{
+                  margin: 0,
+                  color: "var(--coach-ink)",
+                }}
+              >
+                {copy.previewTitle}
+              </div>
+
+              <div
+                className="muted"
+                style={{
+                  color: "var(--coach-muted)",
+                  lineHeight: 1.6,
+                }}
+              >
+                {copy.previewBody}
+              </div>
+
+              <div
+                className="fine-print"
+                style={{
+                  color: "var(--coach-muted)",
+                  lineHeight: 1.55,
+                }}
+              >
+                {copy.bottomNote}
+              </div>
             </div>
           </aside>
         </div>

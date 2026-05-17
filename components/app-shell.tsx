@@ -27,7 +27,7 @@ export function AppShell({
     null;
 
   return (
-    <div className="app-shell">
+    <div className="app-shell coach-app-shell">
       <SidebarNav uiLanguage={uiLanguage} isAdmin={isAdmin} />
 
       <div className="main-shell">

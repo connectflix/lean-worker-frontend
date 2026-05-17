@@ -37,26 +37,119 @@ export function OfferPriceBlock({
 
   const formattedOriginal = formatPrice(originalPrice, currency);
   const formattedFinal = formatPrice(finalPrice, currency);
+  const formattedMin = formatPrice(priceMin, currency);
+  const formattedMax = formatPrice(priceMax, currency);
 
-  if (
-    !formattedFinal &&
+  const hasRange =
+    typeof priceMin === "number" &&
+    typeof priceMax === "number" &&
+    formattedMin &&
+    formattedMax;
+
+  const hasSingleMin =
+    typeof priceMin === "number" &&
+    typeof priceMax !== "number" &&
+    formattedMin;
+
+  const hasSingleMax =
+    typeof priceMax === "number" &&
     typeof priceMin !== "number" &&
-    typeof priceMax !== "number"
-  ) {
+    formattedMax;
+
+  if (!formattedFinal && !hasRange && !hasSingleMin && !hasSingleMax) {
     return null;
   }
 
   return (
-    <div className="offer-price-wrap">
+    <div
+      className="offer-price-wrap"
+      style={{
+        alignItems: "flex-end",
+        minWidth: 118,
+      }}
+    >
       {hasDiscount && formattedOriginal ? (
-        <div className="offer-price-original">{formattedOriginal}</div>
+        <div
+          className="offer-price-original"
+          style={{
+            color: "var(--coach-muted)",
+            fontSize: 13,
+            fontWeight: 650,
+            opacity: 0.72,
+          }}
+        >
+          {formattedOriginal}
+        </div>
       ) : null}
 
       {formattedFinal ? (
-        <div className="offer-price-final">{formattedFinal}</div>
-      ) : typeof priceMin === "number" && typeof priceMax === "number" ? (
-        <div className="offer-price-range">
-          {formatPrice(priceMin, currency)} – {formatPrice(priceMax, currency)}
+        <div
+          className="offer-price-final"
+          style={{
+            color: "var(--coach-ink)",
+            fontSize: 26,
+            fontWeight: 950,
+            letterSpacing: "-0.055em",
+            lineHeight: 1,
+          }}
+        >
+          {formattedFinal}
+        </div>
+      ) : hasRange ? (
+        <div
+          className="offer-price-range"
+          style={{
+            color: "var(--coach-ink)",
+            fontSize: 20,
+            fontWeight: 900,
+            letterSpacing: "-0.045em",
+            lineHeight: 1.1,
+            textAlign: "right",
+          }}
+        >
+          {formattedMin} – {formattedMax}
+        </div>
+      ) : hasSingleMin ? (
+        <div
+          className="offer-price-range"
+          style={{
+            color: "var(--coach-ink)",
+            fontSize: 20,
+            fontWeight: 900,
+            letterSpacing: "-0.045em",
+            lineHeight: 1.1,
+            textAlign: "right",
+          }}
+        >
+          {formattedMin}
+        </div>
+      ) : hasSingleMax ? (
+        <div
+          className="offer-price-range"
+          style={{
+            color: "var(--coach-ink)",
+            fontSize: 20,
+            fontWeight: 900,
+            letterSpacing: "-0.045em",
+            lineHeight: 1.1,
+            textAlign: "right",
+          }}
+        >
+          {formattedMax}
+        </div>
+      ) : null}
+
+      {hasDiscount ? (
+        <div
+          className="fine-print"
+          style={{
+            marginTop: 5,
+            color: "var(--coach-accent)",
+            fontWeight: 800,
+            letterSpacing: "-0.01em",
+          }}
+        >
+          Better value
         </div>
       ) : null}
     </div>

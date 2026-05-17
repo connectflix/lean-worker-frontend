@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext } from "react";
+import { createContext, useContext, type ReactNode } from "react";
 import type { Me } from "@/lib/types";
 
 type UserContextValue = {
@@ -15,15 +15,17 @@ export function UserProvider({
   children,
 }: {
   value: UserContextValue;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 }
 
 export function useCurrentUser() {
   const context = useContext(UserContext);
+
   if (!context) {
     throw new Error("useCurrentUser must be used within a UserProvider");
   }
+
   return context;
 }

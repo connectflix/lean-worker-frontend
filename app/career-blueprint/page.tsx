@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
@@ -8,6 +8,7 @@ import { useCurrentUser } from "@/components/user-context";
 import {
   BadgePill,
   ChartIcon,
+  CheckCircleIcon,
   PathIcon,
   SparkIcon,
   TargetIcon,
@@ -72,6 +73,94 @@ type CareerGap = {
 
 const LEVELS: Level[] = ["Starter", "Junior", "Senior", "Expert", "Master", "Elite"];
 
+const DEFAULT_STARTING_POINT: StartingPoint = {
+  my_profession_percent: 20,
+  my_work_percent: 20,
+  chore_percent: 20,
+  destiny_percent: 20,
+  hobby_percent: 20,
+};
+
+function CoachSectionCard({
+  children,
+  warm = false,
+}: {
+  children: ReactNode;
+  warm?: boolean;
+}) {
+  return (
+    <div
+      className="card stack"
+      style={{
+        gap: 18,
+        borderRadius: 30,
+        border: "1px solid rgba(43,33,24,0.08)",
+        background: warm
+          ? "linear-gradient(135deg, rgba(255,241,220,0.96), rgba(255,255,255,0.92) 55%, rgba(232,248,246,0.82))"
+          : "rgba(255,255,255,0.80)",
+        boxShadow: "0 22px 60px rgba(43,33,24,0.07)",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function SelectableLevelCard({
+  level,
+  selected,
+  onClick,
+}: {
+  level: Level;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="card stack"
+      onClick={onClick}
+      style={{
+        gap: 8,
+        textAlign: "center",
+        cursor: "pointer",
+        borderRadius: 22,
+        border: selected
+          ? "2px solid var(--coach-accent)"
+          : "1px solid rgba(43,33,24,0.08)",
+        background: selected
+          ? "linear-gradient(135deg, rgba(255,122,89,0.14), rgba(255,255,255,0.88))"
+          : "rgba(255,255,255,0.72)",
+        boxShadow: selected
+          ? "0 14px 34px rgba(255,122,89,0.12)"
+          : "0 8px 24px rgba(43,33,24,0.04)",
+      }}
+    >
+      <div
+        className="row"
+        style={{
+          gap: 8,
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        {selected ? <CheckCircleIcon size={15} /> : <TargetIcon size={15} />}
+
+        <div
+          className="section-title"
+          style={{
+            margin: 0,
+            fontSize: 15,
+            color: "var(--coach-ink)",
+          }}
+        >
+          {level}
+        </div>
+      </div>
+    </button>
+  );
+}
+
 export default function CareerBlueprintPage() {
   return (
     <AuthGuard>
@@ -90,7 +179,7 @@ function CareerBlueprintContent() {
   const [stepIndex, setStepIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
-  const [, setCareerGap] = useState<CareerGap | null>(null);
+  const [careerGap, setCareerGap] = useState<CareerGap | null>(null);
 
   const [form, setForm] = useState<FormState>({
     identity_text: "",
@@ -114,13 +203,7 @@ function CareerBlueprintContent() {
       target_role: "",
       target_level: null,
     },
-    starting_point: {
-      my_profession_percent: 20,
-      my_work_percent: 20,
-      chore_percent: 20,
-      destiny_percent: 20,
-      hobby_percent: 20,
-    },
+    starting_point: DEFAULT_STARTING_POINT,
     is_completed: false,
   });
 
@@ -166,13 +249,7 @@ function CareerBlueprintContent() {
               target_role: blueprint.long_term_goal?.target_role || "",
               target_level: blueprint.long_term_goal?.target_level ?? null,
             },
-            starting_point: blueprint.starting_point || {
-              my_profession_percent: 20,
-              my_work_percent: 20,
-              chore_percent: 20,
-              destiny_percent: 20,
-              hobby_percent: 20,
-            },
+            starting_point: blueprint.starting_point || DEFAULT_STARTING_POINT,
             is_completed: blueprint.is_completed ?? false,
           });
         }
@@ -198,9 +275,16 @@ function CareerBlueprintContent() {
         saved: "Blueprint enregistré.",
         back: "Retour",
         next: "Continuer",
-        finish: "Terminer",
-        loading: "Chargement...",
+        finish: "Retour au tableau de bord",
+        loading: "Chargement du blueprint...",
+        progress: "Progression",
+        activeBlueprint: "Blueprint actif",
+        incompleteBlueprint: "Blueprint à compléter",
+        journey: "Parcours personnel",
         stepLabel: (current: number, total: number) => `Étape ${current} sur ${total}`,
+        noGap: "Aucun écart majeur détecté pour le moment.",
+        totalMustBe100: "La somme doit faire 100%.",
+        currentSignals: "Signaux actuels",
         steps: [
           {
             key: "identity",
@@ -254,11 +338,6 @@ function CareerBlueprintContent() {
               "Qui t’inspire aujourd’hui, et qui rêves-tu d’égaler un jour ?",
           },
         ],
-        currentRole: "Aujourd’hui",
-        shortTermGap: "Écart court terme",
-        midTermGap: "Écart moyen terme",
-        longTermGap: "Écart long terme",
-        levelGap: "Écart de niveau",
       };
     }
 
@@ -272,9 +351,16 @@ function CareerBlueprintContent() {
       saved: "Blueprint saved.",
       back: "Back",
       next: "Continue",
-      finish: "Finish",
-      loading: "Loading...",
+      finish: "Back to dashboard",
+      loading: "Loading blueprint...",
+      progress: "Progress",
+      activeBlueprint: "Blueprint active",
+      incompleteBlueprint: "Blueprint to complete",
+      journey: "Personal journey",
       stepLabel: (current: number, total: number) => `Step ${current} of ${total}`,
+      noGap: "No major gap detected for now.",
+      totalMustBe100: "The total must equal 100%.",
+      currentSignals: "Current signals",
       steps: [
         {
           key: "identity",
@@ -326,11 +412,6 @@ function CareerBlueprintContent() {
             "Who inspires you most today, and who do you dream of equaling one day?",
         },
       ],
-      currentRole: "Today",
-      shortTermGap: "Short-term gap",
-      midTermGap: "Mid-term gap",
-      longTermGap: "Long-term gap",
-      levelGap: "Level gap",
     };
   }, [uiLanguage]);
 
@@ -386,6 +467,7 @@ function CareerBlueprintContent() {
       }));
 
       setSaved(true);
+
       const refreshedGap = await getCareerGap();
       setCareerGap(refreshedGap);
     } catch (err) {
@@ -417,8 +499,15 @@ function CareerBlueprintContent() {
         className="textarea"
         rows={7}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
+        style={{
+          borderRadius: 22,
+          borderColor: "rgba(43,33,24,0.10)",
+          background: "rgba(255,255,255,0.82)",
+          lineHeight: 1.7,
+          minHeight: 220,
+        }}
       />
     );
   }
@@ -428,39 +517,51 @@ function CareerBlueprintContent() {
     data: Horizon,
   ) {
     return (
-      <div className="stack" style={{ gap: 14 }}>
+      <div className="stack" style={{ gap: 18 }}>
         <input
           className="input"
           value={data.target_role}
-          onChange={(e) => updateHorizon(key, { target_role: e.target.value })}
+          onChange={(event) => updateHorizon(key, { target_role: event.target.value })}
           placeholder={uiLanguage === "fr" ? "Rôle cible" : "Target role"}
+          style={{
+            minHeight: 54,
+            borderRadius: 18,
+            borderColor: "rgba(43,33,24,0.10)",
+            background: "rgba(255,255,255,0.82)",
+          }}
         />
-
-        <select
-          className="input"
-          value={data.target_level ?? ""}
-          onChange={(e) =>
-            updateHorizon(key, {
-              target_level: e.target.value ? (e.target.value as Level) : null,
-            })
-          }
-        >
-          <option value="">{uiLanguage === "fr" ? "Niveau cible" : "Target level"}</option>
-          {LEVELS.map((level) => (
-            <option key={level} value={level}>
-              {level}
-            </option>
-          ))}
-        </select>
 
         <input
           className="input"
           value={data.target_compensation}
-          onChange={(e) =>
-            updateHorizon(key, { target_compensation: e.target.value })
+          onChange={(event) =>
+            updateHorizon(key, { target_compensation: event.target.value })
           }
           placeholder={uiLanguage === "fr" ? "Compensation cible" : "Target compensation"}
+          style={{
+            minHeight: 54,
+            borderRadius: 18,
+            borderColor: "rgba(43,33,24,0.10)",
+            background: "rgba(255,255,255,0.82)",
+          }}
         />
+
+        <div className="stack" style={{ gap: 10 }}>
+          <div className="muted" style={{ color: "var(--coach-muted)" }}>
+            {uiLanguage === "fr" ? "Niveau cible" : "Target level"}
+          </div>
+
+          <div className="grid grid-3">
+            {LEVELS.map((level) => (
+              <SelectableLevelCard
+                key={level}
+                level={level}
+                selected={data.target_level === level}
+                onClick={() => updateHorizon(key, { target_level: level })}
+              />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -497,30 +598,67 @@ function CareerBlueprintContent() {
     ];
 
     return (
-      <div className="stack" style={{ gap: 16 }}>
+      <div className="stack" style={{ gap: 18 }}>
         {rows.map((row) => (
-          <div key={row.key} className="stack" style={{ gap: 8 }}>
+          <div
+            key={row.key}
+            className="card-soft stack"
+            style={{
+              gap: 10,
+              borderRadius: 22,
+              background: "rgba(255,248,239,0.74)",
+              border: "1px solid rgba(43,33,24,0.08)",
+            }}
+          >
             <div className="row space-between">
-              <span>{row.label}</span>
-              <strong>{form.starting_point[row.key]}%</strong>
+              <span style={{ fontWeight: 700, color: "var(--coach-ink)" }}>
+                {row.label}
+              </span>
+              <strong style={{ color: "var(--coach-accent)" }}>
+                {form.starting_point[row.key]}%
+              </strong>
             </div>
+
             <input
               type="range"
               min={0}
               max={100}
               step={5}
               value={form.starting_point[row.key]}
-              onChange={(e) => updateStartingPoint(row.key, Number(e.target.value))}
+              onChange={(event) => updateStartingPoint(row.key, Number(event.target.value))}
+              style={{
+                width: "100%",
+                accentColor: "var(--coach-accent)",
+              }}
             />
           </div>
         ))}
 
-        <div className="card-soft row space-between">
+        <div
+          className="card-soft row space-between"
+          style={{
+            borderRadius: 22,
+            background:
+              total === 100
+                ? "rgba(88,180,174,0.10)"
+                : "rgba(198,40,40,0.08)",
+            border:
+              total === 100
+                ? "1px solid rgba(88,180,174,0.18)"
+                : "1px solid rgba(198,40,40,0.16)",
+          }}
+        >
           <strong>{uiLanguage === "fr" ? "Total" : "Total"}</strong>
-          <strong style={{ color: total === 100 ? "var(--success)" : "var(--danger)" }}>
+          <strong style={{ color: total === 100 ? "var(--coach-calm)" : "var(--danger)" }}>
             {total}%
           </strong>
         </div>
+
+        {total !== 100 ? (
+          <div className="muted" style={{ color: "var(--danger)" }}>
+            {copy.totalMustBe100}
+          </div>
+        ) : null}
       </div>
     );
   }
@@ -577,18 +715,39 @@ function CareerBlueprintContent() {
 
       case "inspiration":
         return (
-          <div className="stack" style={{ gap: 14 }}>
+          <div className="stack" style={{ gap: 16 }}>
             <input
               className="input"
               value={form.inspiration_person}
-              onChange={(e) => updateField("inspiration_person", e.target.value)}
-              placeholder={uiLanguage === "fr" ? "Personne qui t’inspire" : "Person who inspires you"}
+              onChange={(event) => updateField("inspiration_person", event.target.value)}
+              placeholder={
+                uiLanguage === "fr"
+                  ? "Personne qui t’inspire"
+                  : "Person who inspires you"
+              }
+              style={{
+                minHeight: 54,
+                borderRadius: 18,
+                borderColor: "rgba(43,33,24,0.10)",
+                background: "rgba(255,255,255,0.82)",
+              }}
             />
+
             <input
               className="input"
               value={form.aspiration_person}
-              onChange={(e) => updateField("aspiration_person", e.target.value)}
-              placeholder={uiLanguage === "fr" ? "Personne que tu rêves d’égaler" : "Person you dream of equaling"}
+              onChange={(event) => updateField("aspiration_person", event.target.value)}
+              placeholder={
+                uiLanguage === "fr"
+                  ? "Personne que tu rêves d’égaler"
+                  : "Person you dream of equaling"
+              }
+              style={{
+                minHeight: 54,
+                borderRadius: 18,
+                borderColor: "rgba(43,33,24,0.10)",
+                background: "rgba(255,255,255,0.82)",
+              }}
             />
           </div>
         );
@@ -635,9 +794,28 @@ function CareerBlueprintContent() {
 
   if (loading) {
     return (
-      <main className="page">
+      <main
+        className="page"
+        style={{
+          minHeight: "100vh",
+          background: "var(--coach-bg)",
+          padding: 24,
+        }}
+      >
         <div className="page-wrap">
-          <div className="card">{copy.loading}</div>
+          <CoachSectionCard warm>
+            <div className="row" style={{ gap: 12, alignItems: "center" }}>
+              <div className="loader" />
+              <div className="stack" style={{ gap: 4 }}>
+                <div className="section-title">{copy.loading}</div>
+                <div className="muted" style={{ color: "var(--coach-muted)" }}>
+                  {uiLanguage === "fr"
+                    ? "Nous récupérons ta trajectoire et ton point de départ."
+                    : "We are retrieving your trajectory and starting point."}
+                </div>
+              </div>
+            </div>
+          </CoachSectionCard>
         </div>
       </main>
     );
@@ -645,110 +823,335 @@ function CareerBlueprintContent() {
 
   return (
     <AppShell uiLanguage={uiLanguage} title={copy.shellTitle}>
-      <div
-        className="card stack"
-        style={{
-          background:
-            "linear-gradient(180deg, rgba(255,255,255,0.92), rgba(248,250,252,0.95))",
-        }}
-      >
-        <div className="row" style={{ gap: 8, alignItems: "center" }}>
-          <PathIcon />
-          <h1 className="title">{copy.title}</h1>
-        </div>
-
-        <p className="subtitle">{copy.subtitle}</p>
-
-        <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
-          <BadgePill icon={<SparkIcon size={14} />}>
-            {copy.stepLabel(stepIndex + 1, totalSteps)}
-          </BadgePill>
-          <BadgePill icon={<ChartIcon size={14} />}>{progress}%</BadgePill>
-        </div>
-
+      <div className="stack" style={{ gap: 18 }}>
         <div
+          className="card stack"
           style={{
-            width: "100%",
-            height: 8,
-            background: "var(--border)",
-            borderRadius: 999,
+            gap: 18,
+            position: "relative",
             overflow: "hidden",
+            borderRadius: 32,
+            border: "1px solid rgba(43,33,24,0.08)",
+            background:
+              "linear-gradient(135deg, rgba(255,241,220,0.96), rgba(255,255,255,0.92) 52%, rgba(232,248,246,0.88))",
+            boxShadow: "0 22px 60px rgba(43,33,24,0.07)",
           }}
         >
           <div
+            aria-hidden="true"
             style={{
-              width: `${progress}%`,
-              height: "100%",
-              background: "var(--primary)",
-              transition: "width 220ms ease",
+              position: "absolute",
+              right: -110,
+              top: -130,
+              width: 310,
+              height: 310,
+              borderRadius: 999,
+              background: "rgba(255,122,89,0.16)",
             }}
           />
-        </div>
-      </div>
 
-      <div className="card stack" style={{ minHeight: 420, justifyContent: "space-between" }}>
-        <div className="stack" style={{ gap: 20 }}>
-          <div className="stack" style={{ gap: 8 }}>
-            <div className="row" style={{ gap: 8, alignItems: "center" }}>
-              <TargetIcon />
-              <h1 className="title" style={{ margin: 0 }}>
-                {currentStep.title}
-              </h1>
+          <div
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              left: "46%",
+              bottom: -150,
+              width: 340,
+              height: 340,
+              borderRadius: 999,
+              background: "rgba(88,180,174,0.14)",
+            }}
+          />
+
+          <div className="stack" style={{ gap: 16, position: "relative" }}>
+            <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
+              <BadgePill icon={<PathIcon size={14} />}>{copy.title}</BadgePill>
+
+              <BadgePill icon={<SparkIcon size={14} />}>
+                {form.is_completed ? copy.activeBlueprint : copy.incompleteBlueprint}
+              </BadgePill>
+
+              <BadgePill icon={<ChartIcon size={14} />}>
+                {copy.progress} {progress}%
+              </BadgePill>
             </div>
-            <p className="subtitle" style={{ margin: 0 }}>
-              {currentStep.subtitle}
-            </p>
-          </div>
 
-          {renderStepContent()}
-        </div>
-
-        <div className="stack" style={{ gap: 12 }}>
-          {error && <div style={{ color: "var(--danger)" }}>{error}</div>}
-          {saved && <div style={{ color: "var(--success)" }}>{copy.saved}</div>}
-
-          <div className="row space-between" style={{ gap: 12 }}>
-            <button
-              className="button ghost"
-              type="button"
-              onClick={goBack}
-              disabled={stepIndex === 0 || saving}
+            <div
+              style={{
+                maxWidth: 920,
+                fontSize: 44,
+                lineHeight: 1.02,
+                fontWeight: 950,
+                letterSpacing: "-0.07em",
+                color: "var(--coach-ink)",
+              }}
             >
-              {copy.back}
-            </button>
+              {uiLanguage === "fr"
+                ? "Dessine la trajectoire qui doit guider ton coaching."
+                : "Shape the trajectory that should guide your coaching."}
+            </div>
 
-            {stepIndex < totalSteps - 1 ? (
-              <button
-                className="button"
-                type="button"
-                onClick={goNext}
-                disabled={!canGoNext || saving}
-              >
-                {copy.next}
-              </button>
-            ) : (
-              <button
-                className="button"
-                type="button"
-                onClick={handleSave}
-                disabled={!canGoNext || saving}
-              >
-                {saving ? copy.saving : copy.save}
-              </button>
-            )}
+            <p
+              className="subtitle"
+              style={{
+                maxWidth: 760,
+                color: "var(--coach-muted)",
+                fontSize: 16,
+                lineHeight: 1.7,
+              }}
+            >
+              {copy.subtitle}
+            </p>
+
+            <div
+              style={{
+                width: "100%",
+                height: 10,
+                background: "rgba(43,33,24,0.08)",
+                borderRadius: 999,
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  width: `${progress}%`,
+                  height: "100%",
+                  background:
+                    "linear-gradient(90deg, var(--coach-accent), var(--coach-calm))",
+                  transition: "width 220ms ease",
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div
+          className="grid"
+          style={{
+            gridTemplateColumns: "minmax(260px, 0.72fr) minmax(0, 1.28fr)",
+            gap: 18,
+            alignItems: "start",
+          }}
+        >
+          <div className="stack" style={{ gap: 18 }}>
+            <CoachSectionCard>
+              <div className="section-title">{copy.journey}</div>
+
+              <div className="stack" style={{ gap: 8 }}>
+                {steps.map((step, index) => {
+                  const active = index === stepIndex;
+                  const done = index < stepIndex;
+
+                  return (
+                    <button
+                      key={step.key}
+                      type="button"
+                      onClick={() => setStepIndex(index)}
+                      className="row"
+                      style={{
+                        width: "100%",
+                        gap: 10,
+                        padding: "10px 12px",
+                        borderRadius: 18,
+                        border: active
+                          ? "1px solid rgba(255,122,89,0.22)"
+                          : "1px solid transparent",
+                        background: active
+                          ? "rgba(255,122,89,0.12)"
+                          : done
+                            ? "rgba(88,180,174,0.10)"
+                            : "transparent",
+                        color: active ? "var(--coach-accent)" : "var(--coach-muted)",
+                        cursor: "pointer",
+                        textAlign: "left",
+                      }}
+                    >
+                      {done ? <CheckCircleIcon size={15} /> : <TargetIcon size={15} />}
+
+                      <span
+                        style={{
+                          fontSize: 13,
+                          fontWeight: active ? 850 : 650,
+                        }}
+                      >
+                        {step.title}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </CoachSectionCard>
+
+            <CoachSectionCard warm>
+              <div className="section-title">{copy.currentSignals}</div>
+
+              <div className="muted" style={{ color: "var(--coach-muted)", lineHeight: 1.65 }}>
+                {careerGap?.key_gap_summary || copy.noGap}
+              </div>
+
+              <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                {careerGap?.role_gap_short_term ? (
+                  <BadgePill icon={<TargetIcon size={14} />}>
+                    {uiLanguage === "fr" ? "Écart court terme" : "Short-term gap"}
+                  </BadgePill>
+                ) : null}
+
+                {careerGap?.role_gap_mid_term ? (
+                  <BadgePill icon={<PathIcon size={14} />}>
+                    {uiLanguage === "fr" ? "Écart moyen terme" : "Mid-term gap"}
+                  </BadgePill>
+                ) : null}
+
+                {careerGap?.role_gap_long_term ? (
+                  <BadgePill icon={<ChartIcon size={14} />}>
+                    {uiLanguage === "fr" ? "Écart long terme" : "Long-term gap"}
+                  </BadgePill>
+                ) : null}
+
+                {!careerGap?.role_gap_short_term &&
+                !careerGap?.role_gap_mid_term &&
+                !careerGap?.role_gap_long_term ? (
+                  <BadgePill icon={<CheckCircleIcon size={14} />}>
+                    {uiLanguage === "fr" ? "Lecture stable" : "Stable reading"}
+                  </BadgePill>
+                ) : null}
+              </div>
+            </CoachSectionCard>
           </div>
 
-          {form.is_completed ? (
-            <div className="row" style={{ justifyContent: "flex-end" }}>
-              <button
-                className="button ghost"
-                type="button"
-                onClick={() => router.push("/dashboard")}
-              >
-                {copy.finish}
-              </button>
+          <CoachSectionCard>
+            <div
+              className="stack"
+              style={{
+                gap: 24,
+                minHeight: 560,
+                justifyContent: "space-between",
+              }}
+            >
+              <div className="stack" style={{ gap: 22 }}>
+                <div className="stack" style={{ gap: 10 }}>
+                  <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                    <BadgePill icon={<SparkIcon size={14} />}>
+                      {copy.stepLabel(stepIndex + 1, totalSteps)}
+                    </BadgePill>
+
+                    <BadgePill icon={<TargetIcon size={14} />}>
+                      {progress}%
+                    </BadgePill>
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: 34,
+                      lineHeight: 1.08,
+                      fontWeight: 950,
+                      letterSpacing: "-0.06em",
+                      color: "var(--coach-ink)",
+                    }}
+                  >
+                    {currentStep.title}
+                  </div>
+
+                  <p
+                    className="subtitle"
+                    style={{
+                      margin: 0,
+                      color: "var(--coach-muted)",
+                      lineHeight: 1.7,
+                      maxWidth: 720,
+                    }}
+                  >
+                    {currentStep.subtitle}
+                  </p>
+                </div>
+
+                {renderStepContent()}
+              </div>
+
+              <div className="stack" style={{ gap: 14 }}>
+                {error ? (
+                  <div
+                    className="card-soft"
+                    style={{
+                      color: "var(--danger)",
+                      borderRadius: 20,
+                      background: "rgba(198,40,40,0.08)",
+                      border: "1px solid rgba(198,40,40,0.16)",
+                    }}
+                  >
+                    {error}
+                  </div>
+                ) : null}
+
+                {saved ? (
+                  <div
+                    className="card-soft"
+                    style={{
+                      color: "var(--coach-calm)",
+                      borderRadius: 20,
+                      background: "rgba(88,180,174,0.10)",
+                      border: "1px solid rgba(88,180,174,0.18)",
+                    }}
+                  >
+                    {copy.saved}
+                  </div>
+                ) : null}
+
+                <div className="row space-between" style={{ gap: 12, flexWrap: "wrap" }}>
+                  <button
+                    className="button ghost"
+                    type="button"
+                    onClick={goBack}
+                    disabled={stepIndex === 0 || saving}
+                  >
+                    {copy.back}
+                  </button>
+
+                  {stepIndex < totalSteps - 1 ? (
+                    <button
+                      className="button"
+                      type="button"
+                      onClick={goNext}
+                      disabled={!canGoNext || saving}
+                      style={{
+                        background: "var(--coach-accent)",
+                        minHeight: 46,
+                        paddingInline: 22,
+                      }}
+                    >
+                      {copy.next}
+                    </button>
+                  ) : (
+                    <button
+                      className="button"
+                      type="button"
+                      onClick={() => void handleSave()}
+                      disabled={!canGoNext || saving}
+                      style={{
+                        background: "var(--coach-accent)",
+                        minHeight: 46,
+                        paddingInline: 22,
+                      }}
+                    >
+                      {saving ? copy.saving : copy.save}
+                    </button>
+                  )}
+                </div>
+
+                {form.is_completed ? (
+                  <div className="row" style={{ justifyContent: "flex-end" }}>
+                    <button
+                      className="button ghost"
+                      type="button"
+                      onClick={() => router.push("/dashboard")}
+                    >
+                      {copy.finish}
+                    </button>
+                  </div>
+                ) : null}
+              </div>
             </div>
-          ) : null}
+          </CoachSectionCard>
         </div>
       </div>
     </AppShell>

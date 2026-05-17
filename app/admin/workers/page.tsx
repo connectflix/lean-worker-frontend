@@ -4132,6 +4132,7 @@ function AdminWorkersContent() {
         clearTimeout(engagementAutoSaveTimerRef.current);
       }
     };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [engagementForm, engagementCanvasLoaded, viewMode, isFutureStateLocked]);
 
   useEffect(() => {
@@ -4159,6 +4160,7 @@ function AdminWorkersContent() {
         clearTimeout(purposeAutoSaveTimerRef.current);
       }
     };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [purposeForm, purposeCanvasLoaded, viewMode]);
 
   useEffect(() => {
@@ -4186,6 +4188,7 @@ function AdminWorkersContent() {
         clearTimeout(timeAutoSaveTimerRef.current);
       }
     };
+     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeForm, timeCanvasLoaded, viewMode, timeReadinessScore, timeReadinessStatus, timeSummary]);
 
   useEffect(() => {
@@ -4213,6 +4216,7 @@ function AdminWorkersContent() {
         clearTimeout(significanceAutoSaveTimerRef.current);
       }
     };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     significanceForm,
     significanceCanvasLoaded,

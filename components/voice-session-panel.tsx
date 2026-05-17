@@ -177,7 +177,7 @@ function getCoachStyleLabel(
   mode: string | undefined,
   intent: string | undefined,
   uiLanguage: SupportedUiLanguage,
-): string | null {
+): string {
   const key = `${mode || ""}:${intent || ""}`;
 
   const labels =
@@ -317,6 +317,11 @@ export function VoiceSessionPanel({
 
   const earconContextRef = useRef<AudioContext | null>(null);
   const lastEarconRef = useRef<string>("");
+  const onCoachStateChangeRef = useRef<typeof onCoachStateChange>(onCoachStateChange);
+
+  useEffect(() => {
+    onCoachStateChangeRef.current = onCoachStateChange;
+  }, [onCoachStateChange]);
 
   useEffect(() => {
     voiceEnabledRef.current = voiceEnabled;
@@ -339,13 +344,10 @@ export function VoiceSessionPanel({
         if (latestCoachState) {
           setCoachMode(latestCoachState.coachMode);
           setCoachIntent(latestCoachState.coachIntent);
-
-          if (onCoachStateChange) {
-            onCoachStateChange(latestCoachState);
-          }
+          onCoachStateChangeRef.current?.(latestCoachState);
         }
       } catch {
-        // ignore bootstrap detail errors
+        // Silent bootstrap fallback: the voice experience can still start.
       } finally {
         if (!cancelled) {
           setBootstrapping(false);
@@ -365,8 +367,9 @@ export function VoiceSessionPanel({
         earconContextRef.current = null;
       }
     };
+    // cleanupAllResources intentionally stays local to the component lifecycle.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId, onCoachStateChange]);
+  }, [sessionId]);
 
   useEffect(() => {
     const key = `${stage}:${voiceEnabled ? "on" : "off"}`;
@@ -403,8 +406,8 @@ export function VoiceSessionPanel({
         uiLanguage === "fr" ? "Clôturer la session" : "Close session",
       voiceDescription:
         uiLanguage === "fr"
-          ? "L’échange se fait uniquement par la voix. Tu parles naturellement, le système détecte la fin de ton tour, puis le coach répond avec la même voix."
-          : "The interaction happens only through voice. You speak naturally, the system detects the end of your turn, then the coach responds with the same voice.",
+          ? "Parle naturellement. Le coach détecte la fin de ton tour, réfléchit, puis te répond par la voix."
+          : "Speak naturally. The coach detects the end of your turn, thinks, then answers by voice.",
       loading:
         uiLanguage === "fr"
           ? "Préparation de l’espace vocal..."
@@ -439,9 +442,15 @@ export function VoiceSessionPanel({
         uiLanguage === "fr" ? "Présence vocale" : "Voice presence",
       soundPresenceText:
         uiLanguage === "fr"
-          ? "Conversation audio immersive."
-          : "Immersive audio conversation.",
+          ? "Conversation audio immersive et continue."
+          : "Immersive and continuous audio conversation.",
       audioMeter: uiLanguage === "fr" ? "Niveau micro" : "Mic level",
+      sessionId: uiLanguage === "fr" ? "Session" : "Session",
+      readiness: uiLanguage === "fr" ? "Prêt quand tu l’es" : "Ready when you are",
+      softInstruction:
+        uiLanguage === "fr"
+          ? "Respire, parle simplement, et laisse le coach t’accompagner pas à pas."
+          : "Breathe, speak naturally, and let the coach guide you step by step.",
     };
   }, [uiLanguage]);
 
@@ -502,16 +511,16 @@ export function VoiceSessionPanel({
       };
 
       if (kind === "listen") {
-        buildTone(740, now, 0.08, 0.02);
-        buildTone(980, now + 0.09, 0.08, 0.018);
+        buildTone(620, now, 0.08, 0.018);
+        buildTone(820, now + 0.09, 0.08, 0.016);
       } else if (kind === "handoff") {
-        buildTone(620, now, 0.07, 0.02);
+        buildTone(540, now, 0.07, 0.018);
       } else if (kind === "coach") {
-        buildTone(520, now, 0.06, 0.018);
-        buildTone(690, now + 0.08, 0.07, 0.018);
+        buildTone(480, now, 0.06, 0.016);
+        buildTone(650, now + 0.08, 0.07, 0.016);
       }
     } catch {
-      // silent fallback
+      // Silent fallback.
     }
   }
 
@@ -791,10 +800,7 @@ export function VoiceSessionPanel({
 
       setCoachMode(nextCoachState.coachMode);
       setCoachIntent(nextCoachState.coachIntent);
-
-      if (onCoachStateChange) {
-        onCoachStateChange(nextCoachState);
-      }
+      onCoachStateChangeRef.current?.(nextCoachState);
 
       const coachAudio = await synthesizeSpeech(result.agent_message);
 
@@ -988,55 +994,67 @@ export function VoiceSessionPanel({
     switch (stage) {
       case "listening":
         return {
-          icon: <FlatMicIcon color="#4f46e5" />,
-          bg: "rgba(99,102,241,0.10)",
-          border: "rgba(99,102,241,0.35)",
+          icon: <FlatMicIcon color="var(--coach-calm)" />,
+          bg: "rgba(88,180,174,0.13)",
+          border: "rgba(88,180,174,0.34)",
           shadow:
-            "0 0 0 12px rgba(99,102,241,0.08), 0 18px 50px rgba(99,102,241,0.12)",
+            "0 0 0 12px rgba(88,180,174,0.08), 0 22px 60px rgba(88,180,174,0.14)",
           baseScale: 1.02,
+          ring: "rgba(88,180,174,0.18)",
+          bar: "rgba(88,180,174,0.68)",
         };
       case "user_speaking":
         return {
-          icon: <FlatMicIcon color="#2563eb" />,
-          bg: "rgba(59,130,246,0.14)",
-          border: "rgba(59,130,246,0.42)",
+          icon: <FlatMicIcon color="var(--coach-accent)" />,
+          bg: "rgba(255,122,89,0.16)",
+          border: "rgba(255,122,89,0.42)",
           shadow:
-            "0 0 0 14px rgba(59,130,246,0.10), 0 20px 55px rgba(59,130,246,0.16)",
-          baseScale: 1.04,
+            "0 0 0 15px rgba(255,122,89,0.10), 0 24px 66px rgba(255,122,89,0.18)",
+          baseScale: 1.05,
+          ring: "rgba(255,122,89,0.22)",
+          bar: "rgba(255,122,89,0.78)",
         };
       case "processing":
         return {
           icon: <FlatBrainPulseIcon color="#d97706" />,
-          bg: "rgba(245,158,11,0.12)",
+          bg: "rgba(245,158,11,0.14)",
           border: "rgba(245,158,11,0.38)",
           shadow:
-            "0 0 0 12px rgba(245,158,11,0.08), 0 18px 50px rgba(245,158,11,0.14)",
+            "0 0 0 12px rgba(245,158,11,0.08), 0 22px 60px rgba(245,158,11,0.14)",
           baseScale: 1.03,
+          ring: "rgba(245,158,11,0.18)",
+          bar: "rgba(245,158,11,0.68)",
         };
       case "agent_speaking":
         return {
-          icon: <FlatVoiceWaveIcon color="#059669" />,
-          bg: "rgba(16,185,129,0.14)",
-          border: "rgba(16,185,129,0.42)",
+          icon: <FlatVoiceWaveIcon color="var(--coach-calm)" />,
+          bg: "rgba(88,180,174,0.16)",
+          border: "rgba(88,180,174,0.44)",
           shadow:
-            "0 0 0 14px rgba(16,185,129,0.10), 0 20px 55px rgba(16,185,129,0.16)",
+            "0 0 0 15px rgba(88,180,174,0.10), 0 24px 66px rgba(88,180,174,0.18)",
           baseScale: 1.05,
+          ring: "rgba(88,180,174,0.22)",
+          bar: "rgba(88,180,174,0.78)",
         };
       case "error":
         return {
-          icon: <FlatAlertIcon color="#dc2626" />,
+          icon: <FlatAlertIcon color="var(--danger)" />,
           bg: "rgba(239,68,68,0.10)",
           border: "rgba(239,68,68,0.35)",
           shadow: "0 0 0 10px rgba(239,68,68,0.08)",
           baseScale: 1,
+          ring: "rgba(239,68,68,0.18)",
+          bar: "rgba(239,68,68,0.66)",
         };
       default:
         return {
-          icon: <FlatMicIcon color="#64748b" />,
-          bg: "rgba(148,163,184,0.08)",
-          border: "rgba(148,163,184,0.28)",
-          shadow: "0 10px 30px rgba(15,23,42,0.06)",
+          icon: <FlatMicIcon color="var(--coach-muted)" />,
+          bg: "rgba(122,107,93,0.08)",
+          border: "rgba(122,107,93,0.24)",
+          shadow: "0 14px 40px rgba(43,33,24,0.06)",
           baseScale: 1,
+          ring: "rgba(122,107,93,0.14)",
+          bar: "rgba(122,107,93,0.28)",
         };
     }
   }
@@ -1054,21 +1072,63 @@ export function VoiceSessionPanel({
           ? Math.max(0.08, micLevel * factor)
           : stage === "agent_speaking"
             ? 0.42 + (index % 2 === 0 ? 0.12 : 0)
-            : 0.12;
+            : stage === "processing"
+              ? 0.3 + (index % 2 === 0 ? 0.1 : 0)
+              : 0.12;
 
     return `${Math.round(18 + activeLevel * 54)}px`;
   });
 
   return (
-    <div className="stack">
-      <div className="card stack">
+    <div className="stack" style={{ gap: 16 }}>
+      <div
+        className="card stack"
+        style={{
+          gap: 16,
+          borderRadius: 28,
+          border: "1px solid rgba(43,33,24,0.08)",
+          background:
+            "linear-gradient(135deg, rgba(255,241,220,0.92), rgba(255,255,255,0.88))",
+          boxShadow: "0 14px 36px rgba(43,33,24,0.05)",
+        }}
+      >
         <div className="row space-between" style={{ alignItems: "flex-start", gap: 16 }}>
-          <div className="stack" style={{ gap: 6 }}>
-            <div className="row" style={{ gap: 8, alignItems: "center" }}>
-              <SessionIcon />
-              <div className="section-title">{copy.session.conversation}</div>
+          <div className="stack" style={{ gap: 7, maxWidth: 720 }}>
+            <div className="row" style={{ gap: 10, alignItems: "center" }}>
+              <span
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 15,
+                  display: "grid",
+                  placeItems: "center",
+                  background: "rgba(255,122,89,0.13)",
+                  border: "1px solid rgba(255,122,89,0.22)",
+                  color: "var(--coach-accent)",
+                  flexShrink: 0,
+                }}
+              >
+                <SessionIcon size={18} />
+              </span>
+
+              <div className="section-title" style={{ color: "var(--coach-ink)" }}>
+                {copy.session.conversation}
+              </div>
             </div>
-            <div className="muted">Session #{sessionId}</div>
+
+            <div className="muted" style={{ color: "var(--coach-muted)" }}>
+              {labels.sessionId} #{sessionId} · {labels.readiness}
+            </div>
+
+            <div
+              className="muted"
+              style={{
+                color: "var(--coach-muted)",
+                lineHeight: 1.65,
+              }}
+            >
+              {labels.immersiveNote}
+            </div>
           </div>
 
           <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
@@ -1081,44 +1141,84 @@ export function VoiceSessionPanel({
         </div>
 
         <div className="grid grid-2">
-          <div className="card-soft stack" style={{ gap: 8 }}>
-            <div className="section-title">{labels.currentVoiceTitle}</div>
-            <div className="muted">{labels.currentVoiceText}</div>
+          <div
+            className="card-soft stack"
+            style={{
+              gap: 8,
+              borderRadius: 22,
+              background: "rgba(255,255,255,0.72)",
+              border: "1px solid rgba(43,33,24,0.08)",
+            }}
+          >
+            <div className="section-title" style={{ fontSize: 15, color: "var(--coach-ink)" }}>
+              {labels.currentVoiceTitle}
+            </div>
+            <div className="muted" style={{ color: "var(--coach-muted)" }}>
+              {labels.currentVoiceText}
+            </div>
           </div>
 
-          <div className="card-soft stack" style={{ gap: 8 }}>
-            <div className="section-title">{labels.soundPresence}</div>
-            <div className="muted">{labels.soundPresenceText}</div>
+          <div
+            className="card-soft stack"
+            style={{
+              gap: 8,
+              borderRadius: 22,
+              background: "rgba(255,255,255,0.72)",
+              border: "1px solid rgba(43,33,24,0.08)",
+            }}
+          >
+            <div className="section-title" style={{ fontSize: 15, color: "var(--coach-ink)" }}>
+              {labels.soundPresence}
+            </div>
+            <div className="muted" style={{ color: "var(--coach-muted)" }}>
+              {labels.soundPresenceText}
+            </div>
           </div>
         </div>
 
-        {currentCoachStyle ? (
-          <div className="card-soft stack" style={{ gap: 8 }}>
-            <div className="row space-between" style={{ flexWrap: "wrap", gap: 10 }}>
-              <div className="section-title">{labels.coachStyle}</div>
-              <BadgePill icon={<SparkIcon size={14} />}>{currentCoachStyle}</BadgePill>
+        <div
+          className="card-soft stack"
+          style={{
+            gap: 10,
+            borderRadius: 24,
+            background: "rgba(255,255,255,0.70)",
+            border: "1px solid rgba(43,33,24,0.08)",
+          }}
+        >
+          <div className="row space-between" style={{ flexWrap: "wrap", gap: 10 }}>
+            <div className="section-title" style={{ fontSize: 15, color: "var(--coach-ink)" }}>
+              {labels.coachStyle}
             </div>
-
-            <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
-              {currentCoachIntent ? (
-                <BadgePill icon={<TargetIcon size={14} />}>{currentCoachIntent}</BadgePill>
-              ) : null}
-
-              {currentCoachMode ? (
-                <BadgePill icon={<BrainIcon size={14} />}>{currentCoachMode}</BadgePill>
-              ) : null}
-
-              <BadgePill icon={<ClockIcon size={14} />}>{labels.currentVoiceText}</BadgePill>
-            </div>
-
-            <div className="muted">{labels.immersiveNote}</div>
+            <BadgePill icon={<SparkIcon size={14} />}>{currentCoachStyle}</BadgePill>
           </div>
-        ) : null}
+
+          <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
+            {currentCoachIntent ? (
+              <BadgePill icon={<TargetIcon size={14} />}>{currentCoachIntent}</BadgePill>
+            ) : null}
+
+            {currentCoachMode ? (
+              <BadgePill icon={<BrainIcon size={14} />}>{currentCoachMode}</BadgePill>
+            ) : null}
+
+            <BadgePill icon={<ClockIcon size={14} />}>{labels.currentVoiceText}</BadgePill>
+          </div>
+        </div>
       </div>
 
       {bootstrapping ? (
-        <div className="card">
-          <div className="muted">{labels.loading}</div>
+        <div
+          className="card"
+          style={{
+            borderRadius: 28,
+            background:
+              "linear-gradient(135deg, rgba(255,241,220,0.92), rgba(255,255,255,0.88))",
+            border: "1px solid rgba(43,33,24,0.08)",
+          }}
+        >
+          <div className="muted" style={{ color: "var(--coach-muted)" }}>
+            {labels.loading}
+          </div>
         </div>
       ) : (
         <div
@@ -1126,8 +1226,11 @@ export function VoiceSessionPanel({
           style={{
             minHeight: 560,
             overflow: "hidden",
+            borderRadius: 32,
+            border: "1px solid rgba(43,33,24,0.08)",
             background:
-              "linear-gradient(180deg, rgba(255,255,255,0.92), rgba(248,250,252,0.94))",
+              "radial-gradient(circle at 18% 8%, rgba(255,122,89,0.10), transparent 28%), radial-gradient(circle at 86% 20%, rgba(88,180,174,0.10), transparent 30%), linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,248,239,0.94))",
+            boxShadow: "0 20px 56px rgba(43,33,24,0.07)",
           }}
         >
           <div
@@ -1147,20 +1250,22 @@ export function VoiceSessionPanel({
                 borderRadius: 32,
                 background:
                   stage === "agent_speaking"
-                    ? "radial-gradient(circle at center, rgba(16,185,129,0.10), transparent 60%)"
+                    ? "radial-gradient(circle at center, rgba(88,180,174,0.14), transparent 60%)"
                     : stage === "user_speaking"
-                      ? "radial-gradient(circle at center, rgba(59,130,246,0.10), transparent 60%)"
+                      ? "radial-gradient(circle at center, rgba(255,122,89,0.14), transparent 60%)"
                       : stage === "listening"
-                        ? "radial-gradient(circle at center, rgba(99,102,241,0.08), transparent 60%)"
-                        : "radial-gradient(circle at center, rgba(148,163,184,0.05), transparent 60%)",
+                        ? "radial-gradient(circle at center, rgba(88,180,174,0.10), transparent 60%)"
+                        : stage === "processing"
+                          ? "radial-gradient(circle at center, rgba(245,158,11,0.10), transparent 60%)"
+                          : "radial-gradient(circle at center, rgba(122,107,93,0.05), transparent 60%)",
                 pointerEvents: "none",
               }}
             />
 
             <div
               style={{
-                width: 184,
-                height: 184,
+                width: 190,
+                height: 190,
                 borderRadius: "999px",
                 margin: "0 auto",
                 display: "flex",
@@ -1182,22 +1287,26 @@ export function VoiceSessionPanel({
                 aria-hidden="true"
                 style={{
                   position: "absolute",
-                  inset: -12,
+                  inset: -14,
                   borderRadius: "999px",
-                  border:
-                    stage === "user_speaking"
-                      ? "1px solid rgba(59,130,246,0.20)"
-                      : stage === "agent_speaking"
-                        ? "1px solid rgba(16,185,129,0.20)"
-                        : stage === "listening"
-                          ? "1px solid rgba(99,102,241,0.18)"
-                          : "1px solid transparent",
+                  border: `1px solid ${orb.ring}`,
                   transform: `scale(${1 + micLevel * 0.12})`,
                   transition: "transform 90ms linear",
                 }}
               />
 
-              {orb.icon}
+              <div
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  inset: 20,
+                  borderRadius: "999px",
+                  background:
+                    "linear-gradient(135deg, rgba(255,255,255,0.62), rgba(255,255,255,0.12))",
+                }}
+              />
+
+              <div style={{ position: "relative", zIndex: 1 }}>{orb.icon}</div>
             </div>
 
             <div
@@ -1219,14 +1328,7 @@ export function VoiceSessionPanel({
                     width: 10,
                     height,
                     borderRadius: 999,
-                    background:
-                      stage === "agent_speaking"
-                        ? "rgba(16,185,129,0.72)"
-                        : stage === "user_speaking"
-                          ? "rgba(59,130,246,0.78)"
-                          : stage === "listening"
-                            ? "rgba(99,102,241,0.45)"
-                            : "rgba(148,163,184,0.28)",
+                    background: orb.bar,
                     transition: "height 90ms linear, background 180ms ease",
                   }}
                 />
@@ -1242,19 +1344,77 @@ export function VoiceSessionPanel({
                 zIndex: 1,
               }}
             >
-              <div className="section-title" style={{ fontSize: 30 }}>
+              <div
+                className="section-title"
+                style={{
+                  fontSize: 30,
+                  color: "var(--coach-ink)",
+                }}
+              >
                 {getStageLabel()}
               </div>
 
-              <div className="muted" style={{ maxWidth: 760, margin: "0 auto" }}>
+              <div
+                className="muted"
+                style={{
+                  maxWidth: 760,
+                  margin: "0 auto",
+                  color: "var(--coach-muted)",
+                  fontSize: 15,
+                  lineHeight: 1.65,
+                }}
+              >
                 {labels.voiceDescription}
               </div>
 
-              <div className="muted" style={{ maxWidth: 680, margin: "0 auto" }}>
-                {labels.accessibilityHint}
+              <div
+                className="muted"
+                style={{
+                  maxWidth: 680,
+                  margin: "0 auto",
+                  color: "var(--coach-muted)",
+                  lineHeight: 1.6,
+                }}
+              >
+                {labels.softInstruction}
               </div>
 
-              <div className="muted" style={{ maxWidth: 420, margin: "0 auto" }}>
+              <div
+                style={{
+                  width: 260,
+                  maxWidth: "100%",
+                  margin: "0 auto",
+                  borderRadius: 999,
+                  height: 10,
+                  overflow: "hidden",
+                  background: "rgba(43,33,24,0.08)",
+                  border: "1px solid rgba(43,33,24,0.06)",
+                }}
+                aria-hidden="true"
+              >
+                <div
+                  style={{
+                    width: `${Math.round(micLevel * 100)}%`,
+                    height: "100%",
+                    borderRadius: 999,
+                    background:
+                      stage === "user_speaking"
+                        ? "var(--coach-accent)"
+                        : "var(--coach-calm)",
+                    transition: "width 90ms linear",
+                  }}
+                />
+              </div>
+
+              <div
+                className="muted"
+                style={{
+                  maxWidth: 420,
+                  margin: "0 auto",
+                  color: "var(--coach-muted)",
+                  fontSize: 12,
+                }}
+              >
                 {labels.audioMeter}: {Math.round(micLevel * 100)}%
               </div>
             </div>
@@ -1294,7 +1454,12 @@ export function VoiceSessionPanel({
                   disabled={bootstrapping || closing}
                   type="button"
                   aria-label={labels.startVoice}
-                  style={{ minWidth: 240 }}
+                  style={{
+                    minWidth: 240,
+                    minHeight: 46,
+                    background: "var(--coach-accent)",
+                    boxShadow: "0 14px 30px rgba(255,122,89,0.18)",
+                  }}
                 >
                   {labels.startVoice}
                 </button>
@@ -1305,7 +1470,13 @@ export function VoiceSessionPanel({
                   disabled={closing}
                   type="button"
                   aria-label={labels.stopVoice}
-                  style={{ minWidth: 240 }}
+                  style={{
+                    minWidth: 240,
+                    minHeight: 46,
+                    color: "var(--coach-ink)",
+                    background: "rgba(255,255,255,0.76)",
+                    borderColor: "rgba(43,33,24,0.10)",
+                  }}
                 >
                   {labels.stopVoice}
                 </button>
@@ -1317,7 +1488,13 @@ export function VoiceSessionPanel({
                 disabled={closing || bootstrapping || stage === "processing"}
                 type="button"
                 aria-label={labels.closeSession}
-                style={{ minWidth: 220 }}
+                style={{
+                  minWidth: 220,
+                  minHeight: 46,
+                  color: "var(--coach-accent)",
+                  borderColor: "rgba(255,122,89,0.32)",
+                  background: "rgba(255,122,89,0.06)",
+                }}
               >
                 {closing ? copy.session.closing : labels.closeSession}
               </button>
@@ -1327,7 +1504,15 @@ export function VoiceSessionPanel({
       )}
 
       {error ? (
-        <div className="card-soft" style={{ color: "var(--danger)" }}>
+        <div
+          className="card-soft"
+          style={{
+            color: "var(--danger)",
+            borderRadius: 22,
+            background: "rgba(239,68,68,0.08)",
+            border: "1px solid rgba(239,68,68,0.18)",
+          }}
+        >
           {error}
         </div>
       ) : null}

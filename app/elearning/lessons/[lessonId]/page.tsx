@@ -1,3 +1,4 @@
+// app/elearning/lessons/[lessonId]/page.tsx
 "use client";
 
 import Link from "next/link";
@@ -21,6 +22,13 @@ import type {
   LearningProgressSummary,
   Me,
 } from "@/lib/types";
+import {
+  CheckCircleIcon,
+  ClockIcon,
+  PathIcon,
+  PlayCircleIcon,
+  SparkIcon,
+} from "@/components/ui-flat-icons";
 
 const CALENDLY_FREE_CONVERSATION_URL =
   "https://calendly.com/flixtalent-connect/ad-hoc-conversation";
@@ -111,6 +119,137 @@ function buildCalendlyUrl(utmMedium: string, utmContent: string): string {
   return url.toString();
 }
 
+function MasterclassBadge({
+  children,
+  tone = "dark",
+}: {
+  children: React.ReactNode;
+  tone?: "dark" | "gold" | "green" | "red";
+}) {
+  const styles =
+    tone === "gold"
+      ? {
+          background: "rgba(251,191,36,0.14)",
+          border: "1px solid rgba(251,191,36,0.25)",
+          color: "#fbbf24",
+        }
+      : tone === "green"
+        ? {
+            background: "rgba(34,197,94,0.12)",
+            border: "1px solid rgba(34,197,94,0.22)",
+            color: "#bbf7d0",
+          }
+        : tone === "red"
+          ? {
+              background: "rgba(239,68,68,0.14)",
+              border: "1px solid rgba(239,68,68,0.24)",
+              color: "#fca5a5",
+            }
+          : {
+              background: "rgba(255,255,255,0.07)",
+              border: "1px solid rgba(255,255,255,0.11)",
+              color: "rgba(248,250,252,0.72)",
+            };
+
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 7,
+        padding: "8px 11px",
+        borderRadius: 999,
+        fontSize: 12,
+        fontWeight: 900,
+        letterSpacing: "0.025em",
+        ...styles,
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+function MasterclassPanel({
+  children,
+  warm = false,
+}: {
+  children: React.ReactNode;
+  warm?: boolean;
+}) {
+  return (
+    <section
+      className="stack"
+      style={{
+        gap: 16,
+        padding: 22,
+        borderRadius: 30,
+        background: warm
+          ? "linear-gradient(135deg, rgba(251,191,36,0.13), rgba(255,255,255,0.055))"
+          : "linear-gradient(180deg, rgba(255,255,255,0.075), rgba(255,255,255,0.045))",
+        border: "1px solid rgba(255,255,255,0.10)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
+      }}
+    >
+      {children}
+    </section>
+  );
+}
+
+function MasterclassButtonLink({
+  href,
+  children,
+  variant = "primary",
+  external = false,
+}: {
+  href: string;
+  children: React.ReactNode;
+  variant?: "primary" | "ghost";
+  external?: boolean;
+}) {
+  const style: React.CSSProperties =
+    variant === "primary"
+      ? {
+          background: "#ffffff",
+          color: "#111827",
+          borderRadius: 16,
+          border: "1px solid rgba(255,255,255,0.18)",
+          minHeight: 44,
+          justifyContent: "center",
+        }
+      : {
+          color: "rgba(248,250,252,0.82)",
+          borderColor: "rgba(255,255,255,0.16)",
+          borderRadius: 16,
+          minHeight: 44,
+          justifyContent: "center",
+        };
+
+  if (external) {
+    return (
+      <a
+        className={variant === "primary" ? "button" : "button ghost"}
+        href={href}
+        target="_blank"
+        rel="noreferrer"
+        style={style}
+      >
+        {children}
+      </a>
+    );
+  }
+
+  return (
+    <Link
+      className={variant === "primary" ? "button" : "button ghost"}
+      href={href}
+      style={style}
+    >
+      {children}
+    </Link>
+  );
+}
+
 function VideoPlayer({ lesson }: { lesson: LearningLessonDetail }) {
   const demoVideoUrl = "https://www.youtube.com/embed/dQw4w9WgXcQ";
 
@@ -124,17 +263,20 @@ function VideoPlayer({ lesson }: { lesson: LearningLessonDetail }) {
     isDemoVideo;
 
   return (
-    <div className="stack" style={{ gap: 10 }}>
+    <div className="stack" style={{ gap: 12 }}>
       {isDemoVideo ? (
         <div
-          className="card-soft"
+          className="stack"
           style={{
-            border: "1px solid rgba(37,99,235,0.16)",
-            background: "rgba(37,99,235,0.06)",
+            gap: 6,
+            padding: 15,
+            borderRadius: 22,
+            border: "1px solid rgba(251,191,36,0.24)",
+            background: "rgba(251,191,36,0.10)",
           }}
         >
-          <strong>Vidéo de démonstration</strong>
-          <div className="muted" style={{ marginTop: 4 }}>
+          <strong style={{ color: "#fbbf24" }}>Vidéo de démonstration</strong>
+          <div style={{ color: "rgba(248,250,252,0.62)", lineHeight: 1.6 }}>
             Aucune vidéo n’est encore associée à cette leçon. Une vidéo de démonstration est
             affichée temporairement pour valider le rendu du lecteur.
           </div>
@@ -147,11 +289,12 @@ function VideoPlayer({ lesson }: { lesson: LearningLessonDetail }) {
             position: "relative",
             width: "100%",
             paddingTop: "56.25%",
-            borderRadius: 18,
+            borderRadius: 30,
             overflow: "hidden",
             background: "#020617",
-            border: "1px solid rgba(15,23,42,0.10)",
-            boxShadow: "0 18px 50px rgba(15,23,42,0.12)",
+            border: "1px solid rgba(255,255,255,0.11)",
+            boxShadow:
+              "0 34px 100px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,255,255,0.06)",
           }}
         >
           <iframe
@@ -174,10 +317,11 @@ function VideoPlayer({ lesson }: { lesson: LearningLessonDetail }) {
           src={resolvedVideoUrl}
           style={{
             width: "100%",
-            borderRadius: 18,
+            borderRadius: 30,
             background: "#020617",
-            border: "1px solid rgba(15,23,42,0.10)",
-            boxShadow: "0 18px 50px rgba(15,23,42,0.12)",
+            border: "1px solid rgba(255,255,255,0.11)",
+            boxShadow:
+              "0 34px 100px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,255,255,0.06)",
           }}
         />
       )}
@@ -258,91 +402,59 @@ function LessonSalesCta({
   const isSecondaryExternal = cta.secondaryHref.startsWith("http");
 
   return (
-    <section
-      className="card stack"
-      style={{
-        gap: 14,
-        border:
-          cta.tone === "conversion"
-            ? "1px solid rgba(16,185,129,0.26)"
-            : cta.tone === "strong"
-              ? "1px solid rgba(37,99,235,0.24)"
-              : "1px solid rgba(15,23,42,0.08)",
-        background:
-          cta.tone === "conversion"
-            ? "linear-gradient(135deg, rgba(16,185,129,0.10), rgba(37,99,235,0.07))"
-            : cta.tone === "strong"
-              ? "linear-gradient(135deg, rgba(37,99,235,0.10), rgba(124,58,237,0.06))"
-              : cta.tone === "medium"
-                ? "linear-gradient(135deg, rgba(37,99,235,0.07), rgba(255,255,255,0.96))"
-                : "linear-gradient(135deg, rgba(15,23,42,0.035), rgba(255,255,255,0.96))",
-      }}
-    >
+    <MasterclassPanel warm={cta.tone === "conversion" || cta.tone === "strong"}>
       <div className="row space-between" style={{ gap: 14, flexWrap: "wrap" }}>
-        <div className="stack" style={{ gap: 8, maxWidth: 760 }}>
-          <span className="badge" style={{ alignSelf: "flex-start" }}>
-            {cta.badge}
-          </span>
+        <div className="stack" style={{ gap: 10, maxWidth: 760 }}>
+          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+            <MasterclassBadge tone={cta.tone === "soft" ? "dark" : "gold"}>
+              <SparkIcon size={14} color={cta.tone === "soft" ? "rgba(248,250,252,0.70)" : "#fbbf24"} />
+              {cta.badge}
+            </MasterclassBadge>
+          </div>
 
-          <div className="section-title" style={{ fontSize: 20 }}>
+          <div
+            style={{
+              color: "#ffffff",
+              fontSize: 25,
+              lineHeight: 1.12,
+              fontWeight: 950,
+              letterSpacing: "-0.06em",
+            }}
+          >
             {cta.title}
           </div>
 
-          <div className="muted" style={{ lineHeight: 1.7 }}>
+          <div style={{ color: "rgba(248,250,252,0.64)", lineHeight: 1.75 }}>
             {cta.body}
           </div>
 
           <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 2 }}>
-            <span className="badge">Conversations humaines</span>
-            <span className="badge">Plateforme LeanWorker</span>
-            <span className="badge">Recommendations</span>
-            <span className="badge">Leviers</span>
+            <MasterclassBadge>Conversations humaines</MasterclassBadge>
+            <MasterclassBadge>Plateforme LeanWorker</MasterclassBadge>
+            <MasterclassBadge>Recommendations</MasterclassBadge>
+            <MasterclassBadge>Leviers</MasterclassBadge>
           </div>
         </div>
 
-        <div className="stack" style={{ gap: 10, minWidth: 240 }}>
-          {isPrimaryExternal ? (
-            <a
-              className="button"
-              href={cta.primaryHref}
-              target="_blank"
-              rel="noreferrer"
-              style={{ width: "100%", justifyContent: "center" }}
-            >
-              {cta.primaryLabel}
-            </a>
-          ) : (
-            <Link
-              className="button"
-              href={cta.primaryHref}
-              style={{ width: "100%", justifyContent: "center" }}
-            >
-              {cta.primaryLabel}
-            </Link>
-          )}
+        <div className="stack" style={{ gap: 10, minWidth: 250 }}>
+          <MasterclassButtonLink
+            href={cta.primaryHref}
+            external={isPrimaryExternal}
+            variant="primary"
+          >
+            {cta.primaryLabel}
+          </MasterclassButtonLink>
 
-          {isSecondaryExternal ? (
-            <a
-              className="button ghost"
-              href={cta.secondaryHref}
-              target="_blank"
-              rel="noreferrer"
-              style={{ width: "100%", justifyContent: "center" }}
-            >
-              {cta.secondaryLabel}
-            </a>
-          ) : (
-            <Link
-              className="button ghost"
-              href={cta.secondaryHref}
-              style={{ width: "100%", justifyContent: "center" }}
-            >
-              {cta.secondaryLabel}
-            </Link>
-          )}
+          <MasterclassButtonLink
+            href={cta.secondaryHref}
+            external={isSecondaryExternal}
+            variant="ghost"
+          >
+            {cta.secondaryLabel}
+          </MasterclassButtonLink>
         </div>
       </div>
-    </section>
+    </MasterclassPanel>
   );
 }
 
@@ -392,50 +504,73 @@ function LessonExercises({
 
   if (exercises.length === 0) {
     return (
-      <section className="card stack" style={{ gap: 10 }}>
-        <div className="section-title">Exercice pratique</div>
-        <div className="muted" style={{ lineHeight: 1.7 }}>
+      <MasterclassPanel>
+        <div
+          style={{
+            color: "#ffffff",
+            fontSize: 22,
+            fontWeight: 950,
+            letterSpacing: "-0.055em",
+          }}
+        >
+          Exercice pratique
+        </div>
+
+        <div style={{ color: "rgba(248,250,252,0.62)", lineHeight: 1.7 }}>
           Aucun exercice n’est encore associé à cette leçon. Les exercices permettront bientôt
           de transformer chaque concept en réflexion, décision ou action concrète.
         </div>
-      </section>
+      </MasterclassPanel>
     );
   }
 
   return (
-    <section className="card stack" style={{ gap: 16 }}>
+    <MasterclassPanel>
       <div className="row space-between" style={{ gap: 12, flexWrap: "wrap" }}>
-        <div className="stack" style={{ gap: 4 }}>
-          <div className="section-title">Exercices pratiques</div>
-          <div className="muted">
+        <div className="stack" style={{ gap: 5 }}>
+          <div
+            style={{
+              color: "#ffffff",
+              fontSize: 24,
+              fontWeight: 950,
+              letterSpacing: "-0.055em",
+            }}
+          >
+            Exercices pratiques
+          </div>
+
+          <div style={{ color: "rgba(248,250,252,0.62)", lineHeight: 1.65 }}>
             Répondez aux exercices pour transformer la leçon en réflexion personnelle et en
             passage à l’action.
           </div>
         </div>
 
         <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-          <span className="badge">{exercises.length} exercice(s)</span>
+          <MasterclassBadge>{exercises.length} exercice(s)</MasterclassBadge>
 
           {requiredStats.requiredCount > 0 ? (
-            <span className="badge">
+            <MasterclassBadge tone="gold">
               {requiredStats.submittedRequiredCount}/{requiredStats.requiredCount} obligatoire(s)
               soumis
-            </span>
+            </MasterclassBadge>
           ) : null}
         </div>
       </div>
 
       {!requiredStats.allRequiredSubmitted ? (
         <div
-          className="card-soft"
+          className="stack"
           style={{
-            border: "1px solid rgba(251,191,36,0.32)",
+            gap: 5,
+            padding: 15,
+            borderRadius: 22,
+            border: "1px solid rgba(251,191,36,0.26)",
             background: "rgba(251,191,36,0.10)",
             lineHeight: 1.6,
           }}
         >
-          <strong>Exercices requis à compléter</strong>
-          <div className="muted" style={{ marginTop: 4 }}>
+          <strong style={{ color: "#fbbf24" }}>Exercices requis à compléter</strong>
+          <div style={{ color: "rgba(248,250,252,0.64)" }}>
             Il reste {requiredStats.missingRequiredCount} exercice(s) obligatoire(s) à soumettre
             avant de pouvoir marquer la leçon comme terminée.
           </div>
@@ -443,7 +578,15 @@ function LessonExercises({
       ) : null}
 
       {exerciseError ? (
-        <div className="card-soft" style={{ color: "var(--danger)" }}>
+        <div
+          style={{
+            color: "#fca5a5",
+            padding: 14,
+            borderRadius: 20,
+            border: "1px solid rgba(239,68,68,0.22)",
+            background: "rgba(239,68,68,0.10)",
+          }}
+        >
           {exerciseError}
         </div>
       ) : null}
@@ -458,32 +601,45 @@ function LessonExercises({
           return (
             <article
               key={exercise.id}
-              className="card-soft stack"
+              className="stack"
               style={{
                 gap: 12,
+                padding: 16,
+                borderRadius: 26,
                 border: isSubmitted
-                  ? "1px solid rgba(16,185,129,0.22)"
-                  : "1px solid rgba(15,23,42,0.08)",
+                  ? "1px solid rgba(34,197,94,0.24)"
+                  : "1px solid rgba(255,255,255,0.10)",
                 background: isSubmitted
-                  ? "linear-gradient(135deg, rgba(16,185,129,0.07), rgba(255,255,255,0.96))"
-                  : undefined,
+                  ? "linear-gradient(135deg, rgba(34,197,94,0.10), rgba(255,255,255,0.045))"
+                  : "linear-gradient(180deg, rgba(255,255,255,0.060), rgba(255,255,255,0.035))",
               }}
             >
               <div className="row space-between" style={{ gap: 12, flexWrap: "wrap" }}>
-                <div className="stack" style={{ gap: 6, maxWidth: 760 }}>
+                <div className="stack" style={{ gap: 8, maxWidth: 760 }}>
                   <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                    <span className="badge">Exercice {index + 1}</span>
-                    <span className="badge">{exercise.exercise_type}</span>
-                    {exercise.is_required ? <span className="badge">Obligatoire</span> : null}
-                    <span className="badge">{statusLabel}</span>
+                    <MasterclassBadge>Exercice {index + 1}</MasterclassBadge>
+                    <MasterclassBadge>{exercise.exercise_type}</MasterclassBadge>
+                    {exercise.is_required ? (
+                      <MasterclassBadge tone="gold">Obligatoire</MasterclassBadge>
+                    ) : null}
+                    <MasterclassBadge tone={isSubmitted ? "green" : "dark"}>
+                      {statusLabel}
+                    </MasterclassBadge>
                   </div>
 
-                  <div className="section-title" style={{ fontSize: 18 }}>
+                  <div
+                    style={{
+                      color: "#ffffff",
+                      fontSize: 19,
+                      fontWeight: 950,
+                      letterSpacing: "-0.04em",
+                    }}
+                  >
                     {exercise.title}
                   </div>
 
                   {exercise.instructions ? (
-                    <div className="muted" style={{ lineHeight: 1.7 }}>
+                    <div style={{ color: "rgba(248,250,252,0.62)", lineHeight: 1.7 }}>
                       {exercise.instructions}
                     </div>
                   ) : null}
@@ -503,35 +659,37 @@ function LessonExercises({
                 style={{
                   width: "100%",
                   resize: "vertical",
-                  borderRadius: 16,
-                  border: "1px solid rgba(15,23,42,0.12)",
-                  padding: 14,
+                  borderRadius: 20,
+                  border: "1px solid rgba(255,255,255,0.13)",
+                  padding: 15,
                   font: "inherit",
-                  lineHeight: 1.6,
-                  background: "rgba(255,255,255,0.82)",
-                  color: "inherit",
+                  lineHeight: 1.65,
+                  background: "rgba(0,0,0,0.24)",
+                  color: "#f8fafc",
                   outline: "none",
                 }}
               />
 
               {exercise.submission?.feedback_text ? (
                 <div
-                  className="card"
+                  className="stack"
                   style={{
-                    padding: 12,
-                    background: "rgba(37,99,235,0.06)",
-                    border: "1px solid rgba(37,99,235,0.14)",
+                    gap: 6,
+                    padding: 14,
+                    borderRadius: 20,
+                    background: "rgba(251,191,36,0.09)",
+                    border: "1px solid rgba(251,191,36,0.20)",
                   }}
                 >
-                  <strong>Feedback</strong>
-                  <div className="muted" style={{ marginTop: 6, lineHeight: 1.6 }}>
+                  <strong style={{ color: "#fbbf24" }}>Feedback</strong>
+                  <div style={{ color: "rgba(248,250,252,0.64)", lineHeight: 1.6 }}>
                     {exercise.submission.feedback_text}
                   </div>
                 </div>
               ) : null}
 
               <div className="row space-between" style={{ gap: 10, flexWrap: "wrap" }}>
-                <div className="muted" style={{ fontSize: 13 }}>
+                <div style={{ color: "rgba(248,250,252,0.52)", fontSize: 13 }}>
                   {exercise.submission?.updated_at
                     ? `Dernière mise à jour : ${new Date(
                         exercise.submission.updated_at,
@@ -545,6 +703,11 @@ function LessonExercises({
                     type="button"
                     disabled={isSaving}
                     onClick={() => void handleSave(exercise, "draft")}
+                    style={{
+                      color: "rgba(248,250,252,0.82)",
+                      borderColor: "rgba(255,255,255,0.16)",
+                      borderRadius: 16,
+                    }}
                   >
                     {isSaving ? "Sauvegarde..." : "Sauvegarder le brouillon"}
                   </button>
@@ -554,6 +717,11 @@ function LessonExercises({
                     type="button"
                     disabled={isSaving || currentAnswer.trim().length === 0}
                     onClick={() => void handleSave(exercise, "submitted")}
+                    style={{
+                      background: "#ffffff",
+                      color: "#111827",
+                      borderRadius: 16,
+                    }}
                   >
                     {isSaving
                       ? "Soumission..."
@@ -567,7 +735,7 @@ function LessonExercises({
           );
         })}
       </div>
-    </section>
+    </MasterclassPanel>
   );
 }
 
@@ -713,69 +881,170 @@ function ElearningLessonContent() {
       chapters={course?.chapters ?? []}
       progressPercent={summary?.overall_progress_percent ?? course?.progress_percent ?? 0}
     >
-      <div className="stack" style={{ gap: 18 }}>
+      <div
+        className="stack"
+        style={{
+          gap: 18,
+          color: "#f8fafc",
+        }}
+      >
         {loading ? (
-          <div className="card-soft">Chargement de la leçon...</div>
+          <MasterclassPanel>
+            <div style={{ color: "#ffffff", fontWeight: 900, fontSize: 18 }}>
+              Chargement de la leçon...
+            </div>
+            <div style={{ color: "rgba(248,250,252,0.62)", lineHeight: 1.7 }}>
+              Préparation de la vidéo, des exercices et de votre progression.
+            </div>
+          </MasterclassPanel>
         ) : error ? (
-          <div className="card-soft" style={{ color: "var(--danger)" }}>
-            {error}
-          </div>
+          <MasterclassPanel>
+            <div style={{ color: "#fca5a5", fontWeight: 900, fontSize: 18 }}>
+              Impossible de charger ou mettre à jour la leçon
+            </div>
+            <div style={{ color: "rgba(248,250,252,0.68)" }}>{error}</div>
+          </MasterclassPanel>
         ) : !lesson ? (
-          <div className="card-soft">Leçon introuvable.</div>
+          <MasterclassPanel>
+            <div style={{ color: "rgba(248,250,252,0.72)" }}>Leçon introuvable.</div>
+          </MasterclassPanel>
         ) : (
           <>
-            <section className="card stack" style={{ gap: 16 }}>
-              <div className="row space-between" style={{ gap: 12, flexWrap: "wrap" }}>
-                <div className="stack" style={{ gap: 8, maxWidth: 760 }}>
+            <section
+              className="stack"
+              style={{
+                position: "relative",
+                overflow: "hidden",
+                gap: 22,
+                padding: 30,
+                borderRadius: 36,
+                background:
+                  "radial-gradient(circle at 18% 0%, rgba(239,68,68,0.20), transparent 32%), radial-gradient(circle at 88% 12%, rgba(250,204,21,0.13), transparent 30%), linear-gradient(135deg, #0a0a0a 0%, #11100f 48%, #1e120b 100%)",
+                border: "1px solid rgba(255,255,255,0.10)",
+                boxShadow:
+                  "0 34px 100px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.08)",
+              }}
+            >
+              <div
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  top: -160,
+                  right: -120,
+                  width: 360,
+                  height: 360,
+                  borderRadius: 999,
+                  background: "rgba(249,115,22,0.15)",
+                }}
+              />
+
+              <div
+                className="row space-between"
+                style={{
+                  gap: 18,
+                  flexWrap: "wrap",
+                  position: "relative",
+                  zIndex: 1,
+                }}
+              >
+                <div className="stack" style={{ gap: 13, maxWidth: 800 }}>
                   <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                    <span className="badge">{lesson.chapter_title}</span>
-                    <span className="badge">{formatDuration(lesson.duration_seconds)}</span>
-                    <span className="badge">
+                    <MasterclassBadge tone="gold">
+                      <PathIcon size={14} color="#fbbf24" />
+                      {lesson.chapter_title}
+                    </MasterclassBadge>
+
+                    <MasterclassBadge>
+                      <ClockIcon size={14} color="rgba(248,250,252,0.70)" />
+                      {formatDuration(lesson.duration_seconds)}
+                    </MasterclassBadge>
+
+                    <MasterclassBadge tone={isCompleted ? "green" : "dark"}>
+                      {isCompleted ? (
+                        <CheckCircleIcon size={14} color="#bbf7d0" />
+                      ) : (
+                        <PlayCircleIcon size={14} color="rgba(248,250,252,0.70)" />
+                      )}
                       {getProgressStatusLabel(
                         lesson.progress?.status,
                         lesson.progress?.progress_percent,
                       )}
-                    </span>
+                    </MasterclassBadge>
 
                     {exercises.length > 0 ? (
-                      <span className="badge">{exercises.length} exercice(s)</span>
+                      <MasterclassBadge>{exercises.length} exercice(s)</MasterclassBadge>
                     ) : null}
 
                     {requiredStats.requiredCount > 0 ? (
-                      <span className="badge">
+                      <MasterclassBadge tone="gold">
                         {requiredStats.submittedRequiredCount}/{requiredStats.requiredCount} requis
-                      </span>
+                      </MasterclassBadge>
                     ) : null}
                   </div>
 
                   <h1
-                    className="title"
                     style={{
                       margin: 0,
-                      fontSize: 36,
-                      lineHeight: 1.08,
-                      letterSpacing: "-0.03em",
+                      color: "#ffffff",
+                      fontSize: 48,
+                      lineHeight: 0.98,
+                      fontWeight: 950,
+                      letterSpacing: "-0.075em",
                     }}
                   >
                     {lesson.title}
                   </h1>
 
                   {lesson.description ? (
-                    <p className="muted" style={{ lineHeight: 1.7, margin: 0 }}>
+                    <p
+                      style={{
+                        color: "rgba(248,250,252,0.64)",
+                        fontSize: 16,
+                        lineHeight: 1.75,
+                        margin: 0,
+                        maxWidth: 760,
+                      }}
+                    >
                       {lesson.description}
                     </p>
                   ) : null}
                 </div>
 
-                <div className="card-soft stack" style={{ gap: 8, minWidth: 220 }}>
-                  <div className="muted">Progression de la leçon</div>
-                  <div className="admin-metric-value">{formatPercent(lessonProgress)}</div>
+                <div
+                  className="stack"
+                  style={{
+                    gap: 12,
+                    minWidth: 260,
+                    maxWidth: 330,
+                    padding: 20,
+                    borderRadius: 28,
+                    background:
+                      "linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.055))",
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
+                  }}
+                >
+                  <div style={{ color: "rgba(248,250,252,0.62)", fontSize: 13 }}>
+                    Progression de la leçon
+                  </div>
+
+                  <div
+                    style={{
+                      color: "#ffffff",
+                      fontSize: 42,
+                      lineHeight: 1,
+                      fontWeight: 950,
+                      letterSpacing: "-0.07em",
+                    }}
+                  >
+                    {formatPercent(lessonProgress)}
+                  </div>
 
                   <div
                     style={{
                       height: 10,
                       borderRadius: 999,
-                      background: "rgba(15,23,42,0.08)",
+                      background: "rgba(255,255,255,0.09)",
                       overflow: "hidden",
                     }}
                   >
@@ -784,56 +1053,63 @@ function ElearningLessonContent() {
                         width: formatPercent(lessonProgress),
                         height: "100%",
                         borderRadius: 999,
-                        background: "linear-gradient(135deg, #2563eb, #10b981)",
+                        background: "linear-gradient(135deg, #facc15, #f97316, #ef4444)",
                       }}
                     />
+                  </div>
+
+                  <div style={{ color: "rgba(248,250,252,0.58)", lineHeight: 1.55 }}>
+                    Regardez la vidéo, complétez les exercices requis, puis marquez la leçon comme
+                    terminée.
                   </div>
                 </div>
               </div>
             </section>
 
-            <section className="card stack" style={{ gap: 14 }}>
+            <MasterclassPanel>
               <VideoPlayer lesson={lesson} />
+            </MasterclassPanel>
 
-              <LessonExercises
-                exercises={exercises}
-                onRefresh={() => refreshExercises(lesson.id)}
-              />
+            <LessonExercises
+              exercises={exercises}
+              onRefresh={() => refreshExercises(lesson.id)}
+            />
 
-              <LessonSalesCta lesson={lesson} summary={summary} isCompleted={isCompleted} />
+            <LessonSalesCta lesson={lesson} summary={summary} isCompleted={isCompleted} />
 
+            <MasterclassPanel>
               <div className="row space-between" style={{ gap: 12, flexWrap: "wrap" }}>
                 <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
                   {lesson.previous_lesson_id ? (
-                    <Link
-                      className="button ghost"
+                    <MasterclassButtonLink
                       href={`/elearning/lessons/${lesson.previous_lesson_id}`}
+                      variant="ghost"
                     >
                       Leçon précédente
-                    </Link>
+                    </MasterclassButtonLink>
                   ) : (
-                    <Link
-                      className="button ghost"
+                    <MasterclassButtonLink
                       href={`/elearning/courses/${lesson.course_id}`}
+                      variant="ghost"
                     >
                       Retour au programme
-                    </Link>
+                    </MasterclassButtonLink>
                   )}
 
                   {lesson.next_lesson_id ? (
-                    <Link
-                      className="button ghost"
+                    <MasterclassButtonLink
                       href={`/elearning/lessons/${lesson.next_lesson_id}`}
+                      variant="ghost"
                     >
                       Leçon suivante
-                    </Link>
+                    </MasterclassButtonLink>
                   ) : (
-                    <Link
-                      className="button ghost"
+                    <MasterclassButtonLink
                       href={`/elearning/courses/${lesson.course_id}`}
+                      variant="ghost"
                     >
                       Voir le programme complet
-                    </Link>
+                    </MasterclassButtonLink>
                   )}
                 </div>
 
@@ -851,6 +1127,15 @@ function ElearningLessonContent() {
                       ? "Soumettez d’abord les exercices obligatoires."
                       : undefined
                   }
+                  style={{
+                    background: isCompleted ? "rgba(34,197,94,0.16)" : "#ffffff",
+                    color: isCompleted ? "#bbf7d0" : "#111827",
+                    borderRadius: 16,
+                    border: isCompleted
+                      ? "1px solid rgba(34,197,94,0.24)"
+                      : "1px solid rgba(255,255,255,0.18)",
+                    minHeight: 44,
+                  }}
                 >
                   {isCompleted
                     ? "Leçon terminée"
@@ -861,39 +1146,48 @@ function ElearningLessonContent() {
                         : "Marquer comme terminée"}
                 </button>
               </div>
-            </section>
+            </MasterclassPanel>
 
             {!lesson.next_lesson_id && isCompleted ? (
-              <section
-                className="card stack"
-                style={{
-                  gap: 12,
-                  border: "1px solid rgba(16,185,129,0.20)",
-                  background:
-                    "linear-gradient(135deg, rgba(16,185,129,0.08), rgba(37,99,235,0.06))",
-                }}
-              >
-                <span className="badge">Fin du programme</span>
-                <div className="section-title">Passez maintenant à l’accompagnement LeanWorker</div>
-                <div className="muted" style={{ lineHeight: 1.7 }}>
+              <MasterclassPanel warm>
+                <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                  <MasterclassBadge tone="green">
+                    <CheckCircleIcon size={14} color="#bbf7d0" />
+                    Fin du programme
+                  </MasterclassBadge>
+                </div>
+
+                <div
+                  style={{
+                    color: "#ffffff",
+                    fontSize: 26,
+                    lineHeight: 1.12,
+                    fontWeight: 950,
+                    letterSpacing: "-0.06em",
+                  }}
+                >
+                  Passez maintenant à l’accompagnement LeanWorker
+                </div>
+
+                <div style={{ color: "rgba(248,250,252,0.64)", lineHeight: 1.75 }}>
                   Vous avez terminé la dernière leçon. Le programme vous a donné la méthode ;
                   l’accompagnement vous aide maintenant à l’appliquer à votre propre trajectoire.
                 </div>
 
                 <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
-                  <Link className="button" href="/elearning/subscribe">
+                  <MasterclassButtonLink href="/elearning/subscribe" variant="primary">
                     Voir les packs d’accompagnement
-                  </Link>
-                  <a
-                    className="button ghost"
+                  </MasterclassButtonLink>
+
+                  <MasterclassButtonLink
                     href={buildCalendlyUrl("final_program_bottom_cta", `lesson_${lesson.id}`)}
-                    target="_blank"
-                    rel="noreferrer"
+                    external
+                    variant="ghost"
                   >
                     Réserver une conversation gratuite
-                  </a>
+                  </MasterclassButtonLink>
                 </div>
-              </section>
+              </MasterclassPanel>
             ) : null}
           </>
         )}

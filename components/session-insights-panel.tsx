@@ -114,6 +114,58 @@ function getDerivedCoachStyle(
   return uiLanguage === "fr" ? mapFr[key] || mapFr.default : mapEn[key] || mapEn.default;
 }
 
+function getStatusLabel(
+  status: Recommendation["status"],
+  copy: {
+    statusOpen: string;
+    statusInProgress: string;
+    statusOther: string;
+  },
+): string {
+  if (status === "in_progress") return copy.statusInProgress;
+  if (status === "open") return copy.statusOpen;
+  return copy.statusOther;
+}
+
+function formatActionTrack(value?: string | null): string | null {
+  if (!value) return null;
+
+  return value
+    .replaceAll("_", " ")
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function getPriorityTone(priority?: string | null): {
+  background: string;
+  border: string;
+  color: string;
+} {
+  if (priority === "high") {
+    return {
+      background: "rgba(255,122,89,0.12)",
+      border: "rgba(255,122,89,0.24)",
+      color: "var(--coach-accent)",
+    };
+  }
+
+  if (priority === "medium") {
+    return {
+      background: "rgba(245,158,11,0.10)",
+      border: "rgba(245,158,11,0.20)",
+      color: "#b45309",
+    };
+  }
+
+  return {
+    background: "rgba(88,180,174,0.12)",
+    border: "rgba(88,180,174,0.22)",
+    color: "var(--coach-calm)",
+  };
+}
+
 export function SessionInsightsPanel({
   uiLanguage = "en",
   sessionId,
@@ -158,7 +210,15 @@ export function SessionInsightsPanel({
             activeRecommendations: "Recommandations actives",
             statusOpen: "ouverte",
             statusInProgress: "en cours",
+            statusOther: "à suivre",
             adaptiveDefault: "Adaptatif",
+            contextActive: "Contexte actif",
+            softSignal: "Signal vivant",
+            coachingMemory: "Mémoire active",
+            nextSteps: "Prochains pas",
+            trajectory: "Trajectoire",
+            sessionLabel: "Session",
+            priority: "Priorité",
           }
         : {
             live: "Live session",
@@ -186,13 +246,22 @@ export function SessionInsightsPanel({
             activeRecommendations: "Active recommendations",
             statusOpen: "open",
             statusInProgress: "in progress",
+            statusOther: "to follow",
             adaptiveDefault: "Adaptive",
+            contextActive: "Active context",
+            softSignal: "Live signal",
+            coachingMemory: "Active memory",
+            nextSteps: "Next steps",
+            trajectory: "Trajectory",
+            sessionLabel: "Session",
+            priority: "Priority",
           },
     [uiLanguage],
   );
 
   const activeRecommendations = (recommendations ?? []).filter(
-    (r) => r.status !== "completed" && r.status !== "dismissed",
+    (recommendation) =>
+      recommendation.status !== "completed" && recommendation.status !== "dismissed",
   );
 
   const coachModeLabel = getCoachModeLabel(coachMode, uiLanguage);
@@ -203,9 +272,25 @@ export function SessionInsightsPanel({
     const hasValue = Boolean(role || level);
 
     return (
-      <div className="card-soft">
-        <strong>{title}</strong>
-        <div className="muted" style={{ marginTop: 6 }}>
+      <div
+        className="card-soft"
+        style={{
+          borderRadius: 20,
+          background: "rgba(255,255,255,0.72)",
+          border: "1px solid rgba(43,33,24,0.08)",
+          padding: 14,
+        }}
+      >
+        <strong style={{ color: "var(--coach-ink)" }}>{title}</strong>
+
+        <div
+          className="muted"
+          style={{
+            marginTop: 6,
+            color: "var(--coach-muted)",
+            lineHeight: 1.5,
+          }}
+        >
           {hasValue ? `${role || "—"} ${level || ""}`.trim() : copy.notDefined}
         </div>
       </div>
@@ -215,35 +300,160 @@ export function SessionInsightsPanel({
   return (
     <div className="session-insights-shell">
       <div className="session-insights-scroll">
-        <div className="stack">
-          <div className="card stack">
-            <div className="row" style={{ gap: 8, alignItems: "center" }}>
-              <SessionIcon />
-              <div className="section-title">{copy.live}</div>
+        <div className="stack" style={{ gap: 16 }}>
+          <div
+            className="card stack"
+            style={{
+              gap: 14,
+              borderRadius: 28,
+              border: "1px solid rgba(43,33,24,0.08)",
+              background:
+                "linear-gradient(135deg, rgba(255,241,220,0.92), rgba(255,255,255,0.90))",
+              boxShadow: "0 14px 34px rgba(43,33,24,0.05)",
+            }}
+          >
+            <div className="row" style={{ gap: 10, alignItems: "center" }}>
+              <span
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 15,
+                  display: "grid",
+                  placeItems: "center",
+                  background: "rgba(255,122,89,0.13)",
+                  border: "1px solid rgba(255,122,89,0.22)",
+                  color: "var(--coach-accent)",
+                  flexShrink: 0,
+                }}
+              >
+                <SessionIcon size={18} />
+              </span>
+
+              <div>
+                <div className="section-title" style={{ color: "var(--coach-ink)" }}>
+                  {copy.live}
+                </div>
+                <div
+                  className="muted"
+                  style={{
+                    marginTop: 2,
+                    color: "var(--coach-muted)",
+                    fontSize: 13,
+                  }}
+                >
+                  {copy.sessionLabel} #{sessionId}
+                </div>
+              </div>
             </div>
 
-            <div className="muted">{copy.liveText}</div>
+            <div
+              className="muted"
+              style={{
+                color: "var(--coach-muted)",
+                lineHeight: 1.65,
+              }}
+            >
+              {copy.liveText}
+            </div>
 
             <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
-              <BadgePill icon={<SessionIcon size={14} />}>Session #{sessionId}</BadgePill>
-              <BadgePill icon={<SparkIcon size={14} />}>{copy.focus}</BadgePill>
+              <BadgePill icon={<SessionIcon size={14} />}>
+                {copy.sessionLabel} #{sessionId}
+              </BadgePill>
+
+              <BadgePill icon={<SparkIcon size={14} />}>{copy.contextActive}</BadgePill>
+
+              <BadgePill icon={<BrainIcon size={14} />}>{copy.coachingMemory}</BadgePill>
             </div>
 
-            <div className="card-soft">
-              <div className="muted">{copy.focusText}</div>
+            <div
+              className="card-soft"
+              style={{
+                borderRadius: 22,
+                background: "rgba(255,255,255,0.70)",
+                border: "1px solid rgba(43,33,24,0.08)",
+              }}
+            >
+              <div className="row" style={{ gap: 8, alignItems: "center" }}>
+                <TargetIcon size={16} />
+                <strong style={{ color: "var(--coach-ink)" }}>{copy.focus}</strong>
+              </div>
+
+              <div
+                className="muted"
+                style={{
+                  marginTop: 8,
+                  color: "var(--coach-muted)",
+                  lineHeight: 1.6,
+                }}
+              >
+                {copy.focusText}
+              </div>
             </div>
           </div>
 
-          <div className="card stack">
-            <div className="row" style={{ gap: 8, alignItems: "center" }}>
-              <BrainIcon />
-              <div className="section-title">{copy.currentCoachStyle}</div>
+          <div
+            className="card stack"
+            style={{
+              gap: 14,
+              borderRadius: 28,
+              border: "1px solid rgba(43,33,24,0.08)",
+              background:
+                "linear-gradient(135deg, rgba(255,255,255,0.92), rgba(255,248,239,0.90))",
+              boxShadow: "0 14px 34px rgba(43,33,24,0.05)",
+            }}
+          >
+            <div className="row" style={{ gap: 10, alignItems: "center" }}>
+              <span
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 15,
+                  display: "grid",
+                  placeItems: "center",
+                  background: "rgba(88,180,174,0.13)",
+                  border: "1px solid rgba(88,180,174,0.22)",
+                  color: "var(--coach-calm)",
+                  flexShrink: 0,
+                }}
+              >
+                <BrainIcon size={18} />
+              </span>
+
+              <div className="section-title" style={{ color: "var(--coach-ink)" }}>
+                {copy.currentCoachStyle}
+              </div>
             </div>
 
-            <div className="muted">{copy.currentCoachStyleText}</div>
+            <div
+              className="muted"
+              style={{
+                color: "var(--coach-muted)",
+                lineHeight: 1.65,
+              }}
+            >
+              {copy.currentCoachStyleText}
+            </div>
 
-            <div className="card-soft stack" style={{ gap: 10 }}>
-              <div style={{ fontSize: 16, fontWeight: 700 }}>
+            <div
+              className="card-soft stack"
+              style={{
+                gap: 12,
+                borderRadius: 24,
+                background:
+                  "linear-gradient(135deg, rgba(88,180,174,0.12), rgba(255,255,255,0.72))",
+                border: "1px solid rgba(88,180,174,0.18)",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 18,
+                  lineHeight: 1.25,
+                  fontWeight: 800,
+                  color: "var(--coach-ink)",
+                  letterSpacing: "-0.03em",
+                }}
+              >
                 {coachStyleLabel || copy.adaptiveDefault}
               </div>
 
@@ -255,25 +465,63 @@ export function SessionInsightsPanel({
                 <BadgePill icon={<TargetIcon size={14} />}>
                   {copy.currentIntent}: {coachIntentLabel || copy.adaptiveDefault}
                 </BadgePill>
+
+                <BadgePill icon={<SparkIcon size={14} />}>{copy.softSignal}</BadgePill>
               </div>
             </div>
           </div>
 
-          <div className="card stack">
-            <div className="row" style={{ gap: 8, alignItems: "center" }}>
-              <PathIcon />
-              <div className="section-title">{copy.gap}</div>
+          <div
+            className="card stack"
+            style={{
+              gap: 14,
+              borderRadius: 28,
+              border: "1px solid rgba(43,33,24,0.08)",
+              background:
+                "linear-gradient(135deg, rgba(255,255,255,0.92), rgba(255,241,220,0.74))",
+              boxShadow: "0 14px 34px rgba(43,33,24,0.05)",
+            }}
+          >
+            <div className="row" style={{ gap: 10, alignItems: "center" }}>
+              <span
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 15,
+                  display: "grid",
+                  placeItems: "center",
+                  background: "rgba(255,122,89,0.13)",
+                  border: "1px solid rgba(255,122,89,0.22)",
+                  color: "var(--coach-accent)",
+                  flexShrink: 0,
+                }}
+              >
+                <PathIcon size={18} />
+              </span>
+
+              <div className="section-title" style={{ color: "var(--coach-ink)" }}>
+                {copy.gap}
+              </div>
             </div>
 
-            {careerGap?.key_gap_summary ? (
-              <div className="card-soft">
-                <div className="muted">{careerGap.key_gap_summary}</div>
+            <div
+              className="card-soft"
+              style={{
+                borderRadius: 22,
+                background: "rgba(255,255,255,0.72)",
+                border: "1px solid rgba(43,33,24,0.08)",
+              }}
+            >
+              <div
+                className="muted"
+                style={{
+                  color: "var(--coach-muted)",
+                  lineHeight: 1.65,
+                }}
+              >
+                {careerGap?.key_gap_summary || copy.noGap}
               </div>
-            ) : (
-              <div className="card-soft">
-                <div className="muted">{copy.noGap}</div>
-              </div>
-            )}
+            </div>
 
             <div className="stack" style={{ gap: 10 }}>
               {renderRoleBlock(copy.current, careerGap?.current_role, null)}
@@ -283,44 +531,143 @@ export function SessionInsightsPanel({
             </div>
           </div>
 
-          <div className="card stack">
-            <div className="row" style={{ gap: 8, alignItems: "center" }}>
-              <ActionListIcon />
-              <div className="section-title">{copy.recs}</div>
+          <div
+            className="card stack"
+            style={{
+              gap: 14,
+              borderRadius: 28,
+              border: "1px solid rgba(43,33,24,0.08)",
+              background:
+                "linear-gradient(135deg, rgba(255,255,255,0.94), rgba(255,248,239,0.92))",
+              boxShadow: "0 14px 34px rgba(43,33,24,0.05)",
+            }}
+          >
+            <div className="row" style={{ gap: 10, alignItems: "center" }}>
+              <span
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 15,
+                  display: "grid",
+                  placeItems: "center",
+                  background: "rgba(88,180,174,0.13)",
+                  border: "1px solid rgba(88,180,174,0.22)",
+                  color: "var(--coach-calm)",
+                  flexShrink: 0,
+                }}
+              >
+                <ActionListIcon size={18} />
+              </span>
+
+              <div className="section-title" style={{ color: "var(--coach-ink)" }}>
+                {copy.recs}
+              </div>
             </div>
 
             {activeRecommendations.length === 0 ? (
-              <div className="card-soft">
-                <div className="muted">{copy.noRecs}</div>
+              <div
+                className="card-soft"
+                style={{
+                  borderRadius: 22,
+                  background: "rgba(255,255,255,0.72)",
+                  border: "1px solid rgba(43,33,24,0.08)",
+                }}
+              >
+                <div
+                  className="muted"
+                  style={{
+                    color: "var(--coach-muted)",
+                    lineHeight: 1.65,
+                  }}
+                >
+                  {copy.noRecs}
+                </div>
               </div>
             ) : (
               <>
-                <div className="muted">{copy.activeRecommendations}</div>
+                <div
+                  className="muted"
+                  style={{
+                    color: "var(--coach-muted)",
+                    lineHeight: 1.55,
+                  }}
+                >
+                  {copy.activeRecommendations}
+                </div>
 
-                {activeRecommendations.slice(0, 3).map((rec) => (
-                  <div key={rec.id} className="card-soft stack" style={{ gap: 10 }}>
-                    <strong>{rec.title}</strong>
+                {activeRecommendations.slice(0, 3).map((recommendation) => {
+                  const priorityTone = getPriorityTone(recommendation.priority);
+                  const actionTrack = formatActionTrack(recommendation.action_track);
 
-                    <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                      <BadgePill
-                        icon={
-                          rec.status === "in_progress" ? (
-                            <ClockIcon size={14} />
-                          ) : (
-                            <ActionListIcon size={14} />
-                          )
-                        }
+                  return (
+                    <div
+                      key={recommendation.id}
+                      className="card-soft stack"
+                      style={{
+                        gap: 10,
+                        borderRadius: 22,
+                        background: "rgba(255,255,255,0.74)",
+                        border: "1px solid rgba(43,33,24,0.08)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontWeight: 800,
+                          color: "var(--coach-ink)",
+                          lineHeight: 1.35,
+                          letterSpacing: "-0.02em",
+                        }}
                       >
-                        {rec.priority} •{" "}
-                        {rec.status === "in_progress" ? copy.statusInProgress : copy.statusOpen}
-                      </BadgePill>
-                    </div>
+                        {recommendation.title}
+                      </div>
 
-                    {rec.action_track && (
-                      <div className="muted">{rec.action_track.replaceAll("_", " ")}</div>
-                    )}
-                  </div>
-                ))}
+                      <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 6,
+                            borderRadius: 999,
+                            padding: "6px 10px",
+                            fontSize: 12,
+                            lineHeight: 1,
+                            border: `1px solid ${priorityTone.border}`,
+                            background: priorityTone.background,
+                            color: priorityTone.color,
+                            fontWeight: 750,
+                          }}
+                        >
+                          <TargetIcon size={14} />
+                          {copy.priority}: {recommendation.priority}
+                        </span>
+
+                        <BadgePill
+                          icon={
+                            recommendation.status === "in_progress" ? (
+                              <ClockIcon size={14} />
+                            ) : (
+                              <ActionListIcon size={14} />
+                            )
+                          }
+                        >
+                          {getStatusLabel(recommendation.status, copy)}
+                        </BadgePill>
+                      </div>
+
+                      {actionTrack ? (
+                        <div
+                          className="muted"
+                          style={{
+                            color: "var(--coach-muted)",
+                            lineHeight: 1.55,
+                          }}
+                        >
+                          {actionTrack}
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
               </>
             )}
           </div>

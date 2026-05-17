@@ -20,26 +20,26 @@ function BrandMark() {
   return (
     <div
       style={{
-        width: 44,
-        height: 44,
-        borderRadius: 14,
+        width: 48,
+        height: 48,
+        borderRadius: 18,
         display: "grid",
         placeItems: "center",
         background:
-          "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(16,185,129,0.14))",
-        border: "1px solid rgba(37,99,235,0.18)",
+          "linear-gradient(135deg, rgba(255,122,89,0.22), rgba(88,180,174,0.16))",
+        border: "1px solid rgba(255,122,89,0.18)",
         boxShadow:
-          "0 10px 30px rgba(15,23,42,0.10), inset 0 1px 0 rgba(255,255,255,0.5)",
-        fontWeight: 800,
+          "0 16px 34px rgba(120,72,42,0.10), inset 0 1px 0 rgba(255,255,255,0.65)",
+        fontWeight: 900,
         fontSize: 17,
-        letterSpacing: "-0.04em",
+        letterSpacing: "-0.05em",
         flexShrink: 0,
       }}
       aria-hidden="true"
     >
       <span
         style={{
-          background: "linear-gradient(135deg, #2563eb, #10b981)",
+          background: "linear-gradient(135deg, var(--coach-accent), var(--coach-calm))",
           WebkitBackgroundClip: "text",
           color: "transparent",
         }}
@@ -57,7 +57,7 @@ function NavIcon({
   href: string;
   active: boolean;
 }) {
-  const color = active ? "var(--primary)" : "currentColor";
+  const color = active ? "var(--coach-accent)" : "currentColor";
 
   if (href === "/dashboard") return <ChartIcon size={16} color={color} />;
   if (href === "/session") return <SessionIcon size={16} color={color} />;
@@ -99,7 +99,7 @@ export function SidebarNav({
     },
     {
       href: "/career-blueprint",
-      label: uiLanguage === "fr" ? "Blueprint" : "Blueprint",
+      label: uiLanguage === "fr" ? "Blueprint carrière" : "Career Blueprint",
     },
     {
       href: "/account/subscription",
@@ -120,28 +120,29 @@ export function SidebarNav({
 
   return (
     <aside
-      className="sidebar"
+      className="sidebar coach-sidebar"
       style={{
         position: "relative",
         padding: 16,
-        borderRadius: 28,
-        border: "1px solid rgba(15,23,42,0.06)",
+        borderRadius: 30,
+        border: "1px solid rgba(43,33,24,0.08)",
         background:
-          "linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,250,252,0.98))",
+          "linear-gradient(180deg, rgba(255,255,255,0.78), rgba(255,241,220,0.72))",
         boxShadow:
-          "0 24px 60px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.75)",
-        backdropFilter: "blur(12px)",
+          "0 26px 70px rgba(120,72,42,0.10), inset 0 1px 0 rgba(255,255,255,0.78)",
+        backdropFilter: "blur(14px)",
         minHeight: "calc(100vh - 32px)",
+        overflow: "hidden",
       }}
     >
       <div
         style={{
           position: "absolute",
           inset: 0,
-          borderRadius: 28,
+          borderRadius: 30,
           pointerEvents: "none",
           background:
-            "radial-gradient(circle at top left, rgba(37,99,235,0.06), transparent 28%)",
+            "radial-gradient(circle at top left, rgba(255,122,89,0.16), transparent 28%), radial-gradient(circle at bottom right, rgba(88,180,174,0.12), transparent 32%)",
         }}
       />
 
@@ -160,34 +161,44 @@ export function SidebarNav({
             display: "flex",
             alignItems: "center",
             gap: 12,
-            padding: "8px 6px 4px 6px",
+            padding: "8px 6px 12px",
+            borderBottom: "1px solid rgba(43,33,24,0.08)",
+            marginBottom: 0,
           }}
         >
           <BrandMark />
 
-          <div className="stack" style={{ gap: 2 }}>
+          <div className="stack" style={{ gap: 2, minWidth: 0 }}>
             <p
               className="brand-title"
               style={{
                 margin: 0,
-                fontSize: 17,
-                fontWeight: 700,
-                letterSpacing: "-0.03em",
+                fontSize: 18,
+                fontWeight: 850,
+                letterSpacing: "-0.04em",
+                color: "var(--coach-ink)",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
               }}
             >
               LeanWorker
             </p>
+
             <p
               className="brand-subtitle"
               style={{
                 margin: 0,
                 fontSize: 12,
-                color: "var(--muted-foreground, #64748b)",
+                color: "var(--coach-muted)",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
               }}
             >
               {uiLanguage === "fr"
-                ? "Career intelligence amplifiée"
-                : "Career intelligence amplified"}
+                ? "Ton espace de progression"
+                : "Your growth workspace"}
             </p>
           </div>
         </div>
@@ -204,17 +215,17 @@ export function SidebarNav({
             className="nav-section-label"
             style={{
               fontSize: 11,
-              fontWeight: 700,
+              fontWeight: 850,
               letterSpacing: "0.08em",
-              color: "var(--muted-foreground, #64748b)",
+              color: "var(--coach-muted)",
               padding: "0 10px",
               textTransform: "uppercase",
             }}
           >
-            {uiLanguage === "fr" ? "Espace de travail" : "Workspace"}
+            {uiLanguage === "fr" ? "Parcours" : "Journey"}
           </span>
 
-          <div className="stack" style={{ gap: 6 }}>
+          <div className="stack" style={{ gap: 7 }}>
             {items.map((item) => {
               const active =
                 pathname === item.href ||
@@ -232,19 +243,20 @@ export function SidebarNav({
                     justifyContent: "space-between",
                     gap: 10,
                     padding: "12px 12px",
-                    borderRadius: 16,
+                    borderRadius: 18,
                     textDecoration: "none",
-                    color: active ? "var(--foreground)" : "inherit",
+                    color: active ? "var(--coach-ink)" : "var(--coach-muted)",
                     background: active
-                      ? "linear-gradient(180deg, rgba(255,255,255,0.95), rgba(241,245,249,0.95))"
+                      ? "linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,241,220,0.92))"
                       : "transparent",
                     border: active
-                      ? "1px solid rgba(37,99,235,0.14)"
+                      ? "1px solid rgba(255,122,89,0.22)"
                       : "1px solid transparent",
                     boxShadow: active
-                      ? "0 8px 24px rgba(37,99,235,0.08), inset 0 1px 0 rgba(255,255,255,0.75)"
+                      ? "0 14px 30px rgba(120,72,42,0.10), inset 0 1px 0 rgba(255,255,255,0.76)"
                       : "none",
-                    transition: "all 180ms ease",
+                    transition:
+                      "background 180ms ease, border-color 180ms ease, box-shadow 180ms ease, color 180ms ease, transform 160ms ease",
                   }}
                 >
                   {active ? (
@@ -253,11 +265,12 @@ export function SidebarNav({
                       style={{
                         position: "absolute",
                         left: 0,
-                        top: 8,
-                        bottom: 8,
-                        width: 3,
+                        top: 10,
+                        bottom: 10,
+                        width: 4,
                         borderRadius: 999,
-                        background: "linear-gradient(180deg, #2563eb, #10b981)",
+                        background:
+                          "linear-gradient(180deg, var(--coach-accent), var(--coach-calm))",
                       }}
                     />
                   ) : null}
@@ -272,14 +285,15 @@ export function SidebarNav({
                   >
                     <span
                       style={{
-                        width: 30,
-                        height: 30,
-                        borderRadius: 10,
+                        width: 32,
+                        height: 32,
+                        borderRadius: 12,
                         display: "grid",
                         placeItems: "center",
+                        color: active ? "var(--coach-accent)" : "var(--coach-muted)",
                         background: active
-                          ? "rgba(37,99,235,0.08)"
-                          : "rgba(15,23,42,0.04)",
+                          ? "rgba(255,122,89,0.12)"
+                          : "rgba(43,33,24,0.045)",
                         transition: "all 180ms ease",
                         flexShrink: 0,
                       }}
@@ -290,7 +304,7 @@ export function SidebarNav({
                     <span
                       style={{
                         fontSize: 14,
-                        fontWeight: active ? 600 : 500,
+                        fontWeight: active ? 750 : 600,
                         whiteSpace: "nowrap",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
@@ -302,16 +316,14 @@ export function SidebarNav({
 
                   <span
                     style={{
-                      opacity: active ? 1 : 0.45,
-                      transform: active ? "translateX(0)" : "translateX(-2px)",
+                      opacity: active ? 1 : 0.38,
+                      transform: active ? "translateX(0)" : "translateX(-3px)",
                       transition: "all 180ms ease",
                       flexShrink: 0,
+                      color: active ? "var(--coach-accent)" : "var(--coach-muted)",
                     }}
                   >
-                    <ArrowRightIcon
-                      size={14}
-                      color={active ? "var(--primary)" : "currentColor"}
-                    />
+                    <ArrowRightIcon size={14} color="currentColor" />
                   </span>
                 </Link>
               );
@@ -322,35 +334,37 @@ export function SidebarNav({
         <div
           className="card-soft stack"
           style={{
-            gap: 8,
-            padding: 14,
-            borderRadius: 18,
+            gap: 9,
+            padding: 15,
+            borderRadius: 22,
             background:
-              "linear-gradient(180deg, rgba(255,255,255,0.86), rgba(248,250,252,0.92))",
-            border: "1px solid rgba(15,23,42,0.06)",
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7)",
+              "linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,241,220,0.82))",
+            border: "1px solid rgba(255,122,89,0.14)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.72)",
           }}
         >
           <div
             className="section-title"
             style={{
               margin: 0,
-              fontSize: 13,
+              fontSize: 14,
+              color: "var(--coach-ink)",
             }}
           >
-            {uiLanguage === "fr" ? "Espace personnel" : "Personal workspace"}
+            {uiLanguage === "fr" ? "Ton espace personnel" : "Your personal space"}
           </div>
 
           <div
             className="muted"
             style={{
               fontSize: 12,
-              lineHeight: 1.5,
+              lineHeight: 1.55,
+              color: "var(--coach-muted)",
             }}
           >
             {uiLanguage === "fr"
-              ? "Coaching, mémoire, recommandations et guides IA réunis dans un même espace."
-              : "Coaching, memory, recommendations, and AI guides in one workspace."}
+              ? "Un espace calme pour clarifier, décider et avancer sans te disperser."
+              : "A calm space to clarify, decide, and move forward without scattering your energy."}
           </div>
         </div>
 
@@ -360,9 +374,11 @@ export function SidebarNav({
             style={{
               width: "100%",
               minHeight: 46,
-              borderRadius: 16,
-              background: "rgba(255,255,255,0.55)",
-              border: "1px solid rgba(15,23,42,0.08)",
+              borderRadius: 18,
+              background: "rgba(255,255,255,0.68)",
+              color: "var(--coach-ink)",
+              border: "1px solid rgba(43,33,24,0.08)",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.68)",
             }}
             onClick={() => {
               clearToken();

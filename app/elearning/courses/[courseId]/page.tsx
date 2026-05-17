@@ -1,3 +1,4 @@
+// app/elearning/courses/[courseId]/page.tsx
 "use client";
 
 import Link from "next/link";
@@ -16,6 +17,13 @@ import type {
   LearningProgressSummary,
   Me,
 } from "@/lib/types";
+import {
+  CheckCircleIcon,
+  ClockIcon,
+  PathIcon,
+  PlayCircleIcon,
+  SparkIcon,
+} from "@/components/ui-flat-icons";
 
 export default function ElearningCoursePage() {
   return (
@@ -70,37 +78,130 @@ function getLessonStatusTone(lesson: LearningLessonSummary): React.CSSProperties
   const base: React.CSSProperties = {
     display: "inline-flex",
     alignItems: "center",
+    gap: 6,
     borderRadius: 999,
-    padding: "5px 10px",
+    padding: "6px 10px",
     fontSize: 12,
-    fontWeight: 800,
+    fontWeight: 900,
     whiteSpace: "nowrap",
+    letterSpacing: "0.015em",
   };
 
   if (lesson.progress?.status === "completed" || progress >= 100) {
     return {
       ...base,
-      color: "#15803d",
-      background: "rgba(21,128,61,0.10)",
-      border: "1px solid rgba(21,128,61,0.22)",
+      color: "#bbf7d0",
+      background: "rgba(34,197,94,0.12)",
+      border: "1px solid rgba(34,197,94,0.24)",
     };
   }
 
   if (lesson.progress?.status === "in_progress" || progress > 0) {
     return {
       ...base,
-      color: "#4338ca",
-      background: "rgba(99,102,241,0.12)",
-      border: "1px solid rgba(99,102,241,0.22)",
+      color: "#fbbf24",
+      background: "rgba(251,191,36,0.13)",
+      border: "1px solid rgba(251,191,36,0.26)",
     };
   }
 
   return {
     ...base,
-    color: "#475569",
-    background: "rgba(100,116,139,0.10)",
-    border: "1px solid rgba(100,116,139,0.18)",
+    color: "rgba(248,250,252,0.66)",
+    background: "rgba(255,255,255,0.07)",
+    border: "1px solid rgba(255,255,255,0.11)",
   };
+}
+
+function MasterclassBadge({
+  children,
+  tone = "dark",
+}: {
+  children: React.ReactNode;
+  tone?: "dark" | "gold" | "green" | "red";
+}) {
+  const styles =
+    tone === "gold"
+      ? {
+          background: "rgba(251,191,36,0.14)",
+          border: "1px solid rgba(251,191,36,0.25)",
+          color: "#fbbf24",
+        }
+      : tone === "green"
+        ? {
+            background: "rgba(34,197,94,0.12)",
+            border: "1px solid rgba(34,197,94,0.22)",
+            color: "#bbf7d0",
+          }
+        : tone === "red"
+          ? {
+              background: "rgba(239,68,68,0.14)",
+              border: "1px solid rgba(239,68,68,0.24)",
+              color: "#fca5a5",
+            }
+          : {
+              background: "rgba(255,255,255,0.07)",
+              border: "1px solid rgba(255,255,255,0.11)",
+              color: "rgba(248,250,252,0.72)",
+            };
+
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 7,
+        padding: "8px 11px",
+        borderRadius: 999,
+        fontSize: 12,
+        fontWeight: 900,
+        letterSpacing: "0.025em",
+        ...styles,
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+function MasterclassPanel({
+  children,
+  warm = false,
+}: {
+  children: React.ReactNode;
+  warm?: boolean;
+}) {
+  return (
+    <section
+      className="stack"
+      style={{
+        gap: 16,
+        padding: 22,
+        borderRadius: 30,
+        background: warm
+          ? "linear-gradient(135deg, rgba(251,191,36,0.13), rgba(255,255,255,0.055))"
+          : "linear-gradient(180deg, rgba(255,255,255,0.075), rgba(255,255,255,0.045))",
+        border: "1px solid rgba(255,255,255,0.10)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
+      }}
+    >
+      {children}
+    </section>
+  );
+}
+
+function LessonStatusIcon({ lesson }: { lesson: LearningLessonSummary }) {
+  const progress = Number(lesson.progress?.progress_percent ?? 0);
+
+  if (lesson.progress?.status === "completed" || progress >= 100) {
+    return <CheckCircleIcon size={14} color="#bbf7d0" />;
+  }
+
+  if (lesson.progress?.status === "in_progress" || progress > 0) {
+    return <ClockIcon size={14} color="#fbbf24" />;
+  }
+
+  return <PlayCircleIcon size={14} color="rgba(248,250,252,0.62)" />;
 }
 
 function ElearningCourseContent() {
@@ -192,65 +293,161 @@ function ElearningCourseContent() {
       chapters={course?.chapters ?? []}
       progressPercent={summary?.overall_progress_percent ?? course?.progress_percent ?? 0}
     >
-      <div className="stack" style={{ gap: 18 }}>
+      <div
+        className="stack"
+        style={{
+          gap: 18,
+          color: "#f8fafc",
+        }}
+      >
         {loading ? (
-          <div className="card-soft">Chargement du programme...</div>
+          <MasterclassPanel>
+            <div style={{ color: "#ffffff", fontWeight: 900, fontSize: 18 }}>
+              Chargement du programme...
+            </div>
+            <div style={{ color: "rgba(248,250,252,0.62)", lineHeight: 1.7 }}>
+              Préparation des chapitres, des leçons et de votre progression.
+            </div>
+          </MasterclassPanel>
         ) : error ? (
-          <div className="card-soft" style={{ color: "var(--danger)" }}>
-            {error}
-          </div>
+          <MasterclassPanel>
+            <div style={{ color: "#fca5a5", fontWeight: 900, fontSize: 18 }}>
+              Impossible de charger le programme
+            </div>
+            <div style={{ color: "rgba(248,250,252,0.68)" }}>{error}</div>
+          </MasterclassPanel>
         ) : !course ? (
-          <div className="card-soft">Programme introuvable.</div>
+          <MasterclassPanel>
+            <div style={{ color: "rgba(248,250,252,0.72)" }}>
+              Programme introuvable.
+            </div>
+          </MasterclassPanel>
         ) : (
           <>
             <section
-              className="card stack"
+              className="stack"
               style={{
-                gap: 18,
+                position: "relative",
+                overflow: "hidden",
+                gap: 22,
+                padding: 30,
+                borderRadius: 36,
                 background:
-                  "radial-gradient(circle at top left, rgba(37,99,235,0.10), transparent 32%), linear-gradient(135deg, rgba(255,255,255,0.98), rgba(248,250,252,0.96))",
+                  "radial-gradient(circle at 16% 0%, rgba(239,68,68,0.20), transparent 32%), radial-gradient(circle at 86% 14%, rgba(250,204,21,0.13), transparent 30%), linear-gradient(135deg, #0a0a0a 0%, #11100f 48%, #1e120b 100%)",
+                border: "1px solid rgba(255,255,255,0.10)",
+                boxShadow:
+                  "0 34px 100px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.08)",
               }}
             >
-              <div className="row space-between" style={{ gap: 16, flexWrap: "wrap" }}>
-                <div className="stack" style={{ gap: 10, maxWidth: 760 }}>
-                  <span className="badge">Programme de formation</span>
+              <div
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  top: -160,
+                  right: -120,
+                  width: 360,
+                  height: 360,
+                  borderRadius: 999,
+                  background: "rgba(249,115,22,0.15)",
+                }}
+              />
+
+              <div
+                className="row space-between"
+                style={{
+                  gap: 18,
+                  flexWrap: "wrap",
+                  position: "relative",
+                  zIndex: 1,
+                }}
+              >
+                <div className="stack" style={{ gap: 13, maxWidth: 780 }}>
+                  <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                    <MasterclassBadge tone="gold">
+                      <SparkIcon size={14} color="#fbbf24" />
+                      Programme de formation
+                    </MasterclassBadge>
+
+                    <MasterclassBadge>
+                      <PathIcon size={14} color="rgba(248,250,252,0.70)" />
+                      Parcours complet
+                    </MasterclassBadge>
+                  </div>
 
                   <h1
-                    className="title"
                     style={{
                       margin: 0,
-                      fontSize: 42,
-                      lineHeight: 1.05,
-                      letterSpacing: "-0.04em",
+                      color: "#ffffff",
+                      fontSize: 58,
+                      lineHeight: 0.95,
+                      fontWeight: 950,
+                      letterSpacing: "-0.075em",
                     }}
                   >
                     {course.title}
                   </h1>
 
                   {course.subtitle ? (
-                    <div className="subtitle" style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>
+                    <div
+                      style={{
+                        color: "rgba(248,250,252,0.90)",
+                        margin: 0,
+                        fontSize: 24,
+                        fontWeight: 900,
+                        lineHeight: 1.18,
+                        letterSpacing: "-0.045em",
+                      }}
+                    >
                       {course.subtitle}
                     </div>
                   ) : null}
 
                   {course.description ? (
-                    <p className="muted" style={{ fontSize: 15, lineHeight: 1.7 }}>
+                    <p
+                      style={{
+                        color: "rgba(248,250,252,0.64)",
+                        fontSize: 16,
+                        lineHeight: 1.75,
+                        margin: 0,
+                        maxWidth: 760,
+                      }}
+                    >
                       {course.description}
                     </p>
                   ) : null}
                 </div>
 
                 <div
-                  className="card-soft stack"
+                  className="stack"
                   style={{
-                    gap: 10,
-                    minWidth: 260,
-                    border: "1px solid rgba(37,99,235,0.14)",
+                    gap: 12,
+                    minWidth: 280,
+                    maxWidth: 340,
+                    padding: 20,
+                    borderRadius: 28,
+                    background:
+                      "linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.055))",
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
                   }}
                 >
-                  <div className="muted">Progression du programme</div>
-                  <div className="admin-metric-value">{formatPercent(course.progress_percent)}</div>
-                  <div className="muted">
+                  <div style={{ color: "rgba(248,250,252,0.62)", fontSize: 13 }}>
+                    Progression du programme
+                  </div>
+
+                  <div
+                    style={{
+                      color: "#ffffff",
+                      fontSize: 44,
+                      lineHeight: 1,
+                      fontWeight: 950,
+                      letterSpacing: "-0.07em",
+                    }}
+                  >
+                    {formatPercent(course.progress_percent)}
+                  </div>
+
+                  <div style={{ color: "rgba(248,250,252,0.62)", lineHeight: 1.55 }}>
                     {course.completed_lessons} leçon(s) terminée(s) sur {course.total_lessons}
                   </div>
 
@@ -258,7 +455,7 @@ function ElearningCourseContent() {
                     style={{
                       height: 10,
                       borderRadius: 999,
-                      background: "rgba(15,23,42,0.08)",
+                      background: "rgba(255,255,255,0.09)",
                       overflow: "hidden",
                     }}
                   >
@@ -267,13 +464,23 @@ function ElearningCourseContent() {
                         width: formatPercent(course.progress_percent),
                         height: "100%",
                         borderRadius: 999,
-                        background: "linear-gradient(135deg, #2563eb, #10b981)",
+                        background: "linear-gradient(135deg, #facc15, #f97316, #ef4444)",
                       }}
                     />
                   </div>
 
                   {nextRecommendedLessonId ? (
-                    <Link className="button" href={`/elearning/lessons/${nextRecommendedLessonId}`}>
+                    <Link
+                      className="button"
+                      href={`/elearning/lessons/${nextRecommendedLessonId}`}
+                      style={{
+                        background: "#ffffff",
+                        color: "#111827",
+                        borderRadius: 16,
+                        minHeight: 46,
+                        justifyContent: "center",
+                      }}
+                    >
                       {course.progress_percent > 0 ? "Continuer" : "Démarrer"}
                     </Link>
                   ) : null}
@@ -281,22 +488,36 @@ function ElearningCourseContent() {
               </div>
             </section>
 
-            <section className="card stack" style={{ gap: 14 }}>
+            <MasterclassPanel>
               <div className="row space-between" style={{ gap: 12, flexWrap: "wrap" }}>
-                <div className="stack" style={{ gap: 4 }}>
-                  <div className="section-title">Chapitres et leçons</div>
-                  <div className="muted">
+                <div className="stack" style={{ gap: 5 }}>
+                  <div
+                    style={{
+                      color: "#ffffff",
+                      fontSize: 24,
+                      fontWeight: 950,
+                      letterSpacing: "-0.055em",
+                    }}
+                  >
+                    Chapitres et leçons
+                  </div>
+
+                  <div style={{ color: "rgba(248,250,252,0.62)", lineHeight: 1.65 }}>
                     Suivez le programme dans l’ordre ou ouvrez directement un chapitre.
                   </div>
                 </div>
 
                 <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                  <span className="badge">{course.chapters.length} chapitre(s)</span>
-                  <span className="badge">{course.total_lessons} leçon(s)</span>
+                  <MasterclassBadge>
+                    {course.chapters.length} chapitre(s)
+                  </MasterclassBadge>
+                  <MasterclassBadge tone="gold">
+                    {course.total_lessons} leçon(s)
+                  </MasterclassBadge>
                 </div>
               </div>
 
-              <div className="stack" style={{ gap: 12 }}>
+              <div className="stack" style={{ gap: 14 }}>
                 {course.chapters.map((chapter) => {
                   const completedLessons = chapter.lessons.filter((lesson) => {
                     const progress = Number(lesson.progress?.progress_percent ?? 0);
@@ -307,39 +528,65 @@ function ElearningCourseContent() {
                     <article
                       id={`chapter-${chapter.id}`}
                       key={chapter.id}
-                      className="card-soft stack"
-                      style={{ gap: 12 }}
+                      className="stack"
+                      style={{
+                        gap: 13,
+                        padding: 18,
+                        borderRadius: 28,
+                        background:
+                          "linear-gradient(180deg, rgba(255,255,255,0.070), rgba(255,255,255,0.040))",
+                        border: "1px solid rgba(255,255,255,0.10)",
+                      }}
                     >
                       <div className="row space-between" style={{ gap: 12, flexWrap: "wrap" }}>
-                        <div className="stack" style={{ gap: 6 }}>
+                        <div className="stack" style={{ gap: 8 }}>
                           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                            <span className="badge">Chapitre {chapter.display_order}</span>
-                            <span className="badge">
+                            <MasterclassBadge tone="gold">
+                              Chapitre {chapter.display_order}
+                            </MasterclassBadge>
+
+                            <MasterclassBadge>
                               {completedLessons}/{chapter.lessons.length} leçon(s) terminée(s)
-                            </span>
+                            </MasterclassBadge>
                           </div>
 
-                          <h2 className="section-title" style={{ fontSize: 20 }}>
+                          <h2
+                            style={{
+                              color: "#ffffff",
+                              fontSize: 22,
+                              lineHeight: 1.15,
+                              fontWeight: 950,
+                              letterSpacing: "-0.055em",
+                              margin: 0,
+                            }}
+                          >
                             {chapter.title}
                           </h2>
 
                           {chapter.description ? (
-                            <div className="muted" style={{ lineHeight: 1.6 }}>
+                            <div
+                              style={{
+                                color: "rgba(248,250,252,0.62)",
+                                lineHeight: 1.65,
+                                maxWidth: 900,
+                              }}
+                            >
                               {chapter.description}
                             </div>
                           ) : null}
                         </div>
                       </div>
 
-                      <div className="stack" style={{ gap: 8 }}>
+                      <div className="stack" style={{ gap: 9 }}>
                         {chapter.lessons.length === 0 ? (
-                          <div className="muted">Aucune leçon disponible dans ce chapitre.</div>
+                          <div style={{ color: "rgba(248,250,252,0.62)" }}>
+                            Aucune leçon disponible dans ce chapitre.
+                          </div>
                         ) : (
                           chapter.lessons.map((lesson) => (
                             <Link
                               key={lesson.id}
                               href={`/elearning/lessons/${lesson.id}`}
-                              className="card"
                               style={{
                                 display: "grid",
                                 gridTemplateColumns: "1fr auto",
@@ -347,27 +594,65 @@ function ElearningCourseContent() {
                                 alignItems: "center",
                                 textDecoration: "none",
                                 color: "inherit",
-                                padding: 14,
+                                padding: 15,
+                                borderRadius: 22,
+                                background: "rgba(0,0,0,0.18)",
+                                border: "1px solid rgba(255,255,255,0.09)",
+                                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.045)",
                               }}
                             >
-                              <div className="stack" style={{ gap: 5 }}>
+                              <div className="stack" style={{ gap: 7 }}>
                                 <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                                   <span style={getLessonStatusTone(lesson)}>
+                                    <LessonStatusIcon lesson={lesson} />
                                     {getLessonStatusLabel(lesson)}
                                   </span>
-                                  <span className="badge">{formatDuration(lesson.duration_seconds)}</span>
+
+                                  <MasterclassBadge>
+                                    <ClockIcon size={14} color="rgba(248,250,252,0.62)" />
+                                    {formatDuration(lesson.duration_seconds)}
+                                  </MasterclassBadge>
                                 </div>
 
-                                <strong>{lesson.title}</strong>
+                                <strong
+                                  style={{
+                                    color: "#ffffff",
+                                    fontSize: 15,
+                                    lineHeight: 1.35,
+                                  }}
+                                >
+                                  {lesson.title}
+                                </strong>
 
                                 {lesson.description ? (
-                                  <div className="muted" style={{ lineHeight: 1.5 }}>
+                                  <div
+                                    style={{
+                                      color: "rgba(248,250,252,0.58)",
+                                      lineHeight: 1.55,
+                                      fontSize: 14,
+                                    }}
+                                  >
                                     {lesson.description}
                                   </div>
                                 ) : null}
                               </div>
 
-                              <div className="button ghost" style={{ whiteSpace: "nowrap" }}>
+                              <div
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 8,
+                                  padding: "10px 13px",
+                                  borderRadius: 14,
+                                  background: "rgba(255,255,255,0.08)",
+                                  border: "1px solid rgba(255,255,255,0.11)",
+                                  color: "rgba(248,250,252,0.78)",
+                                  fontSize: 13,
+                                  fontWeight: 900,
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                <PlayCircleIcon size={14} />
                                 Ouvrir
                               </div>
                             </Link>
@@ -378,35 +663,62 @@ function ElearningCourseContent() {
                   );
                 })}
               </div>
-            </section>
+            </MasterclassPanel>
 
             {course.progress_percent >= 100 ? (
-              <section
-                className="card stack"
-                style={{
-                  gap: 12,
-                  border: "1px solid rgba(16,185,129,0.20)",
-                  background:
-                    "linear-gradient(135deg, rgba(16,185,129,0.08), rgba(37,99,235,0.06))",
-                }}
-              >
-                <span className="badge">Programme terminé</span>
-                <div className="section-title">Prêt à passer à l’accompagnement ?</div>
-                <div className="muted" style={{ lineHeight: 1.7 }}>
+              <MasterclassPanel warm>
+                <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                  <MasterclassBadge tone="green">
+                    <CheckCircleIcon size={14} color="#bbf7d0" />
+                    Programme terminé
+                  </MasterclassBadge>
+                </div>
+
+                <div
+                  style={{
+                    color: "#ffffff",
+                    fontSize: 26,
+                    lineHeight: 1.12,
+                    fontWeight: 950,
+                    letterSpacing: "-0.06em",
+                  }}
+                >
+                  Prêt à passer à l’accompagnement ?
+                </div>
+
+                <div style={{ color: "rgba(248,250,252,0.64)", lineHeight: 1.75 }}>
                   Vous avez terminé le programme Time’s UP!. Vous pouvez maintenant choisir un pack
                   LeanWorker ou réserver une conversation gratuite pour transformer la méthode en plan
                   d’action personnel.
                 </div>
 
                 <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
-                  <Link className="button" href="/elearning/subscribe">
+                  <Link
+                    className="button"
+                    href="/elearning/subscribe"
+                    style={{
+                      background: "#ffffff",
+                      color: "#111827",
+                      borderRadius: 16,
+                    }}
+                  >
                     Voir les packs
                   </Link>
-                  <a className="button ghost" href="#" target="_blank" rel="noreferrer">
+
+                  <a
+                    className="button ghost"
+                    href="#"
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      color: "rgba(248,250,252,0.82)",
+                      borderColor: "rgba(255,255,255,0.16)",
+                    }}
+                  >
                     Réserver une conversation gratuite
                   </a>
                 </div>
-              </section>
+              </MasterclassPanel>
             ) : null}
           </>
         )}

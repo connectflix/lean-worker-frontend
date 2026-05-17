@@ -177,7 +177,13 @@ export function BadgePill({
   return (
     <span
       className="badge"
-      style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+      translate="no"
+      suppressHydrationWarning
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+      }}
     >
       {icon}
       {children}

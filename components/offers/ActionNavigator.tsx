@@ -17,6 +17,7 @@ type ActionNavigatorProps = {
 };
 
 type NavigableOffer = {
+  key: string;
   offer: OfferItemResponse;
   type: "base" | "upsell" | "cross_sell";
 };
@@ -48,16 +49,28 @@ export function ActionNavigator({
     const list: NavigableOffer[] = [];
 
     if (baseOffer) {
-      list.push({ offer: baseOffer, type: "base" });
+      list.push({
+        key: `base-${baseOffer.lever_category}-${baseOffer.format ?? "unknown"}-0`,
+        offer: baseOffer,
+        type: "base",
+      });
     }
 
-    for (const offer of upsellOffers) {
-      list.push({ offer, type: "upsell" });
-    }
+    upsellOffers.forEach((offer, index) => {
+      list.push({
+        key: `upsell-${offer.lever_category}-${offer.format ?? "unknown"}-${index}`,
+        offer,
+        type: "upsell",
+      });
+    });
 
-    for (const offer of crossSellOffers) {
-      list.push({ offer, type: "cross_sell" });
-    }
+    crossSellOffers.forEach((offer, index) => {
+      list.push({
+        key: `cross-sell-${offer.lever_category}-${offer.format ?? "unknown"}-${index}`,
+        offer,
+        type: "cross_sell",
+      });
+    });
 
     return list;
   }, [baseOffer, upsellOffers, crossSellOffers]);
@@ -82,11 +95,13 @@ export function ActionNavigator({
   const current = offers[currentIndex];
 
   function goPrevious() {
-    setCurrentIndex((prev) => Math.max(prev - 1, 0));
+    setCurrentIndex((previousIndex) => Math.max(previousIndex - 1, 0));
   }
 
   function goNext() {
-    setCurrentIndex((prev) => Math.min(prev + 1, offers.length - 1));
+    setCurrentIndex((previousIndex) =>
+      Math.min(previousIndex + 1, offers.length - 1),
+    );
   }
 
   return (
@@ -100,7 +115,10 @@ export function ActionNavigator({
             <BadgePill icon={<SparkIcon size={14} />}>
               {currentIndex + 1} / {offers.length}
             </BadgePill>
-            <BadgePill icon={<SparkIcon size={14} />}>{getTypeLabel(current.type, uiLanguage)}</BadgePill>
+
+            <BadgePill icon={<SparkIcon size={14} />}>
+              {getTypeLabel(current.type, uiLanguage)}
+            </BadgePill>
           </div>
 
           <div className="row" style={{ gap: 8 }}>
@@ -125,22 +143,24 @@ export function ActionNavigator({
         </div>
       ) : null}
 
-      {current.type === "base" ? (
-        <BaseOfferCard
-          offer={current.offer}
-          uiLanguage={uiLanguage}
-          hasExistingArtifactForFormat={hasExistingArtifactForFormat(current.offer)}
-          onClick={() => onClick(current.offer)}
-        />
-      ) : (
-        <SecondaryOfferCard
-          offer={current.offer}
-          kind={current.type}
-          uiLanguage={uiLanguage}
-          hasExistingArtifactForFormat={hasExistingArtifactForFormat(current.offer)}
-          onClick={() => onClick(current.offer)}
-        />
-      )}
+      <div key={current.key}>
+        {current.type === "base" ? (
+          <BaseOfferCard
+            offer={current.offer}
+            uiLanguage={uiLanguage}
+            hasExistingArtifactForFormat={hasExistingArtifactForFormat(current.offer)}
+            onClick={() => onClick(current.offer)}
+          />
+        ) : (
+          <SecondaryOfferCard
+            offer={current.offer}
+            kind={current.type}
+            uiLanguage={uiLanguage}
+            hasExistingArtifactForFormat={hasExistingArtifactForFormat(current.offer)}
+            onClick={() => onClick(current.offer)}
+          />
+        )}
+      </div>
     </div>
   );
 }

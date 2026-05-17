@@ -44,68 +44,90 @@ type EngagementFormState = {
 function getCanvasToneStyles(tone: CanvasTone): {
   border: string;
   background: string;
+  surface: string;
   title: string;
+  softTitle: string;
 } {
   switch (tone) {
     case "blue":
       return {
-        border: "rgba(59,130,246,0.55)",
-        background: "rgba(59,130,246,0.08)",
-        title: "#1d4ed8",
+        border: "rgba(94,106,210,0.28)",
+        background: "rgba(94,106,210,0.055)",
+        surface: "rgba(94,106,210,0.035)",
+        title: "#4f5bc4",
+        softTitle: "rgba(79,91,196,0.82)",
       };
     case "purple":
       return {
-        border: "rgba(168,85,247,0.55)",
-        background: "rgba(168,85,247,0.08)",
-        title: "#7e22ce",
+        border: "rgba(126,87,194,0.25)",
+        background: "rgba(126,87,194,0.055)",
+        surface: "rgba(126,87,194,0.035)",
+        title: "#6f47b8",
+        softTitle: "rgba(111,71,184,0.82)",
       };
     case "orange":
       return {
-        border: "rgba(249,115,22,0.55)",
-        background: "rgba(249,115,22,0.08)",
-        title: "#c2410c",
+        border: "rgba(217,119,6,0.24)",
+        background: "rgba(217,119,6,0.055)",
+        surface: "rgba(217,119,6,0.035)",
+        title: "#b45309",
+        softTitle: "rgba(180,83,9,0.82)",
       };
     case "teal":
       return {
-        border: "rgba(20,184,166,0.55)",
-        background: "rgba(20,184,166,0.08)",
+        border: "rgba(13,148,136,0.24)",
+        background: "rgba(13,148,136,0.055)",
+        surface: "rgba(13,148,136,0.035)",
         title: "#0f766e",
+        softTitle: "rgba(15,118,110,0.82)",
       };
     case "rose":
       return {
-        border: "rgba(244,63,94,0.55)",
-        background: "rgba(244,63,94,0.08)",
+        border: "rgba(225,29,72,0.22)",
+        background: "rgba(225,29,72,0.052)",
+        surface: "rgba(225,29,72,0.032)",
         title: "#be123c",
+        softTitle: "rgba(190,18,60,0.82)",
       };
     case "amber":
       return {
-        border: "rgba(245,158,11,0.55)",
-        background: "rgba(245,158,11,0.1)",
+        border: "rgba(180,83,9,0.24)",
+        background: "rgba(180,83,9,0.055)",
+        surface: "rgba(180,83,9,0.035)",
         title: "#b45309",
+        softTitle: "rgba(180,83,9,0.82)",
       };
     case "indigo":
       return {
-        border: "rgba(99,102,241,0.55)",
-        background: "rgba(99,102,241,0.08)",
+        border: "rgba(79,70,229,0.24)",
+        background: "rgba(79,70,229,0.055)",
+        surface: "rgba(79,70,229,0.035)",
         title: "#4338ca",
+        softTitle: "rgba(67,56,202,0.82)",
       };
     case "green":
       return {
-        border: "rgba(34,197,94,0.55)",
-        background: "rgba(34,197,94,0.08)",
+        border: "rgba(21,128,61,0.24)",
+        background: "rgba(21,128,61,0.055)",
+        surface: "rgba(21,128,61,0.035)",
         title: "#15803d",
+        softTitle: "rgba(21,128,61,0.82)",
       };
     case "cyan":
       return {
-        border: "rgba(6,182,212,0.55)",
-        background: "rgba(6,182,212,0.08)",
+        border: "rgba(8,145,178,0.24)",
+        background: "rgba(8,145,178,0.055)",
+        surface: "rgba(8,145,178,0.035)",
         title: "#0e7490",
+        softTitle: "rgba(14,116,144,0.82)",
       };
     default:
       return {
-        border: "rgba(59,130,246,0.55)",
-        background: "rgba(59,130,246,0.08)",
-        title: "#1d4ed8",
+        border: "rgba(94,106,210,0.28)",
+        background: "rgba(94,106,210,0.055)",
+        surface: "rgba(94,106,210,0.035)",
+        title: "#4f5bc4",
+        softTitle: "rgba(79,91,196,0.82)",
       };
   }
 }
@@ -125,16 +147,24 @@ export function OrganizationEngagementCanvasVisual({
   disabled = false,
 }: OrganizationEngagementCanvasVisualProps) {
   return (
-    <div className="stack" style={{ gap: 14 }}>
-      <div style={{ width: "100%", overflowX: "auto", paddingBottom: 4 }}>
+    <div className="stack" style={{ gap: 14, minWidth: 0 }}>
+      <div
+        className="card-soft"
+        style={{
+          minWidth: 0,
+          overflowX: "auto",
+          overflowY: "hidden",
+          padding: 12,
+          background: "rgba(255,255,255,0.72)",
+        }}
+      >
         <div
           style={{
             minWidth: 1180,
-            border: "2px solid rgba(15,23,42,0.78)",
-            borderRadius: 10,
             overflow: "hidden",
-            background: "#fff",
-            boxShadow: "0 18px 48px rgba(15,23,42,0.10)",
+            borderRadius: 22,
+            border: "1px solid rgba(17,24,39,0.10)",
+            background: "#ffffff",
           }}
         >
           <div
@@ -142,12 +172,13 @@ export function OrganizationEngagementCanvasVisual({
               display: "grid",
               gridTemplateColumns: "1.05fr 1.4fr 1.4fr 1.1fr 1.05fr",
               minHeight: 620,
-              borderBottom: "2px solid rgba(15,23,42,0.78)",
+              borderBottom: "1px solid rgba(17,24,39,0.10)",
             }}
           >
-            <div style={{ borderRight: "2px solid rgba(15,23,42,0.78)" }}>
+            <div style={{ borderRight: "1px solid rgba(17,24,39,0.10)" }}>
               <EngagementCanvasCell
                 title="Ambitions"
+                helper="Ce que le worker vise, cherche à accomplir ou souhaite devenir."
                 tone="orange"
                 value={form.ambitions_text}
                 onChange={(value) => onChange("ambitions_text", value)}
@@ -161,12 +192,13 @@ export function OrganizationEngagementCanvasVisual({
               style={{
                 display: "grid",
                 gridTemplateRows: "1fr 1fr",
-                borderRight: "2px solid rgba(15,23,42,0.78)",
+                borderRight: "1px solid rgba(17,24,39,0.10)",
               }}
             >
-              <div style={{ borderBottom: "2px solid rgba(15,23,42,0.78)" }}>
+              <div style={{ borderBottom: "1px solid rgba(17,24,39,0.10)" }}>
                 <EngagementCanvasCell
                   title="But"
+                  helper="Le sens immédiat ou la finalité visible dans son travail."
                   tone="purple"
                   value={form.purpose_text}
                   onChange={(value) => onChange("purpose_text", value)}
@@ -178,6 +210,7 @@ export function OrganizationEngagementCanvasVisual({
 
               <EngagementCanvasCell
                 title="Missions"
+                helper="Les responsabilités, contributions et activités importantes."
                 tone="teal"
                 value={form.missions_text}
                 onChange={(value) => onChange("missions_text", value)}
@@ -187,9 +220,10 @@ export function OrganizationEngagementCanvasVisual({
               />
             </div>
 
-            <div style={{ borderRight: "2px solid rgba(15,23,42,0.78)" }}>
+            <div style={{ borderRight: "1px solid rgba(17,24,39,0.10)" }}>
               <EngagementCanvasCell
                 title="Identité"
+                helper="La manière dont le worker se définit professionnellement."
                 tone="blue"
                 value={form.identity_text}
                 onChange={(value) => onChange("identity_text", value)}
@@ -203,12 +237,13 @@ export function OrganizationEngagementCanvasVisual({
               style={{
                 display: "grid",
                 gridTemplateRows: "1fr 1fr",
-                borderRight: "2px solid rgba(15,23,42,0.78)",
+                borderRight: "1px solid rgba(17,24,39,0.10)",
               }}
             >
-              <div style={{ borderBottom: "2px solid rgba(15,23,42,0.78)" }}>
+              <div style={{ borderBottom: "1px solid rgba(17,24,39,0.10)" }}>
                 <EngagementCanvasCell
                   title="Vision"
+                  helper="La direction claire qui doit guider la trajectoire."
                   tone="cyan"
                   value={form.vision_text}
                   onChange={(value) => onChange("vision_text", value)}
@@ -220,6 +255,7 @@ export function OrganizationEngagementCanvasVisual({
 
               <EngagementCanvasCell
                 title="Actions"
+                helper="Les actions concrètes à exécuter ou à renforcer."
                 tone="amber"
                 value={form.actions_text}
                 onChange={(value) => onChange("actions_text", value)}
@@ -231,6 +267,7 @@ export function OrganizationEngagementCanvasVisual({
 
             <EngagementCanvasCell
               title="Objectifs"
+              helper="Les résultats ciblés et les points de progression mesurables."
               tone="rose"
               value={form.objectives_text}
               onChange={(value) => onChange("objectives_text", value)}
@@ -244,12 +281,13 @@ export function OrganizationEngagementCanvasVisual({
             style={{
               display: "grid",
               gridTemplateColumns: "1fr 1fr",
-              minHeight: 260,
+              minHeight: 280,
             }}
           >
-            <div style={{ borderRight: "2px solid rgba(15,23,42,0.78)" }}>
+            <div style={{ borderRight: "1px solid rgba(17,24,39,0.10)" }}>
               <EngagementIntentCanvasCell
                 title="Intentions Carrière"
+                helper="Ce que le worker attend de sa trajectoire professionnelle."
                 tone="indigo"
                 disabled={disabled}
                 items={[
@@ -293,6 +331,7 @@ export function OrganizationEngagementCanvasVisual({
 
             <EngagementIntentCanvasCell
               title="Intentions Talent"
+              helper="Ce qui permet de renforcer, développer ou exprimer son talent."
               tone="green"
               disabled={disabled}
               items={[
@@ -333,9 +372,21 @@ export function OrganizationEngagementCanvasVisual({
         </div>
       </div>
 
-      <div className="muted" style={{ lineHeight: 1.6 }}>
-        Structure cible respectée : Ambitions, But/Missions, Identité, Vision/Actions,
-        Objectifs, puis Intentions Carrière et Intentions Talent en bas du canvas.
+      <div
+        className="card-soft"
+        style={{
+          display: "flex",
+          gap: 10,
+          flexWrap: "wrap",
+          alignItems: "center",
+          background: "rgba(255,255,255,0.72)",
+        }}
+      >
+        <span className="badge primary">Engagement structure</span>
+        <span className="muted" style={{ lineHeight: 1.6 }}>
+          Ambitions · But/Missions · Identité · Vision/Actions · Objectifs · Intentions
+          Carrière · Intentions Talent.
+        </span>
       </div>
     </div>
   );
@@ -343,6 +394,7 @@ export function OrganizationEngagementCanvasVisual({
 
 function EngagementCanvasCell({
   title,
+  helper,
   tone,
   value,
   onChange,
@@ -351,6 +403,7 @@ function EngagementCanvasCell({
   disabled = false,
 }: {
   title: string;
+  helper: string;
   tone: CanvasTone;
   value: string;
   onChange: (value: string) => void;
@@ -367,31 +420,47 @@ function EngagementCanvasCell({
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        background: `linear-gradient(180deg, ${toneStyles.background}, rgba(255,255,255,0.98) 42%)`,
+        background: `linear-gradient(180deg, ${toneStyles.background}, #ffffff 46%)`,
+        opacity: disabled ? 0.76 : 1,
       }}
     >
       <div
+        className="stack"
         style={{
-          padding: "18px 18px 8px",
-          fontSize: 34,
-          lineHeight: 1,
-          fontWeight: 900,
-          letterSpacing: "-0.04em",
-          color: toneStyles.title,
+          gap: 5,
+          padding: "18px 18px 10px",
         }}
       >
-        {title}
+        <div
+          style={{
+            fontSize: 24,
+            lineHeight: 1.04,
+            fontWeight: 750,
+            letterSpacing: "-0.045em",
+            color: toneStyles.title,
+          }}
+        >
+          {title}
+        </div>
+
+        <div
+          style={{
+            maxWidth: 260,
+            color: toneStyles.softTitle,
+            fontSize: 12,
+            lineHeight: 1.45,
+            fontWeight: 600,
+          }}
+        >
+          {helper}
+        </div>
       </div>
 
       <div
         style={{
-          height: 4,
-          width: 56,
-          marginLeft: 18,
-          marginBottom: 6,
-          borderRadius: 999,
-          background: toneStyles.title,
-          opacity: 0.75,
+          height: 1,
+          margin: "0 18px",
+          background: toneStyles.border,
         }}
       />
 
@@ -408,13 +477,13 @@ function EngagementCanvasCell({
           border: "none",
           outline: "none",
           background: "transparent",
-          color: "#0f172a",
+          color: "var(--foreground)",
           font: "inherit",
-          fontSize: 15,
-          lineHeight: 1.55,
-          padding: "10px 18px 18px",
+          fontSize: 14,
+          lineHeight: 1.6,
+          padding: "14px 18px 18px",
           cursor: disabled ? "not-allowed" : "text",
-          opacity: disabled ? 0.72 : 1,
+          overflowY: "auto",
         }}
       />
     </div>
@@ -423,11 +492,13 @@ function EngagementCanvasCell({
 
 function EngagementIntentCanvasCell({
   title,
+  helper,
   tone,
   items,
   disabled = false,
 }: {
   title: string;
+  helper: string;
   tone: CanvasTone;
   items: Array<{
     label: string;
@@ -441,35 +512,50 @@ function EngagementIntentCanvasCell({
   return (
     <div
       style={{
-        minHeight: 260,
+        minHeight: 280,
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        background: `linear-gradient(180deg, ${toneStyles.background}, rgba(255,255,255,0.98) 48%)`,
+        background: `linear-gradient(180deg, ${toneStyles.background}, #ffffff 52%)`,
+        opacity: disabled ? 0.76 : 1,
       }}
     >
       <div
+        className="stack"
         style={{
-          padding: "18px 18px 8px",
-          fontSize: 32,
-          lineHeight: 1,
-          fontWeight: 900,
-          letterSpacing: "-0.04em",
-          color: toneStyles.title,
+          gap: 5,
+          padding: "18px 18px 10px",
         }}
       >
-        {title}
+        <div
+          style={{
+            fontSize: 22,
+            lineHeight: 1.04,
+            fontWeight: 750,
+            letterSpacing: "-0.045em",
+            color: toneStyles.title,
+          }}
+        >
+          {title}
+        </div>
+
+        <div
+          style={{
+            color: toneStyles.softTitle,
+            fontSize: 12,
+            lineHeight: 1.45,
+            fontWeight: 600,
+          }}
+        >
+          {helper}
+        </div>
       </div>
 
       <div
         style={{
-          height: 4,
-          width: 72,
-          marginLeft: 18,
-          marginBottom: 6,
-          borderRadius: 999,
-          background: toneStyles.title,
-          opacity: 0.75,
+          height: 1,
+          margin: "0 18px",
+          background: toneStyles.border,
         }}
       />
 
@@ -478,7 +564,7 @@ function EngagementIntentCanvasCell({
           display: "grid",
           gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
           gap: 10,
-          padding: "10px 18px 18px",
+          padding: "14px 18px 18px",
           flex: 1,
         }}
       >
@@ -487,8 +573,9 @@ function EngagementIntentCanvasCell({
             <span
               style={{
                 fontSize: 12,
-                fontWeight: 800,
+                fontWeight: 700,
                 color: toneStyles.title,
+                letterSpacing: "-0.01em",
               }}
             >
               {item.label}
@@ -502,19 +589,20 @@ function EngagementIntentCanvasCell({
               placeholder="Saisir ici..."
               style={{
                 width: "100%",
-                minHeight: 72,
+                minHeight: 76,
+                maxHeight: 132,
                 resize: "vertical",
                 border: `1px solid ${toneStyles.border}`,
-                borderRadius: 12,
+                borderRadius: 14,
                 outline: "none",
                 padding: 10,
                 font: "inherit",
                 fontSize: 13,
-                lineHeight: 1.45,
-                background: "rgba(255,255,255,0.82)",
-                color: "#0f172a",
+                lineHeight: 1.5,
+                background: "rgba(255,255,255,0.88)",
+                color: "var(--foreground)",
                 cursor: disabled ? "not-allowed" : "text",
-                opacity: disabled ? 0.72 : 1,
+                overflowY: "auto",
               }}
             />
           </label>

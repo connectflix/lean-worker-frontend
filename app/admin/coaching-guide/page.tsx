@@ -870,28 +870,55 @@ function getTypeStyle(type: GuideSectionType): {
   background: string;
   border: string;
   color: string;
+  softBackground: string;
 } {
   if (type === "stage") {
     return {
-      background: "rgba(59,130,246,0.09)",
+      background: "rgba(59,130,246,0.10)",
       border: "1px solid rgba(59,130,246,0.22)",
       color: "#1d4ed8",
+      softBackground: "linear-gradient(135deg, rgba(59,130,246,0.10), rgba(255,255,255,0.96))",
     };
   }
 
   if (type === "canvas") {
     return {
-      background: "rgba(124,58,237,0.08)",
-      border: "1px solid rgba(124,58,237,0.20)",
+      background: "rgba(124,58,237,0.09)",
+      border: "1px solid rgba(124,58,237,0.22)",
       color: "#6d28d9",
+      softBackground: "linear-gradient(135deg, rgba(124,58,237,0.09), rgba(255,255,255,0.96))",
     };
   }
 
   return {
-    background: "rgba(34,197,94,0.08)",
+    background: "rgba(34,197,94,0.09)",
     border: "1px solid rgba(34,197,94,0.22)",
     color: "#15803d",
+    softBackground: "linear-gradient(135deg, rgba(34,197,94,0.08), rgba(255,255,255,0.96))",
   };
+}
+
+function GuideTypeBadge({ type }: { type: GuideSectionType }) {
+  const typeStyle = getTypeStyle(type);
+
+  return (
+    <span
+      style={{
+        borderRadius: 999,
+        padding: "7px 10px",
+        fontSize: 11,
+        fontWeight: 900,
+        background: typeStyle.background,
+        border: typeStyle.border,
+        color: typeStyle.color,
+        textTransform: "uppercase",
+        letterSpacing: "0.04em",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {getTypeLabel(type)}
+    </span>
+  );
 }
 
 function GuideTree({
@@ -923,15 +950,33 @@ function GuideTree({
   ];
 
   return (
-    <div className="card stack" style={{ gap: 14, position: "sticky", top: 24 }}>
+    <div
+      className="card stack"
+      style={{
+        gap: 14,
+        position: "sticky",
+        top: 96,
+        maxHeight: "calc(100vh - 120px)",
+        overflow: "hidden",
+      }}
+    >
       <div className="stack" style={{ gap: 4 }}>
         <div className="section-title">Guide numérique</div>
         <div className="muted">
-          Sélectionne une étape pour afficher son contenu, ses questions et ses exemples.
+          Sélectionne une étape pour afficher son contenu, ses questions, ses exemples et sa
+          check-list.
         </div>
       </div>
 
-      <div className="stack" style={{ gap: 14 }}>
+      <div
+        className="stack"
+        style={{
+          gap: 14,
+          overflowY: "auto",
+          overflowX: "hidden",
+          paddingRight: 4,
+        }}
+      >
         {groups.map((group) => (
           <div key={group.title} className="stack" style={{ gap: 8 }}>
             <div
@@ -941,6 +986,7 @@ function GuideTree({
                 letterSpacing: "0.08em",
                 textTransform: "uppercase",
                 color: "var(--muted-foreground, #64748b)",
+                paddingLeft: 2,
               }}
             >
               {group.title}
@@ -949,7 +995,6 @@ function GuideTree({
             <div className="stack" style={{ gap: 6 }}>
               {group.items.map((node) => {
                 const isActive = node.id === activeNodeId;
-                const typeStyle = getTypeStyle(node.type);
 
                 return (
                   <button
@@ -960,29 +1005,28 @@ function GuideTree({
                     style={{
                       textAlign: "left",
                       cursor: "pointer",
-                      border: isActive ? "1px solid var(--primary)" : "1px solid var(--border)",
-                      background: isActive ? "rgba(59,130,246,0.07)" : undefined,
+                      border: isActive
+                        ? "1px solid rgba(37,99,235,0.35)"
+                        : "1px solid var(--border)",
+                      background: isActive ? "rgba(59,130,246,0.07)" : "rgba(255,255,255,0.78)",
                       padding: 12,
+                      boxShadow: isActive ? "0 10px 28px rgba(37,99,235,0.10)" : "none",
                     }}
                   >
-                    <div className="row" style={{ gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
-                      <span
-                        style={{
-                          borderRadius: 999,
-                          padding: "5px 8px",
-                          fontSize: 11,
-                          fontWeight: 800,
-                          background: typeStyle.background,
-                          border: typeStyle.border,
-                          color: typeStyle.color,
-                        }}
-                      >
-                        {getTypeLabel(node.type)}
-                      </span>
+                    <div className="row" style={{ gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                      <GuideTypeBadge type={node.type} />
                     </div>
 
                     <div style={{ fontWeight: 850, lineHeight: 1.3 }}>{node.title}</div>
-                    <div className="muted" style={{ marginTop: 4, fontSize: 13, lineHeight: 1.4 }}>
+
+                    <div
+                      className="muted"
+                      style={{
+                        marginTop: 4,
+                        fontSize: 13,
+                        lineHeight: 1.45,
+                      }}
+                    >
                       {node.subtitle}
                     </div>
                   </button>
@@ -996,43 +1040,56 @@ function GuideTree({
   );
 }
 
-function GuideNodeContent({ node }: { node: GuideNode }) {
+function GuideNodeContent({
+  node,
+  previousNode,
+  nextNode,
+  onSelect,
+}: {
+  node: GuideNode;
+  previousNode: GuideNode | null;
+  nextNode: GuideNode | null;
+  onSelect: (id: string) => void;
+}) {
   const typeStyle = getTypeStyle(node.type);
 
   return (
-    <div className="stack" style={{ gap: 16 }}>
+    <div className="stack" style={{ gap: 16, minWidth: 0 }}>
       <div
         className="card stack"
         style={{
           gap: 12,
           border: typeStyle.border,
-          background:
-            node.type === "stage"
-              ? "linear-gradient(135deg, rgba(59,130,246,0.10), rgba(255,255,255,0.96))"
-              : node.type === "canvas"
-                ? "linear-gradient(135deg, rgba(124,58,237,0.09), rgba(255,255,255,0.96))"
-                : "linear-gradient(135deg, rgba(34,197,94,0.08), rgba(255,255,255,0.96))",
+          background: typeStyle.softBackground,
         }}
       >
-        <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-          <span
-            style={{
-              borderRadius: 999,
-              padding: "7px 10px",
-              fontSize: 12,
-              fontWeight: 900,
-              background: typeStyle.background,
-              border: typeStyle.border,
-              color: typeStyle.color,
-              textTransform: "uppercase",
-              letterSpacing: "0.04em",
-            }}
-          >
-            {getTypeLabel(node.type)}
-          </span>
+        <div className="row space-between" style={{ gap: 12, flexWrap: "wrap" }}>
+          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+            <GuideTypeBadge type={node.type} />
+            <span className="badge">{node.questions.length} questions</span>
+            <span className="badge">{node.examples.length} examples</span>
+          </div>
+
+          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+            {previousNode ? (
+              <button
+                className="button ghost"
+                type="button"
+                onClick={() => onSelect(previousNode.id)}
+              >
+                Previous
+              </button>
+            ) : null}
+
+            {nextNode ? (
+              <button className="button" type="button" onClick={() => onSelect(nextNode.id)}>
+                Next
+              </button>
+            ) : null}
+          </div>
         </div>
 
-        <div className="section-title" style={{ fontSize: 26 }}>
+        <div className="section-title" style={{ fontSize: 28, lineHeight: 1.1 }}>
           {node.title}
         </div>
 
@@ -1084,9 +1141,9 @@ function GuideNodeContent({ node }: { node: GuideNode }) {
             gap: 10,
           }}
         >
-          {node.content.map((item) => (
+          {node.content.map((item, index) => (
             <div
-              key={item}
+              key={`${node.id}-content-${index}`}
               className="card-soft"
               style={{
                 lineHeight: 1.55,
@@ -1133,7 +1190,7 @@ function GuideNodeContent({ node }: { node: GuideNode }) {
                 {index + 1}
               </div>
 
-              <div className="stack" style={{ gap: 8 }}>
+              <div className="stack" style={{ gap: 8, minWidth: 0 }}>
                 <div style={{ lineHeight: 1.55 }}>{question.text}</div>
 
                 {question.canvasBlocks?.length ? (
@@ -1272,13 +1329,25 @@ function GuideNodeContent({ node }: { node: GuideNode }) {
 function CoachingGuideContent() {
   const [activeNodeId, setActiveNodeId] = useState(GUIDE_NODES[0].id);
 
-  const activeNode = useMemo(() => {
-    return GUIDE_NODES.find((node) => node.id === activeNodeId) ?? GUIDE_NODES[0];
+  const activeNodeIndex = useMemo(() => {
+    const index = GUIDE_NODES.findIndex((node) => node.id === activeNodeId);
+    return index >= 0 ? index : 0;
   }, [activeNodeId]);
+
+  const activeNode = GUIDE_NODES[activeNodeIndex] ?? GUIDE_NODES[0];
+  const previousNode = activeNodeIndex > 0 ? GUIDE_NODES[activeNodeIndex - 1] : null;
+  const nextNode =
+    activeNodeIndex < GUIDE_NODES.length - 1 ? GUIDE_NODES[activeNodeIndex + 1] : null;
 
   const totalQuestions = useMemo(() => {
     return GUIDE_NODES.reduce((total, node) => total + node.questions.length, 0);
   }, []);
+
+  const canvasCount = useMemo(() => {
+    return GUIDE_NODES.filter((node) => node.type === "canvas").length;
+  }, []);
+
+  const progressPercent = Math.round(((activeNodeIndex + 1) / GUIDE_NODES.length) * 100);
 
   return (
     <div className="stack" style={{ gap: 18 }}>
@@ -1290,9 +1359,37 @@ function CoachingGuideContent() {
           background:
             "linear-gradient(135deg, rgba(15,23,42,0.98), rgba(30,41,59,0.96))",
           color: "white",
+          overflow: "hidden",
+          position: "relative",
         }}
       >
-        <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+        <div
+          style={{
+            position: "absolute",
+            right: -90,
+            top: -90,
+            width: 260,
+            height: 260,
+            borderRadius: 999,
+            background: "rgba(59,130,246,0.22)",
+            filter: "blur(4px)",
+          }}
+        />
+
+        <div
+          style={{
+            position: "absolute",
+            left: "45%",
+            bottom: -120,
+            width: 280,
+            height: 280,
+            borderRadius: 999,
+            background: "rgba(124,58,237,0.18)",
+            filter: "blur(5px)",
+          }}
+        />
+
+        <div className="row" style={{ gap: 8, flexWrap: "wrap", position: "relative" }}>
           <span
             style={{
               borderRadius: 999,
@@ -1306,6 +1403,7 @@ function CoachingGuideContent() {
           >
             Digital coaching guide
           </span>
+
           <span
             style={{
               borderRadius: 999,
@@ -1321,11 +1419,25 @@ function CoachingGuideContent() {
           </span>
         </div>
 
-        <div style={{ fontSize: 32, lineHeight: 1.08, fontWeight: 950 }}>
+        <div
+          style={{
+            fontSize: 34,
+            lineHeight: 1.08,
+            fontWeight: 950,
+            position: "relative",
+          }}
+        >
           LeanWorker Coaching Guide
         </div>
 
-        <div style={{ maxWidth: 960, lineHeight: 1.7, color: "rgba(255,255,255,0.74)" }}>
+        <div
+          style={{
+            maxWidth: 960,
+            lineHeight: 1.7,
+            color: "rgba(255,255,255,0.74)",
+            position: "relative",
+          }}
+        >
           Un parcours simple et structuré pour aider l’Organization à mener un coaching worker :
           étapes, contenus, questions à poser, exemples de réponses et mindsets coach.
         </div>
@@ -1335,16 +1447,14 @@ function CoachingGuideContent() {
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
             gap: 10,
+            position: "relative",
           }}
         >
           {[
             { label: "Étapes & pratiques", value: GUIDE_NODES.length },
-            {
-              label: "Canvas guides",
-              value: GUIDE_NODES.filter((node) => node.type === "canvas").length,
-            },
+            { label: "Canvas guides", value: canvasCount },
             { label: "Questions", value: totalQuestions },
-            { label: "Format", value: "Arborescence" },
+            { label: "Progression", value: `${progressPercent}%` },
           ].map((metric) => (
             <div
               key={metric.label}
@@ -1369,13 +1479,20 @@ function CoachingGuideContent() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "minmax(280px, 360px) minmax(0, 1fr)",
+          gridTemplateColumns: "minmax(300px, 360px) minmax(0, 1fr)",
           gap: 18,
           alignItems: "flex-start",
+          minWidth: 0,
         }}
       >
         <GuideTree nodes={GUIDE_NODES} activeNodeId={activeNode.id} onSelect={setActiveNodeId} />
-        <GuideNodeContent node={activeNode} />
+
+        <GuideNodeContent
+          node={activeNode}
+          previousNode={previousNode}
+          nextNode={nextNode}
+          onSelect={setActiveNodeId}
+        />
       </div>
     </div>
   );
@@ -1403,21 +1520,28 @@ function AdminCoachingGuideContent() {
   }, []);
 
   return (
-<AdminShell
-  activeHref="/admin/coaching-guide"
-  title="Coaching Guide"
-  subtitle="Tree-based digital guide for organization-led worker coaching."
-  adminEmail={admin?.email ?? null}
-  adminRole={admin?.role ?? "admin"}
-  adminOrganizationName={admin?.organization_name ?? null}
->
+    <AdminShell
+      activeHref="/admin/coaching-guide"
+      title="Coaching Guide"
+      subtitle="Tree-based digital guide for organization-led worker coaching."
+      adminEmail={admin?.email ?? null}
+      adminRole={admin?.role ?? "admin"}
+      adminOrganizationName={admin?.organization_name ?? null}
+    >
       {error ? (
         <div className="card" style={{ color: "var(--danger)" }}>
           {error}
         </div>
       ) : null}
 
-      {loading ? <div className="card">Loading coaching guide...</div> : <CoachingGuideContent />}
+      {loading ? (
+        <div className="card stack" style={{ gap: 10 }}>
+          <div className="section-title">Loading coaching guide...</div>
+          <div className="muted">Preparing the organization coaching enablement workspace.</div>
+        </div>
+      ) : (
+        <CoachingGuideContent />
+      )}
     </AdminShell>
   );
 }

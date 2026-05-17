@@ -19,31 +19,55 @@ function BrandMark() {
   return (
     <div
       style={{
-        width: 42,
-        height: 42,
-        borderRadius: 14,
+        width: 46,
+        height: 46,
+        borderRadius: 18,
         display: "grid",
         placeItems: "center",
         background:
-          "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(16,185,129,0.14))",
-        border: "1px solid rgba(37,99,235,0.18)",
+          "linear-gradient(135deg, rgba(255,122,89,0.20), rgba(88,180,174,0.16))",
+        border: "1px solid rgba(43,33,24,0.08)",
         boxShadow:
-          "0 10px 30px rgba(15,23,42,0.10), inset 0 1px 0 rgba(255,255,255,0.5)",
-        fontWeight: 800,
+          "0 14px 34px rgba(43,33,24,0.10), inset 0 1px 0 rgba(255,255,255,0.74)",
+        fontWeight: 950,
         fontSize: 16,
-        letterSpacing: "-0.04em",
+        letterSpacing: "-0.05em",
+        color: "var(--coach-ink)",
+        flexShrink: 0,
+      }}
+      aria-hidden="true"
+    >
+      LW
+    </div>
+  );
+}
+
+function NavLink({
+  href,
+  icon,
+  label,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <Link
+      className="button ghost"
+      href={href}
+      style={{
+        minHeight: 40,
+        borderRadius: 999,
+        background: "rgba(255,255,255,0.66)",
+        border: "1px solid rgba(43,33,24,0.08)",
+        color: "var(--coach-ink)",
       }}
     >
-      <span
-        style={{
-          background: "linear-gradient(135deg, #2563eb, #10b981)",
-          WebkitBackgroundClip: "text",
-          color: "transparent",
-        }}
-      >
-        LW
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+        {icon}
+        {label}
       </span>
-    </div>
+    </Link>
   );
 }
 
@@ -64,20 +88,79 @@ export function Header({
     <header
       className="card row space-between"
       style={{
+        position: "relative",
+        overflow: "hidden",
         marginBottom: 16,
         alignItems: "center",
         padding: "16px 20px",
         gap: 16,
         flexWrap: "wrap",
+        borderRadius: 28,
+        border: "1px solid rgba(43,33,24,0.08)",
+        background:
+          "linear-gradient(135deg, rgba(255,248,239,0.92), rgba(255,255,255,0.88) 55%, rgba(232,248,246,0.78))",
+        boxShadow: "0 18px 48px rgba(43,33,24,0.06)",
       }}
     >
-      <div className="row" style={{ gap: 12, alignItems: "center" }}>
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          right: -80,
+          top: -90,
+          width: 190,
+          height: 190,
+          borderRadius: 999,
+          background: "rgba(255,122,89,0.12)",
+          pointerEvents: "none",
+        }}
+      />
+
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          left: "40%",
+          bottom: -110,
+          width: 220,
+          height: 220,
+          borderRadius: 999,
+          background: "rgba(88,180,174,0.10)",
+          pointerEvents: "none",
+        }}
+      />
+
+      <div
+        className="row"
+        style={{
+          position: "relative",
+          zIndex: 1,
+          gap: 12,
+          alignItems: "center",
+        }}
+      >
         <BrandMark />
+
         <div className="stack" style={{ gap: 4 }}>
-          <div className="section-title" style={{ margin: 0 }}>
+          <div
+            className="section-title"
+            style={{
+              margin: 0,
+              color: "var(--coach-ink)",
+              fontWeight: 900,
+              letterSpacing: "-0.04em",
+            }}
+          >
             LeanWorker
           </div>
-          <div className="muted">
+
+          <div
+            className="muted"
+            style={{
+              color: "var(--coach-muted)",
+              fontSize: 13,
+            }}
+          >
             {uiLanguage === "fr"
               ? "Intelligence de carrière amplifiée"
               : "Career intelligence amplified"}
@@ -88,54 +171,61 @@ export function Header({
       <nav
         className="row"
         style={{
+          position: "relative",
+          zIndex: 1,
           flexWrap: "wrap",
           justifyContent: "flex-end",
           gap: 10,
         }}
       >
-        <Link className="button ghost" href="/dashboard">
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-            <ChartIcon size={14} />
-            {copy.common.dashboard}
-          </span>
-        </Link>
+        <NavLink
+          href="/dashboard"
+          icon={<ChartIcon size={14} />}
+          label={copy.common.dashboard}
+        />
 
-        <Link className="button ghost" href="/session">
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-            <SessionIcon size={14} />
-            {uiLanguage === "fr" ? "Coaching" : "Coaching"}
-          </span>
-        </Link>
+        <NavLink
+          href="/session"
+          icon={<SessionIcon size={14} />}
+          label={uiLanguage === "fr" ? "Coaching" : "Coaching"}
+        />
 
-        <Link className="button ghost" href="/history">
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-            <BrainIcon size={14} />
-            {uiLanguage === "fr" ? "Historique" : "History"}
-          </span>
-        </Link>
+        <NavLink
+          href="/history"
+          icon={<BrainIcon size={14} />}
+          label={uiLanguage === "fr" ? "Historique" : "History"}
+        />
 
-        <Link className="button ghost" href="/recommendations">
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-            <ActionListIcon size={14} />
-            {copy.common.recommendations}
-          </span>
-        </Link>
+        <NavLink
+          href="/recommendations"
+          icon={<ActionListIcon size={14} />}
+          label={copy.common.recommendations}
+        />
 
-        <Link className="button ghost" href="/ai-artifacts">
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-            <LayerIcon size={14} />
-            {uiLanguage === "fr" ? "Guides IA" : "AI Guides"}
-          </span>
-        </Link>
+        <NavLink
+          href="/ai-artifacts"
+          icon={<LayerIcon size={14} />}
+          label={uiLanguage === "fr" ? "Guides IA" : "AI Guides"}
+        />
 
-        <Link className="button ghost" href="/career-blueprint">
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-            <PathIcon size={14} />
-            {uiLanguage === "fr" ? "Blueprint" : "Blueprint"}
-          </span>
-        </Link>
+        <NavLink
+          href="/career-blueprint"
+          icon={<PathIcon size={14} />}
+          label={uiLanguage === "fr" ? "Blueprint" : "Blueprint"}
+        />
 
-        <button className="button ghost" onClick={handleLogout} type="button">
+        <button
+          className="button ghost"
+          onClick={handleLogout}
+          type="button"
+          style={{
+            minHeight: 40,
+            borderRadius: 999,
+            background: "rgba(255,255,255,0.66)",
+            border: "1px solid rgba(43,33,24,0.08)",
+            color: "var(--coach-ink)",
+          }}
+        >
           <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
             <ArrowRightIcon size={14} />
             {uiLanguage === "fr" ? "Déconnexion" : "Logout"}

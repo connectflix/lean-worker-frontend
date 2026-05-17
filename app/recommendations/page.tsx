@@ -18,12 +18,133 @@ import { getUiCopy } from "@/lib/ui-copy";
 import { useUiLanguage } from "@/lib/use-ui-language";
 import type { Recommendation } from "@/lib/types";
 
-const FEED_MAX_WIDTH = 860;
+const FEED_MAX_WIDTH = 920;
 const INITIAL_VISIBLE_COUNT = 8;
 const LOAD_MORE_STEP = 6;
 const FEED_SCROLL_HEIGHT = "72vh";
 
 type FeedSortMode = "priority" | "open" | "recent";
+
+function CoachSectionCard({
+  children,
+  warm = false,
+}: {
+  children: React.ReactNode;
+  warm?: boolean;
+}) {
+  return (
+    <div
+      className="card stack"
+      style={{
+        gap: 16,
+        borderRadius: 28,
+        border: "1px solid rgba(43,33,24,0.08)",
+        background: warm
+          ? "linear-gradient(135deg, rgba(255,241,220,0.94), rgba(255,255,255,0.90))"
+          : "rgba(255,255,255,0.78)",
+        boxShadow: "0 18px 48px rgba(43,33,24,0.06)",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function CoachMetricCard({
+  label,
+  value,
+  helper,
+  icon,
+  tone = "warm",
+}: {
+  label: string;
+  value: string | number;
+  helper?: string;
+  icon: React.ReactNode;
+  tone?: "warm" | "calm" | "neutral";
+}) {
+  const toneStyle =
+    tone === "calm"
+      ? {
+          background: "rgba(88,180,174,0.12)",
+          border: "1px solid rgba(88,180,174,0.20)",
+          color: "var(--coach-calm)",
+        }
+      : tone === "neutral"
+        ? {
+            background: "rgba(43,33,24,0.05)",
+            border: "1px solid rgba(43,33,24,0.10)",
+            color: "var(--coach-muted)",
+          }
+        : {
+            background: "rgba(255,122,89,0.12)",
+            border: "1px solid rgba(255,122,89,0.20)",
+            color: "var(--coach-accent)",
+          };
+
+  return (
+    <div
+      className="card-soft stack"
+      style={{
+        gap: 10,
+        borderRadius: 24,
+        background: "rgba(255,255,255,0.68)",
+        border: "1px solid rgba(43,33,24,0.08)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.72)",
+      }}
+    >
+      <div
+        style={{
+          width: 38,
+          height: 38,
+          borderRadius: 14,
+          display: "grid",
+          placeItems: "center",
+          ...toneStyle,
+        }}
+      >
+        {icon}
+      </div>
+
+      <div className="stack" style={{ gap: 4 }}>
+        <div
+          className="muted"
+          style={{
+            color: "var(--coach-muted)",
+            fontSize: 13,
+          }}
+        >
+          {label}
+        </div>
+
+        <div
+          style={{
+            fontSize: 30,
+            lineHeight: 1,
+            fontWeight: 900,
+            letterSpacing: "-0.055em",
+            color: "var(--coach-ink)",
+          }}
+        >
+          {value}
+        </div>
+
+        {helper ? (
+          <div
+            className="muted"
+            style={{
+              color: "var(--coach-muted)",
+              fontSize: 13,
+              lineHeight: 1.45,
+            }}
+          >
+            {helper}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
 
 export default function RecommendationsPage() {
   return (
@@ -51,8 +172,11 @@ function RecommendationsContent() {
 
   async function loadRecommendations(showRefreshing = false) {
     try {
-      if (showRefreshing) setRefreshing(true);
-      else setLoading(true);
+      if (showRefreshing) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
 
       setError(null);
 
@@ -68,6 +192,7 @@ function RecommendationsContent() {
         if (data.length <= INITIAL_VISIBLE_COUNT) {
           return data.length;
         }
+
         return Math.min(Math.max(current, INITIAL_VISIBLE_COUNT), data.length);
       });
     } catch (err) {
@@ -93,6 +218,7 @@ function RecommendationsContent() {
     }
 
     const parsedId = Number(openId);
+
     if (Number.isFinite(parsedId)) {
       setSelectedRecommendationId(parsedId);
     }
@@ -101,7 +227,12 @@ function RecommendationsContent() {
   }, [searchParams]);
 
   async function handleRecommendationChanged(updated: Recommendation) {
-    setRecommendations((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+    setRecommendations((prev) =>
+      prev.map((recommendation) =>
+        recommendation.id === updated.id ? updated : recommendation,
+      ),
+    );
+
     await loadRecommendations(true);
   }
 
@@ -129,6 +260,7 @@ function RecommendationsContent() {
 
   function enableFocusMode() {
     if (!selectedRecommendationId) return;
+
     setFocusMode(true);
     router.push(`/recommendations?open=${selectedRecommendationId}&focus=1`, {
       scroll: false,
@@ -137,6 +269,7 @@ function RecommendationsContent() {
 
   function disableFocusMode() {
     if (!selectedRecommendationId) return;
+
     setFocusMode(false);
     router.push(`/recommendations?open=${selectedRecommendationId}`, {
       scroll: false,
@@ -152,20 +285,38 @@ function RecommendationsContent() {
   const totalCount = recommendations.length;
 
   const priorityCount = useMemo(() => {
-    return recommendations.filter((r) => r.priority === "high").length;
+    return recommendations.filter((recommendation) => recommendation.priority === "high")
+      .length;
   }, [recommendations]);
 
   const artifactEligibleCount = useMemo(() => {
-    return recommendations.filter((r) => r.artifact_generation_available).length;
+    return recommendations.filter((recommendation) => {
+      return recommendation.artifact_generation_available;
+    }).length;
   }, [recommendations]);
 
   const openCount = useMemo(() => {
-    return recommendations.filter((r) => r.status === "open").length;
+    return recommendations.filter((recommendation) => recommendation.status === "open")
+      .length;
+  }, [recommendations]);
+
+  const activeCount = useMemo(() => {
+    return recommendations.filter((recommendation) => {
+      return (
+        recommendation.status !== "completed" &&
+        recommendation.status !== "dismissed"
+      );
+    }).length;
   }, [recommendations]);
 
   const selectedRecommendation = useMemo(() => {
     if (selectedRecommendationId == null) return null;
-    return recommendations.find((item) => item.id === selectedRecommendationId) ?? null;
+
+    return (
+      recommendations.find((recommendation) => {
+        return recommendation.id === selectedRecommendationId;
+      }) ?? null
+    );
   }, [recommendations, selectedRecommendationId]);
 
   const sortedRecommendations = useMemo(() => {
@@ -180,28 +331,28 @@ function RecommendationsContent() {
     const openWeight = (item: Recommendation) => (item.status === "open" ? 1 : 0);
     const recentWeight = (item: Recommendation) => item.id ?? 0;
 
-    items.sort((a, b) => {
+    items.sort((left, right) => {
       if (sortMode === "priority") {
-        const byPriority = priorityWeight(b) - priorityWeight(a);
+        const byPriority = priorityWeight(right) - priorityWeight(left);
         if (byPriority !== 0) return byPriority;
 
-        const byOpen = openWeight(b) - openWeight(a);
+        const byOpen = openWeight(right) - openWeight(left);
         if (byOpen !== 0) return byOpen;
 
-        return recentWeight(b) - recentWeight(a);
+        return recentWeight(right) - recentWeight(left);
       }
 
       if (sortMode === "open") {
-        const byOpen = openWeight(b) - openWeight(a);
+        const byOpen = openWeight(right) - openWeight(left);
         if (byOpen !== 0) return byOpen;
 
-        const byPriority = priorityWeight(b) - priorityWeight(a);
+        const byPriority = priorityWeight(right) - priorityWeight(left);
         if (byPriority !== 0) return byPriority;
 
-        return recentWeight(b) - recentWeight(a);
+        return recentWeight(right) - recentWeight(left);
       }
 
-      return recentWeight(b) - recentWeight(a);
+      return recentWeight(right) - recentWeight(left);
     });
 
     return items;
@@ -230,26 +381,39 @@ function RecommendationsContent() {
       if (sortMode === "priority") {
         return "Les recommandations à plus fort impact apparaissent d’abord.";
       }
+
       if (sortMode === "open") {
         return "Les recommandations encore actives apparaissent en premier.";
       }
+
       return "Les recommandations les plus récentes apparaissent en premier.";
     }
 
     if (sortMode === "priority") {
       return "Higher-impact recommendations appear first.";
     }
+
     if (sortMode === "open") {
       return "Still-active recommendations appear first.";
     }
+
     return "Most recent recommendations appear first.";
   }
 
   if (loadingLanguage) {
     return (
-      <main className="page">
+      <main
+        className="page"
+        style={{
+          minHeight: "100vh",
+          background: "var(--coach-bg)",
+          padding: 24,
+        }}
+      >
         <div className="page-wrap">
-          <div className="card">{copy.common.loading}</div>
+          <CoachSectionCard>
+            <div className="section-title">{copy.common.loading}</div>
+          </CoachSectionCard>
         </div>
       </main>
     );
@@ -273,24 +437,65 @@ function RecommendationsContent() {
             transition: "opacity 150ms ease, transform 150ms ease",
           }}
         >
-          <div
-            className="card"
-            style={{
-              background:
-                "linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,250,252,0.98))",
-            }}
-          >
+          <CoachSectionCard warm>
             <div
               className="row space-between"
-              style={{ gap: 12, alignItems: "center", flexWrap: "wrap" }}
+              style={{
+                gap: 14,
+                alignItems: "center",
+                flexWrap: "wrap",
+              }}
             >
-              <div className="stack" style={{ gap: 4 }}>
-                <div className="section-title">
-                  {uiLanguage === "fr"
-                    ? "Mode focus — recommandation ouverte"
-                    : "Focus mode — opened recommendation"}
+              <div className="stack" style={{ gap: 6, maxWidth: 720 }}>
+                <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                  <span
+                    className="badge"
+                    style={{
+                      background: "rgba(255,122,89,0.12)",
+                      borderColor: "rgba(255,122,89,0.22)",
+                      color: "var(--coach-accent)",
+                      fontWeight: 850,
+                    }}
+                  >
+                    <SparkIcon size={14} />
+                    {uiLanguage === "fr" ? "Mode focus" : "Focus mode"}
+                  </span>
+
+                  <span
+                    className="badge"
+                    style={{
+                      background: "rgba(88,180,174,0.12)",
+                      borderColor: "rgba(88,180,174,0.22)",
+                      color: "var(--coach-calm)",
+                      fontWeight: 850,
+                    }}
+                  >
+                    <TargetIcon size={14} />
+                    {uiLanguage === "fr" ? "Exécution" : "Execution"}
+                  </span>
                 </div>
-                <div className="muted">
+
+                <div
+                  style={{
+                    fontSize: 30,
+                    lineHeight: 1.12,
+                    fontWeight: 950,
+                    letterSpacing: "-0.055em",
+                    color: "var(--coach-ink)",
+                  }}
+                >
+                  {uiLanguage === "fr"
+                    ? "Une action, un espace clair, un prochain pas."
+                    : "One action, one clear space, one next step."}
+                </div>
+
+                <div
+                  className="muted"
+                  style={{
+                    color: "var(--coach-muted)",
+                    lineHeight: 1.7,
+                  }}
+                >
                   {uiLanguage === "fr"
                     ? "Tu consultes cette recommandation dans un espace épuré, centré uniquement sur l’exécution."
                     : "You are viewing this recommendation in a simplified space focused only on execution."}
@@ -302,6 +507,10 @@ function RecommendationsContent() {
                   className="button secondary"
                   onClick={disableFocusMode}
                   type="button"
+                  style={{
+                    color: "var(--coach-accent)",
+                    borderColor: "rgba(255,122,89,0.28)",
+                  }}
                 >
                   {uiLanguage === "fr" ? "Quitter le focus" : "Exit focus mode"}
                 </button>
@@ -315,11 +524,18 @@ function RecommendationsContent() {
                 </button>
               </div>
             </div>
-          </div>
+          </CoachSectionCard>
 
           {refreshing ? (
-            <div className="card-soft">
-              <div className="muted">
+            <div
+              className="card-soft"
+              style={{
+                borderRadius: 22,
+                background: "rgba(255,255,255,0.72)",
+                border: "1px solid rgba(43,33,24,0.08)",
+              }}
+            >
+              <div className="muted" style={{ color: "var(--coach-muted)" }}>
                 {uiLanguage === "fr"
                   ? "Actualisation de la recommandation..."
                   : "Refreshing recommendation..."}
@@ -346,7 +562,7 @@ function RecommendationsContent() {
       <div
         className="stack"
         style={{
-          gap: 16,
+          gap: 18,
           maxWidth: FEED_MAX_WIDTH,
           margin: "0 auto",
           width: "100%",
@@ -355,178 +571,303 @@ function RecommendationsContent() {
         <div
           className="card stack"
           style={{
-            gap: 16,
+            gap: 18,
+            position: "relative",
+            overflow: "hidden",
+            borderRadius: 32,
+            border: "1px solid rgba(43,33,24,0.08)",
             background:
-              "linear-gradient(180deg, rgba(255,255,255,0.92), rgba(248,250,252,0.95))",
+              "linear-gradient(135deg, rgba(255,241,220,0.96), rgba(255,255,255,0.92) 54%, rgba(232,248,246,0.88))",
+            boxShadow: "0 22px 60px rgba(43,33,24,0.07)",
           }}
         >
-          <div className="row" style={{ gap: 8, alignItems: "center" }}>
-            <TargetIcon />
-            <h1 className="title">
-              {uiLanguage === "fr"
-                ? "Les actions qui peuvent faire bouger ta trajectoire"
-                : "The actions that can move your trajectory forward"}
-            </h1>
-          </div>
+          <div
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              right: -110,
+              top: -130,
+              width: 310,
+              height: 310,
+              borderRadius: 999,
+              background: "rgba(255,122,89,0.16)",
+              pointerEvents: "none",
+            }}
+          />
 
-          <p className="subtitle">
-            {uiLanguage === "fr"
-              ? "Ces recommandations ne sont pas de simples idées. Elles représentent les actions les plus pertinentes à engager maintenant pour débloquer ta progression."
-              : "These recommendations are not just ideas. They represent the most relevant actions to engage now to unlock your progress."}
-          </p>
+          <div
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              left: "46%",
+              bottom: -150,
+              width: 340,
+              height: 340,
+              borderRadius: 999,
+              background: "rgba(88,180,174,0.14)",
+              pointerEvents: "none",
+            }}
+          />
 
-          <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
-            <BadgePill icon={<SparkIcon size={14} />}>
-              {uiLanguage === "fr"
-                ? "Actions personnalisées par ton coach"
-                : "Coach-personalized actions"}
-            </BadgePill>
-
-            <BadgePill icon={<TargetIcon size={14} />}>
-              {uiLanguage === "fr" ? "Priorisées pour toi" : "Prioritized for you"}
-            </BadgePill>
-
-            <BadgePill icon={<CheckCircleIcon size={14} />}>
-              {uiLanguage === "fr"
-                ? "Pensées pour passer à l’action"
-                : "Designed for action"}
-            </BadgePill>
-          </div>
-
-          <div className="grid grid-3">
-            <div className="card-soft stack" style={{ gap: 6 }}>
-              <div className="muted">
-                {uiLanguage === "fr" ? "Actions ouvertes" : "Open actions"}
-              </div>
-              <div className="section-title">{openCount}</div>
-            </div>
-
-            <div className="card-soft stack" style={{ gap: 6 }}>
-              <div className="muted">
-                {uiLanguage === "fr" ? "Priorité élevée" : "High priority"}
-              </div>
-              <div className="section-title">{priorityCount}</div>
-            </div>
-
-            <div className="card-soft stack" style={{ gap: 6 }}>
-              <div className="muted">
-                {uiLanguage === "fr" ? "Guides IA disponibles" : "AI guides available"}
-              </div>
-              <div className="section-title">{artifactEligibleCount}</div>
-            </div>
-          </div>
-
-          <div className="card-soft stack" style={{ gap: 8 }}>
-            <div className="section-title">
-              {uiLanguage === "fr" ? "Pourquoi agir maintenant" : "Why act now"}
-            </div>
-
-            <div className="muted">
-              {uiLanguage === "fr"
-                ? "Plus une recommandation pertinente reste inactive, plus le coût caché augmente : stagnation, occasions manquées, manque de clarté ou progression plus lente que nécessaire."
-                : "The longer a relevant recommendation stays inactive, the more the hidden cost grows: stagnation, missed opportunities, lack of clarity, or slower progress than necessary."}
-            </div>
-          </div>
-
-          <div className="card-soft stack" style={{ gap: 8 }}>
-            <div className="section-title">
-              {uiLanguage === "fr" ? "Ce que tu peux débloquer" : "What you can unlock"}
-            </div>
-
-            <div className="muted">
-              {uiLanguage === "fr"
-                ? "Certaines recommandations peuvent inclure un guide IA personnalisé, sous forme de mini e-book ou mini audiobook, pour te montrer exactement quoi faire et dans quel ordre."
-                : "Some recommendations can include a personalized AI guide, as a mini e-book or mini audiobook, to show you exactly what to do and in what order."}
-            </div>
-          </div>
-
-          <div className="row" style={{ flexWrap: "wrap", gap: 10 }}>
-            <button
-              className="button ghost"
-              onClick={() => void loadRecommendations(true)}
-              disabled={loading || refreshing}
-              type="button"
-            >
-              <span style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
-                <ClockIcon size={14} />
-                {refreshing
-                  ? uiLanguage === "fr"
-                    ? "Actualisation..."
-                    : "Refreshing..."
-                  : uiLanguage === "fr"
-                    ? "Actualiser"
-                    : "Refresh"}
+          <div
+            className="stack"
+            style={{
+              gap: 18,
+              position: "relative",
+              zIndex: 1,
+            }}
+          >
+            <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
+              <span
+                className="badge"
+                style={{
+                  background: "rgba(255,122,89,0.12)",
+                  borderColor: "rgba(255,122,89,0.20)",
+                  color: "var(--coach-accent)",
+                  fontWeight: 850,
+                }}
+              >
+                <SparkIcon size={14} />
+                {uiLanguage === "fr" ? "Fil d’actions" : "Action feed"}
               </span>
-            </button>
 
-            {selectedRecommendation ? (
-              <>
-                <button
-                  className="button secondary"
-                  onClick={enableFocusMode}
-                  type="button"
-                >
-                  {uiLanguage === "fr" ? "Mode focus" : "Focus mode"}
-                </button>
+              <span
+                className="badge"
+                style={{
+                  background: "rgba(88,180,174,0.12)",
+                  borderColor: "rgba(88,180,174,0.20)",
+                  color: "var(--coach-calm)",
+                  fontWeight: 850,
+                }}
+              >
+                <TargetIcon size={14} />
+                {uiLanguage === "fr" ? "Priorisé par le coach" : "Coach-prioritized"}
+              </span>
+            </div>
 
-                <button
-                  className="button secondary"
-                  onClick={closeRecommendation}
-                  type="button"
+            <div
+              className="row"
+              style={{
+                gap: 12,
+                alignItems: "flex-start",
+                flexWrap: "wrap",
+              }}
+            >
+              <div
+                style={{
+                  width: 50,
+                  height: 50,
+                  borderRadius: 18,
+                  display: "grid",
+                  placeItems: "center",
+                  background: "rgba(255,122,89,0.12)",
+                  border: "1px solid rgba(255,122,89,0.22)",
+                  color: "var(--coach-accent)",
+                  flexShrink: 0,
+                }}
+              >
+                <TargetIcon size={22} />
+              </div>
+
+              <div className="stack" style={{ gap: 10, flex: 1, minWidth: 0 }}>
+                <h1
+                  style={{
+                    margin: 0,
+                    maxWidth: 860,
+                    fontSize: 42,
+                    lineHeight: 1.04,
+                    fontWeight: 950,
+                    letterSpacing: "-0.07em",
+                    color: "var(--coach-ink)",
+                  }}
                 >
-                  {uiLanguage === "fr" ? "Retour à la liste" : "Back to list"}
-                </button>
-              </>
-            ) : null}
+                  {uiLanguage === "fr"
+                    ? "Les actions qui peuvent faire bouger ta trajectoire."
+                    : "The actions that can move your trajectory forward."}
+                </h1>
+
+                <p
+                  className="subtitle"
+                  style={{
+                    maxWidth: 760,
+                    color: "var(--coach-muted)",
+                    fontSize: 16,
+                    lineHeight: 1.7,
+                  }}
+                >
+                  {uiLanguage === "fr"
+                    ? "Ces recommandations ne sont pas de simples idées. Elles représentent les actions les plus pertinentes à engager maintenant pour débloquer ta progression."
+                    : "These recommendations are not just ideas. They represent the most relevant actions to engage now to unlock your progress."}
+                </p>
+              </div>
+            </div>
+
+            <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
+              <BadgePill icon={<SparkIcon size={14} />}>
+                {uiLanguage === "fr"
+                  ? "Actions personnalisées par ton coach"
+                  : "Coach-personalized actions"}
+              </BadgePill>
+
+              <BadgePill icon={<TargetIcon size={14} />}>
+                {uiLanguage === "fr" ? "Priorisées pour toi" : "Prioritized for you"}
+              </BadgePill>
+
+              <BadgePill icon={<CheckCircleIcon size={14} />}>
+                {uiLanguage === "fr"
+                  ? "Pensées pour passer à l’action"
+                  : "Designed for action"}
+              </BadgePill>
+            </div>
+
+            <div className="grid grid-3">
+              <CoachMetricCard
+                label={uiLanguage === "fr" ? "Actions ouvertes" : "Open actions"}
+                value={openCount}
+                helper={
+                  uiLanguage === "fr"
+                    ? "À lire, démarrer ou poursuivre."
+                    : "Ready to read, start, or continue."
+                }
+                icon={<TargetIcon size={18} />}
+                tone="warm"
+              />
+
+              <CoachMetricCard
+                label={uiLanguage === "fr" ? "Priorité élevée" : "High priority"}
+                value={priorityCount}
+                helper={
+                  uiLanguage === "fr"
+                    ? "À fort potentiel d’impact."
+                    : "Higher potential impact."
+                }
+                icon={<SparkIcon size={18} />}
+                tone="calm"
+              />
+
+              <CoachMetricCard
+                label={uiLanguage === "fr" ? "Guides IA disponibles" : "AI guides available"}
+                value={artifactEligibleCount}
+                helper={
+                  uiLanguage === "fr"
+                    ? "Mini e-books ou audiobooks personnalisés."
+                    : "Personalized mini e-books or audiobooks."
+                }
+                icon={<CheckCircleIcon size={18} />}
+                tone="neutral"
+              />
+            </div>
+
+            <div className="row" style={{ flexWrap: "wrap", gap: 10 }}>
+              <button
+                className="button ghost"
+                onClick={() => void loadRecommendations(true)}
+                disabled={loading || refreshing}
+                type="button"
+              >
+                <span style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
+                  <ClockIcon size={14} />
+                  {refreshing
+                    ? uiLanguage === "fr"
+                      ? "Actualisation..."
+                      : "Refreshing..."
+                    : uiLanguage === "fr"
+                      ? "Actualiser"
+                      : "Refresh"}
+                </span>
+              </button>
+
+              {selectedRecommendation ? (
+                <>
+                  <button
+                    className="button secondary"
+                    onClick={enableFocusMode}
+                    type="button"
+                    style={{
+                      color: "var(--coach-accent)",
+                      borderColor: "rgba(255,122,89,0.28)",
+                    }}
+                  >
+                    {uiLanguage === "fr" ? "Mode focus" : "Focus mode"}
+                  </button>
+
+                  <button
+                    className="button secondary"
+                    onClick={closeRecommendation}
+                    type="button"
+                    style={{
+                      color: "var(--coach-accent)",
+                      borderColor: "rgba(255,122,89,0.28)",
+                    }}
+                  >
+                    {uiLanguage === "fr" ? "Retour à la liste" : "Back to list"}
+                  </button>
+                </>
+              ) : null}
+            </div>
           </div>
         </div>
 
         {loading ? (
-          <div className="card stack">
+          <CoachSectionCard warm>
             <div className="section-title">
               {uiLanguage === "fr" ? "Chargement des recommandations" : "Loading recommendations"}
             </div>
-            <div className="muted">
+
+            <div className="muted" style={{ color: "var(--coach-muted)" }}>
               {uiLanguage === "fr"
                 ? "Le coach rassemble tes actions prioritaires."
                 : "Your coach is gathering your priority actions."}
             </div>
-          </div>
+          </CoachSectionCard>
         ) : error ? (
-          <div className="card stack">
+          <CoachSectionCard>
             <div className="section-title" style={{ color: "var(--danger)" }}>
               {uiLanguage === "fr"
                 ? "Impossible de charger les recommandations"
                 : "Unable to load recommendations"}
             </div>
+
             <div className="muted">{error}</div>
+
             <div className="row" style={{ flexWrap: "wrap", gap: 10 }}>
               <button className="button" onClick={() => void loadRecommendations()}>
                 {uiLanguage === "fr" ? "Réessayer" : "Try again"}
               </button>
+
               <button className="button ghost" onClick={() => router.push("/dashboard")}>
                 {uiLanguage === "fr" ? "Retour au tableau de bord" : "Back to dashboard"}
               </button>
             </div>
-          </div>
+          </CoachSectionCard>
         ) : recommendations.length === 0 ? (
-          <div className="card stack">
-            <div className="section-title">
+          <CoachSectionCard warm>
+            <div
+              style={{
+                fontSize: 32,
+                lineHeight: 1.1,
+                fontWeight: 950,
+                letterSpacing: "-0.055em",
+                color: "var(--coach-ink)",
+              }}
+            >
               {uiLanguage === "fr"
                 ? "Aucune recommandation pour le moment"
                 : "No recommendations yet"}
             </div>
-            <div className="muted">
+
+            <div className="muted" style={{ color: "var(--coach-muted)", lineHeight: 1.7 }}>
               {uiLanguage === "fr"
                 ? "Le coach analysera tes sessions à mesure que ta trajectoire se clarifie. Lance une session pour faire émerger des actions vraiment utiles."
                 : "Your coach will analyze your sessions as your trajectory becomes clearer. Start a session to surface truly useful actions."}
             </div>
+
             <div className="row" style={{ flexWrap: "wrap", gap: 10 }}>
               <button className="button" onClick={() => router.push("/dashboard")}>
                 {uiLanguage === "fr" ? "Démarrer une session" : "Start a session"}
               </button>
             </div>
-          </div>
+          </CoachSectionCard>
         ) : (
           <div
             className="stack"
@@ -538,8 +879,15 @@ function RecommendationsContent() {
             }}
           >
             {refreshing ? (
-              <div className="card-soft">
-                <div className="muted">
+              <div
+                className="card-soft"
+                style={{
+                  borderRadius: 22,
+                  background: "rgba(255,255,255,0.72)",
+                  border: "1px solid rgba(43,33,24,0.08)",
+                }}
+              >
+                <div className="muted" style={{ color: "var(--coach-muted)" }}>
                   {selectedRecommendation
                     ? uiLanguage === "fr"
                       ? "Actualisation de la recommandation..."
@@ -553,18 +901,45 @@ function RecommendationsContent() {
 
             {selectedRecommendation ? (
               <>
-                <div className="card-soft stack" style={{ gap: 8 }}>
-                  <div className="section-title">
-                    {uiLanguage === "fr"
-                      ? "Recommandation ouverte"
-                      : "Opened recommendation"}
+                <CoachSectionCard>
+                  <div className="row space-between" style={{ gap: 12, flexWrap: "wrap" }}>
+                    <div className="stack" style={{ gap: 6, maxWidth: 680 }}>
+                      <div className="section-title">
+                        {uiLanguage === "fr"
+                          ? "Recommandation ouverte"
+                          : "Opened recommendation"}
+                      </div>
+
+                      <div className="muted" style={{ color: "var(--coach-muted)" }}>
+                        {uiLanguage === "fr"
+                          ? "Tu consultes maintenant cette recommandation seule, avec ses actions, ses offres et ses leviers de passage à l’action."
+                          : "You are now viewing this recommendation on its own, with its actions, offers, and execution support."}
+                      </div>
+                    </div>
+
+                    <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
+                      <button
+                        className="button secondary"
+                        onClick={enableFocusMode}
+                        type="button"
+                        style={{
+                          color: "var(--coach-accent)",
+                          borderColor: "rgba(255,122,89,0.28)",
+                        }}
+                      >
+                        {uiLanguage === "fr" ? "Mode focus" : "Focus mode"}
+                      </button>
+
+                      <button
+                        className="button ghost"
+                        onClick={closeRecommendation}
+                        type="button"
+                      >
+                        {uiLanguage === "fr" ? "Retour à la liste" : "Back to list"}
+                      </button>
+                    </div>
                   </div>
-                  <div className="muted">
-                    {uiLanguage === "fr"
-                      ? "Tu consultes maintenant cette recommandation seule, avec ses actions, ses offres et ses leviers de passage à l’action."
-                      : "You are now viewing this recommendation on its own, with its actions, offers, and execution support."}
-                  </div>
-                </div>
+                </CoachSectionCard>
 
                 <RecommendationCard
                   item={selectedRecommendation}
@@ -577,63 +952,92 @@ function RecommendationsContent() {
                 <div
                   className="card-soft stack"
                   style={{
-                    gap: 8,
+                    gap: 10,
                     position: "sticky",
                     top: 12,
                     zIndex: 2,
-                    backdropFilter: "blur(10px)",
-                    background: "rgba(248, 250, 252, 0.92)",
+                    backdropFilter: "blur(14px)",
+                    borderRadius: 26,
+                    background: "rgba(255,248,239,0.92)",
+                    border: "1px solid rgba(43,33,24,0.08)",
+                    boxShadow: "0 16px 40px rgba(43,33,24,0.06)",
                   }}
                 >
-                  <div className="section-title">
-                    {uiLanguage === "fr"
-                      ? "Choisis la prochaine action la plus utile"
-                      : "Choose the next most useful action"}
-                  </div>
-                  <div className="muted">
-                    {uiLanguage === "fr"
-                      ? `Tu as actuellement ${totalCount} recommandation${totalCount > 1 ? "s" : ""}. Parcours-les comme un fil d’actions, en commençant par celles qui portent le plus de tension, de blocage ou de potentiel immédiat.`
-                      : `You currently have ${totalCount} recommendation${totalCount > 1 ? "s" : ""}. Browse them as an action feed, starting with the ones carrying the most tension, blockage, or immediate potential.`}
-                  </div>
-                  <div className="muted">
-                    {uiLanguage === "fr"
-                      ? `${visibleRecommendations.length} affichée${visibleRecommendations.length > 1 ? "s" : ""} sur ${totalCount}`
-                      : `${visibleRecommendations.length} shown out of ${totalCount}`}
+                  <div className="row space-between" style={{ gap: 12, flexWrap: "wrap" }}>
+                    <div className="stack" style={{ gap: 6, maxWidth: 620 }}>
+                      <div className="section-title">
+                        {uiLanguage === "fr"
+                          ? "Choisis la prochaine action la plus utile"
+                          : "Choose the next most useful action"}
+                      </div>
+
+                      <div className="muted" style={{ color: "var(--coach-muted)" }}>
+                        {uiLanguage === "fr"
+                          ? `Tu as actuellement ${totalCount} recommandation${totalCount > 1 ? "s" : ""}. Parcours-les comme un fil d’actions, en commençant par celles qui portent le plus de tension, de blocage ou de potentiel immédiat.`
+                          : `You currently have ${totalCount} recommendation${totalCount > 1 ? "s" : ""}. Browse them as an action feed, starting with the ones carrying the most tension, blockage, or immediate potential.`}
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        borderRadius: 999,
+                        padding: "9px 13px",
+                        background: "rgba(255,122,89,0.11)",
+                        border: "1px solid rgba(255,122,89,0.20)",
+                        color: "var(--coach-accent)",
+                        fontSize: 13,
+                        fontWeight: 850,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {uiLanguage === "fr"
+                        ? `${visibleRecommendations.length} / ${totalCount} visibles`
+                        : `${visibleRecommendations.length} / ${totalCount} visible`}
+                    </div>
                   </div>
                 </div>
 
-                <div className="card-soft stack" style={{ gap: 10 }}>
-                  <div className="section-title">
-                    {uiLanguage === "fr" ? "Trier le fil" : "Sort the feed"}
+                <div
+                  className="card-soft stack"
+                  style={{
+                    gap: 12,
+                    borderRadius: 26,
+                    background: "rgba(255,255,255,0.72)",
+                    border: "1px solid rgba(43,33,24,0.08)",
+                  }}
+                >
+                  <div className="row space-between" style={{ gap: 12, flexWrap: "wrap" }}>
+                    <div className="stack" style={{ gap: 4 }}>
+                      <div className="section-title">
+                        {uiLanguage === "fr" ? "Trier le fil" : "Sort the feed"}
+                      </div>
+
+                      <div className="muted" style={{ color: "var(--coach-muted)" }}>
+                        {getSortHelperText()}
+                      </div>
+                    </div>
+
+                    <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
+                      {(["priority", "open", "recent"] as FeedSortMode[]).map((mode) => (
+                        <button
+                          key={mode}
+                          className={sortMode === mode ? "button" : "button ghost"}
+                          onClick={() => setSortMode(mode)}
+                          type="button"
+                          style={
+                            sortMode === mode
+                              ? {
+                                  background: "var(--coach-accent)",
+                                  borderColor: "var(--coach-accent)",
+                                }
+                              : undefined
+                          }
+                        >
+                          {getSortLabel(mode)}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-
-                  <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
-                    <button
-                      className={sortMode === "priority" ? "button" : "button ghost"}
-                      onClick={() => setSortMode("priority")}
-                      type="button"
-                    >
-                      {getSortLabel("priority")}
-                    </button>
-
-                    <button
-                      className={sortMode === "open" ? "button" : "button ghost"}
-                      onClick={() => setSortMode("open")}
-                      type="button"
-                    >
-                      {getSortLabel("open")}
-                    </button>
-
-                    <button
-                      className={sortMode === "recent" ? "button" : "button ghost"}
-                      onClick={() => setSortMode("recent")}
-                      type="button"
-                    >
-                      {getSortLabel("recent")}
-                    </button>
-                  </div>
-
-                  <div className="muted">{getSortHelperText()}</div>
                 </div>
 
                 <div
@@ -647,45 +1051,68 @@ function RecommendationsContent() {
                     scrollBehavior: "smooth",
                   }}
                 >
-                  {visibleRecommendations.map((rec, index) => (
+                  {visibleRecommendations.map((recommendation, index) => (
                     <div
-                      key={rec.id}
+                      key={recommendation.id}
                       style={{
                         width: "100%",
                         animation: `fadeInUp 180ms ease ${Math.min(index * 20, 180)}ms both`,
                       }}
                     >
                       <RecommendationSummaryCard
-                        item={rec}
+                        item={recommendation}
                         uiLanguage={uiLanguage}
-                        onOpen={() => openRecommendation(rec.id)}
+                        onOpen={() => openRecommendation(recommendation.id)}
                       />
                     </div>
                   ))}
                 </div>
 
                 {hasMoreRecommendations ? (
-                  <div className="card-soft row space-between" style={{ gap: 12, flexWrap: "wrap" }}>
-                    <div className="muted">
+                  <div
+                    className="card-soft row space-between"
+                    style={{
+                      gap: 12,
+                      flexWrap: "wrap",
+                      borderRadius: 24,
+                      background: "rgba(255,248,239,0.74)",
+                      border: "1px solid rgba(43,33,24,0.08)",
+                    }}
+                  >
+                    <div className="muted" style={{ color: "var(--coach-muted)" }}>
                       {uiLanguage === "fr"
-                        ? `Il reste ${sortedRecommendations.length - visibleCount} recommandation${sortedRecommendations.length - visibleCount > 1 ? "s" : ""} à afficher.`
-                        : `${sortedRecommendations.length - visibleCount} recommendation${sortedRecommendations.length - visibleCount > 1 ? "s" : ""} left to show.`}
+                        ? `Il reste ${sortedRecommendations.length - visibleCount} recommandation${
+                            sortedRecommendations.length - visibleCount > 1 ? "s" : ""
+                          } à afficher.`
+                        : `${sortedRecommendations.length - visibleCount} recommendation${
+                            sortedRecommendations.length - visibleCount > 1 ? "s" : ""
+                          } left to show.`}
                     </div>
 
                     <button
                       className="button"
                       onClick={handleLoadMore}
                       type="button"
+                      style={{
+                        background: "var(--coach-accent)",
+                      }}
                     >
                       {uiLanguage === "fr" ? "Voir plus" : "Load more"}
                     </button>
                   </div>
                 ) : (
-                  <div className="card-soft">
-                    <div className="muted">
+                  <div
+                    className="card-soft"
+                    style={{
+                      borderRadius: 24,
+                      background: "rgba(255,248,239,0.74)",
+                      border: "1px solid rgba(43,33,24,0.08)",
+                    }}
+                  >
+                    <div className="muted" style={{ color: "var(--coach-muted)" }}>
                       {uiLanguage === "fr"
-                        ? "Toutes les recommandations actuellement chargées sont visibles."
-                        : "All currently loaded recommendations are visible."}
+                        ? `Toutes les ${activeCount} action${activeCount > 1 ? "s" : ""} active${activeCount > 1 ? "s" : ""} actuellement chargées sont visibles.`
+                        : `All ${activeCount} currently active action${activeCount > 1 ? "s" : ""} are visible.`}
                     </div>
                   </div>
                 )}
