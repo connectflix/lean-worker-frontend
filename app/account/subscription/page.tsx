@@ -1,6 +1,7 @@
 // app/account/subscription/page.tsx
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
@@ -12,6 +13,7 @@ import {
   CheckCircleIcon,
   ClockIcon,
   LayerIcon,
+  PathIcon,
   SparkIcon,
   TargetIcon,
   UserCardIcon,
@@ -342,6 +344,7 @@ function SubscriptionContent() {
         heroTitle: "Choisis le niveau d’accompagnement qui soutient ton rythme.",
         heroSubtitle:
           "Ton abonnement définit l’intensité de ton espace LeanWorker : coaching, Career Blueprint, recommandations, guides IA et leviers d’action.",
+        backToElearning: "Retour au programme Time’s UP!",
         activePlan: "Pack actif",
         currentlyActive: "Actuellement activé",
         updatedTitle: "Abonnement mis à jour",
@@ -378,6 +381,7 @@ function SubscriptionContent() {
       heroTitle: "Choose the support level that matches your pace.",
       heroSubtitle:
         "Your subscription defines the intensity of your LeanWorker space: coaching, Career Blueprint, recommendations, AI guides, and action levers.",
+      backToElearning: "Back to Time’s UP! program",
       activePlan: "Active plan",
       currentlyActive: "Currently active",
       updatedTitle: "Subscription updated",
@@ -591,6 +595,23 @@ function SubscriptionContent() {
               >
                 {labels.heroSubtitle}
               </p>
+
+              <div className="row" style={{ flexWrap: "wrap", gap: 10 }}>
+                <Link
+                  className="button ghost"
+                  href="/elearning"
+                  style={{
+                    borderColor: "rgba(255,122,89,0.28)",
+                    color: "var(--coach-accent)",
+                    background: "rgba(255,255,255,0.62)",
+                  }}
+                >
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                    <PathIcon size={14} />
+                    {labels.backToElearning}
+                  </span>
+                </Link>
+              </div>
             </div>
 
             <div

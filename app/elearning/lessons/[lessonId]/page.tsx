@@ -201,11 +201,13 @@ function MasterclassButtonLink({
   children,
   variant = "primary",
   external = false,
+  subtle = false,
 }: {
   href: string;
   children: React.ReactNode;
   variant?: "primary" | "ghost";
   external?: boolean;
+  subtle?: boolean;
 }) {
   const style: React.CSSProperties =
     variant === "primary"
@@ -214,15 +216,19 @@ function MasterclassButtonLink({
           color: "#111827",
           borderRadius: 16,
           border: "1px solid rgba(255,255,255,0.18)",
-          minHeight: 44,
+          minHeight: 46,
           justifyContent: "center",
+          fontWeight: 900,
         }
       : {
-          color: "rgba(248,250,252,0.82)",
-          borderColor: "rgba(255,255,255,0.16)",
+          color: subtle ? "rgba(248,250,252,0.58)" : "rgba(248,250,252,0.82)",
+          borderColor: subtle ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.16)",
+          background: subtle ? "rgba(255,255,255,0.035)" : undefined,
           borderRadius: 16,
-          minHeight: 44,
+          minHeight: subtle ? 38 : 44,
           justifyContent: "center",
+          fontSize: subtle ? 13 : undefined,
+          fontWeight: subtle ? 700 : undefined,
         };
 
   if (external) {
@@ -341,6 +347,7 @@ function LessonSalesCta({
   const progress = Number(summary?.overall_progress_percent ?? 0);
   const isFinalLesson = !lesson.next_lesson_id;
   const isProgramCompleted = isFinalLesson && isCompleted;
+  const freeConversationHref = buildCalendlyUrl("secondary_free_conversation", `lesson_${lesson.id}`);
 
   const cta = (() => {
     if (isProgramCompleted || progress >= 95) {
@@ -348,11 +355,9 @@ function LessonSalesCta({
         badge: "Fin du programme",
         title: "Vous avez maintenant la méthode. Passez à l’accompagnement.",
         body:
-          "Time’s UP! vous a donné les concepts, les canvases, les puissances, les leviers et les preuves. L’étape suivante consiste à appliquer cette méthode à votre propre trajectoire avec un accompagnement humain et technologique.",
-        primaryLabel: "Choisir mon accompagnement",
-        primaryHref: "/elearning/subscribe",
+          "Time’s UP! vous a donné les concepts, les canvases, les puissances, les leviers et les preuves. L’étape suivante est de choisir le pack LeanWorker adapté pour appliquer cette méthode à votre trajectoire avec un accompagnement structuré, des recommandations et des leviers d’action.",
+        primaryLabel: "Voir les packs et passer à l’action",
         secondaryLabel: "Réserver une conversation gratuite",
-        secondaryHref: buildCalendlyUrl("final_lesson_cta", `lesson_${lesson.id}`),
         tone: "conversion",
       };
     }
@@ -362,11 +367,9 @@ function LessonSalesCta({
         badge: "Passage à l’action",
         title: "Vous êtes avancé dans le programme. C’est le bon moment pour structurer l’exécution.",
         body:
-          "À ce stade, vous avez déjà identifié plusieurs mécanismes importants : temps, engagement, risques, leviers et preuves. Un accompagnement LeanWorker peut vous aider à transformer ces apprentissages en plan d’action personnel.",
+          "À ce stade, vous avez déjà identifié plusieurs mécanismes importants : temps, engagement, risques, leviers et preuves. Les packs LeanWorker vous aident à transformer ces apprentissages en trajectoire personnelle, plan d’action et suivi concret.",
         primaryLabel: "Choisir mon pack LeanWorker",
-        primaryHref: "/elearning/subscribe",
-        secondaryLabel: "Parler à un conseiller",
-        secondaryHref: buildCalendlyUrl("advanced_progress_cta", `lesson_${lesson.id}`),
+        secondaryLabel: "Réserver une conversation gratuite",
         tone: "strong",
       };
     }
@@ -376,47 +379,48 @@ function LessonSalesCta({
         badge: "Clarification",
         title: "Vous commencez à voir vos tensions, vos objectifs et votre manière de travailler.",
         body:
-          "La formation vous donne la méthode. L’accompagnement LeanWorker vous aide à l’appliquer à votre situation réelle : trajectoire, décisions, routines, recommandations et leviers.",
+          "La formation vous donne la méthode. Les packs LeanWorker vous aident ensuite à l’appliquer à votre situation réelle : trajectoire, décisions, routines, recommandations et leviers.",
         primaryLabel: "Découvrir les packs d’accompagnement",
-        primaryHref: "/elearning/subscribe",
         secondaryLabel: "Réserver une conversation gratuite",
-        secondaryHref: buildCalendlyUrl("mid_program_cta", `lesson_${lesson.id}`),
         tone: "medium",
       };
     }
 
     return {
       badge: "Début du parcours",
-      title: "Vous démarrez Time’s UP!. Vous pouvez déjà relier la méthode à votre situation.",
+      title: "Vous démarrez Time’s UP!. Préparez déjà votre passage à l’action.",
       body:
-        "Si vous voulez comprendre comment le programme peut s’appliquer à votre réalité professionnelle, vous pouvez réserver une conversation gratuite. Sinon, continuez simplement la formation à votre rythme.",
-      primaryLabel: "Réserver une conversation gratuite",
-      primaryHref: buildCalendlyUrl("early_program_cta", `lesson_${lesson.id}`),
-      secondaryLabel: "Voir les packs",
-      secondaryHref: "/elearning/subscribe",
+        "Continuez la formation à votre rythme. Dès que vous serez prêt à transformer la méthode en actions concrètes, les packs LeanWorker vous permettront de passer de l’apprentissage à l’exécution.",
+      primaryLabel: "Voir les packs disponibles",
+      secondaryLabel: "Réserver une conversation gratuite",
       tone: "soft",
     };
   })();
 
-  const isPrimaryExternal = cta.primaryHref.startsWith("http");
-  const isSecondaryExternal = cta.secondaryHref.startsWith("http");
-
   return (
     <MasterclassPanel warm={cta.tone === "conversion" || cta.tone === "strong"}>
-      <div className="row space-between" style={{ gap: 14, flexWrap: "wrap" }}>
-        <div className="stack" style={{ gap: 10, maxWidth: 760 }}>
+      <div className="row space-between" style={{ gap: 18, flexWrap: "wrap" }}>
+        <div className="stack" style={{ gap: 10, maxWidth: 780 }}>
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
             <MasterclassBadge tone={cta.tone === "soft" ? "dark" : "gold"}>
-              <SparkIcon size={14} color={cta.tone === "soft" ? "rgba(248,250,252,0.70)" : "#fbbf24"} />
+              <SparkIcon
+                size={14}
+                color={cta.tone === "soft" ? "rgba(248,250,252,0.70)" : "#fbbf24"}
+              />
               {cta.badge}
+            </MasterclassBadge>
+
+            <MasterclassBadge tone="green">
+              <CheckCircleIcon size={14} color="#bbf7d0" />
+              Packs LeanWorker disponibles
             </MasterclassBadge>
           </div>
 
           <div
             style={{
               color: "#ffffff",
-              fontSize: 25,
-              lineHeight: 1.12,
+              fontSize: 26,
+              lineHeight: 1.1,
               fontWeight: 950,
               letterSpacing: "-0.06em",
             }}
@@ -424,31 +428,49 @@ function LessonSalesCta({
             {cta.title}
           </div>
 
-          <div style={{ color: "rgba(248,250,252,0.64)", lineHeight: 1.75 }}>
+          <div style={{ color: "rgba(248,250,252,0.66)", lineHeight: 1.75 }}>
             {cta.body}
           </div>
 
           <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 2 }}>
-            <MasterclassBadge>Conversations humaines</MasterclassBadge>
+            <MasterclassBadge>Accompagnement structuré</MasterclassBadge>
             <MasterclassBadge>Plateforme LeanWorker</MasterclassBadge>
             <MasterclassBadge>Recommendations</MasterclassBadge>
             <MasterclassBadge>Leviers</MasterclassBadge>
+            <MasterclassBadge>Passage à l’action</MasterclassBadge>
           </div>
         </div>
 
-        <div className="stack" style={{ gap: 10, minWidth: 250 }}>
-          <MasterclassButtonLink
-            href={cta.primaryHref}
-            external={isPrimaryExternal}
-            variant="primary"
-          >
+        <div
+          className="stack"
+          style={{
+            gap: 12,
+            minWidth: 280,
+            maxWidth: 360,
+            padding: 16,
+            borderRadius: 26,
+            background: "rgba(0,0,0,0.22)",
+            border: "1px solid rgba(255,255,255,0.10)",
+          }}
+        >
+          <div style={{ color: "#ffffff", fontWeight: 900, lineHeight: 1.35 }}>
+            Prêt à transformer la méthode en résultats concrets ?
+          </div>
+
+          <div style={{ color: "rgba(248,250,252,0.58)", fontSize: 13, lineHeight: 1.6 }}>
+            Comparez les packs Standard, Classique, Flix et Exécutif, puis choisissez le niveau
+            d’accompagnement adapté à votre situation.
+          </div>
+
+          <MasterclassButtonLink href="/elearning/subscribe" variant="primary">
             {cta.primaryLabel}
           </MasterclassButtonLink>
 
           <MasterclassButtonLink
-            href={cta.secondaryHref}
-            external={isSecondaryExternal}
+            href={freeConversationHref}
+            external
             variant="ghost"
+            subtle
           >
             {cta.secondaryLabel}
           </MasterclassButtonLink>
@@ -1155,37 +1177,64 @@ function ElearningLessonContent() {
                     <CheckCircleIcon size={14} color="#bbf7d0" />
                     Fin du programme
                   </MasterclassBadge>
+
+                  <MasterclassBadge tone="gold">
+                    <SparkIcon size={14} color="#fbbf24" />
+                    Packs LeanWorker disponibles
+                  </MasterclassBadge>
                 </div>
 
                 <div
                   style={{
                     color: "#ffffff",
-                    fontSize: 26,
-                    lineHeight: 1.12,
+                    fontSize: 28,
+                    lineHeight: 1.1,
                     fontWeight: 950,
-                    letterSpacing: "-0.06em",
+                    letterSpacing: "-0.065em",
                   }}
                 >
-                  Passez maintenant à l’accompagnement LeanWorker
+                  Passez maintenant de la méthode à l’exécution.
                 </div>
 
-                <div style={{ color: "rgba(248,250,252,0.64)", lineHeight: 1.75 }}>
+                <div style={{ color: "rgba(248,250,252,0.66)", lineHeight: 1.75 }}>
                   Vous avez terminé la dernière leçon. Le programme vous a donné la méthode ;
-                  l’accompagnement vous aide maintenant à l’appliquer à votre propre trajectoire.
+                  les packs LeanWorker vous permettent maintenant de l’appliquer à votre propre
+                  trajectoire avec accompagnement, recommandations, leviers et suivi concret.
                 </div>
 
-                <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
-                  <MasterclassButtonLink href="/elearning/subscribe" variant="primary">
-                    Voir les packs d’accompagnement
-                  </MasterclassButtonLink>
+                <div
+                  className="stack"
+                  style={{
+                    gap: 12,
+                    padding: 16,
+                    borderRadius: 26,
+                    background: "rgba(0,0,0,0.22)",
+                    border: "1px solid rgba(255,255,255,0.10)",
+                  }}
+                >
+                  <div style={{ color: "#ffffff", fontWeight: 900 }}>
+                    Choisissez le niveau d’accompagnement adapté à votre situation.
+                  </div>
 
-                  <MasterclassButtonLink
-                    href={buildCalendlyUrl("final_program_bottom_cta", `lesson_${lesson.id}`)}
-                    external
-                    variant="ghost"
-                  >
-                    Réserver une conversation gratuite
-                  </MasterclassButtonLink>
+                  <div style={{ color: "rgba(248,250,252,0.58)", lineHeight: 1.6 }}>
+                    Standard pour démarrer, Classique pour structurer, Flix pour accélérer,
+                    Exécutif pour un accompagnement stratégique.
+                  </div>
+
+                  <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
+                    <MasterclassButtonLink href="/elearning/subscribe" variant="primary">
+                      Voir les packs et passer à l’action
+                    </MasterclassButtonLink>
+
+                    <MasterclassButtonLink
+                      href={buildCalendlyUrl("final_program_secondary_cta", `lesson_${lesson.id}`)}
+                      external
+                      variant="ghost"
+                      subtle
+                    >
+                      Réserver une conversation gratuite
+                    </MasterclassButtonLink>
+                  </div>
                 </div>
               </MasterclassPanel>
             ) : null}
