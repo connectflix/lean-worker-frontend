@@ -27,22 +27,22 @@ type OrganizationConversationsTabProps = {
   loading: boolean;
   saving: boolean;
   editingExternalConversation: AdminWorkerConversation | null;
-  onLoadConversations: () => void;
+  onLoadConversations: () => void | Promise<void>;
   onCreateExternalConversation: (
     payload: Omit<AdminWorkerConversationCreate, "worker_id">,
-  ) => void;
+  ) => void | Promise<void>;
   onUpdateExternalConversation: (
     conversationId: number,
     payload: AdminWorkerConversationUpdate,
-  ) => void;
-  onDeleteExternalConversation: (conversationId: number) => void;
+  ) => void | Promise<void>;
+  onDeleteExternalConversation: (conversationId: number) => void | Promise<void>;
   onEditExternalConversation: (conversation: AdminWorkerConversation) => void;
   onCancelEditExternalConversation: () => void;
 };
 
 const EMPTY_FORM: ConversationFormState = {
   title: "",
-  source_type: "manual",
+  source_type: "video",
   source_label: "",
   video_url: "",
   file_path: "",
@@ -127,7 +127,7 @@ function buildFormFromConversation(
 
   return {
     title: conversation.title || "",
-    source_type: conversation.source_type || "manual",
+    source_type: conversation.source_type || "video",
     source_label: conversation.source_label || "",
     video_url: conversation.video_url || "",
     file_path: conversation.file_path || "",
@@ -142,7 +142,7 @@ function buildPayloadFromForm(
 ): Omit<AdminWorkerConversationCreate, "worker_id"> {
   return {
     title: form.title.trim(),
-    source_type: form.source_type.trim() || "manual",
+    source_type: form.source_type.trim() || "video",
     source_label: form.source_label.trim() || null,
     video_url: form.video_url.trim() || null,
     file_path: form.file_path.trim() || null,
@@ -166,12 +166,58 @@ function getTextPreview(value?: string | null, maxLength = 120): string {
 
 function getConversationSourceLabel(conversation: AdminWorkerConversation): string {
   const parts = [
-    conversation.source_type || "manual",
+    conversation.source_type || "video",
     conversation.source_label || null,
     formatDateTime(conversation.conversation_date),
   ].filter(Boolean);
 
   return parts.join(" · ");
+}
+
+function getErrorMessage(err: unknown): string {
+  if (err instanceof Error && err.message) {
+    return err.message;
+  }
+
+  if (typeof err === "object" && err !== null) {
+    const maybeError = err as {
+      detail?: unknown;
+      message?: unknown;
+      error?: unknown;
+    };
+
+    if (typeof maybeError.detail === "string") return maybeError.detail;
+    if (typeof maybeError.message === "string") return maybeError.message;
+    if (typeof maybeError.error === "string") return maybeError.error;
+  }
+
+  return "Unable to save the external conversation.";
+}
+
+function validateExternalConversationForm(
+  form: ConversationFormState,
+): string | null {
+  const title = form.title.trim();
+  const sourceType = form.source_type.trim();
+  const filePath = form.file_path.trim();
+
+  if (!title) {
+    return "Title is required before saving the external conversation.";
+  }
+
+  if (sourceType === "video" && !filePath) {
+    return "File path is required when Source type is Video. Add the stored video file path, or change Source type if this is only a web link.";
+  }
+
+  if (sourceType === "audio" && !filePath) {
+    return "File path is required when Source type is Audio.";
+  }
+
+  if (sourceType === "upload" && !filePath) {
+    return "File path is required when Source type is Upload.";
+  }
+
+  return null;
 }
 
 function ScrollableTextBlock({
@@ -269,6 +315,10 @@ export function OrganizationConversationsTab({
   const [expandedCoachSessionId, setExpandedCoachSessionId] = useState<number | null>(null);
   const [expandedExternalConversationId, setExpandedExternalConversationId] =
     useState<number | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [localSaving, setLocalSaving] = useState(false);
+
+  const isSubmitting = saving || localSaving;
 
   const workerLabel = selectedWorkerSummary?.worker
     ? `#${selectedWorkerSummary.worker.id} — ${selectedWorkerSummary.worker.display_name}`
@@ -283,12 +333,14 @@ export function OrganizationConversationsTab({
 
   useEffect(() => {
     setForm(buildFormFromConversation(editingExternalConversation));
+    setFormError(null);
   }, [editingExternalConversation]);
 
   function patchField<K extends keyof ConversationFormState>(
     key: K,
     value: ConversationFormState[K],
   ) {
+    setFormError(null);
     setForm((prev) => ({
       ...prev,
       [key]: value,
@@ -297,25 +349,40 @@ export function OrganizationConversationsTab({
 
   function resetForm() {
     setForm(EMPTY_FORM);
+    setFormError(null);
     onCancelEditExternalConversation();
   }
 
-  function handleSubmit(event: React.FormEvent) {
+  async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+
+    const validationError = validateExternalConversationForm(form);
+
+    if (validationError) {
+      setFormError(validationError);
+      return;
+    }
 
     const payload = buildPayloadFromForm(form);
 
-    if (!payload.title) {
-      return;
-    }
+    setLocalSaving(true);
+    setFormError(null);
 
-    if (editingExternalConversation) {
-      onUpdateExternalConversation(editingExternalConversation.id, payload);
-      return;
-    }
+    try {
+      if (editingExternalConversation) {
+        await Promise.resolve(
+          onUpdateExternalConversation(editingExternalConversation.id, payload),
+        );
+        return;
+      }
 
-    onCreateExternalConversation(payload);
-    setForm(EMPTY_FORM);
+      await Promise.resolve(onCreateExternalConversation(payload));
+      setForm(EMPTY_FORM);
+    } catch (err) {
+      setFormError(getErrorMessage(err));
+    } finally {
+      setLocalSaving(false);
+    }
   }
 
   return (
@@ -350,7 +417,7 @@ export function OrganizationConversationsTab({
         <button
           className="button"
           type="button"
-          onClick={onLoadConversations}
+          onClick={() => void onLoadConversations()}
           disabled={!selectedWorkerId || loading}
         >
           {loading ? "Loading..." : conversations ? "Refresh conversations" : "Load conversations"}
@@ -614,7 +681,7 @@ export function OrganizationConversationsTab({
                         <div className="stack" style={{ gap: 6, minWidth: 0 }}>
                           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                             <span className="badge">#{conversation.id}</span>
-                            <span className="badge">{conversation.source_type || "manual"}</span>
+                            <span className="badge">{conversation.source_type || "video"}</span>
                             {conversation.video_url ? (
                               <span className="badge primary">video</span>
                             ) : null}
@@ -682,8 +749,8 @@ export function OrganizationConversationsTab({
                           <button
                             className="button ghost"
                             type="button"
-                            onClick={() => onDeleteExternalConversation(conversation.id)}
-                            disabled={saving}
+                            onClick={() => void onDeleteExternalConversation(conversation.id)}
+                            disabled={isSubmitting}
                             style={{ color: "var(--danger)" }}
                           >
                             Delete
@@ -775,7 +842,7 @@ export function OrganizationConversationsTab({
               position: "sticky",
               top: 78,
             }}
-            onSubmit={handleSubmit}
+            onSubmit={(event) => void handleSubmit(event)}
           >
             <div
               className="stack"
@@ -806,6 +873,20 @@ export function OrganizationConversationsTab({
                 </div>
               </div>
             </div>
+
+            {formError ? (
+              <div
+                className="card-soft"
+                style={{
+                  color: "var(--danger)",
+                  border: "1px solid rgba(239,68,68,0.22)",
+                  background: "rgba(239,68,68,0.08)",
+                  lineHeight: 1.55,
+                }}
+              >
+                {formError}
+              </div>
+            ) : null}
 
             <label className="stack" style={{ gap: 6 }}>
               <span className="muted">Title</span>
@@ -877,13 +958,27 @@ export function OrganizationConversationsTab({
             </label>
 
             <label className="stack" style={{ gap: 6 }}>
-              <span className="muted">File path</span>
+              <span className="muted">
+                File path
+                {["video", "audio", "upload"].includes(form.source_type) ? " *" : ""}
+              </span>
               <input
                 className="input"
                 value={form.file_path}
                 onChange={(event) => patchField("file_path", event.target.value)}
                 placeholder="/uploads/conversation..."
+                aria-invalid={
+                  Boolean(formError) &&
+                  ["video", "audio", "upload"].includes(form.source_type) &&
+                  !form.file_path.trim()
+                }
               />
+              {["video", "audio", "upload"].includes(form.source_type) ? (
+                <span className="muted" style={{ fontSize: 12 }}>
+                  Required for Video, Audio and Upload sources because the backend expects a stored
+                  file path.
+                </span>
+              ) : null}
             </label>
 
             <label className="stack" style={{ gap: 6 }}>
@@ -940,7 +1035,7 @@ export function OrganizationConversationsTab({
                   className="button ghost"
                   type="button"
                   onClick={resetForm}
-                  disabled={saving}
+                  disabled={isSubmitting}
                 >
                   Cancel
                 </button>
@@ -949,9 +1044,9 @@ export function OrganizationConversationsTab({
               <button
                 className="button"
                 type="submit"
-                disabled={saving || !selectedWorkerId || !form.title.trim()}
+                disabled={isSubmitting || !selectedWorkerId || !form.title.trim()}
               >
-                {saving
+                {isSubmitting
                   ? "Saving..."
                   : editingExternalConversation
                     ? "Update conversation"
