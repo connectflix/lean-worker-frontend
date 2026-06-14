@@ -93,6 +93,7 @@ import type {
   AdminCalendlySyncRequest,
   AdminCalendlySyncResponse,
   AdminCalendlyAvailabilityResponse,
+  AdminCalendlyEventType,
   LearningCourseSummary,
   LearningCourseDetail,
   LearningLessonDetail,
@@ -108,6 +109,19 @@ import type {
   SubscriptionChangePackRequest,
   SubscriptionChangePackResponse,
   AdminLearningWorkerPerformance,
+  AdminPaymentTransactionFilters,
+  PaymentTransactionFilters,
+  PaymentTransactionListResponse,
+  PaymentTransactionResponse,
+  ExperienceRatingAdminFilters,
+  ExperienceRatingAdminListResponse,
+  ExperienceRatingEmailPreviewResponse,
+  ExperienceRatingRequestAdminCreate,
+  ExperienceRatingRequestResponse,
+  ExperienceRatingSubmitRequest,
+  ExperienceRatingSubmitResponse,
+  ExperienceRatingSummaryResponse,
+  PublicExperienceRatingFormResponse,
 } from "./types";
 
 export type SupportIssuePayload = {
@@ -422,6 +436,19 @@ async function apiFetchBlob(path: string, options: RequestInit = {}): Promise<Bl
   return response.blob();
 }
 
+function buildQueryString(params?: Record<string, string | number | boolean | null | undefined>) {
+  const search = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value === null || value === undefined || value === "") return;
+    search.set(key, String(value));
+  });
+
+  const query = search.toString();
+
+  return query ? `?${query}` : "";
+}
+
 /* ---------------- USER AUTH / SESSION ---------------- */
 
 export async function getLinkedInAuthorizationUrl(): Promise<string> {
@@ -591,6 +618,41 @@ export async function getAIArtifact(artifactId: number): Promise<AIArtifactRespo
 
 export async function getMyAIArtifacts(): Promise<AIArtifactStatusResponse[]> {
   return apiFetch<AIArtifactStatusResponse[]>("/ai-artifacts");
+}
+
+/* ---------------- USER PAYMENT TRANSACTIONS ---------------- */
+
+export async function getMyPaymentTransactions(
+  filters?: PaymentTransactionFilters,
+): Promise<PaymentTransactionListResponse> {
+  const query = buildQueryString(filters);
+
+  return apiFetch<PaymentTransactionListResponse>(
+    `/payment-transactions/me${query}`,
+  );
+}
+
+/* ---------------- EXPERIENCE RATINGS ---------------- */
+
+export async function getPublicExperienceRatingForm(
+  ratingToken: string,
+): Promise<PublicExperienceRatingFormResponse> {
+  return apiFetch<PublicExperienceRatingFormResponse>(
+    `/experience-ratings/public/${encodeURIComponent(ratingToken)}`,
+  );
+}
+
+export async function submitPublicExperienceRatingForm(
+  ratingToken: string,
+  payload: ExperienceRatingSubmitRequest,
+): Promise<ExperienceRatingSubmitResponse> {
+  return apiFetch<ExperienceRatingSubmitResponse>(
+    `/experience-ratings/public/${encodeURIComponent(ratingToken)}/submit`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
 }
 
 /* ---------------- USER SUPPORT ---------------- */
@@ -956,6 +1018,87 @@ export async function updateAdminWorker(
     method: "PUT",
     body: JSON.stringify(payload),
   });
+}
+
+
+/* ---------------- ADMIN PAYMENT TRANSACTIONS ---------------- */
+
+export async function getAdminPaymentTransactions(
+  filters?: AdminPaymentTransactionFilters,
+): Promise<PaymentTransactionListResponse> {
+  const query = buildQueryString(filters);
+
+  return adminApiFetch<PaymentTransactionListResponse>(
+    `/admin/payment-transactions${query}`,
+  );
+}
+
+export async function getAdminPaymentTransaction(
+  transactionId: number,
+): Promise<PaymentTransactionResponse> {
+  return adminApiFetch<PaymentTransactionResponse>(
+    `/admin/payment-transactions/${transactionId}`,
+  );
+}
+
+/* ---------------- ADMIN EXPERIENCE RATINGS ---------------- */
+
+export async function getAdminExperienceRatings(
+  filters?: ExperienceRatingAdminFilters,
+): Promise<ExperienceRatingAdminListResponse> {
+  const query = buildQueryString(filters);
+
+  return adminApiFetch<ExperienceRatingAdminListResponse>(
+    `/admin/experience-ratings${query}`,
+  );
+}
+
+export async function getAdminExperienceRatingSummary(): Promise<ExperienceRatingSummaryResponse> {
+  return adminApiFetch<ExperienceRatingSummaryResponse>(
+    "/admin/experience-ratings/summary",
+  );
+}
+
+export async function createAdminExperienceRatingRequest(
+  payload: ExperienceRatingRequestAdminCreate,
+): Promise<ExperienceRatingRequestResponse> {
+  return adminApiFetch<ExperienceRatingRequestResponse>(
+    "/admin/experience-ratings/requests",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function cancelAdminExperienceRatingRequest(
+  ratingRequestId: number,
+): Promise<ExperienceRatingRequestResponse> {
+  return adminApiFetch<ExperienceRatingRequestResponse>(
+    `/admin/experience-ratings/requests/${ratingRequestId}/cancel`,
+    {
+      method: "POST",
+    },
+  );
+}
+
+export async function sendAdminExperienceRatingEmail(
+  ratingRequestId: number,
+): Promise<ExperienceRatingRequestResponse> {
+  return adminApiFetch<ExperienceRatingRequestResponse>(
+    `/admin/experience-ratings/requests/${ratingRequestId}/send-email`,
+    {
+      method: "POST",
+    },
+  );
+}
+
+export async function getAdminExperienceRatingEmailPreview(
+  ratingRequestId: number,
+): Promise<ExperienceRatingEmailPreviewResponse> {
+  return adminApiFetch<ExperienceRatingEmailPreviewResponse>(
+    `/admin/experience-ratings/requests/${ratingRequestId}/email-preview`,
+  );
 }
 
 /* ---------------- ADMIN WORKER CONVERSATIONS ---------------- */
@@ -1653,6 +1796,18 @@ export async function getAdminCalendlyAvailability(params: {
 
   return adminApiFetch<AdminCalendlyAvailabilityResponse>(
     `/admin/bookings/calendly-availability?${search.toString()}`,
+  );
+}
+
+export async function getAdminCalendlyEventTypes(
+  activeOnly = true,
+): Promise<AdminCalendlyEventType[]> {
+  const query = buildQueryString({
+    active_only: activeOnly,
+  });
+
+  return adminApiFetch<AdminCalendlyEventType[]>(
+    `/admin/calendly/event-types${query}`,
   );
 }
 

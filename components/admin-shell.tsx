@@ -1,7 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { clearAdminToken } from "@/lib/admin-auth";
 
 type AdminRole = "admin" | "organization";
@@ -26,6 +32,8 @@ type AdminShellProps = {
   children: ReactNode;
 };
 
+const ADMIN_SIDEBAR_COLLAPSED_STORAGE_KEY = "leanworker.admin.sidebarCollapsed";
+
 const NAV_ITEMS: AdminNavItem[] = [
   {
     label: "Dashboard",
@@ -47,6 +55,13 @@ const NAV_ITEMS: AdminNavItem[] = [
     section: "operations",
     roles: ["admin"],
     description: "Support, tech, business and CX signals",
+  },
+  {
+    label: "Experience Ratings",
+    href: "/admin/experience-ratings",
+    section: "operations",
+    roles: ["admin"],
+    description: "Worker perceived quality ratings after key interactions",
   },
   {
     label: "Manage Levers",
@@ -75,6 +90,20 @@ const NAV_ITEMS: AdminNavItem[] = [
     section: "catalog",
     roles: ["admin", "organization"],
     description: "Bookings and appointments",
+  },
+  {
+    label: "Manage Transactions",
+    href: "/admin/payment-transactions",
+    section: "catalog",
+    roles: ["admin"],
+    description: "Worker payments, Stripe sessions and transaction ledger",
+  },
+  {
+    label: "Coaching Plan",
+    href: "/admin/coaching-plan",
+    section: "enablement",
+    roles: ["admin", "organization"],
+    description: "First-session coaching intention, concepts and pedagogical plan",
   },
   {
     label: "Coaching Flow",
@@ -127,6 +156,21 @@ function getInitials(value?: string | null, fallback = "LW"): string {
   return parts.map((part) => part.charAt(0).toUpperCase()).join("");
 }
 
+function getNavItemInitials(label: string): string {
+  const words = label.split(/\s+/).filter(Boolean);
+
+  if (words.length === 0) return "•";
+
+  if (words.length === 1) {
+    return words[0].slice(0, 2).toUpperCase();
+  }
+
+  return words
+    .slice(0, 2)
+    .map((word) => word.charAt(0).toUpperCase())
+    .join("");
+}
+
 function isNavItemActive(activeHref: string, itemHref: string): boolean {
   if (itemHref === "/admin") {
     return activeHref === "/admin";
@@ -174,6 +218,7 @@ export function AdminShell({
   children,
 }: AdminShellProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const displayName = getDisplayName(adminRole, adminOrganizationName);
   const roleLabel = getRoleLabel(adminRole);
@@ -190,13 +235,48 @@ export function AdminShell({
     );
   }, [activeHref, visibleNavItems]);
 
+  useEffect(() => {
+    try {
+      const savedValue = window.localStorage.getItem(
+        ADMIN_SIDEBAR_COLLAPSED_STORAGE_KEY,
+      );
+
+      if (savedValue === "true") {
+        setSidebarCollapsed(true);
+      }
+
+      if (savedValue === "false") {
+        setSidebarCollapsed(false);
+      }
+    } catch {
+      // Keep default expanded state if localStorage is unavailable.
+    }
+  }, []);
+
   function handleLogout() {
     clearAdminToken();
     window.location.href = "/admin/login";
   }
 
+  function toggleSidebarCollapsed() {
+    setSidebarCollapsed((previousValue) => {
+      const nextValue = !previousValue;
+
+      try {
+        window.localStorage.setItem(
+          ADMIN_SIDEBAR_COLLAPSED_STORAGE_KEY,
+          String(nextValue),
+        );
+      } catch {
+        // Ignore storage errors. The UI state can still update for this session.
+      }
+
+      return nextValue;
+    });
+  }
+
   const shellStyle = {
-    "--sidebar-width": "292px",
+    "--sidebar-width": sidebarCollapsed ? "92px" : "292px",
   } as CSSProperties;
 
   return (
@@ -207,28 +287,31 @@ export function AdminShell({
         minHeight: "100vh",
         background:
           "radial-gradient(circle at top left, rgba(99,102,241,0.10), transparent 32%), linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%)",
+        transition: "grid-template-columns 180ms ease, --sidebar-width 180ms ease",
       }}
     >
       <aside
         className="sidebar"
         style={{
-          padding: 18,
+          padding: sidebarCollapsed ? 12 : 18,
           background: "transparent",
           borderRight: "none",
+          transition: "padding 180ms ease, width 180ms ease",
         }}
       >
         <div
           className="admin-sidebar-card stack"
           style={{
-            gap: 16,
+            gap: sidebarCollapsed ? 12 : 16,
             height: "100%",
-            padding: 14,
-            borderRadius: 28,
+            padding: sidebarCollapsed ? 10 : 14,
+            borderRadius: sidebarCollapsed ? 24 : 28,
             background: "rgba(255,255,255,0.82)",
             border: "1px solid rgba(15,23,42,0.08)",
             boxShadow: "0 22px 55px rgba(15,23,42,0.08)",
             backdropFilter: "blur(18px)",
             overflow: "hidden",
+            transition: "padding 180ms ease, border-radius 180ms ease",
           }}
         >
           <div
@@ -236,72 +319,126 @@ export function AdminShell({
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 12,
-              padding: "8px 8px 14px",
+              justifyContent: sidebarCollapsed ? "center" : "space-between",
+              gap: 10,
+              padding: sidebarCollapsed ? "6px 4px 12px" : "8px 8px 14px",
               borderBottom: "1px solid rgba(15,23,42,0.08)",
             }}
           >
             <div
-              className="brand-logo"
               style={{
-                width: 42,
-                height: 42,
-                borderRadius: 16,
-                boxShadow: "0 12px 28px rgba(79,70,229,0.18)",
-                background:
-                  "linear-gradient(135deg, rgba(79,70,229,1), rgba(124,58,237,0.92))",
-                color: "#ffffff",
-                display: "inline-flex",
+                display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
-                fontWeight: 900,
-                letterSpacing: "-0.04em",
+                gap: 12,
+                minWidth: 0,
               }}
             >
-              LW
+              <div
+                className="brand-logo"
+                style={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: 16,
+                  boxShadow: "0 12px 28px rgba(79,70,229,0.18)",
+                  background:
+                    "linear-gradient(135deg, rgba(79,70,229,1), rgba(124,58,237,0.92))",
+                  color: "#ffffff",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontWeight: 900,
+                  letterSpacing: "-0.04em",
+                  flexShrink: 0,
+                }}
+                title={adminRole === "organization" ? "LeanWorker Org" : "LeanWorker Admin"}
+              >
+                LW
+              </div>
+
+              {!sidebarCollapsed ? (
+                <div style={{ minWidth: 0 }}>
+                  <h2
+                    className="brand-title"
+                    style={{
+                      fontSize: 16,
+                      letterSpacing: "-0.03em",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      margin: 0,
+                      color: "#0f172a",
+                    }}
+                  >
+                    {adminRole === "organization" ? "LeanWorker Org" : "LeanWorker Admin"}
+                  </h2>
+
+                  <p
+                    className="brand-subtitle"
+                    style={{
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      margin: "2px 0 0",
+                      color: "#64748b",
+                      fontSize: 12,
+                    }}
+                  >
+                    {roleLabel}
+                  </p>
+                </div>
+              ) : null}
             </div>
 
-            <div style={{ minWidth: 0 }}>
-              <h2
-                className="brand-title"
+            {!sidebarCollapsed ? (
+              <button
+                className="button ghost"
+                type="button"
+                onClick={toggleSidebarCollapsed}
+                aria-label="Collapse admin sidebar"
+                title="Collapse sidebar"
                 style={{
-                  fontSize: 16,
-                  letterSpacing: "-0.03em",
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  margin: 0,
-                  color: "#0f172a",
+                  width: 36,
+                  height: 36,
+                  minHeight: 36,
+                  padding: 0,
+                  borderRadius: 14,
+                  flexShrink: 0,
                 }}
               >
-                {adminRole === "organization" ? "LeanWorker Org" : "LeanWorker Admin"}
-              </h2>
-
-              <p
-                className="brand-subtitle"
-                style={{
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  margin: "2px 0 0",
-                  color: "#64748b",
-                  fontSize: 12,
-                }}
-              >
-                {roleLabel}
-              </p>
-            </div>
+                ‹
+              </button>
+            ) : null}
           </div>
+
+          {sidebarCollapsed ? (
+            <button
+              className="button ghost"
+              type="button"
+              onClick={toggleSidebarCollapsed}
+              aria-label="Expand admin sidebar"
+              title="Expand sidebar"
+              style={{
+                width: "100%",
+                minHeight: 38,
+                padding: 0,
+                borderRadius: 16,
+                fontSize: 18,
+                fontWeight: 950,
+              }}
+            >
+              ›
+            </button>
+          ) : null}
 
           <nav
             className="stack"
             aria-label="Admin navigation"
             style={{
-              gap: 16,
+              gap: sidebarCollapsed ? 10 : 16,
               flex: 1,
               overflowY: "auto",
               overflowX: "hidden",
-              paddingRight: 2,
+              paddingRight: sidebarCollapsed ? 0 : 2,
             }}
           >
             {SECTIONS.map((section) => {
@@ -311,34 +448,48 @@ export function AdminShell({
 
               return (
                 <div key={section} className="nav-section">
-                  <div
-                    className="nav-section-label"
-                    style={{
-                      padding: "4px 10px 7px",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.08em",
-                      fontSize: 11,
-                      fontWeight: 900,
-                      color: "#94a3b8",
-                    }}
-                  >
-                    {sectionLabel(section)}
-                  </div>
+                  {!sidebarCollapsed ? (
+                    <div
+                      className="nav-section-label"
+                      style={{
+                        padding: "4px 10px 7px",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                        fontSize: 11,
+                        fontWeight: 900,
+                        color: "#94a3b8",
+                      }}
+                    >
+                      {sectionLabel(section)}
+                    </div>
+                  ) : (
+                    <div
+                      aria-hidden="true"
+                      style={{
+                        height: 1,
+                        margin: "4px 10px 8px",
+                        background: "rgba(148,163,184,0.24)",
+                      }}
+                    />
+                  )}
 
-                  <div className="stack" style={{ gap: 5 }}>
+                  <div className="stack" style={{ gap: sidebarCollapsed ? 7 : 5 }}>
                     {items.map((item) => {
                       const isActive = isNavItemActive(activeHref, item.href);
+                      const compactLabel = getNavItemInitials(item.label);
 
                       return (
                         <Link
                           key={item.href}
                           href={item.href}
                           className={`nav-item ${isActive ? "active" : ""}`}
-                          title={item.description}
+                          title={`${item.label}${item.description ? ` — ${item.description}` : ""}`}
                           style={{
-                            minHeight: 44,
-                            borderRadius: 15,
-                            padding: "10px 11px",
+                            minHeight: sidebarCollapsed ? 44 : 44,
+                            width: sidebarCollapsed ? 48 : "100%",
+                            alignSelf: sidebarCollapsed ? "center" : "stretch",
+                            borderRadius: sidebarCollapsed ? 16 : 15,
+                            padding: sidebarCollapsed ? 0 : "10px 11px",
                             border: isActive
                               ? "1px solid rgba(79,70,229,0.20)"
                               : "1px solid transparent",
@@ -352,33 +503,59 @@ export function AdminShell({
                               : "none",
                             display: "flex",
                             alignItems: "center",
+                            justifyContent: sidebarCollapsed ? "center" : "flex-start",
                             gap: 10,
                             textDecoration: "none",
                           }}
                         >
-                          <span
-                            aria-hidden="true"
-                            style={{
-                              width: 8,
-                              height: 8,
-                              borderRadius: 999,
-                              flexShrink: 0,
-                              background: isActive
-                                ? "linear-gradient(135deg, #4f46e5, #7c3aed)"
-                                : "rgba(148,163,184,0.45)",
-                            }}
-                          />
+                          {sidebarCollapsed ? (
+                            <span
+                              aria-hidden="true"
+                              style={{
+                                width: 30,
+                                height: 30,
+                                borderRadius: 12,
+                                display: "grid",
+                                placeItems: "center",
+                                flexShrink: 0,
+                                fontSize: 10,
+                                fontWeight: 950,
+                                letterSpacing: "-0.03em",
+                                background: isActive
+                                  ? "linear-gradient(135deg, rgba(79,70,229,0.18), rgba(124,58,237,0.12))"
+                                  : "rgba(148,163,184,0.12)",
+                                color: isActive ? "#3730a3" : "#475569",
+                              }}
+                            >
+                              {compactLabel}
+                            </span>
+                          ) : (
+                            <>
+                              <span
+                                aria-hidden="true"
+                                style={{
+                                  width: 8,
+                                  height: 8,
+                                  borderRadius: 999,
+                                  flexShrink: 0,
+                                  background: isActive
+                                    ? "linear-gradient(135deg, #4f46e5, #7c3aed)"
+                                    : "rgba(148,163,184,0.45)",
+                                }}
+                              />
 
-                          <span
-                            style={{
-                              minWidth: 0,
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            {item.label}
-                          </span>
+                              <span
+                                style={{
+                                  minWidth: 0,
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {item.label}
+                              </span>
+                            </>
+                          )}
                         </Link>
                       );
                     })}
@@ -391,16 +568,25 @@ export function AdminShell({
           <div
             className="card-soft stack"
             style={{
-              gap: 12,
-              padding: 14,
-              borderRadius: 22,
+              gap: sidebarCollapsed ? 10 : 12,
+              padding: sidebarCollapsed ? 10 : 14,
+              borderRadius: sidebarCollapsed ? 18 : 22,
               background:
                 "linear-gradient(180deg, rgba(248,250,252,0.96), rgba(255,255,255,0.90))",
               border: "1px solid rgba(15,23,42,0.08)",
               boxShadow: "0 12px 32px rgba(15,23,42,0.05)",
+              alignItems: sidebarCollapsed ? "center" : "stretch",
             }}
           >
-            <div className="row" style={{ gap: 10, alignItems: "center", minWidth: 0 }}>
+            <div
+              className="row"
+              style={{
+                gap: 10,
+                alignItems: "center",
+                justifyContent: sidebarCollapsed ? "center" : "flex-start",
+                minWidth: 0,
+              }}
+            >
               <span
                 className="avatar-circle"
                 style={{
@@ -412,63 +598,70 @@ export function AdminShell({
                   color: "#3730a3",
                   fontWeight: 900,
                 }}
+                title={displayName}
               >
                 {getInitials(displayName, adminRole === "organization" ? "O" : "A")}
               </span>
 
-              <div style={{ minWidth: 0 }}>
-                <div
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 800,
-                    letterSpacing: "-0.02em",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                    color: "#0f172a",
-                  }}
-                  title={displayName}
-                >
-                  {displayName}
-                </div>
-
-                {adminEmail ? (
+              {!sidebarCollapsed ? (
+                <div style={{ minWidth: 0 }}>
                   <div
-                    className="muted"
                     style={{
-                      fontSize: 12,
+                      fontSize: 13,
+                      fontWeight: 800,
+                      letterSpacing: "-0.02em",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
+                      color: "#0f172a",
                     }}
-                    title={adminEmail}
+                    title={displayName}
                   >
-                    {adminEmail}
+                    {displayName}
                   </div>
-                ) : (
-                  <div className="muted" style={{ fontSize: 12 }}>
-                    {getRoleBadgeLabel(adminRole)}
-                  </div>
-                )}
-              </div>
+
+                  {adminEmail ? (
+                    <div
+                      className="muted"
+                      style={{
+                        fontSize: 12,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                      title={adminEmail}
+                    >
+                      {adminEmail}
+                    </div>
+                  ) : (
+                    <div className="muted" style={{ fontSize: 12 }}>
+                      {getRoleBadgeLabel(adminRole)}
+                    </div>
+                  )}
+                </div>
+              ) : null}
             </div>
 
-            <div className="muted" style={{ fontSize: 12, lineHeight: 1.5 }}>
-              {getRoleDescription(adminRole)}
-            </div>
+            {!sidebarCollapsed ? (
+              <div className="muted" style={{ fontSize: 12, lineHeight: 1.5 }}>
+                {getRoleDescription(adminRole)}
+              </div>
+            ) : null}
 
             <button
               className="button ghost"
               type="button"
               onClick={handleLogout}
+              title="Log out"
               style={{
                 width: "100%",
                 justifyContent: "center",
-                minHeight: 40,
+                minHeight: sidebarCollapsed ? 38 : 40,
                 borderRadius: 14,
+                padding: sidebarCollapsed ? 0 : undefined,
               }}
             >
-              Log out
+              {sidebarCollapsed ? "⎋" : "Log out"}
             </button>
           </div>
         </div>
@@ -561,6 +754,20 @@ export function AdminShell({
               alignItems: "center",
             }}
           >
+            <button
+              className="button ghost"
+              type="button"
+              onClick={toggleSidebarCollapsed}
+              aria-pressed={sidebarCollapsed}
+              title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              style={{
+                minHeight: 40,
+                borderRadius: 14,
+              }}
+            >
+              {sidebarCollapsed ? "Expand" : "Collapse"}
+            </button>
+
             <div
               className="user-pill"
               style={{
@@ -681,7 +888,8 @@ export function AdminShell({
         <main
           className="content-area"
           style={{
-            padding: "24px",
+            padding: sidebarCollapsed ? "20px 22px" : "24px",
+            transition: "padding 180ms ease",
           }}
         >
           <div

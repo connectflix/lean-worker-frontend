@@ -277,6 +277,86 @@ export type AIArtifactStatusResponse = {
   updated_at: string;
 };
 
+/* ---------------- PAYMENT TRANSACTIONS ---------------- */
+
+export type PaymentTransactionStatus =
+  | "pending"
+  | "paid"
+  | "cancelled"
+  | "failed"
+  | string;
+
+export type PaymentTransactionType =
+  | "ai_artifact"
+  | "lever"
+  | "subscription"
+  | string;
+
+export type PaymentTransactionResponse = {
+  id: number;
+
+  user_id: number;
+
+  worker_name?: string | null;
+  worker_email?: string | null;
+
+  lever_id?: number | null;
+  lever_name?: string | null;
+
+  recommendation_id?: number | null;
+  recommendation_title?: string | null;
+  recommendation_description?: string | null;
+
+  artifact_id?: number | null;
+  artifact_title?: string | null;
+  artifact_format?: string | null;
+
+  transaction_type: PaymentTransactionType;
+  transaction_status: PaymentTransactionStatus;
+  transaction_description?: string | null;
+
+  amount_eur: number;
+  currency: string;
+
+  checkout_session_id?: string | null;
+  payment_intent_id?: string | null;
+  stripe_customer_id?: string | null;
+
+  paid_at?: string | null;
+  cancelled_at?: string | null;
+  failed_at?: string | null;
+
+  metadata_json?: Record<string, unknown> | null;
+
+  created_at: string;
+  updated_at: string;
+};
+
+export type PaymentTransactionListResponse = {
+  items: PaymentTransactionResponse[];
+  total: number;
+};
+
+export type PaymentTransactionFilters = {
+  transaction_status?: string;
+  transaction_type?: string;
+  recommendation_id?: number;
+  lever_id?: number;
+  artifact_id?: number;
+  limit?: number;
+  offset?: number;
+};
+
+export type AdminPaymentTransactionFilters = PaymentTransactionFilters & {
+  q?: string;
+  worker_id?: number;
+  user_id?: number;
+  checkout_session_id?: string;
+  payment_intent_id?: string;
+  created_from?: string;
+  created_to?: string;
+};
+
 export type SessionCloseResponse = {
   session_id: number;
   status: string;
@@ -374,6 +454,226 @@ export type DashboardTimelineItem = {
   completed_recommendations: number;
   total_recommendations: number;
 };
+
+/* ---------------- EXPERIENCE RATINGS ---------------- */
+
+export type ExperienceRatingTargetType =
+  | "conversation"
+  | "session"
+  | "recommendation"
+  | "lever"
+  | "booking"
+  | "artifact"
+  | "external_conversation"
+  | string;
+
+export type ExperienceRatingRequestStatus =
+  | "pending"
+  | "completed"
+  | "expired"
+  | "cancelled"
+  | string;
+
+export type ExperienceRatingSource =
+  | "auto_session_close"
+  | "recommendation_completed"
+  | "lever_paid"
+  | "artifact_paid"
+  | "booking_completed"
+  | "external_conversation"
+  | "admin_manual"
+  | "system"
+  | string;
+
+export type ExperienceRatingQuestionResponse = {
+  key: string;
+  label: string;
+};
+
+export type ExperienceRatingScaleOptionResponse = {
+  value: number;
+  label: string;
+};
+
+export type ExperienceRatingMetadataResponse = {
+  questions: ExperienceRatingQuestionResponse[];
+  scale_options: ExperienceRatingScaleOptionResponse[];
+};
+
+export type ExperienceRatingRequestCreate = {
+  user_id: number;
+
+  worker_name?: string | null;
+  worker_email?: string | null;
+
+  target_type: ExperienceRatingTargetType;
+  target_id?: number | null;
+  target_title?: string | null;
+  target_description?: string | null;
+
+  source?: ExperienceRatingSource;
+  expires_at?: string | null;
+  metadata_json?: Record<string, unknown> | null;
+};
+
+export type ExperienceRatingRequestAdminCreate = {
+  user_id: number;
+
+  target_type: ExperienceRatingTargetType;
+  target_id?: number | null;
+  target_title?: string | null;
+  target_description?: string | null;
+
+  source?: ExperienceRatingSource;
+  expires_at?: string | null;
+  metadata_json?: Record<string, unknown> | null;
+
+  send_email?: boolean;
+};
+
+export type ExperienceRatingRequestResponse = {
+  id: number;
+
+  user_id: number;
+  worker_name?: string | null;
+  worker_email?: string | null;
+
+  target_type: ExperienceRatingTargetType;
+  target_id?: number | null;
+  target_title?: string | null;
+  target_description?: string | null;
+
+  rating_token: string;
+  status: ExperienceRatingRequestStatus;
+
+  email_subject?: string | null;
+  email_sent_to?: string | null;
+  email_sent_at?: string | null;
+
+  expires_at?: string | null;
+  completed_at?: string | null;
+  cancelled_at?: string | null;
+
+  source?: ExperienceRatingSource | string | null;
+  metadata_json?: Record<string, unknown> | null;
+
+  created_at: string;
+  updated_at?: string | null;
+};
+
+export type PublicExperienceRatingFormResponse = {
+  request_id: number;
+  rating_token: string;
+
+  status: ExperienceRatingRequestStatus;
+  is_submittable: boolean;
+
+  worker_name?: string | null;
+
+  target_type: ExperienceRatingTargetType;
+  target_id?: number | null;
+  target_title?: string | null;
+  target_description?: string | null;
+
+  expires_at?: string | null;
+  completed_at?: string | null;
+
+  questions: ExperienceRatingQuestionResponse[];
+  scale_options: ExperienceRatingScaleOptionResponse[];
+};
+
+export type ExperienceRatingSubmitRequest = {
+  interlocutor_quality_rating: number;
+  interlocutor_quality_comment?: string | null;
+
+  content_quality_rating: number;
+  content_quality_comment?: string | null;
+
+  service_quality_rating: number;
+  service_quality_comment?: string | null;
+
+  metadata_json?: Record<string, unknown> | null;
+};
+
+export type ExperienceRatingSubmitResponse = {
+  success: boolean;
+  message: string;
+  rating_id: number;
+  overall_score: number;
+};
+
+export type ExperienceRatingResponse = {
+  id: number;
+
+  rating_request_id: number;
+  user_id: number;
+
+  worker_name?: string | null;
+  worker_email?: string | null;
+
+  target_type: ExperienceRatingTargetType;
+  target_id?: number | null;
+  target_title?: string | null;
+  target_description?: string | null;
+
+  interlocutor_quality_rating: number;
+  interlocutor_quality_comment?: string | null;
+
+  content_quality_rating: number;
+  content_quality_comment?: string | null;
+
+  service_quality_rating: number;
+  service_quality_comment?: string | null;
+
+  overall_score: number;
+
+  submitted_at: string;
+  metadata_json?: Record<string, unknown> | null;
+
+  created_at: string;
+  updated_at?: string | null;
+};
+
+export type ExperienceRatingAdminItemResponse = {
+  request: ExperienceRatingRequestResponse;
+  rating?: ExperienceRatingResponse | null;
+};
+
+export type ExperienceRatingAdminListResponse = {
+  items: ExperienceRatingAdminItemResponse[];
+  total: number;
+};
+
+export type ExperienceRatingSummaryResponse = {
+  total_requests: number;
+  pending_requests: number;
+  completed_requests: number;
+  expired_requests: number;
+  cancelled_requests: number;
+
+  average_overall_score?: number | null;
+  average_interlocutor_quality_rating?: number | null;
+  average_content_quality_rating?: number | null;
+  average_service_quality_rating?: number | null;
+};
+
+export type ExperienceRatingAdminFilters = {
+  status?: ExperienceRatingRequestStatus;
+  target_type?: ExperienceRatingTargetType;
+  user_id?: number;
+  limit?: number;
+  offset?: number;
+};
+
+export type ExperienceRatingEmailPreviewResponse = {
+  request_id: number;
+  worker_email?: string | null;
+  subject: string;
+  text_body: string;
+  html_body: string;
+  public_url: string;
+};
+
 
 /* ---------------- ADMIN LEVERS ---------------- */
 
@@ -1160,6 +1460,17 @@ export type AdminCalendlyAvailabilityResponse = {
   available_times: AdminCalendlyAvailableTime[];
   available_count: number;
   message: string;
+};
+
+export type AdminCalendlyEventType = {
+  uri: string;
+  name: string;
+  slug?: string | null;
+  scheduling_url?: string | null;
+  duration?: number | null;
+  active: boolean;
+  kind?: string | null;
+  color?: string | null;
 };
 
 /* ---------------- CAREER / PROFILE ---------------- */

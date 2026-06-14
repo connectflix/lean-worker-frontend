@@ -1,7 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { AdminOrganization, AdminOrganizationType } from "@/lib/types";
+import type {
+  AdminCalendlyEventType,
+  AdminOrganization,
+  AdminOrganizationType,
+} from "@/lib/types";
 
 type OrganizationFormState = {
   name: string;
@@ -22,6 +26,10 @@ type OrganizationAdminTabProps = {
 
   saving: boolean;
   detailLoading: boolean;
+
+  calendlyEventTypes?: AdminCalendlyEventType[];
+  calendlyEventTypesLoading?: boolean;
+  calendlyEventTypesError?: string | null;
 
   onOpenOrganization: (organizationId: number) => void;
   onSubmit: (event: React.FormEvent) => void;
@@ -74,6 +82,29 @@ function getOrganizationTypeTone(type?: string | null): {
   };
 }
 
+function getCalendlySearchText(eventType: AdminCalendlyEventType): string {
+  return [
+    eventType.name,
+    eventType.slug,
+    eventType.scheduling_url,
+    eventType.uri,
+    eventType.duration ? `${eventType.duration}` : "",
+    eventType.active ? "active" : "inactive",
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+function getShortCalendlyUrl(value?: string | null): string {
+  if (!value) return "No scheduling URL";
+
+  return value
+    .replace("https://", "")
+    .replace("http://", "")
+    .replace("www.", "");
+}
+
 export function OrganizationAdminTab({
   organizations,
   selectedOrganizationId,
@@ -81,6 +112,9 @@ export function OrganizationAdminTab({
   form,
   saving,
   detailLoading,
+  calendlyEventTypes = [],
+  calendlyEventTypesLoading = false,
+  calendlyEventTypesError = null,
   onOpenOrganization,
   onSubmit,
   onFormChange,
@@ -89,25 +123,80 @@ export function OrganizationAdminTab({
   getRequiredSubscriptionForOrganizationType,
 }: OrganizationAdminTabProps) {
   const [organizationSearch, setOrganizationSearch] = useState("");
+  const [calendlySearch, setCalendlySearch] = useState("");
+
+  const safeOrganizations = Array.isArray(organizations) ? organizations : [];
+  const safeCalendlyEventTypes = Array.isArray(calendlyEventTypes)
+    ? calendlyEventTypes
+    : [];
 
   const filteredOrganizations = useMemo(() => {
     const query = organizationSearch.trim().toLowerCase();
 
-    if (!query) return organizations;
+    if (!query) return safeOrganizations;
 
-    return organizations.filter((organization) => {
+    return safeOrganizations.filter((organization) => {
       return (
         organization.name.toLowerCase().includes(query) ||
         (organization.code || "").toLowerCase().includes(query) ||
         (organization.contact_email || "").toLowerCase().includes(query) ||
-        getOrganizationTypeLabel(organization.organization_type).toLowerCase().includes(query)
+        getOrganizationTypeLabel(organization.organization_type)
+          .toLowerCase()
+          .includes(query)
       );
     });
-  }, [organizations, organizationSearch, getOrganizationTypeLabel]);
+  }, [safeOrganizations, organizationSearch, getOrganizationTypeLabel]);
 
-  const activeOrganizations = organizations.filter((organization) => organization.is_active);
-  const inactiveOrganizations = organizations.filter((organization) => !organization.is_active);
+  const filteredCalendlyEventTypes = useMemo(() => {
+    const query = calendlySearch.trim().toLowerCase();
+
+    if (!query) return safeCalendlyEventTypes;
+
+    return safeCalendlyEventTypes.filter((eventType) =>
+      getCalendlySearchText(eventType).includes(query),
+    );
+  }, [safeCalendlyEventTypes, calendlySearch]);
+
+  const visibleCalendlyEventTypes = filteredCalendlyEventTypes.slice(0, 25);
+  const hiddenCalendlyEventTypeCount = Math.max(
+    filteredCalendlyEventTypes.length - visibleCalendlyEventTypes.length,
+    0,
+  );
+
+  const activeOrganizations = safeOrganizations.filter(
+    (organization) => organization.is_active,
+  );
+
+  const inactiveOrganizations = safeOrganizations.filter(
+    (organization) => !organization.is_active,
+  );
+
   const selectedTypeTone = getOrganizationTypeTone(form.organization_type);
+
+  const selectedCalendlyEventType = safeCalendlyEventTypes.find(
+    (eventType) => eventType.uri === form.calendly_event_type_uri,
+  );
+
+  const shouldShowUnknownCalendlyValue =
+    Boolean(form.calendly_event_type_uri) && !selectedCalendlyEventType;
+
+  function selectCalendlyEventType(eventType: AdminCalendlyEventType) {
+    onFormChange({
+      ...form,
+      calendly_event_type_uri: eventType.uri,
+    });
+
+    setCalendlySearch("");
+  }
+
+  function clearCalendlySelection() {
+    onFormChange({
+      ...form,
+      calendly_event_type_uri: "",
+    });
+
+    setCalendlySearch("");
+  }
 
   return (
     <div
@@ -153,20 +242,26 @@ export function OrganizationAdminTab({
           <div className="card-soft stack" style={{ gap: 6, padding: 14 }}>
             <div className="muted">Total</div>
             <div className="admin-metric-value" style={{ fontSize: 24 }}>
-              {organizations.length}
+              {safeOrganizations.length}
             </div>
           </div>
 
           <div className="card-soft stack" style={{ gap: 6, padding: 14 }}>
             <div className="muted">Active</div>
-            <div className="admin-metric-value" style={{ fontSize: 24, color: "var(--success)" }}>
+            <div
+              className="admin-metric-value"
+              style={{ fontSize: 24, color: "var(--success)" }}
+            >
               {activeOrganizations.length}
             </div>
           </div>
 
           <div className="card-soft stack" style={{ gap: 6, padding: 14 }}>
             <div className="muted">Inactive</div>
-            <div className="admin-metric-value" style={{ fontSize: 24, color: "var(--warning)" }}>
+            <div
+              className="admin-metric-value"
+              style={{ fontSize: 24, color: "var(--warning)" }}
+            >
               {inactiveOrganizations.length}
             </div>
           </div>
@@ -182,7 +277,7 @@ export function OrganizationAdminTab({
           />
         </label>
 
-        {organizations.length === 0 ? (
+        {safeOrganizations.length === 0 ? (
           <div className="card-soft muted">No organizations found.</div>
         ) : filteredOrganizations.length === 0 ? (
           <div className="card-soft muted">No organization matches this search.</div>
@@ -213,7 +308,9 @@ export function OrganizationAdminTab({
                     border: isSelected
                       ? "1px solid var(--admin-accent)"
                       : "1px solid var(--admin-border)",
-                    background: isSelected ? "rgba(94,106,210,0.07)" : "var(--admin-surface-muted)",
+                    background: isSelected
+                      ? "rgba(94,106,210,0.07)"
+                      : "var(--admin-surface-muted)",
                     boxShadow: "none",
                   }}
                 >
@@ -480,24 +577,257 @@ export function OrganizationAdminTab({
             </label>
           </div>
 
-          <label className="stack" style={{ gap: 6 }}>
-            <strong>Calendly Event Type URI</strong>
-            <input
-              className="input"
-              value={form.calendly_event_type_uri}
-              onChange={(event) =>
-                onFormChange({
-                  ...form,
-                  calendly_event_type_uri: event.target.value,
-                })
-              }
-              disabled={detailLoading}
-              placeholder="https://api.calendly.com/event_types/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-            />
-            <div className="fine-print">
-              Dedicated Calendly event type used to restrict this organization to its own bookings.
+          <div className="stack" style={{ gap: 8 }}>
+            <strong>Calendly event</strong>
+
+            <div className="card-soft stack" style={{ gap: 10 }}>
+              {selectedCalendlyEventType ? (
+                <div
+                  className="card-soft stack"
+                  style={{
+                    gap: 8,
+                    border: "1px solid rgba(34,197,94,0.20)",
+                    background: "rgba(34,197,94,0.07)",
+                  }}
+                >
+                  <div className="row space-between" style={{ gap: 10, flexWrap: "wrap" }}>
+                    <div className="stack" style={{ gap: 4, minWidth: 0 }}>
+                      <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                        <span className="badge success">Selected</span>
+
+                        {selectedCalendlyEventType.duration ? (
+                          <span className="badge">
+                            {selectedCalendlyEventType.duration} min
+                          </span>
+                        ) : null}
+
+                        <span
+                          className={
+                            selectedCalendlyEventType.active
+                              ? "badge success"
+                              : "badge warning"
+                          }
+                        >
+                          {selectedCalendlyEventType.active ? "active" : "inactive"}
+                        </span>
+                      </div>
+
+                      <strong>{selectedCalendlyEventType.name}</strong>
+
+                      <div
+                        className="muted"
+                        style={{
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                        title={selectedCalendlyEventType.scheduling_url || undefined}
+                      >
+                        {getShortCalendlyUrl(selectedCalendlyEventType.scheduling_url)}
+                      </div>
+                    </div>
+
+                    <button
+                      className="button ghost"
+                      type="button"
+                      onClick={clearCalendlySelection}
+                      disabled={detailLoading}
+                      style={{
+                        minHeight: 36,
+                        color: "var(--danger)",
+                        borderColor: "rgba(239,68,68,0.22)",
+                      }}
+                    >
+                      Clear
+                    </button>
+                  </div>
+
+                  {selectedCalendlyEventType.scheduling_url ? (
+                    <a
+                      href={selectedCalendlyEventType.scheduling_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="fine-print"
+                      style={{
+                        color: "var(--primary-hover)",
+                        textDecoration: "none",
+                      }}
+                    >
+                      Open Calendly scheduling page
+                    </a>
+                  ) : null}
+                </div>
+              ) : shouldShowUnknownCalendlyValue ? (
+                <div
+                  className="card-soft stack"
+                  style={{
+                    gap: 8,
+                    border: "1px solid rgba(251,191,36,0.26)",
+                    background: "rgba(251,191,36,0.10)",
+                  }}
+                >
+                  <span className="badge warning">Current saved event not found</span>
+                  <div className="muted" style={{ lineHeight: 1.5, wordBreak: "break-all" }}>
+                    {form.calendly_event_type_uri}
+                  </div>
+
+                  <button
+                    className="button ghost"
+                    type="button"
+                    onClick={clearCalendlySelection}
+                    disabled={detailLoading}
+                    style={{
+                      alignSelf: "flex-start",
+                      minHeight: 36,
+                      color: "var(--danger)",
+                      borderColor: "rgba(239,68,68,0.22)",
+                    }}
+                  >
+                    Clear saved value
+                  </button>
+                </div>
+              ) : (
+                <div className="muted" style={{ lineHeight: 1.5 }}>
+                  No Calendly event selected yet.
+                </div>
+              )}
+
+              <label className="stack" style={{ gap: 6 }}>
+                <span className="muted">Search Calendly events</span>
+                <input
+                  className="input"
+                  value={calendlySearch}
+                  onChange={(event) => setCalendlySearch(event.target.value)}
+                  disabled={detailLoading || calendlyEventTypesLoading}
+                  placeholder={
+                    calendlyEventTypesLoading
+                      ? "Loading Calendly events..."
+                      : "Search by name, slug, duration or URL..."
+                  }
+                />
+              </label>
+
+              {calendlyEventTypesError ? (
+                <div
+                  className="fine-print"
+                  style={{
+                    color: "var(--danger)",
+                    lineHeight: 1.45,
+                  }}
+                >
+                  Calendly events could not be loaded: {calendlyEventTypesError}
+                </div>
+              ) : null}
+
+              {!calendlyEventTypesLoading &&
+              !calendlyEventTypesError &&
+              safeCalendlyEventTypes.length === 0 ? (
+                <div className="fine-print">
+                  No Calendly event type was found. Check your Calendly API token and scope.
+                </div>
+              ) : null}
+
+              {!calendlyEventTypesLoading &&
+              !calendlyEventTypesError &&
+              safeCalendlyEventTypes.length > 0 &&
+              filteredCalendlyEventTypes.length === 0 ? (
+                <div className="card-soft muted">
+                  No Calendly event matches this search.
+                </div>
+              ) : null}
+
+              {visibleCalendlyEventTypes.length > 0 ? (
+                <div className="stack" style={{ gap: 8 }}>
+                  <div
+                    className="stack"
+                    style={{
+                      gap: 8,
+                      maxHeight: 360,
+                      overflowY: "auto",
+                      overflowX: "hidden",
+                      paddingRight: 6,
+                      borderRadius: 16,
+                    }}
+                  >
+                    {visibleCalendlyEventTypes.map((eventType) => {
+                      const isSelected = eventType.uri === form.calendly_event_type_uri;
+
+                      return (
+                        <button
+                          key={eventType.uri}
+                          type="button"
+                          className="card-soft stack"
+                          onClick={() => selectCalendlyEventType(eventType)}
+                          disabled={detailLoading}
+                          style={{
+                            gap: 7,
+                            textAlign: "left",
+                            cursor: detailLoading ? "not-allowed" : "pointer",
+                            border: isSelected
+                              ? "1px solid rgba(34,197,94,0.42)"
+                              : "1px solid var(--admin-border)",
+                            background: isSelected
+                              ? "rgba(34,197,94,0.08)"
+                              : "var(--admin-surface-muted)",
+                            boxShadow: "none",
+                            flexShrink: 0,
+                          }}
+                        >
+                          <div className="row space-between" style={{ gap: 10 }}>
+                            <strong>{eventType.name}</strong>
+
+                            {isSelected ? (
+                              <span className="badge success">selected</span>
+                            ) : null}
+                          </div>
+
+                          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                            {eventType.duration ? (
+                              <span className="badge">{eventType.duration} min</span>
+                            ) : null}
+
+                            <span
+                              className={eventType.active ? "badge success" : "badge warning"}
+                            >
+                              {eventType.active ? "active" : "inactive"}
+                            </span>
+
+                            {eventType.slug ? (
+                              <span className="badge">{eventType.slug}</span>
+                            ) : null}
+                          </div>
+
+                          <div
+                            className="muted"
+                            style={{
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                            title={eventType.scheduling_url || eventType.uri}
+                          >
+                            {getShortCalendlyUrl(eventType.scheduling_url || eventType.uri)}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {hiddenCalendlyEventTypeCount > 0 ? (
+                    <div className="fine-print">
+                      {hiddenCalendlyEventTypeCount} more result(s). Refine your search to narrow
+                      the list.
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
+              <div className="fine-print">
+                Dedicated Calendly event type used to restrict this organization to its own
+                bookings.
+              </div>
             </div>
-          </label>
+          </div>
 
           <label
             className="card-soft row"

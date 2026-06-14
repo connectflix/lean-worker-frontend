@@ -33,6 +33,7 @@ import {
   deleteAdminOrganizationWorkerExternalConversation,
   getAdminOrganizationWorkerConversations,
   updateAdminOrganizationWorkerExternalConversation,
+  getAdminCalendlyEventTypes,
 } from "@/lib/api";
 import { OrganizationOverviewTab } from "./components/organization-overview-tab";
 import { OrganizationWorkspaceHero } from "./components/organization-workspace-hero";
@@ -96,6 +97,7 @@ import type {
   AdminWorkerConversation,
   AdminWorkerConversationCreate,
   AdminWorkerConversationUpdate,
+  AdminCalendlyEventType,
 } from "@/lib/types";
 
 type OrganizationFormState = {
@@ -1151,6 +1153,10 @@ function AdminOrganizationsContent() {
 
   const [form, setForm] = useState<OrganizationFormState>(EMPTY_FORM);
 
+  const [calendlyEventTypes, setCalendlyEventTypes] = useState<AdminCalendlyEventType[]>([]);
+const [calendlyEventTypesLoading, setCalendlyEventTypesLoading] = useState(false);
+const [calendlyEventTypesError, setCalendlyEventTypesError] = useState<string | null>(null);
+
   const [engagementSelectionState, setEngagementSelectionState] =
     useState<AdminWorkerEngagementState>("current");
   const [engagementCanvasLoaded, setEngagementCanvasLoaded] = useState(false);
@@ -1287,6 +1293,25 @@ function AdminOrganizationsContent() {
         const me = await getAdminMe();
         setAdmin(me);
 
+        if (me.role === "admin") {
+          setCalendlyEventTypesLoading(true);
+          setCalendlyEventTypesError(null);
+
+          try {
+            const eventTypes = await getAdminCalendlyEventTypes(true);
+            setCalendlyEventTypes(eventTypes);
+          } catch (calendlyErr) {
+            setCalendlyEventTypes([]);
+            setCalendlyEventTypesError(
+              calendlyErr instanceof Error
+                ? calendlyErr.message
+                : "Failed to load Calendly event types.",
+            );
+          } finally {
+            setCalendlyEventTypesLoading(false);
+          }
+        }
+
         const orgs = await getAdminOrganizations();
         const sortedOrgs = [...orgs].sort((a, b) => a.name.localeCompare(b.name));
         setOrganizations(sortedOrgs);
@@ -1342,6 +1367,7 @@ function AdminOrganizationsContent() {
             resetSignificanceCanvas(null);
           }
         } else {
+          setActiveWorkspaceTab("organizations");
           setAssignedWorkers([]);
           setEditingOrganizationId(null);
           setSelectedWorkerId(null);
@@ -1351,6 +1377,7 @@ function AdminOrganizationsContent() {
           resetPurposeCanvas(null);
           resetTimeCanvas(null);
           resetSignificanceCanvas(null);
+          resetWorkerConversations();
         }
 
         if (me.role === "admin") {
@@ -2957,7 +2984,7 @@ const relatedLeversByRecommendationId = useMemo(() => {
           </>
         ) : null}
 
-        {isPlatformAdmin && activeWorkspaceTab === "organizations" ? (
+        {isPlatformAdmin && (!selectedOrganization || activeWorkspaceTab === "organizations") ? (
           <OrganizationAdminTab
             organizations={organizations}
             selectedOrganizationId={selectedOrganizationId}
@@ -2965,6 +2992,9 @@ const relatedLeversByRecommendationId = useMemo(() => {
             form={form}
             saving={saving}
             detailLoading={detailLoading}
+            calendlyEventTypes={calendlyEventTypes}
+            calendlyEventTypesLoading={calendlyEventTypesLoading}
+            calendlyEventTypesError={calendlyEventTypesError}
             onOpenOrganization={(organizationId) => void openOrganization(organizationId)}
             onSubmit={(event) => void handleSaveOrganization(event)}
             onFormChange={setForm}
