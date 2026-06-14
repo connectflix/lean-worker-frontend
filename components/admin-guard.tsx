@@ -8,6 +8,7 @@ import type { AdminMe } from "@/lib/types";
 
 const ORGANIZATION_ALLOWED_PREFIXES = [
   "/admin/organizations",
+  "/admin/coaching-plan",
   "/admin/coaching-guide",
   "/admin/coaching-flow",
   "/admin/bookings",
@@ -22,7 +23,7 @@ function isAllowedForOrganization(pathname: string): boolean {
 
 function getLoadingMessage(account: AdminMe | null): string {
   if (account?.role === "organization") {
-    return "Redirecting to your organization workspace...";
+    return "Checking your organization workspace access...";
   }
 
   return "Checking backoffice access...";
