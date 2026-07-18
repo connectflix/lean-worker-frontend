@@ -48,6 +48,10 @@ import { OrganizationSignificanceCanvasTab } from "./components/organization-sig
 import { OrganizationTimeCanvasVisual } from "./components/organization-time-canvas-visual";
 import { OrganizationPurposeCanvasVisual } from "./components/organization-purpose-canvas-visual";
 import { OrganizationEngagementCanvasVisual } from "./components/organization-engagement-canvas-visual";
+import {
+  OrganizationCanvasPrintExport,
+  type OrganizationCanvasPrintKind,
+} from "./components/organization-canvas-print-export";
 import { OrganizationConversationsTab } from "./components/organization-conversations-tab";
 import {
   OrganizationSignificanceCanvasVisual,
@@ -862,6 +866,44 @@ function timeFormFromItem(item: AdminWorkerTimeCanvas): TimeFormState {
   };
 }
 
+function getServerTimeTextValue(value: string | null | undefined, fallback: string): string {
+  return typeof value === "string" ? value : fallback;
+}
+
+function mergeTimeFormWithServerItem(
+  current: TimeFormState,
+  item: AdminWorkerTimeCanvas,
+): TimeFormState {
+  return {
+    ...current,
+    worker_id: item.worker_id ? String(item.worker_id) : current.worker_id,
+    available_time_text: getServerTimeTextValue(
+      item.available_time_text,
+      current.available_time_text,
+    ),
+    time_constraints_text: getServerTimeTextValue(
+      item.time_constraints_text,
+      current.time_constraints_text,
+    ),
+    time_energy_text: getServerTimeTextValue(
+      item.time_energy_text,
+      current.time_energy_text,
+    ),
+    time_rituals_text: getServerTimeTextValue(
+      item.time_rituals_text,
+      current.time_rituals_text,
+    ),
+    time_priorities_text: getServerTimeTextValue(
+      item.time_priorities_text,
+      current.time_priorities_text,
+    ),
+    time_risks_text: getServerTimeTextValue(
+      item.time_risks_text,
+      current.time_risks_text,
+    ),
+  };
+}
+
 function getTimeCanvasCompletedNodes(form: TimeFormState): number {
   return TIME_NODES.reduce((count, node) => {
     const value = form[node.key] || "";
@@ -1144,6 +1186,10 @@ function AdminOrganizationsContent() {
   const [activeCanvasTab, setActiveCanvasTab] =
     useState<OrganizationCanvasTab>("engagement");
 
+  const [canvasToPrint, setCanvasToPrint] =
+    useState<OrganizationCanvasPrintKind | null>(null);
+  const [canvasPrintedAt, setCanvasPrintedAt] = useState<Date>(() => new Date());
+
   const [workerSearch, setWorkerSearch] = useState("");
   const [selectedWorkerIdToAssign, setSelectedWorkerIdToAssign] = useState<string>("");
 
@@ -1284,6 +1330,10 @@ const [calendlyEventTypesError, setCalendlyEventTypesError] = useState<string | 
     () => buildSignificanceAnalysisSummary(significanceDimensions),
     [significanceDimensions],
   );
+
+  const selectedWorkerPrintName =
+    selectedWorkerSummary?.worker.display_name ||
+    (selectedWorkerId ? `Worker #${selectedWorkerId}` : "Worker non renseigné");
 
   useEffect(() => {
     async function load() {
@@ -2120,12 +2170,24 @@ function handleNewOrganization() {
 
     try {
       const basePayload = {
-        available_time_text: timeForm.available_time_text.trim() || null,
-        time_constraints_text: timeForm.time_constraints_text.trim() || null,
-        time_energy_text: timeForm.time_energy_text.trim() || null,
-        time_rituals_text: timeForm.time_rituals_text.trim() || null,
-        time_priorities_text: timeForm.time_priorities_text.trim() || null,
-        time_risks_text: timeForm.time_risks_text.trim() || null,
+        available_time_text: timeForm.available_time_text.trim()
+          ? timeForm.available_time_text
+          : null,
+        time_constraints_text: timeForm.time_constraints_text.trim()
+          ? timeForm.time_constraints_text
+          : null,
+        time_energy_text: timeForm.time_energy_text.trim()
+          ? timeForm.time_energy_text
+          : null,
+        time_rituals_text: timeForm.time_rituals_text.trim()
+          ? timeForm.time_rituals_text
+          : null,
+        time_priorities_text: timeForm.time_priorities_text.trim()
+          ? timeForm.time_priorities_text
+          : null,
+        time_risks_text: timeForm.time_risks_text.trim()
+          ? timeForm.time_risks_text
+          : null,
         readiness_score: timeReadinessScore,
         readiness_status: timeReadinessStatus,
         summary_text: timeSummary,
@@ -2136,7 +2198,7 @@ function handleNewOrganization() {
         const updated = await updateAdminWorkerTimeCanvas(editingTimeCanvasId, payload);
 
         setEditingTimeCanvas(updated);
-        setTimeForm(timeFormFromItem(updated));
+        setTimeForm((current) => mergeTimeFormWithServerItem(current, updated));
         stampTimeSavedNow();
       } else {
         const payload = {
@@ -2148,7 +2210,7 @@ function handleNewOrganization() {
 
         setEditingTimeCanvasId(created.id);
         setEditingTimeCanvas(created);
-        setTimeForm(timeFormFromItem(created));
+        setTimeForm((current) => mergeTimeFormWithServerItem(current, created));
         stampTimeSavedNow();
       }
     } catch (err) {
@@ -2658,6 +2720,28 @@ const relatedLeversByRecommendationId = useMemo(() => {
 
   return map;
 }, [selectedWorkerSummary]);
+
+  useEffect(() => {
+    function handleAfterPrint() {
+      setCanvasToPrint(null);
+    }
+
+    window.addEventListener("afterprint", handleAfterPrint);
+
+    return () => {
+      window.removeEventListener("afterprint", handleAfterPrint);
+    };
+  }, []);
+
+  function handlePrintCanvas(canvasKind: OrganizationCanvasPrintKind) {
+    setCanvasToPrint(canvasKind);
+    setCanvasPrintedAt(new Date());
+
+    window.setTimeout(() => {
+      window.print();
+    }, 150);
+  }
+
     return (
     <AdminShell
       activeHref="/admin/organizations"
@@ -2667,6 +2751,77 @@ const relatedLeversByRecommendationId = useMemo(() => {
       adminRole={admin?.role ?? "admin"}
       adminOrganizationName={admin?.organization_name ?? null}
     >
+      {canvasToPrint === "engagement" ? (
+        <div className="organization-canvas-print-only">
+          <OrganizationCanvasPrintExport
+            canvasKind="engagement"
+            workerName={selectedWorkerPrintName}
+            printedAt={canvasPrintedAt}
+          >
+            <OrganizationEngagementCanvasVisual
+              form={engagementForm}
+              onChange={patchEngagementField}
+              disabled
+              printMode
+            />
+          </OrganizationCanvasPrintExport>
+        </div>
+      ) : null}
+
+      {canvasToPrint === "purpose" ? (
+        <div className="organization-canvas-print-only">
+          <OrganizationCanvasPrintExport
+            canvasKind="purpose"
+            workerName={selectedWorkerPrintName}
+            printedAt={canvasPrintedAt}
+          >
+            <OrganizationPurposeCanvasVisual
+              form={purposeForm}
+              onChange={patchPurposeField}
+              printMode
+            />
+          </OrganizationCanvasPrintExport>
+        </div>
+      ) : null}
+
+      {canvasToPrint === "significance" ? (
+        <div className="organization-canvas-print-only">
+          <OrganizationCanvasPrintExport
+            canvasKind="significance"
+            workerName={selectedWorkerPrintName}
+            printedAt={canvasPrintedAt}
+          >
+            <OrganizationSignificanceCanvasVisual
+              form={significanceForm}
+              questions={significanceQuestions}
+              onChange={patchSignificanceAnswer}
+              dimensions={significanceDimensions}
+              analysisSummary={significanceAnalysisSummary}
+              printMode
+            />
+          </OrganizationCanvasPrintExport>
+        </div>
+      ) : null}
+
+      {canvasToPrint === "time" ? (
+        <div className="organization-canvas-print-only">
+          <OrganizationCanvasPrintExport
+            canvasKind="time"
+            workerName={selectedWorkerPrintName}
+            printedAt={canvasPrintedAt}
+          >
+            <OrganizationTimeCanvasVisual
+              form={timeForm}
+              onChange={patchTimeField}
+              readinessScore={timeReadinessScore}
+              readinessStatus={timeReadinessStatus}
+              summary={timeSummary}
+              printMode
+            />
+          </OrganizationCanvasPrintExport>
+        </div>
+      ) : null}
+
       <div
         className="card-soft"
         style={{
@@ -2828,11 +2983,31 @@ const relatedLeversByRecommendationId = useMemo(() => {
                     onSaveCanvas={() => void handleSaveEngagement()}
                     onFinalizeFutureState={() => void handleFinalizeFutureEngagement()}
                   >
-                    <OrganizationEngagementCanvasVisual
-                      form={engagementForm}
-                      onChange={patchEngagementField}
-                      disabled={isFutureStateLocked}
-                    />
+                    <div className="stack" style={{ gap: 12 }}>
+                      <div
+                        className="row"
+                        style={{
+                          justifyContent: "flex-end",
+                          gap: 8,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <button
+                          type="button"
+                          className="button secondary"
+                          disabled={!selectedWorkerId}
+                          onClick={() => handlePrintCanvas("engagement")}
+                        >
+                          Exporter PDF
+                        </button>
+                      </div>
+
+                      <OrganizationEngagementCanvasVisual
+                        form={engagementForm}
+                        onChange={patchEngagementField}
+                        disabled={isFutureStateLocked}
+                      />
+                    </div>
                   </OrganizationEngagementCanvasTab>
                 ) : null}
 
@@ -2855,10 +3030,30 @@ const relatedLeversByRecommendationId = useMemo(() => {
                     onClearCanvas={() => resetPurposeCanvas(selectedWorkerId)}
                     onSaveCanvas={() => void handleSavePurposeCanvas()}
                   >
-                    <OrganizationPurposeCanvasVisual
-                      form={purposeForm}
-                      onChange={patchPurposeField}
-                    />
+                    <div className="stack" style={{ gap: 12 }}>
+                      <div
+                        className="row"
+                        style={{
+                          justifyContent: "flex-end",
+                          gap: 8,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <button
+                          type="button"
+                          className="button secondary"
+                          disabled={!selectedWorkerId}
+                          onClick={() => handlePrintCanvas("purpose")}
+                        >
+                          Exporter PDF
+                        </button>
+                      </div>
+
+                      <OrganizationPurposeCanvasVisual
+                        form={purposeForm}
+                        onChange={patchPurposeField}
+                      />
+                    </div>
                   </OrganizationPurposeCanvasTab>
                 ) : null}
 
@@ -2884,13 +3079,33 @@ const relatedLeversByRecommendationId = useMemo(() => {
                     onClearCanvas={() => resetTimeCanvas(selectedWorkerId)}
                     onSaveCanvas={() => void handleSaveTimeCanvas()}
                   >
-                    <OrganizationTimeCanvasVisual
-                      form={timeForm}
-                      onChange={patchTimeField}
-                      readinessScore={timeReadinessScore}
-                      readinessStatus={timeReadinessStatus}
-                      summary={timeSummary}
-                    />
+                    <div className="stack" style={{ gap: 12 }}>
+                      <div
+                        className="row"
+                        style={{
+                          justifyContent: "flex-end",
+                          gap: 8,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <button
+                          type="button"
+                          className="button secondary"
+                          disabled={!selectedWorkerId}
+                          onClick={() => handlePrintCanvas("time")}
+                        >
+                          Exporter PDF
+                        </button>
+                      </div>
+
+                      <OrganizationTimeCanvasVisual
+                        form={timeForm}
+                        onChange={patchTimeField}
+                        readinessScore={timeReadinessScore}
+                        readinessStatus={timeReadinessStatus}
+                        summary={timeSummary}
+                      />
+                    </div>
                   </OrganizationTimeCanvasTab>
                 ) : null}
 
@@ -2913,13 +3128,33 @@ const relatedLeversByRecommendationId = useMemo(() => {
                     onClearCanvas={() => resetSignificanceCanvas(selectedWorkerId)}
                     onSaveCanvas={() => void handleSaveSignificanceCanvas()}
                   >
-                    <OrganizationSignificanceCanvasVisual
-                      form={significanceForm}
-                      questions={significanceQuestions}
-                      onChange={patchSignificanceAnswer}
-                      dimensions={significanceDimensions}
-                      analysisSummary={significanceAnalysisSummary}
-                    />
+                    <div className="stack" style={{ gap: 12 }}>
+                      <div
+                        className="row"
+                        style={{
+                          justifyContent: "flex-end",
+                          gap: 8,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <button
+                          type="button"
+                          className="button secondary"
+                          disabled={!selectedWorkerId}
+                          onClick={() => handlePrintCanvas("significance")}
+                        >
+                          Exporter PDF
+                        </button>
+                      </div>
+
+                      <OrganizationSignificanceCanvasVisual
+                        form={significanceForm}
+                        questions={significanceQuestions}
+                        onChange={patchSignificanceAnswer}
+                        dimensions={significanceDimensions}
+                        analysisSummary={significanceAnalysisSummary}
+                      />
+                    </div>
                   </OrganizationSignificanceCanvasTab>
                 ) : null}
               </OrganizationCanvasesTab>
