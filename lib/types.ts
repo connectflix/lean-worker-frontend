@@ -886,6 +886,7 @@ export type AdminWorkerConversation = {
   title: string;
   source_type: AdminWorkerConversationSourceType;
   source_label?: string | null;
+  secret_code?: string | null;
 
   video_url?: string | null;
   file_path?: string | null;
@@ -904,6 +905,7 @@ export type AdminWorkerConversationCreate = {
   title: string;
   source_type?: AdminWorkerConversationSourceType;
   source_label?: string | null;
+  secret_code?: string | null;
 
   video_url?: string | null;
   file_path?: string | null;
@@ -917,6 +919,7 @@ export type AdminWorkerConversationUpdate = {
   title?: string | null;
   source_type?: AdminWorkerConversationSourceType | null;
   source_label?: string | null;
+  secret_code?: string | null;
 
   video_url?: string | null;
   file_path?: string | null;

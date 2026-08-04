@@ -13,6 +13,7 @@ type ConversationFormState = {
   title: string;
   source_type: string;
   source_label: string;
+  secret_code: string;
   video_url: string;
   file_path: string;
   conversation_date: string;
@@ -44,6 +45,7 @@ const EMPTY_FORM: ConversationFormState = {
   title: "",
   source_type: "video",
   source_label: "",
+  secret_code: "",
   video_url: "",
   file_path: "",
   conversation_date: "",
@@ -129,6 +131,7 @@ function buildFormFromConversation(
     title: conversation.title || "",
     source_type: conversation.source_type || "video",
     source_label: conversation.source_label || "",
+    secret_code: conversation.secret_code || "",
     video_url: conversation.video_url || "",
     file_path: conversation.file_path || "",
     conversation_date: toDateTimeLocalValue(conversation.conversation_date),
@@ -144,6 +147,7 @@ function buildPayloadFromForm(
     title: form.title.trim(),
     source_type: form.source_type.trim() || "video",
     source_label: form.source_label.trim() || null,
+    secret_code: form.secret_code.trim() || null,
     video_url: form.video_url.trim() || null,
     file_path: form.file_path.trim() || null,
     conversation_date: form.conversation_date ? `${form.conversation_date}:00` : null,
@@ -200,9 +204,18 @@ function validateExternalConversationForm(
   const title = form.title.trim();
   const sourceType = form.source_type.trim();
   const filePath = form.file_path.trim();
+  const secretCode = form.secret_code.trim();
 
   if (!title) {
     return "Title is required before saving the external conversation.";
+  }
+
+  if (secretCode && !/^[A-Za-z0-9_-]+$/.test(secretCode)) {
+    return "Code secret can contain only letters, numbers, hyphens and underscores.";
+  }
+
+  if (secretCode.length > 100) {
+    return "Code secret cannot exceed 100 characters.";
   }
 
   if (sourceType === "video" && !filePath) {
@@ -689,6 +702,9 @@ export function OrganizationConversationsTab({
                               <span className="badge">transcript</span>
                             ) : null}
                             {conversation.notes ? <span className="badge">notes</span> : null}
+                            {conversation.secret_code ? (
+                              <span className="badge">code secret</span>
+                            ) : null}
                           </div>
 
                           <strong
@@ -801,6 +817,26 @@ export function OrganizationConversationsTab({
                               >
                                 {conversation.file_path}
                               </div>
+                            </div>
+                          ) : null}
+
+                          {conversation.secret_code ? (
+                            <div className="stack" style={{ gap: 6 }}>
+                              <strong style={{ fontSize: 12 }}>Code secret</strong>
+                              <code
+                                style={{
+                                  width: "fit-content",
+                                  maxWidth: "100%",
+                                  wordBreak: "break-all",
+                                  border: "1px solid var(--admin-border, var(--border))",
+                                  borderRadius: 12,
+                                  padding: "9px 11px",
+                                  background: "rgba(17,24,39,0.035)",
+                                  fontSize: 13,
+                                }}
+                              >
+                                {conversation.secret_code}
+                              </code>
                             </div>
                           ) : null}
 
@@ -935,6 +971,25 @@ export function OrganizationConversationsTab({
             </div>
 
             <label className="stack" style={{ gap: 6 }}>
+              <span className="muted">Code secret</span>
+              <input
+                className="input"
+                type="text"
+                value={form.secret_code}
+                onChange={(event) => patchField("secret_code", event.target.value)}
+                placeholder="Example: ABC123_XYZ"
+                maxLength={100}
+                autoComplete="off"
+                spellCheck={false}
+                pattern="[A-Za-z0-9_-]+"
+                title="Letters, numbers, hyphens and underscores only"
+              />
+              <span className="muted" style={{ fontSize: 12 }}>
+                Optional. Letters, numbers, hyphens and underscores only. Maximum 100 characters.
+              </span>
+            </label>
+
+            <label className="stack" style={{ gap: 6 }}>
               <span className="muted">Conversation date</span>
               <input
                 className="input"
@@ -975,8 +1030,8 @@ export function OrganizationConversationsTab({
               />
               {["video", "audio", "upload"].includes(form.source_type) ? (
                 <span className="muted" style={{ fontSize: 12 }}>
-                  Required for Video, Audio and Upload sources because the backend expects a stored
-                  file path.
+                  Required for Video, Audio and Upload sources. Manual, Meeting and Note can be
+                  saved without a file.
                 </span>
               ) : null}
             </label>
