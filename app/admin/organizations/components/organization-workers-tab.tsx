@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import type { AdminOrganization, AdminWorker } from "@/lib/types";
 
 type OrganizationWorkersTabProps = {
@@ -14,6 +15,7 @@ type OrganizationWorkersTabProps = {
 
   isPlatformAdmin: boolean;
   assigning: boolean;
+  updatingWorkerEmail: boolean;
   detailLoading: boolean;
 
   onWorkerSearchChange: (value: string) => void;
@@ -21,6 +23,7 @@ type OrganizationWorkersTabProps = {
   onAssignWorker: () => void;
   onUnassignWorker: (workerId: number) => void;
   onOpenWorker: (workerId: number) => void;
+  onUpdateWorkerEmail: (workerId: number, email: string) => Promise<void>;
 
   getOrganizationTypeLabel: (type?: string | null) => string;
   getRequiredSubscriptionForOrganizationType: (
@@ -92,15 +95,68 @@ export function OrganizationWorkersTab({
   workerSearch,
   isPlatformAdmin,
   assigning,
+  updatingWorkerEmail,
   detailLoading,
   onWorkerSearchChange,
   onSelectedWorkerIdToAssignChange,
   onAssignWorker,
   onUnassignWorker,
   onOpenWorker,
+  onUpdateWorkerEmail,
   getOrganizationTypeLabel,
   getRequiredSubscriptionForOrganizationType,
 }: OrganizationWorkersTabProps) {
+  const [editingWorkerId, setEditingWorkerId] = useState<number | null>(null);
+  const [emailDraft, setEmailDraft] = useState("");
+  const [emailError, setEmailError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (
+      editingWorkerId !== null &&
+      !assignedWorkers.some((worker) => worker.id === editingWorkerId)
+    ) {
+      setEditingWorkerId(null);
+      setEmailDraft("");
+      setEmailError(null);
+    }
+  }, [assignedWorkers, editingWorkerId]);
+
+  function startEditingEmail(worker: AdminWorker) {
+    setEditingWorkerId(worker.id);
+    setEmailDraft(worker.email || "");
+    setEmailError(null);
+  }
+
+  function cancelEditingEmail() {
+    setEditingWorkerId(null);
+    setEmailDraft("");
+    setEmailError(null);
+  }
+
+  async function saveWorkerEmail(worker: AdminWorker) {
+    const normalizedEmail = emailDraft.trim().toLowerCase();
+
+    if (!normalizedEmail) {
+      setEmailError("Email is required.");
+      return;
+    }
+
+    if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) {
+      setEmailError("Please enter a valid email address.");
+      return;
+    }
+
+    try {
+      setEmailError(null);
+      await onUpdateWorkerEmail(worker.id, normalizedEmail);
+      cancelEditingEmail();
+    } catch (error) {
+      setEmailError(
+        error instanceof Error ? error.message : "Unable to update worker email.",
+      );
+    }
+  }
+
   const requiredPack = getRequiredSubscriptionForOrganizationType(
     selectedOrganization.organization_type,
   );
@@ -331,17 +387,93 @@ export function OrganizationWorkersTab({
                         {isSelected ? <span className="badge primary">Selected</span> : null}
                       </div>
 
-                      <div
-                        className="muted"
-                        style={{
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                        title={worker.email || "No email"}
-                      >
-                        {worker.email || "No email"}
-                      </div>
+                      {editingWorkerId === worker.id ? (
+                        <div
+                          className="stack"
+                          style={{ gap: 8 }}
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          <input
+                            className="input"
+                            type="email"
+                            value={emailDraft}
+                            autoFocus
+                            disabled={updatingWorkerEmail}
+                            onChange={(event) => {
+                              setEmailDraft(event.target.value);
+                              setEmailError(null);
+                            }}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter") {
+                                event.preventDefault();
+                                void saveWorkerEmail(worker);
+                              }
+
+                              if (event.key === "Escape") {
+                                event.preventDefault();
+                                cancelEditingEmail();
+                              }
+                            }}
+                            aria-label={`Email for ${worker.display_name}`}
+                          />
+
+                          {emailError ? (
+                            <div className="fine-print" style={{ color: "var(--danger)" }}>
+                              {emailError}
+                            </div>
+                          ) : null}
+
+                          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                            <button
+                              className="button"
+                              type="button"
+                              disabled={updatingWorkerEmail}
+                              onClick={() => void saveWorkerEmail(worker)}
+                            >
+                              {updatingWorkerEmail ? "Saving..." : "Save email"}
+                            </button>
+
+                            <button
+                              className="button ghost"
+                              type="button"
+                              disabled={updatingWorkerEmail}
+                              onClick={cancelEditingEmail}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                          <div
+                            className="muted"
+                            style={{
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                              minWidth: 0,
+                              flex: "1 1 auto",
+                            }}
+                            title={worker.email || "No email"}
+                          >
+                            {worker.email || "No email"}
+                          </div>
+
+                          {isPlatformAdmin ? (
+                            <button
+                              className="button ghost"
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                startEditingEmail(worker);
+                              }}
+                              style={{ minHeight: 32, padding: "6px 10px" }}
+                            >
+                              Edit email
+                            </button>
+                          ) : null}
+                        </div>
+                      )}
 
                       <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
                         <span className="badge">#{worker.id}</span>

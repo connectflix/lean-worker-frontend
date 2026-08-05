@@ -25,6 +25,7 @@ import {
   getAdminWorkers,
   unassignWorkerFromOrganization,
   updateAdminOrganization,
+  updateAdminWorker,
   updateAdminWorkerEngagement,
   updateAdminWorkerPurposeCanvas,
   updateAdminWorkerSignificanceCanvas,
@@ -1169,6 +1170,7 @@ function AdminOrganizationsContent() {
   const [workerConversationsLoading, setWorkerConversationsLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [assigning, setAssigning] = useState(false);
+  const [updatingWorkerEmail, setUpdatingWorkerEmail] = useState(false);
   const [accessAccountSaving, setAccessAccountSaving] = useState(false);
   const [externalConversationSaving, setExternalConversationSaving] = useState(false);
 
@@ -1525,6 +1527,54 @@ const [calendlyEventTypesError, setCalendlyEventTypesError] = useState<string | 
     setSignificanceSaveState("idle");
     setSignificanceLastSavedAtLabel(null);
     skipNextSignificanceAutosaveRef.current = true;
+  }
+
+  async function handleUpdateWorkerEmail(workerId: number, email: string) {
+    if (!isPlatformAdmin) {
+      throw new Error("Only a platform admin can update a worker email.");
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedEmail) {
+      throw new Error("Email is required.");
+    }
+
+    setUpdatingWorkerEmail(true);
+    setError(null);
+
+    try {
+      const updatedWorker = await updateAdminWorker(workerId, {
+        email: normalizedEmail,
+      });
+
+      setAssignedWorkers((current) =>
+        current.map((worker) => (worker.id === workerId ? updatedWorker : worker)),
+      );
+
+      setWorkers((current) =>
+        current.map((worker) => (worker.id === workerId ? updatedWorker : worker)),
+      );
+
+      setSelectedWorkerSummary((current) => {
+        if (!current || current.worker.id !== workerId) return current;
+
+        return {
+          ...current,
+          worker: {
+            ...current.worker,
+            ...updatedWorker,
+          },
+        };
+      });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to update worker email.";
+      setError(message);
+      throw err instanceof Error ? err : new Error(message);
+    } finally {
+      setUpdatingWorkerEmail(false);
+    }
   }
 
   function resetWorkerConversations() {
@@ -2935,12 +2985,14 @@ const relatedLeversByRecommendationId = useMemo(() => {
                 workerSearch={workerSearch}
                 isPlatformAdmin={isPlatformAdmin}
                 assigning={assigning}
+                updatingWorkerEmail={updatingWorkerEmail}
                 detailLoading={detailLoading}
                 onWorkerSearchChange={setWorkerSearch}
                 onSelectedWorkerIdToAssignChange={setSelectedWorkerIdToAssign}
                 onAssignWorker={() => void handleAssignWorker()}
                 onUnassignWorker={(workerId) => void handleUnassignWorker(workerId)}
                 onOpenWorker={(workerId) => void openWorker(workerId)}
+                onUpdateWorkerEmail={handleUpdateWorkerEmail}
                 getOrganizationTypeLabel={getOrganizationTypeLabel}
                 getRequiredSubscriptionForOrganizationType={
                   getRequiredSubscriptionForOrganizationType

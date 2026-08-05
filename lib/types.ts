@@ -834,6 +834,7 @@ export type AdminWorkerCreate = {
 };
 
 export type AdminWorkerUpdate = {
+  email?: string;
   business_id?: string | null;
   location?: string | null;
   phone_number?: string | null;
