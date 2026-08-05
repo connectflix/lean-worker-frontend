@@ -1678,49 +1678,53 @@ export function VoiceSessionPanel({
 
           .voice-orb-card {
             height: auto !important;
-            min-height: 360px !important;
+            min-height: 430px !important;
             padding: 14px 16px !important;
             border-radius: 26px !important;
           }
 
           .voice-orb-card > .stack {
             height: auto !important;
-            min-height: 326px !important;
+            min-height: 396px !important;
             display: grid !important;
-            grid-template-columns: minmax(145px, 0.7fr) minmax(0, 1.3fr);
+            grid-template-columns: minmax(0, 1fr);
             grid-template-areas:
-              "orb copy"
-              "meter copy"
-              "actions actions";
-            column-gap: 18px !important;
-            row-gap: 6px !important;
+              "orb"
+              "meter"
+              "copy"
+              "actions";
+            row-gap: 8px !important;
             align-items: center !important;
-            justify-content: stretch !important;
+            justify-items: center !important;
           }
 
           .voice-orb-visual {
             grid-area: orb;
             width: 118px !important;
             height: 118px !important;
-            align-self: end !important;
+            align-self: center !important;
+            justify-self: center !important;
           }
 
           .voice-meter-bars {
             grid-area: meter;
-            height: 34px !important;
+            height: 32px !important;
             gap: 5px !important;
-            align-self: start !important;
+            align-self: center !important;
+            justify-self: center !important;
           }
 
           .voice-meter-bars > div {
             width: 6px !important;
-            max-height: 32px !important;
+            max-height: 30px !important;
           }
 
           .voice-stage-copy {
             grid-area: copy;
+            width: 100% !important;
             gap: 6px !important;
             align-self: center !important;
+            justify-self: stretch !important;
           }
 
           .voice-stage-copy .section-title {
@@ -1733,8 +1737,7 @@ export function VoiceSessionPanel({
             line-height: 1.34 !important;
           }
 
-          .voice-secondary-description,
-          .voice-meter-label {
+          .voice-secondary-description {
             display: none !important;
           }
 
@@ -1743,9 +1746,16 @@ export function VoiceSessionPanel({
             height: 7px !important;
           }
 
+          .voice-meter-label {
+            display: block !important;
+            font-size: 11px !important;
+            line-height: 1.3 !important;
+          }
+
           .voice-actions {
             grid-area: actions;
             align-self: end !important;
+            justify-self: center !important;
             gap: 10px !important;
             padding-bottom: 0 !important;
           }
