@@ -283,6 +283,99 @@ export function WorkspaceShell({
           }
         }
 
+
+        /*
+         * Measured compact-laptop viewport:
+         * 1512 × 791 CSS pixels.
+         * Keep the central coaching experience fully visible and allow
+         * only the side rails to scroll independently.
+         */
+        @media (max-width: 1600px) and (max-height: 850px) and (min-width: 1100px) {
+          .workspace-content-area {
+            overflow: hidden !important;
+          }
+
+          .workspace-layout {
+            height: calc(100dvh - 178px) !important;
+            min-height: 0 !important;
+            overflow: hidden !important;
+            gap: 12px !important;
+            align-items: stretch !important;
+          }
+
+          .workspace-layout--three {
+            grid-template-columns:
+              minmax(205px, 220px)
+              minmax(0, 1fr)
+              minmax(250px, 270px) !important;
+          }
+
+          .workspace-left,
+          .workspace-right {
+            height: 100% !important;
+            min-height: 0 !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            scrollbar-width: thin;
+            overscroll-behavior: contain;
+          }
+
+          .workspace-center {
+            height: 100% !important;
+            min-height: 0 !important;
+            overflow: hidden !important;
+          }
+
+          .session-cockpit-column {
+            height: 100% !important;
+            min-height: 0 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 10px !important;
+          }
+
+          .session-cockpit-column > .card {
+            flex: 0 0 auto !important;
+            padding: 16px !important;
+          }
+
+          .session-cockpit-column > .chat-surface {
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            overflow: hidden !important;
+          }
+
+          .workspace-left .card,
+          .workspace-right .card {
+            padding: 16px !important;
+            border-radius: 22px !important;
+          }
+
+          .workspace-left .stack,
+          .workspace-right .stack {
+            gap: 10px !important;
+          }
+
+          .workspace-left .section-title,
+          .workspace-right .section-title {
+            font-size: 15px !important;
+            line-height: 1.2 !important;
+          }
+
+          .workspace-left .muted,
+          .workspace-right .muted {
+            font-size: 12px !important;
+            line-height: 1.4 !important;
+          }
+
+          .workspace-left .button,
+          .workspace-right .button {
+            min-height: 38px !important;
+            padding-top: 8px !important;
+            padding-bottom: 8px !important;
+          }
+        }
+
         @media (max-width: 980px) {
           .workspace-content-area {
             overflow: visible;

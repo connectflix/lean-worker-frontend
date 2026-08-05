@@ -1660,6 +1660,104 @@ export function VoiceSessionPanel({
           }
         }
 
+
+        /*
+         * Exact compact-laptop mode for the measured 1512 × 791 viewport.
+         * The orb, status and both primary actions fit inside one viewport.
+         */
+        @media (max-width: 1600px) and (max-height: 850px) and (min-width: 1100px) {
+          .voice-session-panel {
+            height: 100% !important;
+            min-height: 0 !important;
+            gap: 0 !important;
+          }
+
+          .voice-session-intro {
+            display: none !important;
+          }
+
+          .voice-orb-card {
+            height: 100% !important;
+            min-height: 0 !important;
+            padding: 14px 16px !important;
+            border-radius: 26px !important;
+          }
+
+          .voice-orb-card > .stack {
+            height: 100% !important;
+            min-height: 0 !important;
+            display: grid !important;
+            grid-template-columns: minmax(145px, 0.7fr) minmax(0, 1.3fr);
+            grid-template-areas:
+              "orb copy"
+              "meter copy"
+              "actions actions";
+            column-gap: 18px !important;
+            row-gap: 6px !important;
+            align-items: center !important;
+            justify-content: stretch !important;
+          }
+
+          .voice-orb-visual {
+            grid-area: orb;
+            width: 118px !important;
+            height: 118px !important;
+            align-self: end !important;
+          }
+
+          .voice-meter-bars {
+            grid-area: meter;
+            height: 34px !important;
+            gap: 5px !important;
+            align-self: start !important;
+          }
+
+          .voice-meter-bars > div {
+            width: 6px !important;
+            max-height: 32px !important;
+          }
+
+          .voice-stage-copy {
+            grid-area: copy;
+            gap: 6px !important;
+            align-self: center !important;
+          }
+
+          .voice-stage-copy .section-title {
+            font-size: 20px !important;
+            line-height: 1.14 !important;
+          }
+
+          .voice-primary-description {
+            font-size: 12px !important;
+            line-height: 1.34 !important;
+          }
+
+          .voice-secondary-description,
+          .voice-meter-label {
+            display: none !important;
+          }
+
+          .voice-mic-progress {
+            width: min(210px, 100%) !important;
+            height: 7px !important;
+          }
+
+          .voice-actions {
+            grid-area: actions;
+            align-self: end !important;
+            gap: 10px !important;
+            padding-bottom: 0 !important;
+          }
+
+          .voice-actions .button {
+            min-width: 180px !important;
+            min-height: 40px !important;
+            padding: 8px 14px !important;
+            font-size: 13px !important;
+          }
+        }
+
         @media (max-width: 980px) {
           .voice-session-panel {
             height: auto;
