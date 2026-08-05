@@ -474,7 +474,10 @@ function SessionDetailContent() {
             </div>
           </div>
 
-          <SessionSummaryCard summary={item.summary || copy.noSummary} />
+          <SessionSummaryCard
+  summary={item.summary || copy.noSummary}
+  uiLanguage={uiLanguage}
+/>
 
           {analysis ? (
             <ProblemDetectionCard item={analysis} />

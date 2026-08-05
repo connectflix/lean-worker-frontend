@@ -1,8 +1,30 @@
 "use client";
 
 import { BadgePill, BrainIcon, SparkIcon } from "@/components/ui-flat-icons";
+import type { SupportedUiLanguage } from "@/lib/user-locales";
 
-export function SessionSummaryCard({ summary }: { summary: string }) {
+type SessionSummaryCardProps = {
+  summary: string;
+  uiLanguage: SupportedUiLanguage;
+};
+
+export function SessionSummaryCard({
+  summary,
+  uiLanguage,
+}: SessionSummaryCardProps) {
+  const copy =
+    uiLanguage === "fr"
+      ? {
+          title: "Résumé de la session",
+          description:
+            "Principaux éléments identifiés lors de votre conversation de coaching.",
+          badge: "Synthèse IA",
+        }
+      : {
+          title: "Session summary",
+          description: "Key signals captured from your coaching conversation.",
+          badge: "AI synthesis",
+        };
   return (
     <div
       className="card stack"
@@ -79,7 +101,7 @@ export function SessionSummaryCard({ summary }: { summary: string }) {
                 color: "var(--coach-ink)",
               }}
             >
-              Session summary
+              {copy.title}
             </div>
 
             <div
@@ -89,12 +111,12 @@ export function SessionSummaryCard({ summary }: { summary: string }) {
                 fontSize: 13,
               }}
             >
-              Key signals captured from your coaching conversation.
+              {copy.description}
             </div>
           </div>
         </div>
 
-        <BadgePill icon={<SparkIcon size={14} />}>AI synthesis</BadgePill>
+        <BadgePill icon={<SparkIcon size={14} />}>{copy.badge}</BadgePill>
       </div>
 
       <div
