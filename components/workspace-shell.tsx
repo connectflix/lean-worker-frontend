@@ -323,7 +323,10 @@ export function WorkspaceShell({
           .workspace-center {
             height: 100% !important;
             min-height: 0 !important;
-            overflow: hidden !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            scrollbar-width: thin;
+            overscroll-behavior: contain;
           }
 
           .session-cockpit-column {
@@ -340,9 +343,9 @@ export function WorkspaceShell({
           }
 
           .session-cockpit-column > .chat-surface {
-            flex: 1 1 auto !important;
+            flex: 0 0 auto !important;
             min-height: 0 !important;
-            overflow: hidden !important;
+            overflow: visible !important;
           }
 
           .workspace-left .card,
