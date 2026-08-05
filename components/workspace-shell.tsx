@@ -122,7 +122,10 @@ export function WorkspaceShell({
         }
 
         .workspace-layout--three {
-          grid-template-columns: minmax(240px, 280px) minmax(0, 1fr) minmax(300px, 340px);
+          grid-template-columns:
+            minmax(240px, 280px)
+            minmax(0, 1fr)
+            minmax(300px, 340px);
         }
 
         .workspace-layout--left-center {
@@ -147,20 +150,81 @@ export function WorkspaceShell({
           width: 100%;
         }
 
-        @media (max-width: 1760px) {
+        /*
+         * 15-inch laptops and medium desktop windows:
+         * keep the coaching conversation above the fold by preserving
+         * the three-column cockpit, while making the side panels compact.
+         */
+        @media (max-width: 1780px) and (min-width: 1381px) {
           .workspace-layout {
-            gap: 18px;
+            gap: 14px;
           }
 
           .workspace-layout--three {
-            grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
-            grid-template-areas:
-              "left left"
-              "center right";
+            grid-template-columns:
+              minmax(205px, 225px)
+              minmax(520px, 1fr)
+              minmax(250px, 280px);
           }
 
-          .workspace-layout--three .workspace-left {
-            grid-area: left;
+          .workspace-layout--left-center {
+            grid-template-columns: minmax(205px, 225px) minmax(0, 1fr);
+          }
+
+          .workspace-layout--center-right {
+            grid-template-columns: minmax(0, 1fr) minmax(250px, 280px);
+          }
+
+          .workspace-left .card,
+          .workspace-right .card {
+            padding: 18px !important;
+            border-radius: 24px !important;
+          }
+
+          .workspace-left .stack,
+          .workspace-right .stack {
+            gap: 12px;
+          }
+
+          .workspace-left .section-title,
+          .workspace-right .section-title {
+            font-size: 16px;
+            line-height: 1.25;
+          }
+
+          .workspace-left .muted,
+          .workspace-right .muted {
+            font-size: 13px;
+            line-height: 1.48 !important;
+          }
+
+          .workspace-left .button,
+          .workspace-right .button {
+            min-height: 40px;
+            padding-top: 9px;
+            padding-bottom: 9px;
+          }
+
+          .workspace-left .badge,
+          .workspace-right .badge {
+            font-size: 11px;
+          }
+        }
+
+        /*
+         * Smaller laptop windows:
+         * prioritize the conversation and move secondary context below.
+         */
+        @media (max-width: 1380px) {
+          .workspace-layout {
+            gap: 16px;
+          }
+
+          .workspace-layout--three {
+            grid-template-columns: minmax(0, 1fr) minmax(250px, 290px);
+            grid-template-areas:
+              "center right"
+              "left left";
           }
 
           .workspace-layout--three .workspace-center {
@@ -171,37 +235,34 @@ export function WorkspaceShell({
             grid-area: right;
           }
 
+          .workspace-layout--three .workspace-left {
+            grid-area: left;
+          }
+
           .workspace-layout--three .workspace-left > .stack {
             display: grid;
-            grid-template-columns: minmax(240px, 0.8fr) minmax(0, 1.2fr);
-            gap: 18px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
             align-items: start;
           }
-        }
 
-        @media (max-width: 1320px) {
-          .workspace-layout--three,
           .workspace-layout--left-center,
           .workspace-layout--center-right {
             grid-template-columns: minmax(0, 1fr);
+          }
+        }
+
+        @media (max-width: 980px) {
+          .workspace-layout--three {
+            grid-template-columns: minmax(0, 1fr);
             grid-template-areas:
-              "left"
               "center"
+              "left"
               "right";
           }
 
           .workspace-layout--three .workspace-left > .stack {
-            grid-template-columns: 1fr;
-          }
-        }
-
-        @media (max-width: 900px) {
-          .workspace-layout {
-            gap: 14px;
-          }
-
-          .workspace-layout--three .workspace-left > .stack {
-            display: flex;
+            grid-template-columns: minmax(0, 1fr);
           }
 
           .main-shell {
