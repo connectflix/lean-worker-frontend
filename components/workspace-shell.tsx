@@ -327,11 +327,12 @@ export function WorkspaceShell({
             overflow-x: hidden !important;
             scrollbar-width: thin;
             overscroll-behavior: contain;
+            padding-bottom: 24px;
           }
 
           .session-cockpit-column {
-            height: 100% !important;
-            min-height: 0 !important;
+            height: auto !important;
+            min-height: 100% !important;
             display: flex !important;
             flex-direction: column !important;
             gap: 10px !important;

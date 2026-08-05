@@ -1667,25 +1667,25 @@ export function VoiceSessionPanel({
          */
         @media (max-width: 1600px) and (max-height: 850px) and (min-width: 1100px) {
           .voice-session-panel {
-            height: 100% !important;
+            height: auto !important;
             min-height: 0 !important;
-            gap: 0 !important;
+            gap: 12px !important;
           }
 
           .voice-session-intro {
-            display: none !important;
+            display: block !important;
           }
 
           .voice-orb-card {
-            height: 100% !important;
-            min-height: 0 !important;
+            height: auto !important;
+            min-height: 360px !important;
             padding: 14px 16px !important;
             border-radius: 26px !important;
           }
 
           .voice-orb-card > .stack {
-            height: 100% !important;
-            min-height: 0 !important;
+            height: auto !important;
+            min-height: 326px !important;
             display: grid !important;
             grid-template-columns: minmax(145px, 0.7fr) minmax(0, 1.3fr);
             grid-template-areas:
@@ -1755,6 +1755,31 @@ export function VoiceSessionPanel({
             min-height: 40px !important;
             padding: 8px 14px !important;
             font-size: 13px !important;
+          }
+
+          .voice-session-intro {
+            padding: 14px !important;
+            gap: 10px !important;
+            border-radius: 24px !important;
+          }
+
+          .voice-session-intro .grid.grid-2 {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 10px !important;
+          }
+
+          .voice-session-intro .card-soft {
+            padding: 12px !important;
+            border-radius: 18px !important;
+          }
+
+          .voice-session-intro .muted {
+            font-size: 12px !important;
+            line-height: 1.4 !important;
+          }
+
+          .voice-session-intro .section-title {
+            font-size: 14px !important;
           }
         }
 
