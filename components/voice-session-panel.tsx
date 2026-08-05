@@ -5,14 +5,6 @@ import { closeSession, getSessionDetail, synthesizeSpeech, voiceTurn } from "@/l
 import { getUiCopy } from "@/lib/ui-copy";
 import type { SessionCloseResponse, TranscriptTurn, VoiceTurnResponse } from "@/lib/types";
 import type { SupportedUiLanguage } from "@/lib/user-locales";
-import {
-  BadgePill,
-  BrainIcon,
-  ClockIcon,
-  SessionIcon,
-  SparkIcon,
-  TargetIcon,
-} from "@/components/ui-flat-icons";
 
 type VoiceStage =
   | "idle"
@@ -115,97 +107,6 @@ function FlatAlertIcon({
       <circle cx="12" cy="16.5" r="1" fill={color} />
     </svg>
   );
-}
-
-function getCoachIntentLabel(
-  intent: string | undefined,
-  uiLanguage: SupportedUiLanguage,
-): string | null {
-  if (!intent) return null;
-
-  const labels =
-    uiLanguage === "fr"
-      ? {
-          clarify: "Clarification de la situation",
-          reframe: "Reformulation de la perspective",
-          prioritize: "Priorisation du prochain mouvement",
-          sequence: "Structuration des prochaines étapes",
-          encourage: "Renforcement de l’élan",
-          challenge_softly: "Exploration d’une tension",
-        }
-      : {
-          clarify: "Clarifying your situation",
-          reframe: "Reframing perspective",
-          prioritize: "Prioritizing next move",
-          sequence: "Structuring next steps",
-          encourage: "Reinforcing momentum",
-          challenge_softly: "Exploring a tension",
-        };
-
-  return labels[intent as keyof typeof labels] ?? null;
-}
-
-function getCoachModeLabel(
-  mode: string | undefined,
-  uiLanguage: SupportedUiLanguage,
-): string | null {
-  if (!mode) return null;
-
-  const labels =
-    uiLanguage === "fr"
-      ? {
-          coach_opening: "Ouverture",
-          coach_exploration: "Exploration",
-          coach_reflection: "Réflexion",
-          coach_trajectory: "Trajectoire",
-          coach_actionable: "Action",
-          coach_regulation: "Stabilisation",
-        }
-      : {
-          coach_opening: "Opening",
-          coach_exploration: "Exploration",
-          coach_reflection: "Reflection",
-          coach_trajectory: "Trajectory",
-          coach_actionable: "Action",
-          coach_regulation: "Stabilization",
-        };
-
-  return labels[mode as keyof typeof labels] ?? null;
-}
-
-function getCoachStyleLabel(
-  mode: string | undefined,
-  intent: string | undefined,
-  uiLanguage: SupportedUiLanguage,
-): string {
-  const key = `${mode || ""}:${intent || ""}`;
-
-  const labels =
-    uiLanguage === "fr"
-      ? {
-          "coach_opening:encourage": "Accueillant et chaleureux",
-          "coach_exploration:clarify": "Curieux et clarifiant",
-          "coach_reflection:encourage": "Empathique et soutenant",
-          "coach_reflection:sequence": "Réflexif et structurant",
-          "coach_trajectory:reframe": "Stratégique et recadrant",
-          "coach_trajectory:sequence": "Stratégique et organisé",
-          "coach_actionable:prioritize": "Direct et orienté action",
-          "coach_regulation:sequence": "Calme et contenant",
-          default: "Adaptatif et contextuel",
-        }
-      : {
-          "coach_opening:encourage": "Warm and welcoming",
-          "coach_exploration:clarify": "Curious and clarifying",
-          "coach_reflection:encourage": "Empathic and supportive",
-          "coach_reflection:sequence": "Reflective and structuring",
-          "coach_trajectory:reframe": "Strategic and reframing",
-          "coach_trajectory:sequence": "Strategic and organized",
-          "coach_actionable:prioritize": "Direct and action-oriented",
-          "coach_regulation:sequence": "Calm and containing",
-          default: "Adaptive and contextual",
-        };
-
-  return labels[key as keyof typeof labels] ?? labels.default;
 }
 
 function getAverageVolume(analyser: AnalyserNode): number {
@@ -453,10 +354,6 @@ export function VoiceSessionPanel({
           : "Breathe, speak naturally, and let the coach guide you step by step.",
     };
   }, [uiLanguage]);
-
-  const currentCoachStyle = getCoachStyleLabel(coachMode, coachIntent, uiLanguage);
-  const currentCoachIntent = getCoachIntentLabel(coachIntent, uiLanguage);
-  const currentCoachMode = getCoachModeLabel(coachMode, uiLanguage);
 
   async function ensureEarconContext(): Promise<AudioContext> {
     let ctx = earconContextRef.current;
@@ -1380,131 +1277,6 @@ export function VoiceSessionPanel({
         </div>
       )}
 
-      <div
-        className="card stack voice-session-intro"
-        style={{
-          gap: 16,
-          borderRadius: 28,
-          border: "1px solid rgba(43,33,24,0.08)",
-          background:
-            "linear-gradient(135deg, rgba(255,241,220,0.92), rgba(255,255,255,0.88))",
-          boxShadow: "0 14px 36px rgba(43,33,24,0.05)",
-        }}
-      >
-        <div className="row space-between" style={{ alignItems: "flex-start", gap: 16 }}>
-          <div className="stack" style={{ gap: 7, maxWidth: 720 }}>
-            <div className="row" style={{ gap: 10, alignItems: "center" }}>
-              <span
-                style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 15,
-                  display: "grid",
-                  placeItems: "center",
-                  background: "rgba(255,122,89,0.13)",
-                  border: "1px solid rgba(255,122,89,0.22)",
-                  color: "var(--coach-accent)",
-                  flexShrink: 0,
-                }}
-              >
-                <SessionIcon size={18} />
-              </span>
-
-              <div className="section-title" style={{ color: "var(--coach-ink)" }}>
-                {copy.session.conversation}
-              </div>
-            </div>
-
-            <div className="muted" style={{ color: "var(--coach-muted)" }}>
-              {labels.sessionId} #{sessionId} · {labels.readiness}
-            </div>
-
-            <div
-              className="muted"
-              style={{
-                color: "var(--coach-muted)",
-                lineHeight: 1.65,
-              }}
-            >
-              {labels.immersiveNote}
-            </div>
-          </div>
-
-          <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
-            <BadgePill icon={<SessionIcon size={14} />}>{labels.sessionLive}</BadgePill>
-            <BadgePill icon={<SparkIcon size={14} />}>{labels.voiceOnly}</BadgePill>
-            <BadgePill icon={<BrainIcon size={14} />}>{labels.adaptiveCoach}</BadgePill>
-            <BadgePill icon={<TargetIcon size={14} />}>{labels.activeMemory}</BadgePill>
-            <BadgePill icon={<SparkIcon size={14} />}>{labels.purposeAware}</BadgePill>
-          </div>
-        </div>
-
-        <div className="grid grid-2">
-          <div
-            className="card-soft stack"
-            style={{
-              gap: 8,
-              borderRadius: 22,
-              background: "rgba(255,255,255,0.72)",
-              border: "1px solid rgba(43,33,24,0.08)",
-            }}
-          >
-            <div className="section-title" style={{ fontSize: 15, color: "var(--coach-ink)" }}>
-              {labels.currentVoiceTitle}
-            </div>
-            <div className="muted" style={{ color: "var(--coach-muted)" }}>
-              {labels.currentVoiceText}
-            </div>
-          </div>
-
-          <div
-            className="card-soft stack"
-            style={{
-              gap: 8,
-              borderRadius: 22,
-              background: "rgba(255,255,255,0.72)",
-              border: "1px solid rgba(43,33,24,0.08)",
-            }}
-          >
-            <div className="section-title" style={{ fontSize: 15, color: "var(--coach-ink)" }}>
-              {labels.soundPresence}
-            </div>
-            <div className="muted" style={{ color: "var(--coach-muted)" }}>
-              {labels.soundPresenceText}
-            </div>
-          </div>
-        </div>
-
-        <div
-          className="card-soft stack"
-          style={{
-            gap: 10,
-            borderRadius: 24,
-            background: "rgba(255,255,255,0.70)",
-            border: "1px solid rgba(43,33,24,0.08)",
-          }}
-        >
-          <div className="row space-between" style={{ flexWrap: "wrap", gap: 10 }}>
-            <div className="section-title" style={{ fontSize: 15, color: "var(--coach-ink)" }}>
-              {labels.coachStyle}
-            </div>
-            <BadgePill icon={<SparkIcon size={14} />}>{currentCoachStyle}</BadgePill>
-          </div>
-
-          <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
-            {currentCoachIntent ? (
-              <BadgePill icon={<TargetIcon size={14} />}>{currentCoachIntent}</BadgePill>
-            ) : null}
-
-            {currentCoachMode ? (
-              <BadgePill icon={<BrainIcon size={14} />}>{currentCoachMode}</BadgePill>
-            ) : null}
-
-            <BadgePill icon={<ClockIcon size={14} />}>{labels.currentVoiceText}</BadgePill>
-          </div>
-        </div>
-      </div>
-
       <style jsx global>{`
         .voice-session-panel {
           min-width: 0;
@@ -1670,10 +1442,6 @@ export function VoiceSessionPanel({
             height: auto !important;
             min-height: 0 !important;
             gap: 12px !important;
-          }
-
-          .voice-session-intro {
-            display: block !important;
           }
 
           .voice-orb-card {
