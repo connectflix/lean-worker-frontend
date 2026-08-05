@@ -74,9 +74,13 @@ function NavIcon({
 export function SidebarNav({
   uiLanguage,
   isAdmin = false,
+  collapsed = false,
+  onToggleCollapsed,
 }: {
   uiLanguage: SupportedUiLanguage;
   isAdmin?: boolean;
+  collapsed?: boolean;
+  onToggleCollapsed?: () => void;
 }) {
   const pathname = usePathname();
 
@@ -120,7 +124,8 @@ export function SidebarNav({
 
   return (
     <aside
-      className="sidebar coach-sidebar"
+      className={`sidebar coach-sidebar ${collapsed ? "coach-sidebar--collapsed" : ""}`}
+      aria-label={uiLanguage === "fr" ? "Navigation principale" : "Primary navigation"}
       style={{
         position: "relative",
         padding: 16,
@@ -147,7 +152,7 @@ export function SidebarNav({
       />
 
       <div
-        className="stack"
+        className="stack coach-sidebar__content"
         style={{
           position: "relative",
           zIndex: 1,
@@ -201,6 +206,53 @@ export function SidebarNav({
                 : "Your growth workspace"}
             </p>
           </div>
+
+          {onToggleCollapsed ? (
+            <button
+              className="button ghost coach-sidebar__toggle"
+              type="button"
+              onClick={onToggleCollapsed}
+              aria-label={
+                collapsed
+                  ? uiLanguage === "fr"
+                    ? "Agrandir le menu"
+                    : "Expand menu"
+                  : uiLanguage === "fr"
+                    ? "Réduire le menu"
+                    : "Collapse menu"
+              }
+              title={
+                collapsed
+                  ? uiLanguage === "fr"
+                    ? "Agrandir le menu"
+                    : "Expand menu"
+                  : uiLanguage === "fr"
+                    ? "Réduire le menu"
+                    : "Collapse menu"
+              }
+              style={{
+                width: 34,
+                height: 34,
+                minHeight: 34,
+                padding: 0,
+                borderRadius: 12,
+                flexShrink: 0,
+                background: "rgba(255,255,255,0.68)",
+                border: "1px solid rgba(43,33,24,0.08)",
+                color: "var(--coach-muted)",
+              }}
+            >
+              <span
+                style={{
+                  display: "inline-flex",
+                  transform: collapsed ? "rotate(0deg)" : "rotate(180deg)",
+                  transition: "transform 180ms ease",
+                }}
+              >
+                <ArrowRightIcon size={14} color="currentColor" />
+              </span>
+            </button>
+          ) : null}
         </div>
 
         <div
@@ -236,6 +288,8 @@ export function SidebarNav({
                   key={item.href}
                   href={item.href}
                   className={`nav-item ${active ? "active" : ""}`}
+                  aria-label={item.label}
+                  title={collapsed ? item.label : undefined}
                   style={{
                     position: "relative",
                     display: "flex",
@@ -302,6 +356,7 @@ export function SidebarNav({
                     </span>
 
                     <span
+                      className="coach-sidebar__nav-label"
                       style={{
                         fontSize: 14,
                         fontWeight: active ? 750 : 600,
@@ -315,6 +370,7 @@ export function SidebarNav({
                   </span>
 
                   <span
+                    className="coach-sidebar__nav-arrow"
                     style={{
                       opacity: active ? 1 : 0.38,
                       transform: active ? "translateX(0)" : "translateX(-3px)",
@@ -332,7 +388,7 @@ export function SidebarNav({
         </div>
 
         <div
-          className="card-soft stack"
+          className="card-soft stack coach-sidebar__personal-card"
           style={{
             gap: 9,
             padding: 15,
@@ -386,13 +442,119 @@ export function SidebarNav({
             }}
             type="button"
           >
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <span
+              className="coach-sidebar__logout-content"
+              style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
+            >
               <ArrowRightIcon size={14} />
-              {uiLanguage === "fr" ? "Déconnexion" : "Logout"}
+              <span className="coach-sidebar__logout-label">
+                {uiLanguage === "fr" ? "Déconnexion" : "Logout"}
+              </span>
             </span>
           </button>
         </div>
       </div>
+
+      <style jsx global>{`
+        .coach-sidebar {
+          transition:
+            width 220ms ease,
+            padding 220ms ease,
+            border-radius 220ms ease;
+        }
+
+        .coach-sidebar__toggle {
+          display: inline-grid;
+          place-items: center;
+        }
+
+        .coach-sidebar--collapsed {
+          padding-left: 10px !important;
+          padding-right: 10px !important;
+        }
+
+        .coach-sidebar--collapsed .brand-block {
+          justify-content: center;
+          gap: 6px !important;
+          padding-left: 0 !important;
+          padding-right: 0 !important;
+        }
+
+        .coach-sidebar--collapsed .brand-title,
+        .coach-sidebar--collapsed .brand-subtitle,
+        .coach-sidebar--collapsed .nav-section-label,
+        .coach-sidebar--collapsed .coach-sidebar__nav-label,
+        .coach-sidebar--collapsed .coach-sidebar__nav-arrow,
+        .coach-sidebar--collapsed .coach-sidebar__personal-card,
+        .coach-sidebar--collapsed .coach-sidebar__logout-label {
+          display: none !important;
+        }
+
+        .coach-sidebar--collapsed .coach-sidebar__content {
+          gap: 14px !important;
+        }
+
+        .coach-sidebar--collapsed .nav-section {
+          align-items: center;
+        }
+
+        .coach-sidebar--collapsed .nav-section > .stack {
+          width: 100%;
+          align-items: center;
+        }
+
+        .coach-sidebar--collapsed .nav-item {
+          width: 52px;
+          min-height: 52px;
+          padding: 9px !important;
+          justify-content: center !important;
+        }
+
+        .coach-sidebar--collapsed .nav-item > span:first-of-type {
+          gap: 0 !important;
+          justify-content: center;
+        }
+
+        .coach-sidebar--collapsed .nav-item > span:first-of-type > span {
+          width: 34px !important;
+          height: 34px !important;
+        }
+
+        .coach-sidebar--collapsed .coach-sidebar__logout-content {
+          gap: 0 !important;
+        }
+
+        .coach-sidebar--collapsed .button.ghost {
+          min-width: 0;
+        }
+
+        @media (max-width: 980px) {
+          .coach-sidebar--collapsed .brand-title,
+          .coach-sidebar--collapsed .brand-subtitle,
+          .coach-sidebar--collapsed .nav-section-label,
+          .coach-sidebar--collapsed .coach-sidebar__nav-label,
+          .coach-sidebar--collapsed .coach-sidebar__nav-arrow,
+          .coach-sidebar--collapsed .coach-sidebar__personal-card,
+          .coach-sidebar--collapsed .coach-sidebar__logout-label {
+            display: initial !important;
+          }
+
+          .coach-sidebar--collapsed {
+            padding: 16px !important;
+          }
+
+          .coach-sidebar--collapsed .brand-block {
+            justify-content: flex-start;
+            gap: 12px !important;
+          }
+
+          .coach-sidebar--collapsed .nav-item {
+            width: 100%;
+            padding: 12px !important;
+            justify-content: space-between !important;
+          }
+        }
+      `}</style>
     </aside>
   );
 }

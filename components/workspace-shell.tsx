@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { SidebarNav } from "@/components/sidebar-nav";
 import { Topbar } from "@/components/topbar";
 import { useCurrentUser } from "@/components/user-context";
@@ -26,6 +26,25 @@ export function WorkspaceShell({
   layout?: "workspace" | "page";
 }) {
   const { user } = useCurrentUser();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    const storedValue = window.localStorage.getItem(
+      "leanworker-sidebar-collapsed",
+    );
+    setSidebarCollapsed(storedValue === "true");
+  }, []);
+
+  function toggleSidebarCollapsed() {
+    setSidebarCollapsed((current) => {
+      const next = !current;
+      window.localStorage.setItem(
+        "leanworker-sidebar-collapsed",
+        String(next),
+      );
+      return next;
+    });
+  }
 
   const resolvedFirstName =
     firstName ??
@@ -42,13 +61,20 @@ export function WorkspaceShell({
 
   return (
     <div
-      className="app-shell coach-app-shell"
+      className={`app-shell coach-app-shell ${
+        sidebarCollapsed ? "coach-app-shell--sidebar-collapsed" : ""
+      }`}
       style={{
         background:
           "radial-gradient(circle at top left, rgba(255,122,89,0.10), transparent 30%), radial-gradient(circle at bottom right, rgba(88,180,174,0.10), transparent 34%), var(--coach-bg)",
       }}
     >
-      <SidebarNav uiLanguage={uiLanguage} isAdmin={isAdmin} />
+      <SidebarNav
+        uiLanguage={uiLanguage}
+        isAdmin={isAdmin}
+        collapsed={sidebarCollapsed}
+        onToggleCollapsed={toggleSidebarCollapsed}
+      />
 
       <div
         className="main-shell"
@@ -113,6 +139,28 @@ export function WorkspaceShell({
       </div>
 
       <style jsx global>{`
+        .coach-app-shell {
+          transition: grid-template-columns 220ms ease;
+        }
+
+        .coach-app-shell--sidebar-collapsed {
+          grid-template-columns: 88px minmax(0, 1fr) !important;
+        }
+
+        .coach-app-shell--sidebar-collapsed .coach-sidebar {
+          width: 88px;
+        }
+
+        @media (max-width: 980px) {
+          .coach-app-shell--sidebar-collapsed {
+            grid-template-columns: minmax(0, 1fr) !important;
+          }
+
+          .coach-app-shell--sidebar-collapsed .coach-sidebar {
+            width: auto;
+          }
+        }
+
         .workspace-layout {
           display: grid;
           width: 100%;
