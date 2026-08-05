@@ -1080,135 +1080,10 @@ export function VoiceSessionPanel({
   });
 
   return (
-    <div className="stack" style={{ gap: 16 }}>
-      <div
-        className="card stack"
-        style={{
-          gap: 16,
-          borderRadius: 28,
-          border: "1px solid rgba(43,33,24,0.08)",
-          background:
-            "linear-gradient(135deg, rgba(255,241,220,0.92), rgba(255,255,255,0.88))",
-          boxShadow: "0 14px 36px rgba(43,33,24,0.05)",
-        }}
-      >
-        <div className="row space-between" style={{ alignItems: "flex-start", gap: 16 }}>
-          <div className="stack" style={{ gap: 7, maxWidth: 720 }}>
-            <div className="row" style={{ gap: 10, alignItems: "center" }}>
-              <span
-                style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 15,
-                  display: "grid",
-                  placeItems: "center",
-                  background: "rgba(255,122,89,0.13)",
-                  border: "1px solid rgba(255,122,89,0.22)",
-                  color: "var(--coach-accent)",
-                  flexShrink: 0,
-                }}
-              >
-                <SessionIcon size={18} />
-              </span>
-
-              <div className="section-title" style={{ color: "var(--coach-ink)" }}>
-                {copy.session.conversation}
-              </div>
-            </div>
-
-            <div className="muted" style={{ color: "var(--coach-muted)" }}>
-              {labels.sessionId} #{sessionId} · {labels.readiness}
-            </div>
-
-            <div
-              className="muted"
-              style={{
-                color: "var(--coach-muted)",
-                lineHeight: 1.65,
-              }}
-            >
-              {labels.immersiveNote}
-            </div>
-          </div>
-
-          <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
-            <BadgePill icon={<SessionIcon size={14} />}>{labels.sessionLive}</BadgePill>
-            <BadgePill icon={<SparkIcon size={14} />}>{labels.voiceOnly}</BadgePill>
-            <BadgePill icon={<BrainIcon size={14} />}>{labels.adaptiveCoach}</BadgePill>
-            <BadgePill icon={<TargetIcon size={14} />}>{labels.activeMemory}</BadgePill>
-            <BadgePill icon={<SparkIcon size={14} />}>{labels.purposeAware}</BadgePill>
-          </div>
-        </div>
-
-        <div className="grid grid-2">
-          <div
-            className="card-soft stack"
-            style={{
-              gap: 8,
-              borderRadius: 22,
-              background: "rgba(255,255,255,0.72)",
-              border: "1px solid rgba(43,33,24,0.08)",
-            }}
-          >
-            <div className="section-title" style={{ fontSize: 15, color: "var(--coach-ink)" }}>
-              {labels.currentVoiceTitle}
-            </div>
-            <div className="muted" style={{ color: "var(--coach-muted)" }}>
-              {labels.currentVoiceText}
-            </div>
-          </div>
-
-          <div
-            className="card-soft stack"
-            style={{
-              gap: 8,
-              borderRadius: 22,
-              background: "rgba(255,255,255,0.72)",
-              border: "1px solid rgba(43,33,24,0.08)",
-            }}
-          >
-            <div className="section-title" style={{ fontSize: 15, color: "var(--coach-ink)" }}>
-              {labels.soundPresence}
-            </div>
-            <div className="muted" style={{ color: "var(--coach-muted)" }}>
-              {labels.soundPresenceText}
-            </div>
-          </div>
-        </div>
-
-        <div
-          className="card-soft stack"
-          style={{
-            gap: 10,
-            borderRadius: 24,
-            background: "rgba(255,255,255,0.70)",
-            border: "1px solid rgba(43,33,24,0.08)",
-          }}
-        >
-          <div className="row space-between" style={{ flexWrap: "wrap", gap: 10 }}>
-            <div className="section-title" style={{ fontSize: 15, color: "var(--coach-ink)" }}>
-              {labels.coachStyle}
-            </div>
-            <BadgePill icon={<SparkIcon size={14} />}>{currentCoachStyle}</BadgePill>
-          </div>
-
-          <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
-            {currentCoachIntent ? (
-              <BadgePill icon={<TargetIcon size={14} />}>{currentCoachIntent}</BadgePill>
-            ) : null}
-
-            {currentCoachMode ? (
-              <BadgePill icon={<BrainIcon size={14} />}>{currentCoachMode}</BadgePill>
-            ) : null}
-
-            <BadgePill icon={<ClockIcon size={14} />}>{labels.currentVoiceText}</BadgePill>
-          </div>
-        </div>
-      </div>
-
+    <div className="stack voice-session-panel" style={{ gap: 16 }}>
       {bootstrapping ? (
         <div
-          className="card"
+          className="card voice-orb-loading-card"
           style={{
             borderRadius: 28,
             background:
@@ -1222,7 +1097,7 @@ export function VoiceSessionPanel({
         </div>
       ) : (
         <div
-          className="card"
+          className="card voice-orb-card"
           style={{
             minHeight: 560,
             overflow: "hidden",
@@ -1502,6 +1377,224 @@ export function VoiceSessionPanel({
           </div>
         </div>
       )}
+
+      <div
+        className="card stack voice-session-intro"
+        style={{
+          gap: 16,
+          borderRadius: 28,
+          border: "1px solid rgba(43,33,24,0.08)",
+          background:
+            "linear-gradient(135deg, rgba(255,241,220,0.92), rgba(255,255,255,0.88))",
+          boxShadow: "0 14px 36px rgba(43,33,24,0.05)",
+        }}
+      >
+        <div className="row space-between" style={{ alignItems: "flex-start", gap: 16 }}>
+          <div className="stack" style={{ gap: 7, maxWidth: 720 }}>
+            <div className="row" style={{ gap: 10, alignItems: "center" }}>
+              <span
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 15,
+                  display: "grid",
+                  placeItems: "center",
+                  background: "rgba(255,122,89,0.13)",
+                  border: "1px solid rgba(255,122,89,0.22)",
+                  color: "var(--coach-accent)",
+                  flexShrink: 0,
+                }}
+              >
+                <SessionIcon size={18} />
+              </span>
+
+              <div className="section-title" style={{ color: "var(--coach-ink)" }}>
+                {copy.session.conversation}
+              </div>
+            </div>
+
+            <div className="muted" style={{ color: "var(--coach-muted)" }}>
+              {labels.sessionId} #{sessionId} · {labels.readiness}
+            </div>
+
+            <div
+              className="muted"
+              style={{
+                color: "var(--coach-muted)",
+                lineHeight: 1.65,
+              }}
+            >
+              {labels.immersiveNote}
+            </div>
+          </div>
+
+          <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
+            <BadgePill icon={<SessionIcon size={14} />}>{labels.sessionLive}</BadgePill>
+            <BadgePill icon={<SparkIcon size={14} />}>{labels.voiceOnly}</BadgePill>
+            <BadgePill icon={<BrainIcon size={14} />}>{labels.adaptiveCoach}</BadgePill>
+            <BadgePill icon={<TargetIcon size={14} />}>{labels.activeMemory}</BadgePill>
+            <BadgePill icon={<SparkIcon size={14} />}>{labels.purposeAware}</BadgePill>
+          </div>
+        </div>
+
+        <div className="grid grid-2">
+          <div
+            className="card-soft stack"
+            style={{
+              gap: 8,
+              borderRadius: 22,
+              background: "rgba(255,255,255,0.72)",
+              border: "1px solid rgba(43,33,24,0.08)",
+            }}
+          >
+            <div className="section-title" style={{ fontSize: 15, color: "var(--coach-ink)" }}>
+              {labels.currentVoiceTitle}
+            </div>
+            <div className="muted" style={{ color: "var(--coach-muted)" }}>
+              {labels.currentVoiceText}
+            </div>
+          </div>
+
+          <div
+            className="card-soft stack"
+            style={{
+              gap: 8,
+              borderRadius: 22,
+              background: "rgba(255,255,255,0.72)",
+              border: "1px solid rgba(43,33,24,0.08)",
+            }}
+          >
+            <div className="section-title" style={{ fontSize: 15, color: "var(--coach-ink)" }}>
+              {labels.soundPresence}
+            </div>
+            <div className="muted" style={{ color: "var(--coach-muted)" }}>
+              {labels.soundPresenceText}
+            </div>
+          </div>
+        </div>
+
+        <div
+          className="card-soft stack"
+          style={{
+            gap: 10,
+            borderRadius: 24,
+            background: "rgba(255,255,255,0.70)",
+            border: "1px solid rgba(43,33,24,0.08)",
+          }}
+        >
+          <div className="row space-between" style={{ flexWrap: "wrap", gap: 10 }}>
+            <div className="section-title" style={{ fontSize: 15, color: "var(--coach-ink)" }}>
+              {labels.coachStyle}
+            </div>
+            <BadgePill icon={<SparkIcon size={14} />}>{currentCoachStyle}</BadgePill>
+          </div>
+
+          <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
+            {currentCoachIntent ? (
+              <BadgePill icon={<TargetIcon size={14} />}>{currentCoachIntent}</BadgePill>
+            ) : null}
+
+            {currentCoachMode ? (
+              <BadgePill icon={<BrainIcon size={14} />}>{currentCoachMode}</BadgePill>
+            ) : null}
+
+            <BadgePill icon={<ClockIcon size={14} />}>{labels.currentVoiceText}</BadgePill>
+          </div>
+        </div>
+      </div>
+
+      <style jsx global>{`
+        .voice-session-panel {
+          min-width: 0;
+        }
+
+        .voice-orb-card {
+          min-height: 560px;
+        }
+
+        @media (max-width: 1780px) and (min-width: 1381px) {
+          .voice-session-panel {
+            gap: 12px !important;
+          }
+
+          .voice-orb-card {
+            min-height: 430px !important;
+            padding: 18px !important;
+          }
+
+          .voice-orb-card > .stack {
+            min-height: 390px !important;
+            gap: 16px !important;
+          }
+
+          .voice-orb-card > .stack > div:nth-of-type(2) {
+            width: 150px !important;
+            height: 150px !important;
+          }
+
+          .voice-orb-card .section-title {
+            font-size: 24px !important;
+          }
+
+          .voice-orb-card .muted {
+            font-size: 13px !important;
+            line-height: 1.45 !important;
+          }
+
+          .voice-orb-card .button {
+            min-width: 180px !important;
+            min-height: 42px !important;
+          }
+
+          .voice-session-intro {
+            padding: 18px !important;
+            gap: 12px !important;
+          }
+
+          .voice-session-intro .grid.grid-2,
+          .voice-session-intro > .card-soft {
+            display: none !important;
+          }
+
+          .voice-session-intro .muted {
+            font-size: 13px !important;
+            line-height: 1.45 !important;
+          }
+        }
+
+        @media (max-width: 1380px) {
+          .voice-orb-card {
+            min-height: 420px !important;
+          }
+
+          .voice-orb-card > .stack {
+            min-height: 380px !important;
+            gap: 16px !important;
+          }
+
+          .voice-session-intro .grid.grid-2,
+          .voice-session-intro > .card-soft {
+            display: none !important;
+          }
+        }
+
+        @media (max-width: 980px) {
+          .voice-orb-card {
+            min-height: 390px !important;
+            padding: 16px !important;
+          }
+
+          .voice-orb-card > .stack {
+            min-height: 350px !important;
+            gap: 14px !important;
+          }
+
+          .voice-orb-card .button {
+            min-width: 0 !important;
+            width: 100%;
+          }
+        }
+      `}</style>
 
       {error ? (
         <div
