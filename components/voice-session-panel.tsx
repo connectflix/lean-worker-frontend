@@ -1514,24 +1514,23 @@ export function VoiceSessionPanel({
           min-height: 560px;
         }
 
-        /*
-         * Medium laptop screens: keep the orb and its primary controls
-         * fully visible without scrolling. Secondary explanations are
-         * deliberately reduced because the surrounding cockpit already
-         * provides the coaching context.
-         */
         @media (max-width: 1780px) and (min-width: 1381px) {
           .voice-session-panel {
-            gap: 12px !important;
+            height: 100%;
+            min-height: 0;
+            gap: 0 !important;
           }
 
           .voice-orb-card {
-            min-height: 360px !important;
+            height: 100%;
+            min-height: 0 !important;
             padding: 18px !important;
+            border-radius: 28px !important;
           }
 
           .voice-orb-card > .stack {
-            min-height: 324px !important;
+            height: 100%;
+            min-height: 0 !important;
             display: grid !important;
             grid-template-columns: minmax(150px, 0.72fr) minmax(280px, 1.28fr);
             grid-template-areas:
@@ -1539,44 +1538,44 @@ export function VoiceSessionPanel({
               "meter copy"
               "actions actions";
             column-gap: 22px !important;
-            row-gap: 10px !important;
+            row-gap: 8px !important;
             align-items: center;
             justify-content: stretch !important;
           }
 
           .voice-orb-visual {
             grid-area: orb;
-            width: 132px !important;
-            height: 132px !important;
+            width: 126px !important;
+            height: 126px !important;
             align-self: end;
           }
 
           .voice-meter-bars {
             grid-area: meter;
-            height: 44px !important;
+            height: 38px !important;
             gap: 6px !important;
             align-self: start;
           }
 
           .voice-meter-bars > div {
             width: 7px !important;
-            max-height: 42px !important;
+            max-height: 36px !important;
           }
 
           .voice-stage-copy {
             grid-area: copy;
-            gap: 8px !important;
+            gap: 7px !important;
             align-self: center;
           }
 
           .voice-stage-copy .section-title {
-            font-size: 23px !important;
-            line-height: 1.18 !important;
+            font-size: 22px !important;
+            line-height: 1.16 !important;
           }
 
           .voice-primary-description {
             font-size: 13px !important;
-            line-height: 1.42 !important;
+            line-height: 1.4 !important;
           }
 
           .voice-secondary-description,
@@ -1593,6 +1592,7 @@ export function VoiceSessionPanel({
             grid-area: actions;
             align-self: end;
             gap: 10px !important;
+            padding-bottom: 2px;
           }
 
           .voice-actions .button {
@@ -1602,19 +1602,13 @@ export function VoiceSessionPanel({
             padding-bottom: 9px !important;
           }
 
+          /*
+           * This block duplicates information already shown in the cockpit
+           * header and right panel. Removing it on laptops keeps the complete
+           * voice interaction visible in one viewport.
+           */
           .voice-session-intro {
-            padding: 16px !important;
-            gap: 10px !important;
-          }
-
-          .voice-session-intro .grid.grid-2,
-          .voice-session-intro > .card-soft {
             display: none !important;
-          }
-
-          .voice-session-intro .muted {
-            font-size: 13px !important;
-            line-height: 1.42 !important;
           }
         }
 
@@ -1661,14 +1655,18 @@ export function VoiceSessionPanel({
             min-height: 42px !important;
           }
 
-          .voice-session-intro .grid.grid-2,
-          .voice-session-intro > .card-soft {
+          .voice-session-intro {
             display: none !important;
           }
         }
 
         @media (max-width: 980px) {
+          .voice-session-panel {
+            height: auto;
+          }
+
           .voice-orb-card {
+            height: auto;
             min-height: 410px !important;
           }
 

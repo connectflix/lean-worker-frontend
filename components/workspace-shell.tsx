@@ -67,7 +67,7 @@ export function WorkspaceShell({
         />
 
         <main
-          className="content-area"
+          className="content-area workspace-content-area"
           style={{
             background:
               "radial-gradient(circle at 8% 8%, rgba(255,122,89,0.06), transparent 26%), radial-gradient(circle at 92% 18%, rgba(88,180,174,0.06), transparent 28%)",
@@ -150,14 +150,17 @@ export function WorkspaceShell({
           width: 100%;
         }
 
-        /*
-         * 15-inch laptops and medium desktop windows:
-         * keep the coaching conversation above the fold by preserving
-         * the three-column cockpit, while making the side panels compact.
-         */
         @media (max-width: 1780px) and (min-width: 1381px) {
+          .workspace-content-area {
+            overflow: hidden;
+          }
+
           .workspace-layout {
+            height: calc(100dvh - 190px);
+            min-height: 610px;
+            overflow: hidden;
             gap: 14px;
+            align-items: stretch;
           }
 
           .workspace-layout--three {
@@ -173,6 +176,38 @@ export function WorkspaceShell({
 
           .workspace-layout--center-right {
             grid-template-columns: minmax(0, 1fr) minmax(250px, 280px);
+          }
+
+          .workspace-left,
+          .workspace-center,
+          .workspace-right {
+            height: 100%;
+            min-height: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+            overscroll-behavior: contain;
+          }
+
+          .workspace-center {
+            overflow: hidden;
+          }
+
+          .session-cockpit-column {
+            height: 100%;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+          }
+
+          .session-cockpit-column > .card {
+            flex: 0 0 auto;
+          }
+
+          .session-cockpit-column > .chat-surface {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: hidden;
           }
 
           .workspace-left .card,
@@ -211,10 +246,6 @@ export function WorkspaceShell({
           }
         }
 
-        /*
-         * Smaller laptop windows:
-         * prioritize the conversation and move secondary context below.
-         */
         @media (max-width: 1380px) {
           .workspace-layout {
             gap: 16px;
@@ -253,6 +284,16 @@ export function WorkspaceShell({
         }
 
         @media (max-width: 980px) {
+          .workspace-content-area {
+            overflow: visible;
+          }
+
+          .workspace-layout {
+            height: auto;
+            min-height: 0;
+            overflow: visible;
+          }
+
           .workspace-layout--three {
             grid-template-columns: minmax(0, 1fr);
             grid-template-areas:
@@ -263,6 +304,13 @@ export function WorkspaceShell({
 
           .workspace-layout--three .workspace-left > .stack {
             grid-template-columns: minmax(0, 1fr);
+          }
+
+          .workspace-left,
+          .workspace-center,
+          .workspace-right {
+            height: auto;
+            overflow: visible;
           }
 
           .main-shell {
