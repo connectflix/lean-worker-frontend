@@ -9,12 +9,7 @@ import type {
   TranscriptTurn,
 } from "@/lib/types";
 import type { SupportedUiLanguage } from "@/lib/user-locales";
-import {
-  BadgePill,
-  ClockIcon,
-  SessionIcon,
-  SparkIcon,
-} from "@/components/ui-flat-icons";
+import { SparkIcon } from "@/components/ui-flat-icons";
 
 type Turn = {
   speaker: "user" | "agent";
@@ -232,12 +227,6 @@ export function ConversationPanel({
   }
 
   const labels = {
-    sessionLive: uiLanguage === "fr" ? "Session écrite active" : "Written session active",
-    textOnly: uiLanguage === "fr" ? "Écrit uniquement" : "Text only",
-    adaptiveCoach: uiLanguage === "fr" ? "Coach adaptatif" : "Adaptive coach",
-    activeMemory: uiLanguage === "fr" ? "Mémoire active" : "Active memory",
-    purposeAware:
-      uiLanguage === "fr" ? "Purpose Canvas intégré" : "Purpose Canvas integrated",
     loading:
       uiLanguage === "fr"
         ? "Préparation de l’espace écrit..."
@@ -266,10 +255,6 @@ export function ConversationPanel({
         ? "Clôture..."
         : "Closing..."
       : copy.session.closeSession,
-    immersiveNote:
-      uiLanguage === "fr"
-        ? "Même cockpit que la voix, avec interaction écrite au centre. Le coach exploite aussi le Purpose Canvas lorsqu’il existe."
-        : "Same cockpit as voice mode, with written interaction in the center. The coach also uses the Purpose Canvas when available.",
     coachReplyHint:
       uiLanguage === "fr"
         ? "Le coach répondra ici avec le contexte actif disponible."
@@ -287,8 +272,8 @@ export function ConversationPanel({
         display: "flex",
         flexDirection: "column",
         minHeight: 0,
-        height: isCockpit ? "clamp(500px, calc(100vh - 270px), 900px)" : "100%",
-        maxHeight: isCockpit ? "calc(100vh - 270px)" : undefined,
+        height: isCockpit ? "clamp(520px, calc(100dvh - 230px), 920px)" : "100%",
+        maxHeight: isCockpit ? "calc(100dvh - 230px)" : undefined,
         border: isCockpit ? "none" : "1px solid rgba(43,33,24,0.08)",
         background: isCockpit
           ? "transparent"
@@ -297,68 +282,13 @@ export function ConversationPanel({
         overflow: "hidden",
       }}
     >
-      {isCockpit ? (
-        <div
-          className="card stack"
-          style={{
-            gap: 14,
-            margin: 16,
-            marginBottom: 0,
-            borderRadius: 28,
-            border: "1px solid rgba(43,33,24,0.08)",
-            background:
-              "linear-gradient(135deg, rgba(255,241,220,0.92), rgba(255,255,255,0.88))",
-            boxShadow: "0 14px 36px rgba(43,33,24,0.05)",
-          }}
-        >
-          <div
-            className="row"
-            style={{
-              justifyContent: "space-between",
-              alignItems: "flex-start",
-              gap: 12,
-              flexWrap: "wrap",
-            }}
-          >
-            <div className="stack" style={{ gap: 6, maxWidth: 720 }}>
-              <div className="row" style={{ gap: 10, alignItems: "center" }}>
-                <CoachMiniIcon tone="warm">
-                  <SessionIcon size={17} />
-                </CoachMiniIcon>
-
-                <div className="section-title" style={{ color: "var(--coach-ink)" }}>
-                  {labels.sessionLive}
-                </div>
-              </div>
-
-              <div
-                className="muted"
-                style={{
-                  color: "var(--coach-muted)",
-                  lineHeight: 1.65,
-                }}
-              >
-                {labels.immersiveNote}
-              </div>
-            </div>
-
-            <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-              <BadgePill icon={<SparkIcon size={14} />}>{labels.textOnly}</BadgePill>
-              <BadgePill icon={<SparkIcon size={14} />}>{labels.adaptiveCoach}</BadgePill>
-              <BadgePill icon={<ClockIcon size={14} />}>{labels.activeMemory}</BadgePill>
-              <BadgePill icon={<SparkIcon size={14} />}>{labels.purposeAware}</BadgePill>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
       <div
         className="chat-messages"
         style={{
           flex: 1,
           minHeight: 0,
           overflowY: "auto",
-          padding: isCockpit ? "18px 20px 22px 20px" : 24,
+          padding: isCockpit ? "20px" : 24,
           display: "flex",
           flexDirection: "column",
           gap: 18,
@@ -525,7 +455,7 @@ export function ConversationPanel({
         className="chat-input-bar"
         style={{
           borderTop: "1px solid rgba(43,33,24,0.08)",
-          padding: isCockpit ? "16px 20px 18px 20px" : 18,
+          padding: isCockpit ? "14px 20px 18px" : 18,
           marginTop: 0,
           background: "rgba(255,255,255,0.88)",
           backdropFilter: "blur(18px)",
@@ -579,7 +509,7 @@ export function ConversationPanel({
               placeholder={copy.session.typeMessage}
               value={message}
               onChange={(event) => setMessage(event.target.value)}
-              rows={4}
+              rows={3}
               disabled={loading || closing}
               style={{
                 width: "100%",
@@ -743,6 +673,24 @@ export function ConversationPanel({
           </div>
         )}
       </div>
+      <style jsx global>{`
+        @media (max-width: 1600px) and (max-height: 850px) and (min-width: 1100px) {
+          .workspace-center .chat-surface {
+            height: auto !important;
+            min-height: 520px !important;
+            max-height: none !important;
+          }
+
+          .workspace-center .chat-messages {
+            min-height: 260px !important;
+            max-height: none !important;
+          }
+
+          .workspace-center .chat-input-textarea {
+            min-height: 108px !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }
