@@ -1138,6 +1138,7 @@ export function VoiceSessionPanel({
             />
 
             <div
+              className="voice-orb-visual"
               style={{
                 width: 190,
                 height: 190,
@@ -1185,7 +1186,7 @@ export function VoiceSessionPanel({
             </div>
 
             <div
-              className="row"
+              className="row voice-meter-bars"
               style={{
                 justifyContent: "center",
                 alignItems: "flex-end",
@@ -1211,7 +1212,7 @@ export function VoiceSessionPanel({
             </div>
 
             <div
-              className="stack"
+              className="stack voice-stage-copy"
               style={{
                 gap: 12,
                 textAlign: "center",
@@ -1230,7 +1231,7 @@ export function VoiceSessionPanel({
               </div>
 
               <div
-                className="muted"
+                className="muted voice-primary-description"
                 style={{
                   maxWidth: 760,
                   margin: "0 auto",
@@ -1243,7 +1244,7 @@ export function VoiceSessionPanel({
               </div>
 
               <div
-                className="muted"
+                className="muted voice-secondary-description"
                 style={{
                   maxWidth: 680,
                   margin: "0 auto",
@@ -1255,6 +1256,7 @@ export function VoiceSessionPanel({
               </div>
 
               <div
+                className="voice-mic-progress"
                 style={{
                   width: 260,
                   maxWidth: "100%",
@@ -1282,7 +1284,7 @@ export function VoiceSessionPanel({
               </div>
 
               <div
-                className="muted"
+                className="muted voice-meter-label"
                 style={{
                   maxWidth: 420,
                   margin: "0 auto",
@@ -1313,7 +1315,7 @@ export function VoiceSessionPanel({
             </div>
 
             <div
-              className="row"
+              className="row voice-actions"
               style={{
                 justifyContent: "center",
                 gap: 12,
@@ -1512,43 +1514,97 @@ export function VoiceSessionPanel({
           min-height: 560px;
         }
 
+        /*
+         * Medium laptop screens: keep the orb and its primary controls
+         * fully visible without scrolling. Secondary explanations are
+         * deliberately reduced because the surrounding cockpit already
+         * provides the coaching context.
+         */
         @media (max-width: 1780px) and (min-width: 1381px) {
           .voice-session-panel {
             gap: 12px !important;
           }
 
           .voice-orb-card {
-            min-height: 430px !important;
+            min-height: 360px !important;
             padding: 18px !important;
           }
 
           .voice-orb-card > .stack {
-            min-height: 390px !important;
-            gap: 16px !important;
+            min-height: 324px !important;
+            display: grid !important;
+            grid-template-columns: minmax(150px, 0.72fr) minmax(280px, 1.28fr);
+            grid-template-areas:
+              "orb copy"
+              "meter copy"
+              "actions actions";
+            column-gap: 22px !important;
+            row-gap: 10px !important;
+            align-items: center;
+            justify-content: stretch !important;
           }
 
-          .voice-orb-card > .stack > div:nth-of-type(2) {
-            width: 150px !important;
-            height: 150px !important;
+          .voice-orb-visual {
+            grid-area: orb;
+            width: 132px !important;
+            height: 132px !important;
+            align-self: end;
           }
 
-          .voice-orb-card .section-title {
-            font-size: 24px !important;
+          .voice-meter-bars {
+            grid-area: meter;
+            height: 44px !important;
+            gap: 6px !important;
+            align-self: start;
           }
 
-          .voice-orb-card .muted {
+          .voice-meter-bars > div {
+            width: 7px !important;
+            max-height: 42px !important;
+          }
+
+          .voice-stage-copy {
+            grid-area: copy;
+            gap: 8px !important;
+            align-self: center;
+          }
+
+          .voice-stage-copy .section-title {
+            font-size: 23px !important;
+            line-height: 1.18 !important;
+          }
+
+          .voice-primary-description {
             font-size: 13px !important;
-            line-height: 1.45 !important;
+            line-height: 1.42 !important;
           }
 
-          .voice-orb-card .button {
-            min-width: 180px !important;
+          .voice-secondary-description,
+          .voice-meter-label {
+            display: none !important;
+          }
+
+          .voice-mic-progress {
+            width: min(220px, 100%) !important;
+            height: 8px !important;
+          }
+
+          .voice-actions {
+            grid-area: actions;
+            align-self: end;
+            gap: 10px !important;
+          }
+
+          .voice-actions .button {
+            min-width: 190px !important;
             min-height: 42px !important;
+            padding-top: 9px !important;
+            padding-bottom: 9px !important;
           }
 
           .voice-session-intro {
-            padding: 18px !important;
-            gap: 12px !important;
+            padding: 16px !important;
+            gap: 10px !important;
           }
 
           .voice-session-intro .grid.grid-2,
@@ -1558,18 +1614,51 @@ export function VoiceSessionPanel({
 
           .voice-session-intro .muted {
             font-size: 13px !important;
-            line-height: 1.45 !important;
+            line-height: 1.42 !important;
           }
         }
 
         @media (max-width: 1380px) {
           .voice-orb-card {
-            min-height: 420px !important;
+            min-height: 390px !important;
+            padding: 16px !important;
           }
 
           .voice-orb-card > .stack {
-            min-height: 380px !important;
-            gap: 16px !important;
+            min-height: 354px !important;
+            gap: 12px !important;
+          }
+
+          .voice-orb-visual {
+            width: 130px !important;
+            height: 130px !important;
+          }
+
+          .voice-meter-bars {
+            height: 42px !important;
+          }
+
+          .voice-stage-copy {
+            gap: 8px !important;
+          }
+
+          .voice-stage-copy .section-title {
+            font-size: 22px !important;
+          }
+
+          .voice-secondary-description,
+          .voice-meter-label {
+            display: none !important;
+          }
+
+          .voice-primary-description {
+            font-size: 13px !important;
+            line-height: 1.42 !important;
+          }
+
+          .voice-actions .button {
+            min-width: 180px !important;
+            min-height: 42px !important;
           }
 
           .voice-session-intro .grid.grid-2,
@@ -1580,16 +1669,18 @@ export function VoiceSessionPanel({
 
         @media (max-width: 980px) {
           .voice-orb-card {
-            min-height: 390px !important;
-            padding: 16px !important;
+            min-height: 410px !important;
           }
 
           .voice-orb-card > .stack {
-            min-height: 350px !important;
-            gap: 14px !important;
+            min-height: 374px !important;
           }
 
-          .voice-orb-card .button {
+          .voice-actions {
+            width: 100%;
+          }
+
+          .voice-actions .button {
             min-width: 0 !important;
             width: 100%;
           }
