@@ -111,6 +111,109 @@ export function WorkspaceShell({
           )}
         </main>
       </div>
+
+      <style jsx global>{`
+        .workspace-layout {
+          display: grid;
+          width: 100%;
+          min-width: 0;
+          gap: 24px;
+          align-items: start;
+        }
+
+        .workspace-layout--three {
+          grid-template-columns: minmax(240px, 280px) minmax(0, 1fr) minmax(300px, 340px);
+        }
+
+        .workspace-layout--left-center {
+          grid-template-columns: minmax(240px, 280px) minmax(0, 1fr);
+        }
+
+        .workspace-layout--center-right {
+          grid-template-columns: minmax(0, 1fr) minmax(300px, 340px);
+        }
+
+        .workspace-layout--center-only {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        .workspace-left,
+        .workspace-center,
+        .workspace-right {
+          min-width: 0;
+        }
+
+        .workspace-center {
+          width: 100%;
+        }
+
+        @media (max-width: 1760px) {
+          .workspace-layout {
+            gap: 18px;
+          }
+
+          .workspace-layout--three {
+            grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
+            grid-template-areas:
+              "left left"
+              "center right";
+          }
+
+          .workspace-layout--three .workspace-left {
+            grid-area: left;
+          }
+
+          .workspace-layout--three .workspace-center {
+            grid-area: center;
+          }
+
+          .workspace-layout--three .workspace-right {
+            grid-area: right;
+          }
+
+          .workspace-layout--three .workspace-left > .stack {
+            display: grid;
+            grid-template-columns: minmax(240px, 0.8fr) minmax(0, 1.2fr);
+            gap: 18px;
+            align-items: start;
+          }
+        }
+
+        @media (max-width: 1320px) {
+          .workspace-layout--three,
+          .workspace-layout--left-center,
+          .workspace-layout--center-right {
+            grid-template-columns: minmax(0, 1fr);
+            grid-template-areas:
+              "left"
+              "center"
+              "right";
+          }
+
+          .workspace-layout--three .workspace-left > .stack {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 900px) {
+          .workspace-layout {
+            gap: 14px;
+          }
+
+          .workspace-layout--three .workspace-left > .stack {
+            display: flex;
+          }
+
+          .main-shell {
+            border-radius: 22px !important;
+          }
+
+          .content-area {
+            padding-left: 14px !important;
+            padding-right: 14px !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }
