@@ -69,6 +69,7 @@ type WorkersViewMode =
 type SubscriptionPack = "standard" | "classique" | "flix" | "executif";
 
 type WorkerFormState = {
+  email: string;
   business_id: string;
   location: string;
   phone_number: string;
@@ -258,6 +259,7 @@ const SUBSCRIPTION_PACK_PRICING: Record<
 };
 
 const EMPTY_WORKER_FORM: WorkerFormState = {
+  email: "",
   business_id: "",
   location: "",
   phone_number: "",
@@ -3346,6 +3348,7 @@ function AdminWorkersContent() {
   function fillWorkerForm(worker: AdminWorker) {
     setSelectedWorkerId(worker.id);
     setWorkerForm({
+      email: worker.email || "",
       business_id: worker.business_id || "",
       location: worker.location || "",
       phone_number: worker.phone_number || "",
@@ -3508,7 +3511,18 @@ function AdminWorkersContent() {
     setError(null);
 
     try {
+      const normalizedEmail = workerForm.email.trim().toLowerCase();
+
+      if (!normalizedEmail) {
+        throw new Error("Worker email is required.");
+      }
+
+      if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) {
+        throw new Error("Please enter a valid worker email address.");
+      }
+
       const payload: AdminWorkerUpdate = {
+        email: normalizedEmail,
         location: workerForm.location.trim() || null,
         phone_number: workerForm.phone_number.trim() || null,
         subscription_pack: workerForm.subscription_pack,
@@ -5085,6 +5099,23 @@ function AdminWorkersContent() {
                   </div>
 
                   <div className="stack">
+                    <label className="stack">
+                      <strong>Email address</strong>
+                      <input
+                        className="input"
+                        type="email"
+                        value={workerForm.email}
+                        onChange={(e) =>
+                          setWorkerForm((prev) => ({ ...prev, email: e.target.value }))
+                        }
+                        placeholder="worker@example.com"
+                        autoComplete="email"
+                      />
+                      <div className="muted">
+                        This email is used for the worker account and must be unique.
+                      </div>
+                    </label>
+
                     <label className="stack">
                       <strong>Business ID</strong>
                       <input
