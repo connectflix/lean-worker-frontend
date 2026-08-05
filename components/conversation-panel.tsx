@@ -231,14 +231,6 @@ export function ConversationPanel({
       uiLanguage === "fr"
         ? "Préparation de l’espace écrit..."
         : "Preparing written workspace...",
-    empty:
-      uiLanguage === "fr"
-        ? "Commence à écrire pour lancer l’échange avec ton coach."
-        : "Start typing to begin the exchange with your coach.",
-    emptyDetail:
-      uiLanguage === "fr"
-        ? "Tu peux expliquer ce que tu vis, poser une question, clarifier un blocage ou demander une prochaine action concrète."
-        : "You can explain what you are experiencing, ask a question, clarify a blocker, or request a concrete next step.",
     typing: uiLanguage === "fr" ? "Le coach réfléchit" : "Coach is thinking",
     inputTitle: uiLanguage === "fr" ? "Ton message" : "Your message",
     inputHint:
@@ -315,58 +307,7 @@ export function ConversationPanel({
               </div>
             </div>
           </div>
-        ) : turns.length === 0 ? (
-          <div
-            className="card-soft stack"
-            style={{
-              gap: 12,
-              borderRadius: 28,
-              maxWidth: 680,
-              alignSelf: "center",
-              marginTop: 28,
-              background:
-                "linear-gradient(135deg, rgba(255,241,220,0.84), rgba(255,255,255,0.74))",
-              border: "1px solid rgba(43,33,24,0.08)",
-              textAlign: "center",
-            }}
-          >
-            <div
-              style={{
-                width: 54,
-                height: 54,
-                borderRadius: 20,
-                display: "grid",
-                placeItems: "center",
-                margin: "0 auto",
-                background: "rgba(255,122,89,0.13)",
-                border: "1px solid rgba(255,122,89,0.20)",
-                color: "var(--coach-accent)",
-              }}
-            >
-              <SparkIcon size={22} />
-            </div>
-
-            <div
-              className="section-title"
-              style={{
-                color: "var(--coach-ink)",
-                fontSize: 20,
-              }}
-            >
-              {labels.empty}
-            </div>
-
-            <div
-              className="muted"
-              style={{
-                color: "var(--coach-muted)",
-                lineHeight: 1.65,
-              }}
-            >
-              {labels.emptyDetail}
-            </div>
-          </div>
-        ) : (
+        ) : turns.length === 0 ? null : (
           turns.map((turn, index) => {
             const isUser = turn.speaker === "user";
 
