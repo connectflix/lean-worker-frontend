@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { SupportedUiLanguage } from "@/lib/user-locales";
 import {
   ArrowRightIcon,
@@ -27,7 +27,11 @@ type Props = {
 
 function prettify(value?: string | null): string {
   if (!value) return "";
-  return value.replaceAll("_", " ");
+
+  const normalized = value.replaceAll("_", " ").trim();
+  if (!normalized) return "";
+
+  return `${normalized.charAt(0).toUpperCase()}${normalized.slice(1)}`;
 }
 
 function getStepIcon(tone: Step["tone"]) {
@@ -40,34 +44,34 @@ export function ActionStepNavigator({
   primaryProblem,
   actionTrack,
   whyRecommended,
-  uiLanguage = "en",
+  uiLanguage = "fr",
 }: Props) {
   const steps = useMemo<Step[]>(() => {
     const list: Step[] = [];
 
     if (primaryProblem) {
       list.push({
-        title: uiLanguage === "fr" ? "Blocage identifié" : "Identified blocker",
-        eyebrow: uiLanguage === "fr" ? "Point de départ" : "Starting point",
+        title: uiLanguage === "fr" ? "Point de blocage" : "Identified blocker",
+        eyebrow: uiLanguage === "fr" ? "Situation actuelle" : "Current situation",
         content: prettify(primaryProblem),
         tone: "warm",
       });
     }
 
     list.push({
-      title: uiLanguage === "fr" ? "Si tu ne fais rien" : "If you don’t act",
-      eyebrow: uiLanguage === "fr" ? "Coût caché" : "Hidden cost",
+      title: uiLanguage === "fr" ? "Sans action" : "Without action",
+      eyebrow: uiLanguage === "fr" ? "Risque" : "Risk",
       content:
         uiLanguage === "fr"
-          ? "Ce point risque de continuer à ralentir ta progression, réduire ta clarté et limiter les opportunités que tu peux activer maintenant."
-          : "This may continue to slow your progress, reduce clarity, and limit the opportunities you can activate now.",
+          ? "Ce point peut continuer à ralentir ta progression et limiter les prochaines opportunités."
+          : "This may continue to slow your progress and limit your next opportunities.",
       tone: "neutral",
     });
 
     if (actionTrack) {
       list.push({
-        title: uiLanguage === "fr" ? "Action recommandée" : "Recommended action",
-        eyebrow: uiLanguage === "fr" ? "Prochain mouvement" : "Next move",
+        title: uiLanguage === "fr" ? "Prochaine action" : "Next action",
+        eyebrow: uiLanguage === "fr" ? "À mettre en œuvre" : "To implement",
         content: prettify(actionTrack),
         tone: "calm",
       });
@@ -75,8 +79,8 @@ export function ActionStepNavigator({
 
     if (whyRecommended) {
       list.push({
-        title: uiLanguage === "fr" ? "Pourquoi c’est important" : "Why it matters",
-        eyebrow: uiLanguage === "fr" ? "Raison du coach" : "Coach rationale",
+        title: uiLanguage === "fr" ? "Pourquoi cette action" : "Why this action",
+        eyebrow: uiLanguage === "fr" ? "Justification" : "Rationale",
         content: whyRecommended,
         tone: "warm",
       });
@@ -86,6 +90,10 @@ export function ActionStepNavigator({
   }, [primaryProblem, actionTrack, whyRecommended, uiLanguage]);
 
   const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    setIndex((currentIndex) => Math.min(currentIndex, Math.max(steps.length - 1, 0)));
+  }, [steps.length]);
 
   if (steps.length === 0) return null;
 
@@ -146,7 +154,7 @@ export function ActionStepNavigator({
         >
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
             <BadgePill icon={<SparkIcon size={14} />}>
-              {uiLanguage === "fr" ? "Chemin d’action" : "Action path"}
+              {uiLanguage === "fr" ? "Parcours d’action" : "Action path"}
             </BadgePill>
 
             {steps.length > 1 ? (
@@ -160,6 +168,7 @@ export function ActionStepNavigator({
             <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
               <button
                 className="button ghost"
+                aria-label={uiLanguage === "fr" ? "Étape précédente" : "Previous step"}
                 disabled={index === 0}
                 onClick={goPrevious}
                 type="button"
@@ -169,6 +178,7 @@ export function ActionStepNavigator({
 
               <button
                 className="button ghost"
+                aria-label={uiLanguage === "fr" ? "Étape suivante" : "Next step"}
                 disabled={index === steps.length - 1}
                 onClick={goNext}
                 type="button"
@@ -183,7 +193,7 @@ export function ActionStepNavigator({
           className="stack"
           style={{
             gap: 12,
-            borderRadius: 24,
+            borderRadius: 20,
             padding: 18,
             background: "rgba(255,255,255,0.74)",
             border: "1px solid rgba(43,33,24,0.08)",
@@ -259,6 +269,7 @@ export function ActionStepNavigator({
                 type="button"
                 onClick={() => setIndex(stepIndex)}
                 aria-label={`${stepIndex + 1}. ${step.title}`}
+                aria-current={stepIndex === index ? "step" : undefined}
                 style={{
                   flex: 1,
                   height: 8,

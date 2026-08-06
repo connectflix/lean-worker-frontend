@@ -176,7 +176,7 @@ function getCoachStateFromVoiceTurn(
 export function VoiceSessionPanel({
   sessionId,
   onClosed,
-  uiLanguage = "en",
+  uiLanguage = "fr",
   onCoachStateChange,
 }: {
   sessionId: number;
@@ -292,19 +292,19 @@ export function VoiceSessionPanel({
 
   const labels = useMemo(() => {
     return {
-      sessionLive: uiLanguage === "fr" ? "Session vocale active" : "Voice session active",
-      voiceOnly: uiLanguage === "fr" ? "Voix uniquement" : "Voice only",
+      sessionLive: uiLanguage === "fr" ? "Session vocale" : "Voice session",
+      voiceOnly: uiLanguage === "fr" ? "Conversation vocale" : "Voice conversation",
       adaptiveCoach: uiLanguage === "fr" ? "Coach adaptatif" : "Adaptive coach",
-      activeMemory: uiLanguage === "fr" ? "Mémoire active" : "Active memory",
+      activeMemory: uiLanguage === "fr" ? "Contexte mémorisé" : "Context memory",
       purposeAware:
         uiLanguage === "fr" ? "Purpose Canvas intégré" : "Purpose Canvas integrated",
       coachStyle: uiLanguage === "fr" ? "Style du coach" : "Coach style",
       startVoice:
         uiLanguage === "fr" ? "Démarrer la session vocale" : "Start voice session",
       stopVoice:
-        uiLanguage === "fr" ? "Arrêter la session vocale" : "Stop voice session",
+        uiLanguage === "fr" ? "Mettre la voix en pause" : "Pause voice session",
       closeSession:
-        uiLanguage === "fr" ? "Clôturer la session" : "Close session",
+        uiLanguage === "fr" ? "Terminer la session" : "End session",
       voiceDescription:
         uiLanguage === "fr"
           ? "Parle naturellement. Le coach détecte la fin de ton tour, réfléchit, puis te répond par la voix."
@@ -317,13 +317,13 @@ export function VoiceSessionPanel({
         uiLanguage === "fr"
           ? "Appuie sur démarrer pour lancer la conversation vocale."
           : "Press start to launch the voice conversation.",
-      listening: uiLanguage === "fr" ? "Je t’écoute." : "Listening.",
+      listening: uiLanguage === "fr" ? "Je t’écoute" : "Listening",
       userSpeaking:
-        uiLanguage === "fr" ? "Tu parles..." : "You are speaking...",
+        uiLanguage === "fr" ? "Tu parles" : "You are speaking",
       processing:
-        uiLanguage === "fr" ? "Le coach réfléchit..." : "Coach is thinking...",
+        uiLanguage === "fr" ? "Le coach prépare sa réponse" : "The coach is preparing a response",
       agentSpeaking:
-        uiLanguage === "fr" ? "Le coach parle..." : "Coach is speaking...",
+        uiLanguage === "fr" ? "Le coach te répond" : "The coach is responding",
       error: uiLanguage === "fr" ? "Erreur vocale" : "Voice error",
       immersiveNote:
         uiLanguage === "fr"
@@ -365,7 +365,11 @@ export function VoiceSessionPanel({
           .webkitAudioContext;
 
       if (!AudioContextCtor) {
-        throw new Error("Web Audio API is not supported in this browser.");
+        throw new Error(
+          uiLanguage === "fr"
+            ? "Ton navigateur ne prend pas en charge l’audio nécessaire à cette fonctionnalité."
+            : "Your browser does not support the audio features required for this experience.",
+        );
       }
 
       ctx = new AudioContextCtor();
@@ -522,7 +526,11 @@ export function VoiceSessionPanel({
           .webkitAudioContext;
 
       if (!AudioContextCtor) {
-        throw new Error("Web Audio API is not supported in this browser.");
+        throw new Error(
+          uiLanguage === "fr"
+            ? "Ton navigateur ne prend pas en charge l’audio nécessaire à cette fonctionnalité."
+            : "Your browser does not support the audio features required for this experience.",
+        );
       }
 
       audioContext = new AudioContextCtor();
@@ -705,7 +713,13 @@ export function VoiceSessionPanel({
       await playAgentAudioBlob(coachAudio);
     } catch (err) {
       isProcessingRef.current = false;
-      setError(err instanceof Error ? err.message : "Voice processing failed.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : uiLanguage === "fr"
+            ? "Impossible de traiter l’enregistrement vocal."
+            : "Voice processing failed.",
+      );
       setStage("error");
     }
   }
@@ -839,7 +853,13 @@ export function VoiceSessionPanel({
       setVoiceEnabled(false);
       voiceEnabledRef.current = false;
       setStage("error");
-      setError(err instanceof Error ? err.message : "Unable to start voice session.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : uiLanguage === "fr"
+            ? "Impossible de démarrer la session vocale."
+            : "Unable to start voice session.",
+      );
     }
   }
 
@@ -860,7 +880,13 @@ export function VoiceSessionPanel({
       const result = await closeSession(sessionId);
       onClosed(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unexpected error");
+      setError(
+        err instanceof Error
+          ? err.message
+          : uiLanguage === "fr"
+            ? "Impossible de terminer la session."
+            : "Unable to close the session.",
+      );
     } finally {
       setClosing(false);
     }
@@ -977,7 +1003,12 @@ export function VoiceSessionPanel({
   });
 
   return (
-    <div className="stack voice-session-panel" style={{ gap: 16 }}>
+    <div
+      className="stack voice-session-panel"
+      lang={uiLanguage}
+      aria-busy={bootstrapping || stage === "processing" || closing}
+      style={{ gap: 14 }}
+    >
       {bootstrapping ? (
         <div
           className="card voice-orb-loading-card"
@@ -1019,7 +1050,7 @@ export function VoiceSessionPanel({
               style={{
                 position: "absolute",
                 inset: 20,
-                borderRadius: 32,
+                borderRadius: 28,
                 background:
                   stage === "agent_speaking"
                     ? "radial-gradient(circle at center, rgba(88,180,174,0.14), transparent 60%)"
@@ -1154,6 +1185,11 @@ export function VoiceSessionPanel({
 
               <div
                 className="voice-mic-progress"
+                role="progressbar"
+                aria-label={labels.audioMeter}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(micLevel * 100)}
                 style={{
                   width: 260,
                   maxWidth: "100%",
@@ -1164,7 +1200,6 @@ export function VoiceSessionPanel({
                   background: "rgba(43,33,24,0.08)",
                   border: "1px solid rgba(43,33,24,0.06)",
                 }}
-                aria-hidden="true"
               >
                 <div
                   style={{
@@ -1194,6 +1229,7 @@ export function VoiceSessionPanel({
             </div>
 
             <div
+              role="status"
               aria-live="polite"
               aria-atomic="true"
               style={{
@@ -1589,6 +1625,7 @@ export function VoiceSessionPanel({
       {error ? (
         <div
           className="card-soft"
+          role="alert"
           style={{
             color: "var(--danger)",
             borderRadius: 22,

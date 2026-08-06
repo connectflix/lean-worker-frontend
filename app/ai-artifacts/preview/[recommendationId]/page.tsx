@@ -41,9 +41,9 @@ function normalizeFormat(value: string | null | undefined): GuideFormat {
   return value === "audiobook" ? "audiobook" : "ebook";
 }
 
-function formatPrice(value: number): string {
+function formatPrice(value: number, uiLanguage: "fr" | "en"): string {
   try {
-    return new Intl.NumberFormat("fr-BE", {
+    return new Intl.NumberFormat(uiLanguage === "fr" ? "fr-BE" : "en-BE", {
       style: "currency",
       currency: "EUR",
       minimumFractionDigits: value % 1 === 0 ? 0 : 2,
@@ -119,10 +119,10 @@ function getArtifactStatusStyle(status: string) {
 
 function getFormatLabel(format: GuideFormat, uiLanguage: "fr" | "en"): string {
   if (format === "audiobook") {
-    return uiLanguage === "fr" ? "Mini audiobook" : "Mini audiobook";
+    return uiLanguage === "fr" ? "Mini livre audio" : "Mini audiobook";
   }
 
-  return uiLanguage === "fr" ? "Mini e-book" : "Mini e-book";
+  return uiLanguage === "fr" ? "Mini guide numérique" : "Mini e-book";
 }
 
 function localizePreviewSubtitle(
@@ -140,9 +140,9 @@ function localizePreviewSubtitle(
     "A concise audio guide generated from your coaching recommendation.":
       "Un guide audio concis, généré à partir de ta recommandation de coaching.",
     "Personalized AI-generated mini e-book":
-      "Mini e-book personnalisé généré par IA",
+      "Mini guide numérique personnalisé généré par IA",
     "Personalized AI-generated mini audiobook":
-      "Mini audiobook personnalisé généré par IA",
+      "Mini livre audio personnalisé généré par IA",
   };
 
   return knownTranslations[normalized] ?? subtitle;
@@ -169,7 +169,7 @@ function localizeOutlineSectionTitle(
     "What this recommendation changes":
       "Ce que cette recommandation change",
     "How to move from insight to action":
-      "Comment passer de l’insight à l’action",
+      "Comment passer de la prise de conscience à l’action",
     "What you are facing right now":
       "Ta situation actuelle",
     "Why this matters now":
@@ -177,7 +177,7 @@ function localizeOutlineSectionTitle(
     "A practical action plan":
       "Un plan d’action concret",
     "Your next 48 hours":
-      "Tes prochaines 48h",
+      "Tes prochaines 48 heures",
   };
 
   return knownTranslations[normalized] ?? title;
@@ -214,7 +214,7 @@ function CoachPreviewCard({
       className="card stack"
       style={{
         gap: 16,
-        borderRadius: 28,
+        borderRadius: 24,
         border: "1px solid rgba(43,33,24,0.08)",
         background: warm
           ? "linear-gradient(135deg, rgba(255,241,220,0.92), rgba(255,255,255,0.90))"
@@ -262,7 +262,7 @@ function AIArtifactPreviewContent() {
     [params.recommendationId, searchParams],
   );
 
-  const { uiLanguage, loadingLanguage } = useUiLanguage("en");
+  const { uiLanguage, loadingLanguage } = useUiLanguage("fr");
 
   const [preview, setPreview] = useState<AIArtifactPreviewResponse | null>(null);
   const [format, setFormat] = useState<GuideFormat>(
@@ -329,7 +329,7 @@ function AIArtifactPreviewContent() {
         err instanceof Error
           ? err.message
           : uiLanguage === "fr"
-            ? "Impossible de charger la preview."
+            ? "Impossible de charger l’aperçu."
             : "Unable to load preview.",
       );
     } finally {
@@ -452,8 +452,8 @@ function AIArtifactPreviewContent() {
     if (!trimmed) {
       setSupportError(
         uiLanguage === "fr"
-          ? "Merci de décrire le problème avant l’envoi."
-          : "Please describe the issue before sending.",
+          ? "Décris le problème avant l’envoi."
+          : "Describe the issue before sending.",
       );
       setSupportSuccess(null);
       return;
@@ -479,8 +479,8 @@ function AIArtifactPreviewContent() {
 
       setSupportSuccess(
         uiLanguage === "fr"
-          ? "Ton signal a bien été envoyé. Nous allons analyser le problème."
-          : "Your report has been sent successfully. We will analyze the issue.",
+          ? "Ta demande a bien été envoyée."
+          : "Your request has been sent.",
       );
       setSupportMessage("");
       setSupportOpen(false);
@@ -489,8 +489,8 @@ function AIArtifactPreviewContent() {
         err instanceof Error
           ? err.message
           : uiLanguage === "fr"
-            ? "Impossible d’envoyer le signal pour le moment."
-            : "Unable to send the report right now.",
+            ? "Impossible d’envoyer la demande pour le moment."
+            : "Unable to send the request right now.",
       );
     } finally {
       setSupportSubmitting(false);
@@ -515,43 +515,46 @@ function AIArtifactPreviewContent() {
     }
 
     return uiLanguage === "fr"
-      ? `Débloquer (${formatPrice(totalPrice)})`
-      : `Unlock (${formatPrice(totalPrice)})`;
+      ? `Débloquer (${formatPrice(totalPrice, uiLanguage)})`
+      : `Unlock (${formatPrice(totalPrice, uiLanguage)})`;
   }
 
   function getSiblingButtonLabel() {
     if (siblingArtifact?.status === "completed") {
       return alternateFormat === "ebook"
         ? uiLanguage === "fr"
-          ? "Ouvrir la version e-book"
-          : "Open e-book version"
+          ? "Ouvrir le guide numérique"
+          : "Open digital guide"
         : uiLanguage === "fr"
-          ? "Ouvrir la version audio"
-          : "Open audio version";
+          ? "Ouvrir le guide audio"
+          : "Open audio guide";
     }
 
     return alternateFormat === "ebook"
       ? uiLanguage === "fr"
-        ? "Découvrir la version e-book"
-        : "Discover e-book version"
+        ? "Découvrir le guide numérique"
+        : "Discover digital guide"
       : uiLanguage === "fr"
-        ? "Découvrir la version audio"
-        : "Discover audio version";
+        ? "Découvrir le guide audio"
+        : "Discover audio guide";
   }
 
   const supportPlaceholder =
     uiLanguage === "fr"
-      ? "Décris brièvement le problème rencontré sur cette preview ou ce paiement : prix, format, checkout, accès, déblocage, etc."
-      : "Briefly describe the issue you encountered with this preview or payment: price, format, checkout, access, unlock, etc.";
+      ? "Décris brièvement le problème rencontré : prix, format, paiement, accès ou déblocage."
+      : "Briefly describe the issue: price, format, payment, access, or unlock.";
 
   if (loadingLanguage) {
     return (
       <main
         className="page"
+        lang={uiLanguage}
+        translate="no"
+        suppressHydrationWarning
         style={{
           minHeight: "100vh",
           background: "var(--coach-bg)",
-          padding: 24,
+          padding: "clamp(16px, 3vw, 24px)",
         }}
       >
         <div className="page-wrap">
@@ -568,7 +571,7 @@ function AIArtifactPreviewContent() {
   return (
     <AppShell
       uiLanguage={uiLanguage}
-      title={uiLanguage === "fr" ? "Preview du guide IA" : "AI Guide Preview"}
+      title={uiLanguage === "fr" ? "Aperçu du guide" : "Guide Preview"}
     >
       {loading ? (
         <CoachPreviewCard warm>
@@ -589,7 +592,7 @@ function AIArtifactPreviewContent() {
 
             <div className="stack" style={{ gap: 4 }}>
               <div className="section-title">
-                {uiLanguage === "fr" ? "Chargement de la preview" : "Loading preview"}
+                {uiLanguage === "fr" ? "Chargement de l’aperçu" : "Loading preview"}
               </div>
               <div className="muted" style={{ color: "var(--coach-muted)" }}>
                 {uiLanguage === "fr"
@@ -631,7 +634,7 @@ function AIArtifactPreviewContent() {
           </div>
         </CoachPreviewCard>
       ) : (
-        <div className="stack" style={{ gap: 18 }}>
+        <div className="stack" style={{ gap: 16 }}>
           <div
             className="card stack"
             style={{
@@ -727,7 +730,7 @@ function AIArtifactPreviewContent() {
 
               <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                 <BadgePill icon={<TargetIcon size={14} />}>
-                  {formatPrice(currentArtifact?.price_eur ?? basePrice)}
+                  {formatPrice(currentArtifact?.price_eur ?? basePrice, uiLanguage)}
                 </BadgePill>
 
                 {currentArtifact ? (
@@ -752,7 +755,7 @@ function AIArtifactPreviewContent() {
                       : undefined
                   }
                 >
-                  {uiLanguage === "fr" ? "Version mini e-book" : "Mini e-book version"}
+                  {uiLanguage === "fr" ? "Guide numérique" : "Digital guide"}
                 </button>
 
                 <button
@@ -811,7 +814,7 @@ function AIArtifactPreviewContent() {
               <div className="row" style={{ gap: 10, alignItems: "center" }}>
                 <TargetIcon />
                 <div className="section-title">
-                  {uiLanguage === "fr" ? "Pourquoi c’est critique" : "Why this matters now"}
+                  {uiLanguage === "fr" ? "Pourquoi ce guide est utile" : "Why this guide matters"}
                 </div>
               </div>
 
@@ -870,14 +873,14 @@ function AIArtifactPreviewContent() {
 
           <CoachPreviewCard>
             <div className="section-title">
-              {uiLanguage === "fr" ? "Ce que tu vas obtenir" : "What you will get"}
+              {uiLanguage === "fr" ? "Ce que contient le guide" : "What the guide includes"}
             </div>
 
             <div className="grid grid-3">
               {[
-                uiLanguage === "fr" ? "Plan clair" : "Clear plan",
+                uiLanguage === "fr" ? "Plan structuré" : "Structured plan",
                 uiLanguage === "fr" ? "Étapes concrètes" : "Concrete steps",
-                uiLanguage === "fr" ? "Action immédiate" : "Immediate action",
+                uiLanguage === "fr" ? "Première action" : "First action",
               ].map((label) => (
                 <div
                   key={label}
@@ -969,7 +972,7 @@ function AIArtifactPreviewContent() {
             <div className="row space-between" style={{ gap: 12, flexWrap: "wrap" }}>
               <div className="stack" style={{ gap: 4 }}>
                 <div className="muted" style={{ color: "var(--coach-muted)" }}>
-                  {uiLanguage === "fr" ? "Action" : "Action"}
+                  {uiLanguage === "fr" ? "Prix" : "Price"}
                 </div>
 
                 <div
@@ -981,7 +984,7 @@ function AIArtifactPreviewContent() {
                     color: "var(--coach-ink)",
                   }}
                 >
-                  {formatPrice(displayedActionPrice)}
+                  {formatPrice(displayedActionPrice, uiLanguage)}
                 </div>
               </div>
 
@@ -1023,7 +1026,7 @@ function AIArtifactPreviewContent() {
           <CoachPreviewCard>
             <div className="row space-between" style={{ alignItems: "center", gap: 12 }}>
               <div className="section-title">
-                {uiLanguage === "fr" ? "Besoin d’aide ?" : "Need help?"}
+                {uiLanguage === "fr" ? "Besoin d’aide" : "Need help"}
               </div>
 
               <button

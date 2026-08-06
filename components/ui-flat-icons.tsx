@@ -2,11 +2,12 @@
 
 import type { ReactNode } from "react";
 
-type IconProps = {
+export type IconProps = {
   size?: number;
   color?: string;
   strokeWidth?: number;
   className?: string;
+  title?: string;
 };
 
 function SvgIcon({
@@ -14,8 +15,11 @@ function SvgIcon({
   color = "currentColor",
   strokeWidth = 1.8,
   className,
+  title,
   children,
 }: IconProps & { children: ReactNode }) {
+  const isDecorative = !title;
+
   return (
     <svg
       width={size}
@@ -23,9 +27,17 @@ function SvgIcon({
       viewBox="0 0 24 24"
       fill="none"
       className={className}
-      aria-hidden="true"
+      role={isDecorative ? undefined : "img"}
+      aria-hidden={isDecorative ? true : undefined}
+      aria-label={title}
+      focusable="false"
     >
-      <g stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+      <g
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         {children}
       </g>
     </svg>
@@ -170,23 +182,46 @@ export function ArrowRightIcon(props: IconProps) {
 export function BadgePill({
   icon,
   children,
+  className,
+  ariaLabel,
 }: {
-  icon: ReactNode;
+  icon?: ReactNode;
   children: ReactNode;
+  className?: string;
+  ariaLabel?: string;
 }) {
   return (
     <span
-      className="badge"
-      translate="no"
-      suppressHydrationWarning
+      className={className ? `badge ${className}` : "badge"}
+      aria-label={ariaLabel}
       style={{
         display: "inline-flex",
         alignItems: "center",
         gap: 6,
+        maxWidth: "100%",
       }}
     >
-      {icon}
-      {children}
+      {icon ? (
+        <span
+          aria-hidden="true"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            flexShrink: 0,
+          }}
+        >
+          {icon}
+        </span>
+      ) : null}
+
+      <span
+        style={{
+          minWidth: 0,
+          overflowWrap: "anywhere",
+        }}
+      >
+        {children}
+      </span>
     </span>
   );
 }

@@ -19,10 +19,10 @@ import {
 
 function formatArtifactType(format: string, uiLanguage: "fr" | "en"): string {
   if (format === "audiobook") {
-    return uiLanguage === "fr" ? "Mini audiobook" : "Mini audiobook";
+    return uiLanguage === "fr" ? "Mini livre audio" : "Mini audiobook";
   }
 
-  return uiLanguage === "fr" ? "Mini e-book" : "Mini e-book";
+  return uiLanguage === "fr" ? "Mini guide numérique" : "Mini e-book";
 }
 
 function formatArtifactStatus(status: string, uiLanguage: "fr" | "en"): string {
@@ -45,9 +45,9 @@ function formatArtifactStatus(status: string, uiLanguage: "fr" | "en"): string {
   return (uiLanguage === "fr" ? fr : en)[status] ?? status;
 }
 
-function formatPrice(price: number): string {
+function formatPrice(price: number, uiLanguage: "fr" | "en"): string {
   try {
-    return new Intl.NumberFormat("fr-BE", {
+    return new Intl.NumberFormat(uiLanguage === "fr" ? "fr-BE" : "en-BE", {
       style: "currency",
       currency: "EUR",
       minimumFractionDigits: price % 1 === 0 ? 0 : 2,
@@ -130,7 +130,7 @@ function ArtifactMetricCard({
       className="card-soft stack"
       style={{
         gap: 10,
-        borderRadius: 24,
+        borderRadius: 20,
         background: "rgba(255,255,255,0.68)",
         border: "1px solid rgba(43,33,24,0.08)",
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.72)",
@@ -204,7 +204,7 @@ function ArtifactCard({
       className="card stack"
       style={{
         gap: 16,
-        borderRadius: 28,
+        borderRadius: 24,
         border: "1px solid rgba(43,33,24,0.08)",
         background: isCompleted
           ? "linear-gradient(135deg, rgba(255,255,255,0.88), rgba(232,248,246,0.72))"
@@ -267,11 +267,11 @@ function ArtifactCard({
         >
           {isCompleted
             ? uiLanguage === "fr"
-              ? "Ton guide est prêt. Tu peux l’ouvrir et l’utiliser comme support concret de passage à l’action."
-              : "Your guide is ready. You can open it and use it as practical support for action."
+              ? "Ton guide est prêt à être consulté."
+              : "Your guide is ready to open."
             : uiLanguage === "fr"
-              ? "Ce guide est en attente de finalisation ou de génération."
-              : "This guide is waiting for finalization or generation."}
+              ? "Ce guide est en cours de préparation."
+              : "This guide is being prepared."}
         </div>
       </div>
 
@@ -281,7 +281,7 @@ function ArtifactCard({
         </BadgePill>
 
         <BadgePill icon={<SparkIcon size={14} />}>
-          {formatPrice(item.price_eur)}
+          {formatPrice(item.price_eur, uiLanguage)}
         </BadgePill>
       </div>
 
@@ -301,8 +301,8 @@ function ArtifactCard({
           }}
         >
           {uiLanguage === "fr"
-            ? "Créé à partir d’une recommandation pour transformer une intention en prochaines étapes plus concrètes."
-            : "Created from a recommendation to turn an intention into more concrete next steps."}
+            ? "Créé à partir d’une recommandation pour t’aider à passer à l’action."
+            : "Created from a recommendation to help you move into action."}
         </div>
       </div>
 
@@ -320,10 +320,10 @@ function ArtifactCard({
           <ArrowRightIcon size={14} />
           {isCompleted
             ? uiLanguage === "fr"
-              ? "Ouvrir le guide"
-              : "Open guide"
+              ? "Ouvrir"
+              : "Open"
             : uiLanguage === "fr"
-              ? "Voir le statut"
+              ? "Voir l’état"
               : "View status"}
         </span>
       </button>
@@ -341,7 +341,7 @@ export default function AIArtifactsPage() {
 
 function AIArtifactsContent() {
   const router = useRouter();
-  const { uiLanguage, loadingLanguage } = useUiLanguage("en");
+  const { uiLanguage, loadingLanguage } = useUiLanguage("fr");
   const copy = getUiCopy(uiLanguage);
 
   const [items, setItems] = useState<AIArtifactStatusResponse[]>([]);
@@ -395,10 +395,13 @@ function AIArtifactsContent() {
     return (
       <main
         className="page"
+        lang={uiLanguage}
+        translate="no"
+        suppressHydrationWarning
         style={{
           minHeight: "100vh",
           background: "var(--coach-bg)",
-          padding: 24,
+          padding: "clamp(16px, 3vw, 24px)",
         }}
       >
         <div className="page-wrap">
@@ -420,16 +423,16 @@ function AIArtifactsContent() {
   return (
     <AppShell
       uiLanguage={uiLanguage}
-      title={uiLanguage === "fr" ? "Mes guides IA" : "My AI Guides"}
+      title={uiLanguage === "fr" ? "Guides IA" : "AI Guides"}
     >
-      <div className="stack" style={{ gap: 18 }}>
+      <div className="stack" style={{ gap: 16 }}>
         <div
           className="card stack"
           style={{
-            gap: 20,
+            gap: 16,
             position: "relative",
             overflow: "hidden",
-            borderRadius: 32,
+            borderRadius: 28,
             border: "1px solid rgba(43,33,24,0.08)",
             background:
               "linear-gradient(135deg, rgba(255,241,220,0.96), rgba(255,255,255,0.92) 52%, rgba(232,248,246,0.88))",
@@ -492,13 +495,13 @@ function AIArtifactsContent() {
                   fontWeight: 850,
                 }}
               >
-                {uiLanguage === "fr" ? "Guides actionnables" : "Actionable guides"}
+                {uiLanguage === "fr" ? "Supports personnalisés" : "Personalized resources"}
               </span>
             </div>
 
             <div
               style={{
-                fontSize: 44,
+                fontSize: "clamp(34px, 5vw, 44px)",
                 lineHeight: 1.02,
                 fontWeight: 950,
                 letterSpacing: "-0.07em",
@@ -506,22 +509,22 @@ function AIArtifactsContent() {
               }}
             >
               {uiLanguage === "fr"
-                ? "Tes guides IA pour passer de l’intention à l’action."
-                : "Your AI guides to move from intention to action."}
+                ? "Retrouve tes guides personnalisés."
+                : "Access your personalized guides."}
             </div>
 
             <p
               className="subtitle"
               style={{
-                maxWidth: 760,
+                maxWidth: 700,
                 color: "var(--coach-muted)",
                 fontSize: 16,
                 lineHeight: 1.7,
               }}
             >
               {uiLanguage === "fr"
-                ? "Retrouve tes mini e-books et mini audiobooks générés à partir de tes recommandations. Chaque guide t’aide à clarifier quoi faire, dans quel ordre, et pourquoi cela compte pour ta trajectoire."
-                : "Find your mini e-books and mini audiobooks generated from your recommendations. Each guide helps clarify what to do, in what order, and why it matters for your trajectory."}
+                ? "Consulte les guides numériques et audio créés à partir de tes recommandations."
+                : "Review the digital and audio guides created from your recommendations."}
             </p>
 
             <div className="row" style={{ flexWrap: "wrap", gap: 10 }}>
@@ -535,7 +538,7 @@ function AIArtifactsContent() {
                   paddingInline: 20,
                 }}
               >
-                {uiLanguage === "fr" ? "Explorer les recommandations" : "Explore recommendations"}
+                {uiLanguage === "fr" ? "Voir les recommandations" : "View recommendations"}
               </button>
 
               <button
@@ -561,12 +564,12 @@ function AIArtifactsContent() {
 
         <div className="grid grid-4">
           <ArtifactMetricCard
-            label={uiLanguage === "fr" ? "Guides total" : "Total guides"}
+            label={uiLanguage === "fr" ? "Tous les guides" : "All guides"}
             value={items.length}
             helper={
               uiLanguage === "fr"
-                ? "Tous les guides associés à tes recommandations."
-                : "All guides linked to your recommendations."
+                ? "Ensemble de tes guides personnalisés."
+                : "All your personalized guides."
             }
             tone="warm"
           />
@@ -576,8 +579,8 @@ function AIArtifactsContent() {
             value={completedCount}
             helper={
               uiLanguage === "fr"
-                ? "Guides disponibles à la lecture ou à l’écoute."
-                : "Guides available to read or listen to."
+                ? "Guides disponibles dès maintenant."
+                : "Guides available now."
             }
             tone="calm"
           />
@@ -587,19 +590,19 @@ function AIArtifactsContent() {
             value={generatingCount}
             helper={
               uiLanguage === "fr"
-                ? "Guides payés ou en génération."
-                : "Paid or currently generating guides."
+                ? "Guides en cours de préparation."
+                : "Guides currently being prepared."
             }
             tone="neutral"
           />
 
           <ArtifactMetricCard
-            label={uiLanguage === "fr" ? "Formats audio" : "Audio formats"}
+            label={uiLanguage === "fr" ? "Guides audio" : "Audio guides"}
             value={audiobookCount}
             helper={
               uiLanguage === "fr"
-                ? "Guides disponibles ou demandés en audio."
-                : "Guides available or requested as audio."
+                ? "Guides disponibles au format audio."
+                : "Guides available in audio format."
             }
             tone="calm"
           />
@@ -616,12 +619,12 @@ function AIArtifactsContent() {
             }}
           >
             <div className="section-title">
-              {uiLanguage === "fr" ? "Chargement de ta bibliothèque..." : "Loading your library..."}
+              {uiLanguage === "fr" ? "Chargement des guides..." : "Loading guides..."}
             </div>
             <div className="muted" style={{ color: "var(--coach-muted)" }}>
               {uiLanguage === "fr"
-                ? "Nous préparons tes guides IA."
-                : "We are preparing your AI guides."}
+                ? "Nous récupérons tes guides personnalisés."
+                : "We are retrieving your personalized guides."}
             </div>
           </div>
         ) : error ? (
@@ -634,7 +637,7 @@ function AIArtifactsContent() {
             }}
           >
             <div className="section-title" style={{ color: "var(--danger)" }}>
-              {uiLanguage === "fr" ? "Erreur de chargement" : "Loading error"}
+              {uiLanguage === "fr" ? "Impossible de charger les guides" : "Unable to load guides"}
             </div>
 
             <div className="muted">{error}</div>
@@ -654,7 +657,7 @@ function AIArtifactsContent() {
                 onClick={() => router.push("/recommendations")}
                 type="button"
               >
-                {uiLanguage === "fr" ? "Voir recommandations" : "View recommendations"}
+                {uiLanguage === "fr" ? "Voir les recommandations" : "View recommendations"}
               </button>
             </div>
           </div>
@@ -687,7 +690,7 @@ function AIArtifactsContent() {
               </div>
 
               <div className="section-title">
-                {uiLanguage === "fr" ? "Aucun guide pour le moment" : "No guides yet"}
+                {uiLanguage === "fr" ? "Aucun guide disponible" : "No guides available"}
               </div>
             </div>
 
@@ -700,8 +703,8 @@ function AIArtifactsContent() {
               }}
             >
               {uiLanguage === "fr"
-                ? "Tes guides IA apparaîtront ici après l’achat depuis une recommandation. Commence par ouvrir une recommandation active et choisis le guide qui t’aide le mieux à passer à l’action."
-                : "Your AI guides will appear here after purchase from a recommendation. Start by opening an active recommendation and choose the guide that best helps you move into action."}
+                ? "Tes guides apparaîtront ici après leur création depuis une recommandation."
+                : "Your guides will appear here after they are created from a recommendation."}
             </div>
 
             <div className="row" style={{ flexWrap: "wrap", gap: 10 }}>

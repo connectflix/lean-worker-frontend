@@ -7,7 +7,6 @@ import { ConversationPanel } from "@/components/conversation-panel";
 import { SessionInsightsPanel } from "@/components/session-insights-panel";
 import { VoiceSessionPanel } from "@/components/voice-session-panel";
 import { WorkspaceShell } from "@/components/workspace-shell";
-import { useCurrentUser } from "@/components/user-context";
 import {
   BadgePill,
   BrainIcon,
@@ -22,7 +21,7 @@ import {
   getRecommendations,
 } from "@/lib/api";
 import type { Recommendation } from "@/lib/types";
-import { resolveUiLanguage, type SupportedUiLanguage } from "@/lib/user-locales";
+import { useUiLanguage } from "@/lib/use-ui-language";
 
 type SessionMode = "written" | "voice";
 
@@ -61,7 +60,7 @@ function CoachCard({
       className="card stack"
       style={{
         gap: 16,
-        borderRadius: 28,
+        borderRadius: 24,
         border: "1px solid rgba(43,33,24,0.08)",
         background: warm
           ? "linear-gradient(135deg, rgba(255,241,220,0.94), rgba(255,255,255,0.92))"
@@ -154,9 +153,9 @@ function ModeChoiceCard({
       className="card-soft stack"
       style={{
         gap: 16,
-        padding: 22,
-        minHeight: 300,
-        borderRadius: 28,
+        padding: "clamp(18px, 3vw, 22px)",
+        minHeight: 270,
+        borderRadius: 24,
         border: isWarm
           ? "1px solid rgba(255,122,89,0.18)"
           : "1px solid rgba(88,180,174,0.18)",
@@ -248,12 +247,12 @@ export default function SessionPage() {
             style={{
               minHeight: "100vh",
               background: "var(--coach-bg)",
-              padding: 24,
+              padding: "clamp(16px, 3vw, 24px)",
             }}
           >
             <div className="page-wrap">
               <CoachCard warm>
-                <div className="section-title">Loading coaching workspace...</div>
+                <div className="section-title">Chargement de l’espace de coaching...</div>
               </CoachCard>
             </div>
           </main>
@@ -269,9 +268,7 @@ function SessionPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const searchParamsKey = searchParams.toString();
-  const { user } = useCurrentUser();
-
-  const [uiLanguage, setUiLanguage] = useState<SupportedUiLanguage>("en");
+  const { uiLanguage } = useUiLanguage("fr");
   const [loading, setLoading] = useState(true);
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [careerGap, setCareerGap] = useState<CareerGap | null>(null);
@@ -282,54 +279,45 @@ function SessionPageContent() {
   const [sessionMode, setSessionMode] = useState<SessionMode>("written");
   const [launchingMode, setLaunchingMode] = useState<SessionMode | null>(null);
 
-  useEffect(() => {
-    setUiLanguage(
-      resolveUiLanguage({
-        language: user?.language,
-        locale: user?.locale,
-      }),
-    );
-  }, [user]);
-
   const copy = useMemo(
     () =>
       uiLanguage === "fr"
         ? {
             title: "Coaching",
-            noSession: "Lance ton prochain espace de coaching",
+            noSession: "Démarre une nouvelle session de coaching",
             noSessionText:
-              "Choisis le mode qui correspond le mieux à ta manière de réfléchir et d’avancer. Les deux expériences s’appuient sur le même cockpit de coaching, la même mémoire, le Purpose Canvas et les mêmes recommandations.",
+              "Choisis le mode écrit ou vocal. Les deux utilisent le même contexte, la même mémoire et les mêmes recommandations.",
             noSessionHint:
-              "Tu peux démarrer immédiatement en mode écrit ou vocal, sans repasser par le tableau de bord.",
+              "Tu peux commencer immédiatement et changer de mode pendant la session.",
             sessionErrorTitle: "Impossible de charger l’espace de coaching",
             backToDashboard: "Retour au tableau de bord",
             loading: "Chargement de la session...",
             retry: "Réessayer",
-            chooseMode: "Choisis ton mode de coaching",
+            chooseMode: "Mode de conversation",
             chooseModeText:
-              "Le mode écrit est idéal pour structurer. Le mode vocal est idéal pour fluidifier et te laisser parler naturellement.",
+              "Écris pour structurer tes idées ou parle pour une conversation plus naturelle.",
             writtenMode: "Session écrite",
             writtenModeText:
-              "Même cockpit de coaching, avec conversation écrite au centre.",
+              "Conversation textuelle avec une trace complète de l’échange.",
             voiceMode: "Session vocale",
             voiceModeText:
-              "Même cockpit de coaching, avec interaction voix-only au centre.",
+              "Conversation vocale fluide et spontanée.",
             writtenModeEmptyText:
-              "Pour clarifier, structurer, prendre du recul et garder une trace écrite de l’échange.",
+              "Idéal pour clarifier, structurer et relire facilement l’échange.",
             voiceModeEmptyText:
-              "Pour une conversation plus fluide, plus spontanée et plus immersive.",
+              "Idéal pour parler librement et avancer de manière plus spontanée.",
             activeContext: "Contexte actif",
             activeContextText:
-              "Le coach s’appuie sur ton profil, ta trajectoire, ton historique, ton Purpose Canvas, tes canvases d’engagement et tes recommandations pour ajuster sa posture.",
+              "Le coach utilise ton profil, ta trajectoire, ton historique et tes recommandations pour personnaliser l’échange.",
             activeContextPurpose:
-              "Le Purpose Canvas peut maintenant influencer naturellement les questions, reformulations et recommandations du coach.",
-            writtenHeadline: "Conversation écrite active",
+              "Le Purpose Canvas enrichit les questions, reformulations et recommandations du coach.",
+            writtenHeadline: "Session écrite",
             writtenLead:
-              "Retrouve le même espace de coaching que la session vocale, avec une interaction textuelle au centre.",
-            voiceHeadline: "Conversation vocale active",
+              "Échange avec ton coach par écrit et conserve une trace complète.",
+            voiceHeadline: "Session vocale",
             voiceLead:
-              "Interaction immersive voix-only avec le même cockpit de coaching.",
-            modeCardTitle: "Mode actif",
+              "Parle naturellement avec ton coach dans une conversation vocale.",
+            modeCardTitle: "Mode sélectionné",
             trajectory: "Trajectoire",
             purposeCanvas: "Purpose Canvas",
             memoryActive: "Mémoire active",
@@ -339,45 +327,45 @@ function SessionPageContent() {
             launchingVoice: "Ouverture de la session vocale...",
             writtenTag: "Structuré",
             voiceTag: "Immersif",
-            premiumTag: "Démarrage direct",
-            whyTitle: "Deux façons d’entrer en coaching",
+            premiumTag: "Nouvelle session",
+            whyTitle: "Choisis ton expérience",
           }
         : {
             title: "Coaching",
-            noSession: "Launch your next coaching space",
+            noSession: "Start a new coaching session",
             noSessionText:
-              "Choose the mode that best fits the way you think and move forward. Both experiences rely on the same coaching cockpit, memory, Purpose Canvas, and recommendations.",
+              "Choose written or voice mode. Both use the same context, memory, and recommendations.",
             noSessionHint:
-              "You can start immediately in written or voice mode without going back through the dashboard.",
+              "You can start immediately and switch modes during the session.",
             sessionErrorTitle: "Unable to load the coaching workspace",
             backToDashboard: "Back to dashboard",
             loading: "Loading session...",
             retry: "Try again",
-            chooseMode: "Choose your coaching mode",
+            chooseMode: "Conversation mode",
             chooseModeText:
-              "Written mode is ideal for structure. Voice mode is ideal for fluid and natural conversation.",
+              "Write to structure your thoughts or speak for a more natural conversation.",
             writtenMode: "Written session",
             writtenModeText:
-              "Same coaching cockpit, with written conversation in the center.",
+              "Text conversation with a complete record of the exchange.",
             voiceMode: "Voice session",
             voiceModeText:
-              "Same coaching cockpit, with voice-only interaction in the center.",
+              "A fluid and spontaneous voice conversation.",
             writtenModeEmptyText:
-              "Best for clarifying, structuring, stepping back, and keeping a written trace of the exchange.",
+              "Best for clarifying, structuring, and reviewing the exchange.",
             voiceModeEmptyText:
-              "Best for a more fluid, spontaneous, and immersive conversation.",
+              "Best for speaking freely and moving forward spontaneously.",
             activeContext: "Active context",
             activeContextText:
-              "Your coach uses your profile, trajectory, history, Purpose Canvas, engagement canvases, and recommendations to adapt its stance.",
+              "Your coach uses your profile, trajectory, history, and recommendations to personalize the exchange.",
             activeContextPurpose:
-              "The Purpose Canvas can now naturally influence the coach’s questions, reflections, and recommendations.",
-            writtenHeadline: "Written conversation active",
+              "The Purpose Canvas enriches the coach’s questions, reflections, and recommendations.",
+            writtenHeadline: "Written session",
             writtenLead:
-              "Use the same coaching cockpit as voice mode, with text interaction in the center.",
-            voiceHeadline: "Voice conversation active",
+              "Chat with your coach in writing and keep a complete record.",
+            voiceHeadline: "Voice session",
             voiceLead:
-              "Immersive voice-only interaction within the same coaching cockpit.",
-            modeCardTitle: "Active mode",
+              "Speak naturally with your coach in a voice conversation.",
+            modeCardTitle: "Selected mode",
             trajectory: "Trajectory",
             purposeCanvas: "Purpose Canvas",
             memoryActive: "Memory active",
@@ -387,8 +375,8 @@ function SessionPageContent() {
             launchingVoice: "Opening voice session...",
             writtenTag: "Structured",
             voiceTag: "Immersive",
-            premiumTag: "Direct start",
-            whyTitle: "Two ways to enter coaching",
+            premiumTag: "New session",
+            whyTitle: "Choose your experience",
           },
     [uiLanguage],
   );
@@ -437,11 +425,17 @@ function SessionPageContent() {
       setCoachMode(undefined);
       setCoachIntent(undefined);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load coaching session.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : uiLanguage === "fr"
+            ? "Impossible de charger la session de coaching."
+            : "Failed to load coaching session.",
+      );
     } finally {
       setLoading(false);
     }
-  }, [searchParamsKey]);
+  }, [searchParamsKey, uiLanguage]);
 
   useEffect(() => {
     void loadSessionPage();
@@ -459,7 +453,13 @@ function SessionPageContent() {
 
       router.push(`/session?${params.toString()}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to start session.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : uiLanguage === "fr"
+            ? "Impossible de démarrer la session."
+            : "Failed to start session.",
+      );
     } finally {
       setLaunchingMode(null);
     }
@@ -656,7 +656,7 @@ function SessionPageContent() {
       style={{
         width: "100%",
         maxWidth: 1140,
-        margin: "40px auto",
+        margin: "clamp(16px, 4vw, 40px) auto",
       }}
     >
       <CoachCard

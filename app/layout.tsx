@@ -2,9 +2,16 @@ import "./globals.css";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "LeanWorker",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+  ),
+  title: {
+    default: "LeanWorker",
+    template: "%s · LeanWorker",
+  },
   description:
-    "LeanWorker helps you turn career uncertainty into clear action with AI-powered coaching, personalized recommendations, and practical next steps.",
+    "LeanWorker transforme les situations professionnelles complexes en prochaines actions claires grâce à un coaching personnalisé.",
+  applicationName: "LeanWorker",
   icons: {
     icon: "/favicon.png",
     shortcut: "/favicon.png",
@@ -18,8 +25,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" translate="no" suppressHydrationWarning>
-      <body>{children}</body>
+    <html lang="fr" suppressHydrationWarning>
+      <body>
+        <div id="app-root">{children}</div>
+      </body>
     </html>
   );
 }

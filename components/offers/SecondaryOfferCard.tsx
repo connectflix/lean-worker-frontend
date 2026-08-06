@@ -18,10 +18,10 @@ function getSectionLabel(
   uiLanguage: SupportedUiLanguage,
 ): string {
   if (kind === "upsell") {
-    return uiLanguage === "fr" ? "Upgrade recommandé" : "Recommended upgrade";
+    return uiLanguage === "fr" ? "Option supérieure recommandée" : "Recommended upgrade option";
   }
 
-  return uiLanguage === "fr" ? "Complément pertinent" : "Helpful complement";
+  return uiLanguage === "fr" ? "Option complémentaire" : "Complementary option";
 }
 
 function getSecondaryCtaLabel(
@@ -33,25 +33,25 @@ function getSecondaryCtaLabel(
   if (offer.lever_category === "ai-enabled-developer") {
     if (hasExistingArtifactForFormat) {
       return uiLanguage === "fr"
-        ? "Voir le format complémentaire"
-        : "View complementary format";
+        ? "Ouvrir ce guide complémentaire"
+        : "Open complementary guide";
     }
 
     return kind === "upsell"
       ? uiLanguage === "fr"
-        ? "Ajouter ce format"
-        : "Add this format"
+        ? "Ajouter cette version"
+        : "Add this version"
       : uiLanguage === "fr"
-        ? "Voir l’aperçu"
-        : "View preview";
+        ? "Découvrir l’aperçu"
+        : "Explore preview";
   }
 
   if (kind === "upsell") {
-    return uiLanguage === "fr" ? "Améliorer mon parcours" : "Upgrade my path";
+    return uiLanguage === "fr" ? "Choisir cette option" : "Choose this option";
   }
 
   if (offer.url) {
-    return uiLanguage === "fr" ? "Explorer cette option" : "Explore this option";
+    return uiLanguage === "fr" ? "Voir cette option" : "View this option";
   }
 
   return uiLanguage === "fr" ? "Découvrir" : "Discover";
@@ -65,24 +65,24 @@ function getSecondaryEyebrow(
   if (offer.lever_category === "ai-enabled-developer") {
     if (kind === "upsell") {
       return uiLanguage === "fr"
-        ? "Pour aller plus loin avec un format plus immersif"
-        : "To go further with a more immersive format";
+        ? "Pour approfondir avec un format plus immersif"
+        : "To go deeper with a more immersive format";
     }
 
     return uiLanguage === "fr"
-      ? "Pour compléter ton action avec un support pratique"
-      : "To complement your action with practical support";
+      ? "Pour compléter cette recommandation avec un support pratique"
+      : "To complement this recommendation with practical support";
   }
 
   if (kind === "upsell") {
     return uiLanguage === "fr"
-      ? "Une option plus complète pour accélérer"
-      : "A more complete option to accelerate";
+      ? "Une option plus complète pour aller plus loin"
+      : "A more complete option to go further";
   }
 
   return uiLanguage === "fr"
-    ? "Un levier complémentaire pour soutenir l’exécution"
-    : "A complementary lever to support execution";
+    ? "Un levier complémentaire pour faciliter le passage à l’action"
+    : "A complementary lever to support action";
 }
 
 function getHeaderIcon(kind: "upsell" | "cross_sell") {
@@ -95,7 +95,7 @@ function getHeaderIcon(kind: "upsell" | "cross_sell") {
 
 export function SecondaryOfferCard({
   offer,
-  uiLanguage = "en",
+  uiLanguage = "fr",
   kind,
   hasExistingArtifactForFormat = false,
   onClick,
@@ -103,14 +103,14 @@ export function SecondaryOfferCard({
   const isUpsell = kind === "upsell";
 
   return (
-    <div className="stack" style={{ gap: 10 }}>
+    <div className="stack" lang={uiLanguage} style={{ gap: 10 }}>
       <div
         className="card-soft row space-between"
         style={{
           gap: 12,
           flexWrap: "wrap",
           alignItems: "center",
-          borderRadius: 24,
+          borderRadius: 20,
           background: isUpsell
             ? "linear-gradient(135deg, rgba(255,241,220,0.78), rgba(255,255,255,0.72))"
             : "linear-gradient(135deg, rgba(232,248,246,0.78), rgba(255,255,255,0.72))",
@@ -120,7 +120,15 @@ export function SecondaryOfferCard({
           boxShadow: "inset 0 1px 0 rgba(255,255,255,0.72)",
         }}
       >
-        <div className="row" style={{ gap: 10, alignItems: "center" }}>
+        <div
+          className="row"
+          style={{
+            gap: 10,
+            alignItems: "center",
+            minWidth: 0,
+            flex: "1 1 280px",
+          }}
+        >
           <span
             style={{
               width: 38,
@@ -141,7 +149,7 @@ export function SecondaryOfferCard({
             {getHeaderIcon(kind)}
           </span>
 
-          <div className="stack" style={{ gap: 2 }}>
+          <div className="stack" style={{ gap: 2, minWidth: 0 }}>
             <div
               className="section-title"
               style={{
@@ -166,6 +174,15 @@ export function SecondaryOfferCard({
 
         <span
           className="badge"
+          aria-label={
+            isUpsell
+              ? uiLanguage === "fr"
+                ? "Option renforcée"
+                : "Enhanced option"
+              : uiLanguage === "fr"
+                ? "Option complémentaire"
+                : "Complementary option"
+          }
           style={{
             background: isUpsell
               ? "rgba(255,122,89,0.11)"
@@ -180,10 +197,10 @@ export function SecondaryOfferCard({
           <TargetIcon size={14} />
           {isUpsell
             ? uiLanguage === "fr"
-              ? "Plus complet"
-              : "More complete"
+              ? "Option renforcée"
+              : "Enhanced option"
             : uiLanguage === "fr"
-              ? "Complémentaire"
+              ? "En complément"
               : "Complementary"}
         </span>
       </div>

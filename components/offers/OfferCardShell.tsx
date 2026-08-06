@@ -23,14 +23,14 @@ type OfferCardShellProps = {
 
 function getOfferFormatLabel(
   format: OfferItemResponse["format"] | string | undefined,
-  uiLanguage: SupportedUiLanguage = "en",
+  uiLanguage: SupportedUiLanguage = "fr",
 ): string {
   if (format === "ebook") return uiLanguage === "fr" ? "E-book" : "E-book";
   if (format === "audiobook") return uiLanguage === "fr" ? "Audio" : "Audio";
   if (format === "session") return uiLanguage === "fr" ? "Session" : "Session";
   if (format === "program") return uiLanguage === "fr" ? "Programme" : "Program";
   if (format === "job_opportunity") {
-    return uiLanguage === "fr" ? "Opportunité" : "Opportunity";
+    return uiLanguage === "fr" ? "Opportunité professionnelle" : "Career opportunity";
   }
   if (format === "resource") return uiLanguage === "fr" ? "Ressource" : "Resource";
 
@@ -48,7 +48,7 @@ function getOfferTypeLabel(
   uiLanguage: SupportedUiLanguage,
 ): string {
   if (offer.lever_category === "ai-enabled-developer") {
-    return uiLanguage === "fr" ? "Guide IA personnalisé" : "Personalized AI guide";
+    return uiLanguage === "fr" ? "Guide personnalisé" : "Personalized guide";
   }
 
   if (offer.lever_category === "engager") {
@@ -56,7 +56,7 @@ function getOfferTypeLabel(
   }
 
   if (offer.lever_category === "developer") {
-    return uiLanguage === "fr" ? "Ressource de progression" : "Development resource";
+    return uiLanguage === "fr" ? "Ressource de développement" : "Development resource";
   }
 
   if (offer.lever_category === "transformer") {
@@ -64,7 +64,7 @@ function getOfferTypeLabel(
   }
 
   if (offer.lever_category === "employer") {
-    return uiLanguage === "fr" ? "Opportunité carrière" : "Career opportunity";
+    return uiLanguage === "fr" ? "Opportunité professionnelle" : "Career opportunity";
   }
 
   return uiLanguage === "fr" ? "Levier recommandé" : "Recommended lever";
@@ -72,7 +72,7 @@ function getOfferTypeLabel(
 
 export function OfferCardShell({
   offer,
-  uiLanguage = "en",
+  uiLanguage = "fr",
   variant = "secondary",
   sectionLabel,
   ctaLabel,
@@ -85,10 +85,13 @@ export function OfferCardShell({
   return (
     <div
       className={isHero ? "card offer-hero-card" : "card-soft offer-secondary-card"}
+      lang={uiLanguage}
+      role="group"
+      aria-label={`${sectionLabel}: ${offer.title}`}
       style={{
         position: "relative",
         overflow: "hidden",
-        borderRadius: isHero ? 30 : 26,
+        borderRadius: isHero ? 26 : 22,
         border: isHero
           ? "1px solid rgba(255,122,89,0.18)"
           : "1px solid rgba(43,33,24,0.08)",
@@ -130,12 +133,12 @@ export function OfferCardShell({
         </>
       ) : null}
 
-      <div className="stack" style={{ gap: 16, position: "relative" }}>
+      <div className="stack" style={{ gap: 14, position: "relative" }}>
         <div
           className="row space-between"
           style={{ gap: 14, alignItems: "flex-start", flexWrap: "wrap" }}
         >
-          <div className="stack" style={{ gap: 10, flex: 1, minWidth: 260 }}>
+          <div className="stack" style={{ gap: 10, flex: "1 1 320px", minWidth: 0 }}>
             <div className="row" style={{ gap: 8, flexWrap: "wrap", alignItems: "center" }}>
               <BadgePill icon={<SparkIcon size={14} />}>{sectionLabel}</BadgePill>
 
@@ -163,7 +166,7 @@ export function OfferCardShell({
               ) : null}
             </div>
 
-            <div className="stack" style={{ gap: 6 }}>
+            <div className="stack" style={{ gap: 6, minWidth: 0 }}>
               <div
                 className={isHero ? "offer-header-title" : "offer-header-title-secondary"}
                 style={{
@@ -228,7 +231,7 @@ export function OfferCardShell({
               <div
                 className="offer-meta-block"
                 style={{
-                  borderRadius: 22,
+                  borderRadius: 18,
                   padding: 14,
                   background: "rgba(255,255,255,0.62)",
                   border: "1px solid rgba(43,33,24,0.08)",
@@ -244,7 +247,7 @@ export function OfferCardShell({
                   }}
                 >
                   <ClockIconFallback />
-                  {uiLanguage === "fr" ? "Pourquoi maintenant" : "Why now"}
+                  {uiLanguage === "fr" ? "Pourquoi cette option" : "Why this option"}
                 </div>
 
                 <div
@@ -279,7 +282,7 @@ export function OfferCardShell({
                   }}
                 >
                   <CheckCircleIcon size={14} />
-                  {uiLanguage === "fr" ? "Lien avec ta situation" : "Fit with your situation"}
+                  {uiLanguage === "fr" ? "Pourquoi elle te correspond" : "Why it fits your situation"}
                 </div>
 
                 <div
@@ -314,7 +317,7 @@ export function OfferCardShell({
                   }}
                 >
                   <SparkIcon size={14} />
-                  {uiLanguage === "fr" ? "Avantage" : "Special benefit"}
+                  {uiLanguage === "fr" ? "Avantage associé" : "Included benefit"}
                 </div>
 
                 <div
@@ -334,10 +337,12 @@ export function OfferCardShell({
         <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
           <button
             className={isHero ? "button offer-hero-cta" : "button ghost offer-secondary-cta"}
+            aria-label={`${ctaLabel}: ${offer.title}`}
             onClick={onClick}
             type="button"
             style={{
               minHeight: isHero ? 46 : 42,
+              maxWidth: "100%",
               paddingInline: isHero ? 20 : 17,
               background: isHero ? "var(--coach-accent)" : "rgba(255,255,255,0.72)",
               borderColor: isHero ? "transparent" : "rgba(43,33,24,0.10)",

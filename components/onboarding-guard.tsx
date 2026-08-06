@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { getMe } from "@/lib/api";
 import { clearToken, getToken } from "@/lib/auth";
 import { BadgePill, PathIcon, SparkIcon } from "@/components/ui-flat-icons";
+import { useUiLanguage } from "@/lib/use-ui-language";
 
 function BrandMark() {
   return (
@@ -34,7 +35,25 @@ function BrandMark() {
 
 export function OnboardingGuard({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const { uiLanguage } = useUiLanguage("fr");
   const [status, setStatus] = useState<"checking" | "allowed" | "denied">("checking");
+
+  const copy =
+    uiLanguage === "fr"
+      ? {
+          badge: "Configuration initiale",
+          title: "Préparation de ton parcours...",
+          description:
+            "Nous vérifions ton accès et préparons ton espace de coaching personnalisé.",
+          status: "Vérification de l’accès à l’onboarding",
+        }
+      : {
+          badge: "Initial setup",
+          title: "Preparing your journey...",
+          description:
+            "We are checking your access and preparing your personalized coaching space.",
+          status: "Checking onboarding access",
+        };
 
   useEffect(() => {
     let isMounted = true;
@@ -90,12 +109,16 @@ export function OnboardingGuard({ children }: { children: ReactNode }) {
     return (
       <main
         className="page"
+        lang={uiLanguage}
+        translate="no"
+        aria-busy="true"
+        aria-live="polite"
         style={{
           minHeight: "100vh",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          padding: 24,
+          padding: "clamp(16px, 3vw, 24px)",
           background:
             "radial-gradient(circle at top left, rgba(255,122,89,0.12), transparent 30%), radial-gradient(circle at bottom right, rgba(88,180,174,0.12), transparent 34%), var(--coach-bg)",
         }}
@@ -161,7 +184,7 @@ export function OnboardingGuard({ children }: { children: ReactNode }) {
               <BrandMark />
 
               <div className="row center" style={{ gap: 8, flexWrap: "wrap" }}>
-                <BadgePill icon={<PathIcon size={14} />}>Onboarding</BadgePill>
+                <BadgePill icon={<PathIcon size={14} />}>{copy.badge}</BadgePill>
                 <BadgePill icon={<SparkIcon size={14} />}>LeanWorker</BadgePill>
               </div>
 
@@ -176,6 +199,22 @@ export function OnboardingGuard({ children }: { children: ReactNode }) {
                   border: "1px solid rgba(255,122,89,0.22)",
                 }}
               >
+                <span
+                  style={{
+                    position: "absolute",
+                    width: 1,
+                    height: 1,
+                    padding: 0,
+                    margin: -1,
+                    overflow: "hidden",
+                    clip: "rect(0, 0, 0, 0)",
+                    whiteSpace: "nowrap",
+                    border: 0,
+                  }}
+                >
+                  {copy.status}
+                </span>
+
                 <div
                   className="loader"
                   style={{
@@ -196,7 +235,7 @@ export function OnboardingGuard({ children }: { children: ReactNode }) {
                   color: "var(--coach-ink)",
                 }}
               >
-                Preparing your onboarding...
+                {copy.title}
               </div>
 
               <div
@@ -208,7 +247,7 @@ export function OnboardingGuard({ children }: { children: ReactNode }) {
                   lineHeight: 1.7,
                 }}
               >
-                We are checking your access and preparing your personalized coaching setup.
+                {copy.description}
               </div>
             </div>
           </div>

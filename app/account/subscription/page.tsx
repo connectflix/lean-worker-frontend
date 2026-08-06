@@ -1,7 +1,6 @@
 // app/account/subscription/page.tsx
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
@@ -13,7 +12,6 @@ import {
   CheckCircleIcon,
   ClockIcon,
   LayerIcon,
-  PathIcon,
   SparkIcon,
   TargetIcon,
   UserCardIcon,
@@ -47,29 +45,29 @@ const PACK_PRESENTATION: Record<SubscriptionPackKey, PackPresentation> = {
   standard: {
     key: "standard",
     name: "Standard",
-    subtitleFr: "Gratuit pour commencer avec méthode.",
-    subtitleEn: "Free plan to start with method.",
+    subtitleFr: "Pour découvrir LeanWorker et commencer progressivement.",
+    subtitleEn: "Explore LeanWorker and get started progressively.",
     tone: "neutral",
   },
   classique: {
     key: "classique",
     name: "Classique",
-    subtitleFr: "Pour structurer votre trajectoire avec accompagnement.",
-    subtitleEn: "For structuring your trajectory with support.",
+    subtitleFr: "Pour structurer ta trajectoire avec un accompagnement régulier.",
+    subtitleEn: "Structure your trajectory with regular support.",
     tone: "warm",
   },
   flix: {
     key: "flix",
     name: "Flix",
-    subtitleFr: "Pour accélérer votre transformation professionnelle.",
-    subtitleEn: "For accelerating your professional transformation.",
+    subtitleFr: "Pour accélérer ta progression avec un accompagnement renforcé.",
+    subtitleEn: "Accelerate your progress with enhanced support.",
     tone: "calm",
   },
   executif: {
     key: "executif",
     name: "Exécutif",
-    subtitleFr: "Accompagnement stratégique sur mesure.",
-    subtitleEn: "Tailored strategic support.",
+    subtitleFr: "Pour un accompagnement stratégique et personnalisé.",
+    subtitleEn: "Tailored strategic and personalized support.",
     tone: "premium",
   },
 };
@@ -85,8 +83,8 @@ function CoachSectionCard({
     <section
       className="card stack"
       style={{
-        gap: 18,
-        borderRadius: 30,
+        gap: 16,
+        borderRadius: 24,
         border: "1px solid rgba(43,33,24,0.08)",
         background: warm
           ? "linear-gradient(135deg, rgba(255,241,220,0.96), rgba(255,255,255,0.92) 55%, rgba(232,248,246,0.82))"
@@ -128,18 +126,22 @@ function formatPrice(
   if (cycle === "yearly") {
     const amount = Number(plan.annual_price_eur ?? 0);
 
-    return `${amount.toLocaleString("fr-BE", {
+    const formatted = amount.toLocaleString(uiLanguage === "fr" ? "fr-BE" : "en-BE", {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
-    })} €/an`;
+    });
+
+    return uiLanguage === "fr" ? `${formatted} €/an` : `€${formatted}/year`;
   }
 
   const amount = Number(plan.monthly_price_eur ?? 0);
 
-  return `${amount.toLocaleString("fr-BE", {
+  const formatted = amount.toLocaleString(uiLanguage === "fr" ? "fr-BE" : "en-BE", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  })} €/mois`;
+  });
+
+  return uiLanguage === "fr" ? `${formatted} €/mois` : `€${formatted}/month`;
 }
 
 function getPlanCycleOptions(plan: SubscriptionPlanResponse): SubscriptionBillingCycle[] {
@@ -180,24 +182,24 @@ function getActionLabel(
     return uiLanguage === "fr" ? "Souscrire" : "Subscribe";
   }
 
-  return uiLanguage === "fr" ? "Changer de pack" : "Change plan";
+  return uiLanguage === "fr" ? "Choisir ce pack" : "Choose this plan";
 }
 
 function getPackFeatures(pack: SubscriptionPackKey, uiLanguage: "fr" | "en"): string[] {
   if (uiLanguage === "fr") {
     if (pack === "standard") {
       return [
-        "Accès de base à LeanWorker",
+        "Accès aux fonctionnalités essentielles",
         "Suivi de progression",
-        "Premières recommandations",
-        "Utilisation progressive de la plateforme",
+        "Premières recommandations personnalisées",
+        "Découverte progressive de la plateforme",
       ];
     }
 
     if (pack === "classique") {
       return [
         "Tout le pack Standard",
-        "Conversations d’accompagnement",
+        "Sessions de coaching",
         "Career Blueprint",
         "Adaptive Coach",
         "Recommandations priorisées",
@@ -207,10 +209,10 @@ function getPackFeatures(pack: SubscriptionPackKey, uiLanguage: "fr" | "en"): st
     if (pack === "flix") {
       return [
         "Tout le pack Classique",
-        "Accompagnement plus personnalisé",
+        "Coaching plus personnalisé",
         "Analyse approfondie de trajectoire",
         "Plans d’action plus détaillés",
-        "Suivi plus rapproché",
+        "Suivi renforcé",
       ];
     }
 
@@ -224,17 +226,17 @@ function getPackFeatures(pack: SubscriptionPackKey, uiLanguage: "fr" | "en"): st
 
   if (pack === "standard") {
     return [
-      "Basic LeanWorker access",
+      "Access to essential features",
       "Progress tracking",
-      "First recommendations",
-      "Progressive platform usage",
+      "First personalized recommendations",
+      "Progressive platform discovery",
     ];
   }
 
   if (pack === "classique") {
     return [
       "Everything in Standard",
-      "Support conversations",
+      "Coaching sessions",
       "Career Blueprint",
       "Adaptive Coach",
       "Prioritized recommendations",
@@ -244,10 +246,10 @@ function getPackFeatures(pack: SubscriptionPackKey, uiLanguage: "fr" | "en"): st
   if (pack === "flix") {
     return [
       "Everything in Classique",
-      "More personalized support",
+      "More personalized coaching",
       "Deeper trajectory analysis",
       "More detailed action plans",
-      "Closer follow-up",
+      "Enhanced follow-up",
     ];
   }
 
@@ -341,33 +343,33 @@ function SubscriptionContent() {
         loading: "Chargement...",
         shellTitle: "Mon abonnement",
         heroBadge: "Abonnement LeanWorker",
-        heroTitle: "Choisis le niveau d’accompagnement qui soutient ton rythme.",
+        heroTitle: "Choisis l’accompagnement adapté à tes besoins.",
         heroSubtitle:
-          "Ton abonnement définit l’intensité de ton espace LeanWorker : coaching, Career Blueprint, recommandations, guides IA et leviers d’action.",
+          "Compare les packs et choisis le niveau de coaching, d’analyse et de suivi qui correspond à ta progression.",
         backToElearning: "Retour au programme Time’s UP!",
         activePlan: "Pack actif",
-        currentlyActive: "Actuellement activé",
+        currentlyActive: "Pack actuellement actif",
         updatedTitle: "Abonnement mis à jour",
         errorTitle: "Action impossible",
         loadingPlans: "Chargement des packs...",
-        choosePlan: "Choisissez votre pack",
+        choosePlan: "Comparer les packs",
         choosePlanText:
-          "Tu peux changer de pack selon ton niveau d’engagement, ton besoin de clarté et ton rythme de transformation.",
-        refresh: "Rafraîchir",
+          "Sélectionne un pack selon le niveau d’accompagnement et de personnalisation dont tu as besoin.",
+        refresh: "Actualiser",
         current: "Actuel",
         recommended: "Recommandé",
         processing: "Traitement...",
         qualificationRequired: "Sur qualification",
-        guideTitle: "Comment fonctionne le changement de pack ?",
-        upgrade: "Upgrade",
+        guideTitle: "Comment fonctionne le changement d’abonnement ?",
+        upgrade: "Passer à un pack supérieur",
         upgradeText:
-          "Pour passer vers un pack payant ou supérieur, tu es redirigé vers Stripe pour confirmer le paiement.",
-        downgrade: "Downgrade",
+          "Pour choisir un pack payant ou supérieur, tu es redirigé vers Stripe afin de confirmer le paiement.",
+        downgrade: "Revenir au pack Standard",
         downgradeText:
-          "Le passage vers Standard est immédiat et active le pack gratuit.",
+          "Le retour au pack Standard est immédiat et active l’offre gratuite.",
         security: "Sécurité",
         securityText:
-          "Les paiements et changements payants sont confirmés par webhook Stripe avant activation.",
+          "Les paiements sont confirmés par Stripe avant l’activation du nouveau pack.",
         coachingAccess: "Accès coaching",
         pathSupport: "Soutien de trajectoire",
         executionLevers: "Leviers d’action",
@@ -378,33 +380,33 @@ function SubscriptionContent() {
       loading: "Loading...",
       shellTitle: "My subscription",
       heroBadge: "LeanWorker subscription",
-      heroTitle: "Choose the support level that matches your pace.",
+      heroTitle: "Choose the support level that fits your needs.",
       heroSubtitle:
-        "Your subscription defines the intensity of your LeanWorker space: coaching, Career Blueprint, recommendations, AI guides, and action levers.",
+        "Compare plans and choose the level of coaching, analysis, and follow-up that matches your progress.",
       backToElearning: "Back to Time’s UP! program",
       activePlan: "Active plan",
-      currentlyActive: "Currently active",
+      currentlyActive: "Current active plan",
       updatedTitle: "Subscription updated",
       errorTitle: "Action failed",
       loadingPlans: "Loading subscription plans...",
       choosePlan: "Choose your plan",
       choosePlanText:
-        "You can change your plan based on your commitment level, clarity needs, and transformation pace.",
+        "Select a plan based on the level of support and personalization you need.",
       refresh: "Refresh",
       current: "Current",
       recommended: "Recommended",
       processing: "Processing...",
       qualificationRequired: "Qualification required",
-      guideTitle: "How does plan change work?",
+      guideTitle: "How do subscription changes work?",
       upgrade: "Upgrade",
       upgradeText:
         "To move to a paid or higher plan, you are redirected to Stripe to confirm payment.",
       downgrade: "Downgrade",
       downgradeText:
-        "Switching to Standard is immediate and activates the free plan.",
+        "Returning to Standard is immediate and activates the free plan.",
       security: "Security",
       securityText:
-        "Payments and paid changes are confirmed by Stripe webhook before activation.",
+        "Payments are confirmed by Stripe before the new plan is activated.",
       coachingAccess: "Coaching access",
       pathSupport: "Trajectory support",
       executionLevers: "Action levers",
@@ -497,10 +499,13 @@ function SubscriptionContent() {
     return (
       <main
         className="page"
+        lang={uiLanguage}
+        translate="no"
+        suppressHydrationWarning
         style={{
           minHeight: "100vh",
           background: "var(--coach-bg)",
-          padding: 24,
+          padding: "clamp(16px, 3vw, 24px)",
         }}
       >
         <div className="page-wrap">
@@ -514,14 +519,14 @@ function SubscriptionContent() {
 
   return (
     <AppShell uiLanguage={uiLanguage} title={labels.shellTitle}>
-      <div className="stack" style={{ gap: 18 }}>
+      <div className="stack" style={{ gap: 16 }}>
         <section
           className="card stack"
           style={{
-            gap: 20,
+            gap: 16,
             position: "relative",
             overflow: "hidden",
-            borderRadius: 32,
+            borderRadius: 28,
             border: "1px solid rgba(43,33,24,0.08)",
             background:
               "linear-gradient(135deg, rgba(255,241,220,0.96), rgba(255,255,255,0.92) 52%, rgba(232,248,246,0.88))",
@@ -574,7 +579,7 @@ function SubscriptionContent() {
                 style={{
                   margin: 0,
                   maxWidth: 900,
-                  fontSize: 44,
+                  fontSize: "clamp(34px, 5vw, 44px)",
                   lineHeight: 1.02,
                   fontWeight: 950,
                   letterSpacing: "-0.07em",
@@ -587,7 +592,7 @@ function SubscriptionContent() {
               <p
                 className="subtitle"
                 style={{
-                  maxWidth: 760,
+                  maxWidth: 700,
                   color: "var(--coach-muted)",
                   fontSize: 16,
                   lineHeight: 1.7,
@@ -596,22 +601,6 @@ function SubscriptionContent() {
                 {labels.heroSubtitle}
               </p>
 
-              <div className="row" style={{ flexWrap: "wrap", gap: 10 }}>
-                <Link
-                  className="button ghost"
-                  href="/elearning"
-                  style={{
-                    borderColor: "rgba(255,122,89,0.28)",
-                    color: "var(--coach-accent)",
-                    background: "rgba(255,255,255,0.62)",
-                  }}
-                >
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                    <PathIcon size={14} />
-                    {labels.backToElearning}
-                  </span>
-                </Link>
-              </div>
             </div>
 
             <div
@@ -728,10 +717,9 @@ function SubscriptionContent() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(4, minmax(250px, 1fr))",
+                gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 250px), 1fr))",
                 gap: 14,
-                overflowX: "auto",
-                paddingBottom: 6,
+                alignItems: "stretch",
               }}
             >
               {plans.map((plan) => {
@@ -758,7 +746,7 @@ function SubscriptionContent() {
                     style={{
                       gap: 16,
                       minHeight: 540,
-                      borderRadius: 28,
+                      borderRadius: 20,
                       border: isActive
                         ? `2px solid ${toneStyle.border}`
                         : "1px solid rgba(43,33,24,0.08)",

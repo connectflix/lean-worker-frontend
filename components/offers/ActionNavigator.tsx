@@ -27,21 +27,21 @@ function getTypeLabel(
   uiLanguage: SupportedUiLanguage,
 ): string {
   if (uiLanguage === "fr") {
-    if (type === "base") return "Recommandé";
-    if (type === "upsell") return "Amélioration";
-    return "Complément";
+    if (type === "base") return "Offre recommandée";
+    if (type === "upsell") return "Option supérieure";
+    return "Option complémentaire";
   }
 
-  if (type === "base") return "Recommended";
-  if (type === "upsell") return "Upgrade";
-  return "Complement";
+  if (type === "base") return "Recommended offer";
+  if (type === "upsell") return "Upgrade option";
+  return "Complementary option";
 }
 
 export function ActionNavigator({
   baseOffer,
   upsellOffers = [],
   crossSellOffers = [],
-  uiLanguage = "en",
+  uiLanguage = "fr",
   onClick,
   hasExistingArtifactForFormat,
 }: ActionNavigatorProps) {
@@ -78,15 +78,10 @@ export function ActionNavigator({
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
-    if (offers.length === 0) {
-      setCurrentIndex(0);
-      return;
-    }
-
-    if (currentIndex > offers.length - 1) {
-      setCurrentIndex(offers.length - 1);
-    }
-  }, [offers, currentIndex]);
+    setCurrentIndex((index) =>
+      Math.min(index, Math.max(offers.length - 1, 0)),
+    );
+  }, [offers.length]);
 
   if (offers.length === 0) {
     return null;
@@ -105,7 +100,16 @@ export function ActionNavigator({
   }
 
   return (
-    <div className="stack" style={{ gap: 12 }}>
+    <div
+      className="stack"
+      lang={uiLanguage}
+      aria-label={
+        uiLanguage === "fr"
+          ? "Navigation entre les offres"
+          : "Offer navigation"
+      }
+      style={{ gap: 12 }}
+    >
       {offers.length > 1 ? (
         <div
           className="row space-between"
@@ -113,7 +117,7 @@ export function ActionNavigator({
         >
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
             <BadgePill icon={<SparkIcon size={14} />}>
-              {currentIndex + 1} / {offers.length}
+              {uiLanguage === "fr" ? "Offre" : "Offer"} {currentIndex + 1} / {offers.length}
             </BadgePill>
 
             <BadgePill icon={<SparkIcon size={14} />}>
@@ -124,6 +128,11 @@ export function ActionNavigator({
           <div className="row" style={{ gap: 8 }}>
             <button
               className="button ghost"
+              aria-label={
+                uiLanguage === "fr"
+                  ? "Afficher l’offre précédente"
+                  : "Show previous offer"
+              }
               onClick={goPrevious}
               disabled={currentIndex === 0}
               type="button"
@@ -133,6 +142,11 @@ export function ActionNavigator({
 
             <button
               className="button ghost"
+              aria-label={
+                uiLanguage === "fr"
+                  ? "Afficher l’offre suivante"
+                  : "Show next offer"
+              }
               onClick={goNext}
               disabled={currentIndex === offers.length - 1}
               type="button"
@@ -143,7 +157,12 @@ export function ActionNavigator({
         </div>
       ) : null}
 
-      <div key={current.key}>
+      <div
+        key={current.key}
+        role="region"
+        aria-live="polite"
+        aria-label={getTypeLabel(current.type, uiLanguage)}
+      >
         {current.type === "base" ? (
           <BaseOfferCard
             offer={current.offer}

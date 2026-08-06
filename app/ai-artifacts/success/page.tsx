@@ -20,10 +20,10 @@ import {
 
 function formatArtifactType(format: string, uiLanguage: "fr" | "en"): string {
   if (format === "audiobook") {
-    return uiLanguage === "fr" ? "Mini audiobook" : "Mini audiobook";
+    return uiLanguage === "fr" ? "Mini livre audio" : "Mini audiobook";
   }
 
-  return uiLanguage === "fr" ? "Mini e-book" : "Mini e-book";
+  return uiLanguage === "fr" ? "Mini guide numérique" : "Mini e-book";
 }
 
 function formatArtifactStatus(status: string, uiLanguage: "fr" | "en"): string {
@@ -46,9 +46,9 @@ function formatArtifactStatus(status: string, uiLanguage: "fr" | "en"): string {
   return (uiLanguage === "fr" ? fr : en)[status] ?? status;
 }
 
-function formatPrice(price: number): string {
+function formatPrice(price: number, uiLanguage: "fr" | "en"): string {
   try {
-    return new Intl.NumberFormat("fr-BE", {
+    return new Intl.NumberFormat(uiLanguage === "fr" ? "fr-BE" : "en-BE", {
       style: "currency",
       currency: "EUR",
       minimumFractionDigits: price % 1 === 0 ? 0 : 2,
@@ -106,8 +106,8 @@ function localizeArtifactSubtitle(
   const normalized = subtitle.trim();
 
   const knownTranslations: Record<string, string> = {
-    "Personalized AI-generated mini e-book": "Mini e-book personnalisé généré par IA",
-    "Personalized AI-generated mini audiobook": "Mini audiobook personnalisé généré par IA",
+    "Personalized AI-generated mini e-book": "Mini guide numérique personnalisé généré par IA",
+    "Personalized AI-generated mini audiobook": "Mini livre audio personnalisé généré par IA",
   };
 
   return knownTranslations[normalized] ?? subtitle;
@@ -127,7 +127,7 @@ function SuccessInfoCard({
       className="card-soft stack"
       style={{
         gap: 8,
-        borderRadius: 24,
+        borderRadius: 20,
         background: "rgba(255,248,239,0.68)",
         border: "1px solid rgba(43,33,24,0.08)",
       }}
@@ -175,7 +175,7 @@ function AIArtifactSuccessContent() {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
   }, [artifactIdParam]);
 
-  const { uiLanguage, loadingLanguage } = useUiLanguage("en");
+  const { uiLanguage, loadingLanguage } = useUiLanguage("fr");
   const copy = getUiCopy(uiLanguage);
 
   const [artifact, setArtifact] = useState<AIArtifactResponse | null>(null);
@@ -218,10 +218,13 @@ function AIArtifactSuccessContent() {
     return (
       <main
         className="page"
+        lang={uiLanguage}
+        translate="no"
+        suppressHydrationWarning
         style={{
           minHeight: "100vh",
           background: "var(--coach-bg)",
-          padding: 24,
+          padding: "clamp(16px, 3vw, 24px)",
         }}
       >
         <div className="page-wrap">
@@ -243,16 +246,16 @@ function AIArtifactSuccessContent() {
   return (
     <AppShell
       uiLanguage={uiLanguage}
-      title={uiLanguage === "fr" ? "Paiement réussi" : "Payment successful"}
+      title={uiLanguage === "fr" ? "Paiement confirmé" : "Payment confirmed"}
     >
-      <div className="stack" style={{ gap: 18 }}>
+      <div className="stack" style={{ gap: 16 }}>
         <div
           className="card stack"
           style={{
-            gap: 20,
+            gap: 16,
             position: "relative",
             overflow: "hidden",
-            borderRadius: 32,
+            borderRadius: 28,
             border: "1px solid rgba(43,33,24,0.08)",
             background:
               "linear-gradient(135deg, rgba(255,241,220,0.96), rgba(255,255,255,0.92) 52%, rgba(232,248,246,0.88))",
@@ -323,7 +326,7 @@ function AIArtifactSuccessContent() {
             <div
               style={{
                 maxWidth: 920,
-                fontSize: 44,
+                fontSize: "clamp(34px, 5vw, 44px)",
                 lineHeight: 1.02,
                 fontWeight: 950,
                 letterSpacing: "-0.07em",
@@ -331,22 +334,22 @@ function AIArtifactSuccessContent() {
               }}
             >
               {uiLanguage === "fr"
-                ? "Ton achat est confirmé. Ton guide IA est en préparation."
-                : "Your purchase is confirmed. Your AI guide is being prepared."}
+                ? "Ton paiement est confirmé."
+                : "Your payment is confirmed."}
             </div>
 
             <p
               className="subtitle"
               style={{
-                maxWidth: 760,
+                maxWidth: 700,
                 color: "var(--coach-muted)",
                 fontSize: 16,
                 lineHeight: 1.7,
               }}
             >
               {uiLanguage === "fr"
-                ? "Ton paiement a bien été enregistré. Selon le statut du guide, tu peux l’ouvrir immédiatement ou suivre sa génération depuis la page dédiée."
-                : "Your payment has been recorded. Depending on the guide status, you can open it immediately or follow its generation from the dedicated page."}
+                ? "Ton guide est maintenant accessible ou en cours de préparation. Tu peux suivre son état depuis sa page."
+                : "Your guide is now available or being prepared. You can track its status from the guide page."}
             </p>
 
             <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
@@ -358,7 +361,7 @@ function AIArtifactSuccessContent() {
 
               {artifact?.price_eur != null ? (
                 <BadgePill icon={<TargetIcon size={14} />}>
-                  {formatPrice(artifact.price_eur)}
+                  {formatPrice(artifact.price_eur, uiLanguage)}
                 </BadgePill>
               ) : null}
 
@@ -394,8 +397,8 @@ function AIArtifactSuccessContent() {
 
             <div className="muted" style={{ color: "var(--coach-muted)" }}>
               {uiLanguage === "fr"
-                ? "Nous récupérons les dernières informations sur ton guide."
-                : "We are retrieving the latest information about your guide."}
+                ? "Nous récupérons l’état actuel de ton guide."
+                : "We are retrieving the current guide status."}
             </div>
           </div>
         ) : error ? (
@@ -430,7 +433,7 @@ function AIArtifactSuccessContent() {
                 onClick={() => router.push("/ai-artifacts")}
                 type="button"
               >
-                {uiLanguage === "fr" ? "Ouvrir ma bibliothèque" : "Open my library"}
+                {uiLanguage === "fr" ? "Voir mes guides" : "View my guides"}
               </button>
             </div>
           </div>
@@ -440,7 +443,7 @@ function AIArtifactSuccessContent() {
               className="card stack"
               style={{
                 gap: 16,
-                borderRadius: 32,
+                borderRadius: 28,
                 border: "1px solid rgba(43,33,24,0.08)",
                 background: "rgba(255,255,255,0.78)",
                 boxShadow: "0 18px 48px rgba(43,33,24,0.06)",
@@ -537,7 +540,7 @@ function AIArtifactSuccessContent() {
                     borderColor: "rgba(255,122,89,0.28)",
                   }}
                 >
-                  {uiLanguage === "fr" ? "Ouvrir ma bibliothèque" : "Open my library"}
+                  {uiLanguage === "fr" ? "Voir mes guides" : "View my guides"}
                 </button>
 
                 <button
@@ -611,7 +614,7 @@ function AIArtifactSuccessContent() {
                   style={{
                     whiteSpace: "pre-wrap",
                     lineHeight: 1.7,
-                    borderRadius: 24,
+                    borderRadius: 20,
                     background: "rgba(255,248,239,0.68)",
                     border: "1px solid rgba(43,33,24,0.08)",
                   }}
@@ -649,7 +652,7 @@ function AIArtifactSuccessContent() {
                 type="button"
                 style={{ background: "var(--coach-accent)" }}
               >
-                {uiLanguage === "fr" ? "Ouvrir ma bibliothèque" : "Open my library"}
+                {uiLanguage === "fr" ? "Voir mes guides" : "View my guides"}
               </button>
 
               <button

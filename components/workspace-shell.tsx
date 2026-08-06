@@ -7,7 +7,7 @@ import { useCurrentUser } from "@/components/user-context";
 import type { SupportedUiLanguage } from "@/lib/user-locales";
 
 export function WorkspaceShell({
-  uiLanguage,
+  uiLanguage = "fr",
   title,
   firstName,
   isAdmin = false,
@@ -16,7 +16,7 @@ export function WorkspaceShell({
   right,
   layout = "workspace",
 }: {
-  uiLanguage: SupportedUiLanguage;
+  uiLanguage?: SupportedUiLanguage;
   title: string;
   firstName?: string | null;
   isAdmin?: boolean;
@@ -29,19 +29,29 @@ export function WorkspaceShell({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
-    const storedValue = window.localStorage.getItem(
-      "leanworker-sidebar-collapsed",
-    );
-    setSidebarCollapsed(storedValue === "true");
+    try {
+      const storedValue = window.localStorage.getItem(
+        "leanworker-sidebar-collapsed",
+      );
+      setSidebarCollapsed(storedValue === "true");
+    } catch {
+      setSidebarCollapsed(false);
+    }
   }, []);
 
   function toggleSidebarCollapsed() {
     setSidebarCollapsed((current) => {
       const next = !current;
-      window.localStorage.setItem(
-        "leanworker-sidebar-collapsed",
-        String(next),
-      );
+
+      try {
+        window.localStorage.setItem(
+          "leanworker-sidebar-collapsed",
+          String(next),
+        );
+      } catch {
+        // Keep the in-memory preference even when storage is unavailable.
+      }
+
       return next;
     });
   }
@@ -61,6 +71,9 @@ export function WorkspaceShell({
 
   return (
     <div
+      lang={uiLanguage}
+      data-layout={layout}
+      data-sidebar-collapsed={sidebarCollapsed ? "true" : "false"}
       className={`app-shell coach-app-shell ${
         sidebarCollapsed ? "coach-app-shell--sidebar-collapsed" : ""
       }`}
@@ -69,6 +82,13 @@ export function WorkspaceShell({
           "radial-gradient(circle at top left, rgba(255,122,89,0.10), transparent 30%), radial-gradient(circle at bottom right, rgba(88,180,174,0.10), transparent 34%), var(--coach-bg)",
       }}
     >
+      <a
+        href="#workspace-main-content"
+        className="workspace-skip-link"
+      >
+        {uiLanguage === "fr" ? "Aller au contenu principal" : "Skip to main content"}
+      </a>
+
       <SidebarNav
         uiLanguage={uiLanguage}
         isAdmin={isAdmin}
@@ -93,7 +113,14 @@ export function WorkspaceShell({
         />
 
         <main
+          id="workspace-main-content"
           className="content-area workspace-content-area"
+          tabIndex={-1}
+          aria-label={
+            uiLanguage === "fr"
+              ? `Espace de travail : ${title}`
+              : `Workspace: ${title}`
+          }
           style={{
             background:
               "radial-gradient(circle at 8% 8%, rgba(255,122,89,0.06), transparent 26%), radial-gradient(circle at 92% 18%, rgba(88,180,174,0.06), transparent 28%)",
@@ -106,6 +133,11 @@ export function WorkspaceShell({
               {left ? (
                 <aside
                   className="workspace-left"
+                  aria-label={
+                    uiLanguage === "fr"
+                      ? "Panneau de contexte"
+                      : "Context panel"
+                  }
                   style={{
                     minWidth: 0,
                   }}
@@ -116,6 +148,11 @@ export function WorkspaceShell({
 
               <section
                 className="workspace-center"
+                aria-label={
+                  uiLanguage === "fr"
+                    ? "Zone de travail principale"
+                    : "Main workspace"
+                }
                 style={{
                   minWidth: 0,
                 }}
@@ -126,6 +163,11 @@ export function WorkspaceShell({
               {right ? (
                 <aside
                   className="workspace-right"
+                  aria-label={
+                    uiLanguage === "fr"
+                      ? "Panneau d’informations complémentaires"
+                      : "Supporting information panel"
+                  }
                   style={{
                     minWidth: 0,
                   }}
@@ -139,6 +181,24 @@ export function WorkspaceShell({
       </div>
 
       <style jsx global>{`
+        .workspace-skip-link {
+          position: fixed;
+          top: 12px;
+          left: 16px;
+          z-index: 2000;
+          padding: 10px 14px;
+          border-radius: 12px;
+          background: var(--coach-ink);
+          color: #ffffff;
+          text-decoration: none;
+          transform: translateY(-160%);
+          transition: transform 160ms ease;
+        }
+
+        .workspace-skip-link:focus {
+          transform: translateY(0);
+        }
+
         .coach-app-shell {
           transition: grid-template-columns 220ms ease;
         }

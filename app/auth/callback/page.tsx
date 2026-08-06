@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { saveToken } from "@/lib/auth";
 import { routeUserAfterLogin } from "@/lib/post-login-routing";
+import { useUiLanguage } from "@/lib/use-ui-language";
 import {
   BadgePill,
   CheckCircleIcon,
@@ -38,18 +39,23 @@ function BrandMark() {
 
 function AuthSurface({
   children,
+  lang,
 }: {
   children: React.ReactNode;
+  lang: "fr" | "en";
 }) {
   return (
     <main
       className="page"
+      lang={lang}
+      translate="no"
+      suppressHydrationWarning
       style={{
         minHeight: "100vh",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: 24,
+        padding: "clamp(16px, 4vw, 24px)",
         background:
           "radial-gradient(circle at top left, rgba(255,122,89,0.12), transparent 30%), radial-gradient(circle at bottom right, rgba(88,180,174,0.12), transparent 34%), var(--coach-bg)",
       }}
@@ -57,7 +63,7 @@ function AuthSurface({
       <div
         className="page-wrap center"
         style={{
-          maxWidth: 760,
+          maxWidth: 680,
           width: "100%",
         }}
       >
@@ -67,10 +73,10 @@ function AuthSurface({
             position: "relative",
             overflow: "hidden",
             textAlign: "center",
-            gap: 18,
-            minHeight: 380,
+            gap: 16,
+            minHeight: 340,
             justifyContent: "center",
-            borderRadius: 32,
+            borderRadius: 28,
             border: "1px solid rgba(43,33,24,0.08)",
             background:
               "linear-gradient(135deg, rgba(255,241,220,0.96), rgba(255,255,255,0.92) 52%, rgba(232,248,246,0.88))",
@@ -123,24 +129,48 @@ function AuthSurface({
 function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { uiLanguage } = useUiLanguage("fr");
 
   const [error, setError] = useState<string | null>(null);
 
   const copy = useMemo(
-    () => ({
-      eyebrow: "Authentication",
-      brandTitle: "LeanWorker",
-      brandSubtitle: "Career intelligence amplified",
-      signingIn: "Signing you in...",
-      signingInBody:
-        "We are preparing your coaching workspace, restoring your context, and loading your personalized environment.",
-      badgeOk: "Login",
-      badgeError: "Login issue",
-      errorTitle: "We could not complete your sign-in",
-      errorBody: "Your authentication flow did not complete as expected.",
-      backHome: "Back to home",
-    }),
-    [],
+    () =>
+      uiLanguage === "fr"
+        ? {
+            eyebrow: "Authentification",
+            brandTitle: "LeanWorker",
+            brandSubtitle: "Career intelligence amplified",
+            signingIn: "Connexion en cours",
+            signingInBody:
+              "Nous ouvrons ton espace et préparons ton accompagnement personnalisé.",
+            badgeOk: "Connexion sécurisée",
+            workspaceBadge: "Espace personnel",
+            badgeError: "Problème de connexion",
+            errorTitle: "La connexion n’a pas pu être finalisée",
+            errorBody:
+              "La procédure d’authentification a été interrompue ou a expiré.",
+            backHome: "Retour à l’accueil",
+            missingToken: "Le jeton d’authentification est manquant.",
+            callbackFailed: "La connexion a échoué. Réessaie depuis la page d’accueil.",
+          }
+        : {
+            eyebrow: "Authentication",
+            brandTitle: "LeanWorker",
+            brandSubtitle: "Career intelligence amplified",
+            signingIn: "Signing you in",
+            signingInBody:
+              "We are opening your workspace and preparing your personalized coaching experience.",
+            badgeOk: "Secure sign-in",
+            workspaceBadge: "Personal workspace",
+            badgeError: "Sign-in issue",
+            errorTitle: "We could not complete your sign-in",
+            errorBody:
+              "The authentication process was interrupted or has expired.",
+            backHome: "Back to home",
+            missingToken: "The authentication token is missing.",
+            callbackFailed: "Sign-in failed. Please try again from the home page.",
+          },
+    [uiLanguage],
   );
 
   useEffect(() => {
@@ -153,7 +183,7 @@ function AuthCallbackContent() {
 
         if (!token) {
           if (isMounted) {
-            setError("Missing authentication token.");
+            setError(copy.missingToken);
           }
           return;
         }
@@ -165,7 +195,7 @@ function AuthCallbackContent() {
         });
       } catch (err) {
         if (isMounted) {
-          setError(err instanceof Error ? err.message : "Authentication callback failed.");
+          setError(err instanceof Error ? err.message : copy.callbackFailed);
         }
       }
     }
@@ -175,10 +205,10 @@ function AuthCallbackContent() {
     return () => {
       isMounted = false;
     };
-  }, [router, searchParams]);
+  }, [router, searchParams, copy]);
 
   return (
-    <AuthSurface>
+    <AuthSurface lang={uiLanguage}>
       <div className="stack center" style={{ gap: 10 }}>
         <BrandMark />
 
@@ -188,7 +218,7 @@ function AuthCallbackContent() {
 
         <div
           style={{
-            fontSize: 34,
+            fontSize: 32,
             lineHeight: 1.06,
             fontWeight: 950,
             letterSpacing: "-0.065em",
@@ -213,12 +243,12 @@ function AuthCallbackContent() {
         <>
           <div className="row center" style={{ gap: 8, flexWrap: "wrap" }}>
             <BadgePill icon={<CheckCircleIcon size={14} />}>{copy.badgeOk}</BadgePill>
-            <BadgePill icon={<SparkIcon size={14} />}>Coach workspace</BadgePill>
+            <BadgePill icon={<SparkIcon size={14} />}>{copy.workspaceBadge}</BadgePill>
           </div>
 
           <div
             style={{
-              fontSize: 30,
+              fontSize: 28,
               lineHeight: 1.1,
               fontWeight: 950,
               letterSpacing: "-0.055em",
@@ -232,7 +262,7 @@ function AuthCallbackContent() {
             className="subtitle"
             style={{
               margin: 0,
-              maxWidth: 560,
+              maxWidth: 500,
               color: "var(--coach-muted)",
               lineHeight: 1.7,
             }}
@@ -242,8 +272,8 @@ function AuthCallbackContent() {
 
           <div
             style={{
-              width: 42,
-              height: 42,
+              width: 40,
+              height: 40,
               borderRadius: 999,
               display: "grid",
               placeItems: "center",
@@ -284,7 +314,7 @@ function AuthCallbackContent() {
             className="subtitle"
             style={{
               margin: 0,
-              maxWidth: 560,
+              maxWidth: 500,
               color: "var(--coach-muted)",
               lineHeight: 1.7,
             }}
@@ -328,18 +358,37 @@ function AuthCallbackContent() {
 }
 
 function AuthCallbackFallback() {
+  const { uiLanguage } = useUiLanguage("fr");
+
+  const copy =
+    uiLanguage === "fr"
+      ? {
+          eyebrow: "Authentification",
+          badge: "Connexion sécurisée",
+          workspace: "Espace personnel",
+          title: "Connexion en cours",
+          body: "Nous ouvrons ton espace et préparons ton accompagnement personnalisé.",
+        }
+      : {
+          eyebrow: "Authentication",
+          badge: "Secure sign-in",
+          workspace: "Personal workspace",
+          title: "Signing you in",
+          body: "We are opening your workspace and preparing your personalized coaching experience.",
+        };
+
   return (
-    <AuthSurface>
+    <AuthSurface lang={uiLanguage}>
       <div className="stack center" style={{ gap: 10 }}>
         <BrandMark />
 
         <div className="row center" style={{ gap: 8, flexWrap: "wrap" }}>
-          <BadgePill icon={<SparkIcon size={14} />}>Authentication</BadgePill>
+          <BadgePill icon={<SparkIcon size={14} />}>{copy.eyebrow}</BadgePill>
         </div>
 
         <div
           style={{
-            fontSize: 34,
+            fontSize: 32,
             lineHeight: 1.06,
             fontWeight: 950,
             letterSpacing: "-0.065em",
@@ -361,39 +410,38 @@ function AuthCallbackFallback() {
       </div>
 
       <div className="row center" style={{ gap: 8, flexWrap: "wrap" }}>
-        <BadgePill icon={<CheckCircleIcon size={14} />}>Login</BadgePill>
-        <BadgePill icon={<SparkIcon size={14} />}>Coach workspace</BadgePill>
+        <BadgePill icon={<CheckCircleIcon size={14} />}>{copy.badge}</BadgePill>
+        <BadgePill icon={<SparkIcon size={14} />}>{copy.workspace}</BadgePill>
       </div>
 
       <div
         style={{
-          fontSize: 30,
+          fontSize: 28,
           lineHeight: 1.1,
           fontWeight: 950,
           letterSpacing: "-0.055em",
           color: "var(--coach-ink)",
         }}
       >
-        Signing you in...
+        {copy.title}
       </div>
 
       <p
         className="subtitle"
         style={{
           margin: 0,
-          maxWidth: 560,
+          maxWidth: 500,
           color: "var(--coach-muted)",
-          lineHeight: 1.7,
+          lineHeight: 1.65,
         }}
       >
-        We are preparing your coaching workspace, restoring your context, and loading your
-        personalized environment.
+        {copy.body}
       </p>
 
       <div
         style={{
-          width: 42,
-          height: 42,
+          width: 40,
+          height: 40,
           borderRadius: 999,
           display: "grid",
           placeItems: "center",
@@ -404,8 +452,8 @@ function AuthCallbackFallback() {
         <div
           className="loader"
           style={{
-            width: 24,
-            height: 24,
+            width: 22,
+            height: 22,
             borderColor: "rgba(255,122,89,0.18)",
             borderTopColor: "var(--coach-accent)",
           }}

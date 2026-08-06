@@ -21,7 +21,7 @@ import type { Recommendation } from "@/lib/types";
 const FEED_MAX_WIDTH = 920;
 const INITIAL_VISIBLE_COUNT = 8;
 const LOAD_MORE_STEP = 6;
-const FEED_SCROLL_HEIGHT = "72vh";
+const FEED_SCROLL_HEIGHT = "68vh";
 
 type FeedSortMode = "priority" | "open" | "recent";
 
@@ -37,7 +37,7 @@ function CoachSectionCard({
       className="card stack"
       style={{
         gap: 16,
-        borderRadius: 28,
+        borderRadius: 20,
         border: "1px solid rgba(43,33,24,0.08)",
         background: warm
           ? "linear-gradient(135deg, rgba(255,241,220,0.94), rgba(255,255,255,0.90))"
@@ -157,7 +157,7 @@ export default function RecommendationsPage() {
 function RecommendationsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { uiLanguage, loadingLanguage } = useUiLanguage("en");
+  const { uiLanguage, loadingLanguage } = useUiLanguage("fr");
   const copy = getUiCopy(uiLanguage);
 
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
@@ -196,7 +196,13 @@ function RecommendationsContent() {
         return Math.min(Math.max(current, INITIAL_VISIBLE_COUNT), data.length);
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load recommendations");
+      setError(
+        err instanceof Error
+          ? err.message
+          : uiLanguage === "fr"
+            ? "Impossible de charger les recommandations."
+            : "Failed to load recommendations.",
+      );
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -404,10 +410,13 @@ function RecommendationsContent() {
     return (
       <main
         className="page"
+        lang={uiLanguage}
+        translate="no"
+        suppressHydrationWarning
         style={{
           minHeight: "100vh",
           background: "var(--coach-bg)",
-          padding: 24,
+          padding: "clamp(16px, 3vw, 24px)",
         }}
       >
         <div className="page-wrap">
@@ -458,7 +467,7 @@ function RecommendationsContent() {
                     }}
                   >
                     <SparkIcon size={14} />
-                    {uiLanguage === "fr" ? "Mode focus" : "Focus mode"}
+                    {uiLanguage === "fr" ? "Mode concentration" : "Focus mode"}
                   </span>
 
                   <span
@@ -471,7 +480,7 @@ function RecommendationsContent() {
                     }}
                   >
                     <TargetIcon size={14} />
-                    {uiLanguage === "fr" ? "Exécution" : "Execution"}
+                    {uiLanguage === "fr" ? "Passage à l’action" : "Execution"}
                   </span>
                 </div>
 
@@ -512,7 +521,7 @@ function RecommendationsContent() {
                     borderColor: "rgba(255,122,89,0.28)",
                   }}
                 >
-                  {uiLanguage === "fr" ? "Quitter le focus" : "Exit focus mode"}
+                  {uiLanguage === "fr" ? "Quitter le mode concentration" : "Exit focus mode"}
                 </button>
 
                 <button
@@ -562,7 +571,7 @@ function RecommendationsContent() {
       <div
         className="stack"
         style={{
-          gap: 18,
+          gap: 16,
           maxWidth: FEED_MAX_WIDTH,
           margin: "0 auto",
           width: "100%",
@@ -571,10 +580,10 @@ function RecommendationsContent() {
         <div
           className="card stack"
           style={{
-            gap: 18,
+            gap: 16,
             position: "relative",
             overflow: "hidden",
-            borderRadius: 32,
+            borderRadius: 28,
             border: "1px solid rgba(43,33,24,0.08)",
             background:
               "linear-gradient(135deg, rgba(255,241,220,0.96), rgba(255,255,255,0.92) 54%, rgba(232,248,246,0.88))",
@@ -628,7 +637,7 @@ function RecommendationsContent() {
                 }}
               >
                 <SparkIcon size={14} />
-                {uiLanguage === "fr" ? "Fil d’actions" : "Action feed"}
+                {uiLanguage === "fr" ? "Recommandations personnalisées" : "Personalized recommendations"}
               </span>
 
               <span
@@ -641,7 +650,7 @@ function RecommendationsContent() {
                 }}
               >
                 <TargetIcon size={14} />
-                {uiLanguage === "fr" ? "Priorisé par le coach" : "Coach-prioritized"}
+                {uiLanguage === "fr" ? "Classées par priorité" : "Ranked by priority"}
               </span>
             </div>
 
@@ -722,7 +731,7 @@ function RecommendationsContent() {
 
             <div className="grid grid-3">
               <CoachMetricCard
-                label={uiLanguage === "fr" ? "Actions ouvertes" : "Open actions"}
+                label={uiLanguage === "fr" ? "Recommandations ouvertes" : "Open recommendations"}
                 value={openCount}
                 helper={
                   uiLanguage === "fr"
@@ -746,7 +755,7 @@ function RecommendationsContent() {
               />
 
               <CoachMetricCard
-                label={uiLanguage === "fr" ? "Guides IA disponibles" : "AI guides available"}
+                label={uiLanguage === "fr" ? "Guides disponibles" : "Guides available"}
                 value={artifactEligibleCount}
                 helper={
                   uiLanguage === "fr"
@@ -1009,7 +1018,7 @@ function RecommendationsContent() {
                   <div className="row space-between" style={{ gap: 12, flexWrap: "wrap" }}>
                     <div className="stack" style={{ gap: 4 }}>
                       <div className="section-title">
-                        {uiLanguage === "fr" ? "Trier le fil" : "Sort the feed"}
+                        {uiLanguage === "fr" ? "Trier les recommandations" : "Sort recommendations"}
                       </div>
 
                       <div className="muted" style={{ color: "var(--coach-muted)" }}>

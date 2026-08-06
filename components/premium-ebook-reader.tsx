@@ -193,12 +193,12 @@ function renderRichContent(content: string) {
 export function PremiumEbookReader({
   outlineSections,
   contentMarkdown,
-  uiLanguage,
+  uiLanguage = "fr",
   storageKey,
 }: {
   outlineSections?: OutlineSection[];
   contentMarkdown: string;
-  uiLanguage: "fr" | "en";
+  uiLanguage?: "fr" | "en";
   storageKey: string;
 }) {
   const sections = useMemo(() => {
@@ -207,6 +207,12 @@ export function PremiumEbookReader({
   }, [contentMarkdown, outlineSections]);
 
   const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    setActiveIndex((currentIndex) =>
+      Math.min(currentIndex, Math.max(sections.length - 1, 0)),
+    );
+  }, [sections.length]);
 
   useEffect(() => {
     try {
@@ -244,21 +250,21 @@ export function PremiumEbookReader({
 
   const labels = {
     reading:
-      uiLanguage === "fr" ? "Lecture du mini e-book" : "Mini e-book reading",
+      uiLanguage === "fr" ? "Lecture du guide" : "Guide reader",
     section: uiLanguage === "fr" ? "Section" : "Section",
     previous: uiLanguage === "fr" ? "Précédent" : "Previous",
     next: uiLanguage === "fr" ? "Suivant" : "Next",
     progress: uiLanguage === "fr" ? "Progression" : "Progress",
     saved:
-      uiLanguage === "fr" ? "Progression sauvegardée" : "Progress saved",
+      uiLanguage === "fr" ? "Progression enregistrée" : "Progress saved",
     immersive:
-      uiLanguage === "fr" ? "Lecture guidée" : "Guided reading",
+      uiLanguage === "fr" ? "Lecture structurée" : "Structured reading",
     calmMode:
-      uiLanguage === "fr" ? "Mode calme" : "Calm mode",
+      uiLanguage === "fr" ? "Mode confortable" : "Comfort mode",
     complete:
-      uiLanguage === "fr" ? "Terminé" : "Complete",
+      uiLanguage === "fr" ? "Lecture terminée" : "Reading complete",
     chapter:
-      uiLanguage === "fr" ? "Chapitre actif" : "Active chapter",
+      uiLanguage === "fr" ? "Chapitre en cours" : "Current chapter",
     unavailable:
       uiLanguage === "fr"
         ? "Le contenu du guide n’est pas encore disponible."
@@ -272,8 +278,9 @@ export function PremiumEbookReader({
   return (
     <div
       className="ebook-inline-reader"
+      lang={uiLanguage}
       style={{
-        gap: 16,
+        gap: 14,
       }}
     >
       <div
@@ -351,7 +358,11 @@ export function PremiumEbookReader({
 
         <div
           className="ebook-progress-track"
-          aria-hidden="true"
+          role="progressbar"
+          aria-label={labels.progress}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={progress}
           style={{
             background: "rgba(43,33,24,0.08)",
           }}
@@ -380,6 +391,7 @@ export function PremiumEbookReader({
       >
         <div
           className="ebook-reader-screen"
+          aria-live="polite"
           style={{
             borderRadius: 26,
             border: "1px solid rgba(43,33,24,0.08)",
@@ -441,6 +453,11 @@ export function PremiumEbookReader({
           <button
             className="button ghost"
             type="button"
+            aria-label={
+              uiLanguage === "fr"
+                ? "Lire le chapitre précédent"
+                : "Read previous chapter"
+            }
             disabled={!canGoPrevious}
             onClick={() => setActiveIndex((value) => Math.max(0, value - 1))}
           >
@@ -460,6 +477,11 @@ export function PremiumEbookReader({
           <button
             className="button"
             type="button"
+            aria-label={
+              uiLanguage === "fr"
+                ? "Lire le chapitre suivant"
+                : "Read next chapter"
+            }
             disabled={!canGoNext}
             onClick={() =>
               setActiveIndex((value) =>

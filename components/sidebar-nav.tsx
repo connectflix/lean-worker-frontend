@@ -72,12 +72,12 @@ function NavIcon({
 }
 
 export function SidebarNav({
-  uiLanguage,
+  uiLanguage = "fr",
   isAdmin = false,
   collapsed = false,
   onToggleCollapsed,
 }: {
-  uiLanguage: SupportedUiLanguage;
+  uiLanguage?: SupportedUiLanguage;
   isAdmin?: boolean;
   collapsed?: boolean;
   onToggleCollapsed?: () => void;
@@ -99,11 +99,11 @@ export function SidebarNav({
     },
     {
       href: "/ai-artifacts",
-      label: uiLanguage === "fr" ? "Guides IA" : "AI Guides",
+      label: uiLanguage === "fr" ? "Guides" : "Guides",
     },
     {
       href: "/career-blueprint",
-      label: uiLanguage === "fr" ? "Blueprint carrière" : "Career Blueprint",
+      label: uiLanguage === "fr" ? "Plan de carrière" : "Career blueprint",
     },
     {
       href: "/account/subscription",
@@ -125,11 +125,13 @@ export function SidebarNav({
   return (
     <aside
       className={`sidebar coach-sidebar ${collapsed ? "coach-sidebar--collapsed" : ""}`}
+      lang={uiLanguage}
       aria-label={uiLanguage === "fr" ? "Navigation principale" : "Primary navigation"}
+      data-collapsed={collapsed ? "true" : "false"}
       style={{
         position: "relative",
-        padding: 16,
-        borderRadius: 30,
+        padding: 14,
+        borderRadius: 26,
         border: "1px solid rgba(43,33,24,0.08)",
         background:
           "linear-gradient(180deg, rgba(255,255,255,0.78), rgba(255,241,220,0.72))",
@@ -141,6 +143,7 @@ export function SidebarNav({
       }}
     >
       <div
+        aria-hidden="true"
         style={{
           position: "absolute",
           inset: 0,
@@ -202,8 +205,8 @@ export function SidebarNav({
               }}
             >
               {uiLanguage === "fr"
-                ? "Ton espace de progression"
-                : "Your growth workspace"}
+                ? "Ton espace de développement"
+                : "Your development workspace"}
             </p>
           </div>
 
@@ -212,10 +215,12 @@ export function SidebarNav({
               className="button ghost coach-sidebar__toggle"
               type="button"
               onClick={onToggleCollapsed}
+              aria-expanded={!collapsed}
+              aria-controls="primary-sidebar-navigation"
               aria-label={
                 collapsed
                   ? uiLanguage === "fr"
-                    ? "Agrandir le menu"
+                    ? "Déployer le menu"
                     : "Expand menu"
                   : uiLanguage === "fr"
                     ? "Réduire le menu"
@@ -224,7 +229,7 @@ export function SidebarNav({
               title={
                 collapsed
                   ? uiLanguage === "fr"
-                    ? "Agrandir le menu"
+                    ? "Déployer le menu"
                     : "Expand menu"
                   : uiLanguage === "fr"
                     ? "Réduire le menu"
@@ -256,6 +261,7 @@ export function SidebarNav({
         </div>
 
         <div
+          id="primary-sidebar-navigation"
           className="nav-section"
           style={{
             display: "flex",
@@ -274,7 +280,7 @@ export function SidebarNav({
               textTransform: "uppercase",
             }}
           >
-            {uiLanguage === "fr" ? "Parcours" : "Journey"}
+            {uiLanguage === "fr" ? "Navigation" : "Navigation"}
           </span>
 
           <div className="stack" style={{ gap: 7 }}>
@@ -289,6 +295,7 @@ export function SidebarNav({
                   href={item.href}
                   className={`nav-item ${active ? "active" : ""}`}
                   aria-label={item.label}
+                  aria-current={active ? "page" : undefined}
                   title={collapsed ? item.label : undefined}
                   style={{
                     position: "relative",
@@ -297,7 +304,7 @@ export function SidebarNav({
                     justifyContent: "space-between",
                     gap: 10,
                     padding: "12px 12px",
-                    borderRadius: 18,
+                    borderRadius: 16,
                     textDecoration: "none",
                     color: active ? "var(--coach-ink)" : "var(--coach-muted)",
                     background: active
@@ -407,7 +414,7 @@ export function SidebarNav({
               color: "var(--coach-ink)",
             }}
           >
-            {uiLanguage === "fr" ? "Ton espace personnel" : "Your personal space"}
+            {uiLanguage === "fr" ? "Ton espace de réflexion" : "Your reflection space"}
           </div>
 
           <div
@@ -419,8 +426,8 @@ export function SidebarNav({
             }}
           >
             {uiLanguage === "fr"
-              ? "Un espace calme pour clarifier, décider et avancer sans te disperser."
-              : "A calm space to clarify, decide, and move forward without scattering your energy."}
+              ? "Un espace calme pour clarifier tes priorités, décider et avancer avec plus de cohérence."
+              : "A calm space to clarify priorities, make decisions, and move forward with greater focus."}
           </div>
         </div>
 
@@ -436,6 +443,7 @@ export function SidebarNav({
               border: "1px solid rgba(43,33,24,0.08)",
               boxShadow: "inset 0 1px 0 rgba(255,255,255,0.68)",
             }}
+            aria-label={uiLanguage === "fr" ? "Se déconnecter" : "Log out"}
             onClick={() => {
               clearToken();
               window.location.href = "/";
@@ -448,7 +456,7 @@ export function SidebarNav({
             >
               <ArrowRightIcon size={14} />
               <span className="coach-sidebar__logout-label">
-                {uiLanguage === "fr" ? "Déconnexion" : "Logout"}
+                {uiLanguage === "fr" ? "Se déconnecter" : "Log out"}
               </span>
             </span>
           </button>

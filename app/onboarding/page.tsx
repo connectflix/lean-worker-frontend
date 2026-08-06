@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { OnboardingGuard } from "@/components/onboarding-guard";
 import { completeOnboarding, getMe } from "@/lib/api";
-import { resolveUiLanguage, type SupportedUiLanguage } from "@/lib/user-locales";
+import { useUiLanguage } from "@/lib/use-ui-language";
 import {
   BadgePill,
   BrainIcon,
@@ -33,17 +33,39 @@ type FormState = {
 };
 
 const LEVELS: Level[] = ["Starter", "Junior", "Senior", "Expert", "Master", "Elite"];
-const COACHING_STYLE_OPTIONS_EN = ["empathic", "direct", "structured", "motivational"];
-const COACHING_STYLE_OPTIONS_FR = ["empathique", "direct", "structuré", "motivant"];
+const COACHING_STYLE_OPTIONS = [
+  { value: "empathic", fr: "Empathique", en: "Empathic" },
+  { value: "direct", fr: "Direct", en: "Direct" },
+  { value: "structured", fr: "Structuré", en: "Structured" },
+  { value: "motivational", fr: "Motivant", en: "Motivational" },
+] as const;
 
-function OnboardingShell({ children }: { children: React.ReactNode }) {
+const LEVEL_LABELS: Record<Level, { fr: string; en: string }> = {
+  Starter: { fr: "Débutant", en: "Starter" },
+  Junior: { fr: "Junior", en: "Junior" },
+  Senior: { fr: "Senior", en: "Senior" },
+  Expert: { fr: "Expert", en: "Expert" },
+  Master: { fr: "Maître", en: "Master" },
+  Elite: { fr: "Élite", en: "Elite" },
+};
+
+function OnboardingShell({
+  children,
+  lang,
+}: {
+  children: React.ReactNode;
+  lang: "fr" | "en";
+}) {
   return (
     <main
+      lang={lang}
+      translate="no"
+      suppressHydrationWarning
       style={{
         minHeight: "100vh",
         background:
           "radial-gradient(circle at top left, rgba(255,122,89,0.14), transparent 30%), radial-gradient(circle at bottom right, rgba(88,180,174,0.14), transparent 32%), var(--coach-bg)",
-        padding: 24,
+        padding: "clamp(14px, 3vw, 24px)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -52,7 +74,7 @@ function OnboardingShell({ children }: { children: React.ReactNode }) {
       <div
         style={{
           width: "100%",
-          maxWidth: 1040,
+          maxWidth: 1080,
         }}
       >
         {children}
@@ -72,8 +94,8 @@ function CoachPanel({
     <div
       className="card stack"
       style={{
-        gap: 18,
-        borderRadius: 32,
+        gap: 16,
+        borderRadius: 28,
         border: "1px solid rgba(43,33,24,0.08)",
         background: warm
           ? "linear-gradient(135deg, rgba(255,241,220,0.96), rgba(255,255,255,0.92) 55%, rgba(232,248,246,0.82))"
@@ -104,7 +126,7 @@ function SelectableCard({
         gap: 10,
         textAlign: "left",
         cursor: "pointer",
-        borderRadius: 24,
+        borderRadius: 20,
         border: selected
           ? "2px solid var(--coach-accent)"
           : "1px solid rgba(43,33,24,0.08)",
@@ -112,8 +134,8 @@ function SelectableCard({
           ? "linear-gradient(135deg, rgba(255,122,89,0.14), rgba(255,255,255,0.86))"
           : "rgba(255,255,255,0.74)",
         boxShadow: selected
-          ? "0 16px 36px rgba(255,122,89,0.12)"
-          : "0 10px 28px rgba(43,33,24,0.04)",
+          ? "0 12px 28px rgba(255,122,89,0.10)"
+          : "0 6px 18px rgba(43,33,24,0.035)",
       }}
     >
       {children}
@@ -131,12 +153,12 @@ export default function OnboardingPage() {
 
 function OnboardingContent() {
   const router = useRouter();
+  const { uiLanguage } = useUiLanguage("fr");
 
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [saving, setSaving] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [firstName, setFirstName] = useState("");
-  const [uiLanguage, setUiLanguage] = useState<SupportedUiLanguage>("en");
   const [error, setError] = useState<string | null>(null);
 
   const [form, setForm] = useState<FormState>({
@@ -166,137 +188,155 @@ function OnboardingContent() {
       try {
         const me = await getMe();
         setFirstName(me.given_name || me.display_name || "");
-        setUiLanguage(
-          resolveUiLanguage({
-            language: me.language,
-            locale: me.locale,
-          }),
-        );
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load your profile.");
+        setError(err instanceof Error
+            ? err.message
+            : uiLanguage === "fr"
+              ? "Impossible de charger ton profil."
+              : "Unable to load your profile.");
       } finally {
         setLoadingProfile(false);
       }
     }
 
     void loadProfile();
-  }, []);
+  }, [uiLanguage]);
 
   const copy = useMemo(() => {
     if (uiLanguage === "fr") {
       return {
-        badge: "Onboarding",
-        loading: "Préparation de ton onboarding...",
-        loadingErrorTitle: "Impossible de préparer ton onboarding",
+        badge: "Démarrage",
+        loading: "Préparation de ton parcours...",
+        loadingBody: "Nous chargeons ton profil et personnalisons ton espace.",
+        loadingErrorTitle: "Impossible de préparer ton parcours",
         loadingErrorBody:
-          "Nous n’avons pas pu récupérer ton profil de départ. Réessaie pour continuer.",
+          "Nous n’avons pas pu charger ton profil. Réessaie pour continuer.",
         retry: "Réessayer",
         back: "Retour",
         next: "Continuer",
-        finish: "Terminer l’onboarding",
+        finish: "Terminer",
         saving: "Enregistrement...",
         stepLabel: (current: number, total: number) => `Étape ${current} sur ${total}`,
         saveError: "Impossible d’enregistrer ton onboarding.",
+        welcomeTitle: "Un accompagnement adapté dès le départ",
         welcomeHint:
-          "Ces informations serviront à personnaliser ton coach dès les premières sessions.",
+          "Tes réponses aideront le coach à comprendre ta situation, tes priorités et la direction que tu souhaites prendre.",
         progress: "Progression",
-        calmSetup: "Configuration calme",
+        setupLabel: "Profil personnalisé",
         personalizedCoach: "Coach personnalisé",
+        sidebarTitle: "Posons les bases de ton parcours.",
+        sidebarBody:
+          "Quelques réponses suffisent pour adapter le coaching à ta réalité professionnelle.",
+        targetRolePlaceholder: "Fonction ou rôle visé",
+        targetCompensationPlaceholder: "Rémunération souhaitée (optionnel)",
+        currentRolePlaceholder: "Ex. Business Analyst, Product Manager",
+        industryPlaceholder: "Ex. Banque, technologie, santé",
+        challengePlaceholder:
+          "Ex. J’ai du mal à prioriser et je me sens surchargée",
         steps: [
           {
             key: "welcome",
             title: `Bienvenue ${firstName || ""}`.trim(),
-            subtitle:
-              "Commençons par quelques informations clés pour personnaliser ton coaching.",
+            subtitle: "Prenons quelques minutes pour personnaliser ton accompagnement.",
           },
           {
             key: "current_role",
             title: "Quel est ton rôle actuel ?",
-            subtitle: "Décris simplement ta fonction actuelle.",
+            subtitle: "Indique ta fonction ou ton activité principale.",
           },
           {
             key: "industry",
             title: "Dans quel secteur travailles-tu ?",
-            subtitle: "Cela aide le coach à comprendre ton environnement.",
+            subtitle: "Cela aidera le coach à comprendre ton environnement.",
           },
           {
             key: "main_challenge",
-            title: "Quel est ton principal défi actuellement ?",
-            subtitle: "Partage ce qui te bloque le plus aujourd’hui.",
+            title: "Quel est ton principal défi en ce moment ?",
+            subtitle: "Décris ce qui te freine ou te préoccupe le plus aujourd’hui.",
           },
           {
             key: "short_term_mission",
-            title: "Quelle est ta mission à court terme ?",
-            subtitle: "Ce que tu veux atteindre dans un horizon proche.",
+            title: "Quelle est ta priorité à court terme ?",
+            subtitle: "Ce que tu souhaites accomplir dans les prochains mois.",
           },
           {
             key: "mid_term_ambition",
             title: "Quelle est ton ambition à moyen terme ?",
-            subtitle: "Ce vers quoi tu veux évoluer ensuite.",
+            subtitle: "La prochaine étape importante de ton évolution.",
           },
           {
             key: "long_term_goal",
-            title: "Quel est ton but à long terme ?",
-            subtitle: "La direction professionnelle que tu veux construire.",
+            title: "Quel est ton objectif à long terme ?",
+            subtitle: "La direction professionnelle que tu souhaites construire.",
           },
           {
             key: "preferred_coaching_style",
             title: "Quel style de coaching préfères-tu ?",
-            subtitle: "Nous adapterons le ton et l’approche du coach.",
+            subtitle: "Choisis la manière dont tu aimerais être accompagné.",
           },
         ],
       };
     }
 
     return {
-      badge: "Onboarding",
-      loading: "Preparing your onboarding...",
-      loadingErrorTitle: "We could not prepare your onboarding",
+      badge: "Getting started",
+      loading: "Preparing your journey...",
+      loadingBody: "We are loading your profile and personalizing your workspace.",
+      loadingErrorTitle: "We could not prepare your journey",
       loadingErrorBody:
-        "We were unable to load your starting profile. Please try again to continue.",
+        "We were unable to load your profile. Please try again to continue.",
       retry: "Try again",
       back: "Back",
       next: "Continue",
-      finish: "Finish onboarding",
+      finish: "Finish",
       saving: "Saving...",
       stepLabel: (current: number, total: number) => `Step ${current} of ${total}`,
-      saveError: "Failed to save onboarding.",
+      saveError: "Unable to save your onboarding.",
+      welcomeTitle: "Relevant guidance from the start",
       welcomeHint:
-        "These details will help personalize your coach from your very first sessions.",
+        "Your answers will help the coach understand your situation, priorities, and desired direction.",
       progress: "Progress",
-      calmSetup: "Calm setup",
+      setupLabel: "Personalized profile",
       personalizedCoach: "Personalized coach",
+      sidebarTitle: "Let’s set the foundations for your journey.",
+      sidebarBody:
+        "A few answers are enough to tailor the coaching to your professional reality.",
+      targetRolePlaceholder: "Target role",
+      targetCompensationPlaceholder: "Target compensation (optional)",
+      currentRolePlaceholder: "e.g. Business Analyst, Product Manager",
+      industryPlaceholder: "e.g. Banking, technology, healthcare",
+      challengePlaceholder:
+        "e.g. I struggle to prioritize and feel overloaded",
       steps: [
         {
           key: "welcome",
           title: `Welcome ${firstName || ""}`.trim(),
-          subtitle:
-            "Let’s capture a few key details to personalize your coaching.",
+          subtitle: "Let’s take a few minutes to personalize your experience.",
         },
         {
           key: "current_role",
           title: "What is your current role?",
-          subtitle: "Describe your current function in a simple way.",
+          subtitle: "Enter your main role or professional activity.",
         },
         {
           key: "industry",
           title: "Which industry do you work in?",
-          subtitle: "This helps the coach understand your environment.",
+          subtitle: "This will help the coach understand your environment.",
         },
         {
           key: "main_challenge",
           title: "What is your main challenge right now?",
-          subtitle: "Share what feels most blocking today.",
+          subtitle: "Describe what is holding you back or concerning you most.",
         },
         {
           key: "short_term_mission",
-          title: "What is your short-term mission?",
-          subtitle: "What you want to achieve in the near term.",
+          title: "What is your short-term priority?",
+          subtitle: "What you want to achieve over the next few months.",
         },
         {
           key: "mid_term_ambition",
           title: "What is your mid-term ambition?",
-          subtitle: "What you want to grow into next.",
+          subtitle: "The next important step in your development.",
         },
         {
           key: "long_term_goal",
@@ -306,7 +346,7 @@ function OnboardingContent() {
         {
           key: "preferred_coaching_style",
           title: "What coaching style do you prefer?",
-          subtitle: "We will adapt the tone and approach of your coach.",
+          subtitle: "Choose how you would like to be supported.",
         },
       ],
     };
@@ -423,14 +463,12 @@ function OnboardingContent() {
     try {
       const me = await getMe();
       setFirstName(me.given_name || me.display_name || "");
-      setUiLanguage(
-        resolveUiLanguage({
-          language: me.language,
-          locale: me.locale,
-        }),
-      );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load your profile.");
+      setError(err instanceof Error
+            ? err.message
+            : uiLanguage === "fr"
+              ? "Impossible de charger ton profil."
+              : "Unable to load your profile.");
     } finally {
       setLoadingProfile(false);
     }
@@ -447,7 +485,7 @@ function OnboardingContent() {
           className="input"
           value={value.target_role}
           onChange={(event) => updateHorizon(horizonKey, "target_role", event.target.value)}
-          placeholder={uiLanguage === "fr" ? "Fonction cible" : "Target role"}
+          placeholder={copy.targetRolePlaceholder}
           autoFocus
           style={{
             minHeight: 52,
@@ -463,11 +501,7 @@ function OnboardingContent() {
           onChange={(event) =>
             updateHorizon(horizonKey, "target_compensation", event.target.value)
           }
-          placeholder={
-            uiLanguage === "fr"
-              ? "Rémunération cible (optionnel)"
-              : "Target compensation (optional)"
-          }
+          placeholder={copy.targetCompensationPlaceholder}
           style={{
             minHeight: 52,
             borderRadius: 18,
@@ -497,7 +531,7 @@ function OnboardingContent() {
                       color: "var(--coach-ink)",
                     }}
                   >
-                    {level}
+                    {LEVEL_LABELS[level][uiLanguage]}
                   </div>
                 </div>
               </SelectableCard>
@@ -538,9 +572,7 @@ function OnboardingContent() {
               </div>
 
               <div className="section-title" style={{ margin: 0, color: "var(--coach-ink)" }}>
-                {uiLanguage === "fr"
-                  ? "Un coaching plus pertinent dès le départ"
-                  : "More relevant coaching from day one"}
+                {copy.welcomeTitle}
               </div>
             </div>
 
@@ -556,11 +588,7 @@ function OnboardingContent() {
             className="input"
             value={form.current_role}
             onChange={(event) => updateField("current_role", event.target.value)}
-            placeholder={
-              uiLanguage === "fr"
-                ? "Ex. Business Analyst, Product Manager"
-                : "e.g. Business Analyst, Product Manager"
-            }
+            placeholder={copy.currentRolePlaceholder}
             autoFocus
             style={{
               minHeight: 54,
@@ -577,11 +605,7 @@ function OnboardingContent() {
             className="input"
             value={form.industry}
             onChange={(event) => updateField("industry", event.target.value)}
-            placeholder={
-              uiLanguage === "fr"
-                ? "Ex. Banque, Tech, Santé"
-                : "e.g. Banking, Tech, Healthcare"
-            }
+            placeholder={copy.industryPlaceholder}
             autoFocus
             style={{
               minHeight: 54,
@@ -599,11 +623,7 @@ function OnboardingContent() {
             value={form.main_challenge}
             onChange={(event) => updateField("main_challenge", event.target.value)}
             rows={5}
-            placeholder={
-              uiLanguage === "fr"
-                ? "Ex. J’ai du mal à prioriser et je me sens surchargée"
-                : "e.g. I struggle with prioritization and feel overloaded"
-            }
+            placeholder={copy.challengePlaceholder}
             autoFocus
             style={{
               borderRadius: 18,
@@ -626,15 +646,16 @@ function OnboardingContent() {
       case "preferred_coaching_style":
         return (
           <div className="grid grid-2">
-            {(uiLanguage === "fr" ? COACHING_STYLE_OPTIONS_FR : COACHING_STYLE_OPTIONS_EN).map(
-              (option) => {
-                const selected = form.preferred_coaching_style === option;
+            {COACHING_STYLE_OPTIONS.map((option) => {
+                const selected = form.preferred_coaching_style === option.value;
 
                 return (
                   <SelectableCard
-                    key={option}
+                    key={option.value}
                     selected={selected}
-                    onClick={() => updateField("preferred_coaching_style", option)}
+                    onClick={() =>
+                      updateField("preferred_coaching_style", option.value)
+                    }
                   >
                     <div className="row" style={{ gap: 10, alignItems: "center" }}>
                       <div
@@ -661,7 +682,7 @@ function OnboardingContent() {
                           color: "var(--coach-ink)",
                         }}
                       >
-                        {option}
+                        {option[uiLanguage]}
                       </div>
                     </div>
                   </SelectableCard>
@@ -678,16 +699,14 @@ function OnboardingContent() {
 
   if (loadingProfile) {
     return (
-      <OnboardingShell>
+      <OnboardingShell lang={uiLanguage}>
         <CoachPanel warm>
           <div className="row" style={{ gap: 12, alignItems: "center" }}>
             <div className="loader" />
             <div className="stack" style={{ gap: 4 }}>
               <div className="section-title">{copy.loading}</div>
               <div className="muted" style={{ color: "var(--coach-muted)" }}>
-                {uiLanguage === "fr"
-                  ? "Nous préparons ton espace personnel."
-                  : "We are preparing your personal workspace."}
+                {copy.loadingBody}
               </div>
             </div>
           </div>
@@ -698,7 +717,7 @@ function OnboardingContent() {
 
   if (error && !firstName && stepIndex === 0) {
     return (
-      <OnboardingShell>
+      <OnboardingShell lang={uiLanguage}>
         <CoachPanel>
           <div className="section-title" style={{ color: "var(--danger)" }}>
             {copy.loadingErrorTitle}
@@ -736,12 +755,12 @@ function OnboardingContent() {
   }
 
   return (
-    <OnboardingShell>
+    <OnboardingShell lang={uiLanguage}>
       <div
         className="grid"
         style={{
-          gridTemplateColumns: "minmax(260px, 0.72fr) minmax(0, 1.28fr)",
-          gap: 22,
+          gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 360px), 1fr))",
+          gap: 18,
           alignItems: "stretch",
         }}
       >
@@ -749,21 +768,19 @@ function OnboardingContent() {
           <div className="stack" style={{ gap: 18 }}>
             <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
               <BadgePill icon={<PathIcon size={14} />}>{copy.badge}</BadgePill>
-              <BadgePill icon={<SparkIcon size={14} />}>{copy.calmSetup}</BadgePill>
+              <BadgePill icon={<SparkIcon size={14} />}>{copy.setupLabel}</BadgePill>
             </div>
 
             <div
               style={{
-                fontSize: 38,
+                fontSize: 31,
                 lineHeight: 1.04,
                 fontWeight: 950,
                 letterSpacing: "-0.07em",
                 color: "var(--coach-ink)",
               }}
             >
-              {uiLanguage === "fr"
-                ? "Construisons ton point de départ."
-                : "Let’s build your starting point."}
+              {copy.sidebarTitle}
             </div>
 
             <div
@@ -773,9 +790,7 @@ function OnboardingContent() {
                 lineHeight: 1.7,
               }}
             >
-              {uiLanguage === "fr"
-                ? "Quelques réponses suffisent pour rendre ton coaching plus précis, plus humain et plus actionnable."
-                : "A few answers are enough to make your coaching sharper, more human, and more actionable."}
+              {copy.sidebarBody}
             </div>
 
             <div
@@ -855,8 +870,8 @@ function OnboardingContent() {
           <div
             className="stack"
             style={{
-              gap: 24,
-              minHeight: 560,
+              gap: 20,
+              minHeight: 500,
               justifyContent: "space-between",
             }}
           >

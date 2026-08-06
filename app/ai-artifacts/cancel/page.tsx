@@ -26,7 +26,7 @@ function CoachCancelCard({
       className="card stack"
       style={{
         gap: 16,
-        borderRadius: 28,
+        borderRadius: 24,
         border: "1px solid rgba(43,33,24,0.08)",
         background: warm
           ? "linear-gradient(135deg, rgba(255,241,220,0.94), rgba(255,255,255,0.92) 58%, rgba(232,248,246,0.84))"
@@ -49,12 +49,12 @@ export default function AIArtifactCancelPage() {
             style={{
               minHeight: "100vh",
               background: "var(--coach-bg)",
-              padding: 24,
+              padding: "clamp(16px, 3vw, 24px)",
             }}
           >
             <div className="page-wrap">
               <CoachCancelCard>
-                <div className="section-title">Loading...</div>
+                <div className="section-title">Chargement...</div>
               </CoachCancelCard>
             </div>
           </main>
@@ -71,17 +71,20 @@ function AIArtifactCancelContent() {
   const searchParams = useSearchParams();
   const artifactId = searchParams.get("artifact_id");
 
-  const { uiLanguage, loadingLanguage } = useUiLanguage("en");
+  const { uiLanguage, loadingLanguage } = useUiLanguage("fr");
   const copy = getUiCopy(uiLanguage);
 
   if (loadingLanguage) {
     return (
       <main
         className="page"
+        lang={uiLanguage}
+        translate="no"
+        suppressHydrationWarning
         style={{
           minHeight: "100vh",
           background: "var(--coach-bg)",
-          padding: 24,
+          padding: "clamp(16px, 3vw, 24px)",
         }}
       >
         <div className="page-wrap">
@@ -96,13 +99,13 @@ function AIArtifactCancelContent() {
   return (
     <AppShell
       uiLanguage={uiLanguage}
-      title={uiLanguage === "fr" ? "Paiement annulé" : "Payment canceled"}
+      title={uiLanguage === "fr" ? "Paiement interrompu" : "Payment interrupted"}
     >
       <div
         className="stack"
         style={{
-          gap: 18,
-          maxWidth: 980,
+          gap: 16,
+          maxWidth: 900,
           margin: "0 auto",
           width: "100%",
         }}
@@ -110,10 +113,10 @@ function AIArtifactCancelContent() {
         <div
           className="card stack"
           style={{
-            gap: 18,
+            gap: 16,
             position: "relative",
             overflow: "hidden",
-            borderRadius: 32,
+            borderRadius: 28,
             border: "1px solid rgba(43,33,24,0.08)",
             background:
               "linear-gradient(135deg, rgba(255,241,220,0.96), rgba(255,255,255,0.92) 52%, rgba(232,248,246,0.88))",
@@ -171,14 +174,14 @@ function AIArtifactCancelContent() {
                 }}
               >
                 <ClockIcon size={14} />
-                {uiLanguage === "fr" ? "Paiement non finalisé" : "Payment not completed"}
+                {uiLanguage === "fr" ? "Paiement interrompu" : "Payment interrupted"}
               </span>
             </div>
 
             <div
               style={{
                 maxWidth: 880,
-                fontSize: 44,
+                fontSize: "clamp(34px, 5vw, 44px)",
                 lineHeight: 1.02,
                 fontWeight: 950,
                 letterSpacing: "-0.07em",
@@ -186,31 +189,31 @@ function AIArtifactCancelContent() {
               }}
             >
               {uiLanguage === "fr"
-                ? "Ton paiement a été interrompu."
-                : "Your payment was interrupted."}
+                ? "Le paiement n’a pas été finalisé."
+                : "The payment was not completed."}
             </div>
 
             <p
               className="subtitle"
               style={{
-                maxWidth: 760,
+                maxWidth: 700,
                 color: "var(--coach-muted)",
                 fontSize: 16,
                 lineHeight: 1.7,
               }}
             >
               {uiLanguage === "fr"
-                ? "Aucun souci : aucun débit n’a été finalisé. Tu peux reprendre le déblocage de ton guide plus tard, depuis la page du guide, ta bibliothèque ou tes recommandations."
-                : "No problem: no charge was completed. You can resume unlocking your guide later from the guide page, your library, or your recommendations."}
+                ? "Aucun débit n’a été finalisé. Tu peux reprendre le paiement plus tard depuis le guide ou la bibliothèque."
+                : "No charge was completed. You can resume payment later from the guide or your library."}
             </p>
 
             <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
               <BadgePill icon={<ClockIcon size={14} />}>
-                {uiLanguage === "fr" ? "Aucun débit effectué" : "No charge completed"}
+                {uiLanguage === "fr" ? "Aucun débit finalisé" : "No charge completed"}
               </BadgePill>
 
               <BadgePill icon={<SparkIcon size={14} />}>
-                {uiLanguage === "fr" ? "Reprise possible" : "Can resume later"}
+                {uiLanguage === "fr" ? "Paiement à reprendre" : "Payment can be resumed"}
               </BadgePill>
             </div>
           </div>
@@ -218,7 +221,7 @@ function AIArtifactCancelContent() {
 
         <CoachCancelCard>
           <div className="section-title">
-            {uiLanguage === "fr" ? "Que veux-tu faire maintenant ?" : "What would you like to do now?"}
+            {uiLanguage === "fr" ? "Prochaine étape" : "Next step"}
           </div>
 
           <div
@@ -232,8 +235,8 @@ function AIArtifactCancelContent() {
             }}
           >
             {uiLanguage === "fr"
-              ? "Tu peux retourner au guide concerné si un artefact existe déjà, ouvrir ta bibliothèque de guides IA ou revenir aux recommandations pour choisir une autre action."
-              : "You can return to the related guide if an artifact already exists, open your AI guide library, or go back to recommendations to choose another action."}
+              ? "Retourne au guide concerné, consulte ta bibliothèque ou choisis une autre recommandation."
+              : "Return to the related guide, open your library, or choose another recommendation."}
           </div>
 
           <div className="row" style={{ flexWrap: "wrap", gap: 10 }}>
@@ -246,7 +249,7 @@ function AIArtifactCancelContent() {
               >
                 <span style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
                   <ArrowRightIcon size={14} />
-                  {uiLanguage === "fr" ? "Retour au guide" : "Back to guide"}
+                  {uiLanguage === "fr" ? "Revenir au guide" : "Return to guide"}
                 </span>
               </button>
             ) : null}
@@ -264,7 +267,7 @@ function AIArtifactCancelContent() {
                   : { background: "var(--coach-accent)" }
               }
             >
-              {uiLanguage === "fr" ? "Ouvrir ma bibliothèque" : "Open my library"}
+              {uiLanguage === "fr" ? "Voir mes guides" : "View my guides"}
             </button>
 
             <button

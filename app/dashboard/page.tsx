@@ -219,7 +219,7 @@ function CoachMetricCard({
         gap: 10,
         background: "rgba(255,255,255,0.68)",
         border: "1px solid rgba(43,33,24,0.08)",
-        borderRadius: 24,
+        borderRadius: 20,
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.72)",
       }}
     >
@@ -287,8 +287,8 @@ function CoachSectionCard({
     <div
       className="card stack"
       style={{
-        gap: 16,
-        borderRadius: 28,
+        gap: 14,
+        borderRadius: 24,
         border: "1px solid rgba(43,33,24,0.08)",
         background: warm
           ? "linear-gradient(135deg, rgba(255,241,220,0.92), rgba(255,255,255,0.90))"
@@ -312,7 +312,7 @@ export default function DashboardPage() {
 function DashboardContent() {
   const router = useRouter();
   const { user } = useCurrentUser();
-  const { uiLanguage, loadingLanguage } = useUiLanguage("en");
+  const { uiLanguage, loadingLanguage } = useUiLanguage("fr");
   const copy = getUiCopy(uiLanguage);
 
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
@@ -361,7 +361,13 @@ function DashboardContent() {
       setRecommendations(recommendationsData);
     } catch (err: unknown) {
       const apiError = err as ApiErrorLike;
-      setError(apiError.detail || apiError.message || "Failed to load dashboard.");
+      setError(
+      apiError.detail ||
+        apiError.message ||
+        (uiLanguage === "fr"
+          ? "Impossible de charger le tableau de bord."
+          : "Failed to load dashboard."),
+    );
     } finally {
       setLoading(false);
     }
@@ -385,7 +391,13 @@ function DashboardContent() {
       router.push(`/session?sessionId=${session.session_id}`);
     } catch (err: unknown) {
       const apiError = err as ApiErrorLike;
-      setError(apiError.detail || apiError.message || "Failed to create session.");
+      setError(
+      apiError.detail ||
+        apiError.message ||
+        (uiLanguage === "fr"
+          ? "Impossible de démarrer une session."
+          : "Failed to create session."),
+    );
       setStarting(false);
     }
   }
@@ -401,7 +413,13 @@ function DashboardContent() {
       await loadDashboard();
     } catch (err: unknown) {
       const apiError = err as ApiErrorLike;
-      setError(apiError.detail || apiError.message || "Failed to close active session.");
+      setError(
+      apiError.detail ||
+        apiError.message ||
+        (uiLanguage === "fr"
+          ? "Impossible de clôturer la session active."
+          : "Failed to close active session."),
+    );
     } finally {
       setForceClosing(false);
     }
@@ -416,7 +434,13 @@ function DashboardContent() {
       await loadDashboard();
     } catch (err: unknown) {
       const apiError = err as ApiErrorLike;
-      setError(apiError.detail || apiError.message || "Failed to confirm profile.");
+      setError(
+      apiError.detail ||
+        apiError.message ||
+        (uiLanguage === "fr"
+          ? "Impossible de confirmer le profil."
+          : "Failed to confirm profile."),
+    );
     } finally {
       setConfirmingProfile(false);
     }
@@ -451,10 +475,13 @@ function DashboardContent() {
     return (
       <main
         className="page"
+        lang={uiLanguage}
+        translate="no"
+        suppressHydrationWarning
         style={{
           minHeight: "100vh",
           background: "var(--coach-bg)",
-          padding: 24,
+          padding: "clamp(16px, 3vw, 24px)",
         }}
       >
         <div className="page-wrap">
@@ -474,7 +501,7 @@ function DashboardContent() {
       <div
         className="stack"
         style={{
-          gap: 18,
+          gap: 16,
         }}
       >
         {loading ? (
@@ -498,8 +525,8 @@ function DashboardContent() {
                 <div className="section-title">{copy.dashboard.loading}</div>
                 <div className="muted" style={{ color: "var(--coach-muted)" }}>
                   {uiLanguage === "fr"
-                    ? "Nous préparons ton espace, tes sessions et tes signaux de progression."
-                    : "We are preparing your workspace, sessions, and progress signals."}
+                    ? "Nous préparons ton espace, tes sessions et tes prochaines actions."
+                    : "We are preparing your workspace, sessions, and next actions."}
                 </div>
               </div>
             </div>
@@ -536,14 +563,14 @@ function DashboardContent() {
               }}
             >
               {uiLanguage === "fr"
-                ? "Ton espace est prêt, mais encore vide"
-                : "Your workspace is ready, but still empty"}
+                ? "Ton espace est prêt"
+                : "Your workspace is ready"}
             </div>
 
             <div className="muted" style={{ color: "var(--coach-muted)", maxWidth: 720 }}>
               {uiLanguage === "fr"
-                ? "Démarre une première session pour faire émerger tes premiers insights, recommandations et signaux de trajectoire."
-                : "Start your first session to surface your first insights, recommendations, and trajectory signals."}
+                ? "Démarre une première session pour obtenir tes premières recommandations et définir tes prochaines priorités."
+                : "Start your first session to get your first recommendations and define your next priorities."}
             </div>
 
             <div className="row" style={{ flexWrap: "wrap" }}>
@@ -568,14 +595,14 @@ function DashboardContent() {
               <CoachSectionCard>
                 <div className="section-title">
                   {uiLanguage === "fr"
-                    ? "Ton contexte professionnel a peut-être évolué"
-                    : "Your professional context may have changed"}
+                    ? "Ton profil semble avoir évolué"
+                    : "Your profile may have changed"}
                 </div>
 
                 <div className="muted" style={{ color: "var(--coach-muted)" }}>
                   {uiLanguage === "fr"
-                    ? "Le coach a détecté un possible changement de rôle, d’industrie ou d’objectif. Mets à jour ton profil pour garder un coaching pertinent."
-                    : "The coach detected a possible change in your role, industry, or goals. Update your profile to keep your coaching relevant."}
+                    ? "Un changement de rôle, de secteur ou d’objectif a peut-être été détecté. Vérifie ton profil pour garder un accompagnement pertinent."
+                    : "A change in your role, industry, or goals may have been detected. Review your profile to keep your coaching relevant."}
                 </div>
 
                 <div className="row" style={{ flexWrap: "wrap", gap: 10 }}>
@@ -610,8 +637,8 @@ function DashboardContent() {
 
                 <div className="muted" style={{ color: "var(--coach-muted)" }}>
                   {uiLanguage === "fr"
-                    ? "Clarifie ton identité, ta vision, tes horizons de carrière et ton point de départ pour rendre ton coaching beaucoup plus précis."
-                    : "Clarify your identity, vision, career horizons, and starting point to make your coaching much more precise."}
+                    ? "Définis ton point de départ, tes ambitions et ta direction pour personnaliser davantage ton coaching."
+                    : "Define your starting point, ambitions, and direction to personalize your coaching."}
                 </div>
 
                 <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
@@ -620,7 +647,7 @@ function DashboardContent() {
                   </button>
 
                   <button className="button ghost" onClick={() => router.push("/career-blueprint")}>
-                    {uiLanguage === "fr" ? "En savoir plus" : "Learn more"}
+                    {uiLanguage === "fr" ? "Ouvrir le blueprint" : "Open blueprint"}
                   </button>
                 </div>
               </CoachSectionCard>
@@ -632,7 +659,7 @@ function DashboardContent() {
                 gap: 18,
                 position: "relative",
                 overflow: "hidden",
-                borderRadius: 32,
+                borderRadius: 28,
                 border: "1px solid rgba(43,33,24,0.08)",
                 background:
                   "linear-gradient(135deg, rgba(255,241,220,0.96), rgba(255,255,255,0.92) 52%, rgba(232,248,246,0.88))",
@@ -682,7 +709,7 @@ function DashboardContent() {
                       fontWeight: 850,
                     }}
                   >
-                    {uiLanguage === "fr" ? "Espace actif" : "Active workspace"}
+                    {uiLanguage === "fr" ? "Espace personnel" : "Personal workspace"}
                   </span>
 
                   <span
@@ -701,7 +728,7 @@ function DashboardContent() {
                 <div
                   style={{
                     maxWidth: 900,
-                    fontSize: 44,
+                    fontSize: "clamp(34px, 5vw, 44px)",
                     lineHeight: 1.02,
                     fontWeight: 950,
                     letterSpacing: "-0.07em",
@@ -709,14 +736,14 @@ function DashboardContent() {
                   }}
                 >
                   {uiLanguage === "fr"
-                    ? `Bonjour ${firstName || "toi"}, où veux-tu avancer aujourd’hui ?`
-                    : `Hello ${firstName || "there"}, where do you want to move forward today?`}
+                    ? `Bonjour ${firstName || "toi"}, quelle est ta priorité aujourd’hui ?`
+                    : `Hello ${firstName || "there"}, what is your priority today?`}
                 </div>
 
                 <p
                   className="subtitle"
                   style={{
-                    maxWidth: 760,
+                    maxWidth: 700,
                     color: "var(--coach-muted)",
                     fontSize: 16,
                     lineHeight: 1.7,
@@ -727,15 +754,15 @@ function DashboardContent() {
 
                 <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
                   <BadgePill icon={<SparkIcon size={14} />}>
-                    {uiLanguage === "fr" ? "Coach actif" : "Coach active"}
+                    {uiLanguage === "fr" ? "Coach disponible" : "Coach available"}
                   </BadgePill>
 
                   <BadgePill icon={<BrainIcon size={14} />}>
-                    {uiLanguage === "fr" ? "Mémoire continue" : "Continuous memory"}
+                    {uiLanguage === "fr" ? "Contexte mémorisé" : "Remembered context"}
                   </BadgePill>
 
                   <BadgePill icon={<TargetIcon size={14} />}>
-                    {uiLanguage === "fr" ? "Trajectoire suivie" : "Trajectory tracking"}
+                    {uiLanguage === "fr" ? "Progression suivie" : "Progress tracking"}
                   </BadgePill>
                 </div>
 
@@ -779,12 +806,12 @@ function DashboardContent() {
 
             <div className="grid grid-4">
               <CoachMetricCard
-                label={uiLanguage === "fr" ? "Sessions récentes" : "Recent sessions"}
+                label={uiLanguage === "fr" ? "Sessions" : "Sessions"}
                 value={timeline.length}
                 helper={
                   uiLanguage === "fr"
-                    ? "Activités détectées dans ton historique."
-                    : "Activities detected in your history."
+                    ? "Éléments récents dans ton historique."
+                    : "Recent items in your history."
                 }
                 icon={<ClockIcon size={18} />}
                 tone="warm"
@@ -795,8 +822,8 @@ function DashboardContent() {
                 value={activeRecommendations}
                 helper={
                   uiLanguage === "fr"
-                    ? "Recommandations ouvertes ou en cours."
-                    : "Open or in-progress recommendations."
+                    ? "Actions à traiter ou déjà engagées."
+                    : "Actions to review or already in progress."
                 }
                 icon={<TargetIcon size={18} />}
                 tone="calm"
@@ -808,11 +835,11 @@ function DashboardContent() {
                 helper={
                   blueprintCompleted
                     ? uiLanguage === "fr"
-                      ? "Utilisé pour personnaliser ton coaching."
-                      : "Used to personalize your coaching."
+                      ? "Ton profil de trajectoire est prêt."
+                      : "Your career profile is ready."
                     : uiLanguage === "fr"
-                      ? "À compléter pour améliorer le coaching."
-                      : "Complete it to improve coaching."
+                      ? "À compléter pour affiner le coaching."
+                      : "Complete it to refine your coaching."
                 }
                 icon={<PathIcon size={18} />}
                 tone={blueprintCompleted ? "calm" : "neutral"}
@@ -824,8 +851,8 @@ function DashboardContent() {
                 helper={
                   openSession
                     ? uiLanguage === "fr"
-                      ? "Une conversation est prête à reprendre."
-                      : "A conversation is ready to resume."
+                      ? "Une session peut être reprise."
+                      : "A session is ready to resume."
                     : uiLanguage === "fr"
                       ? "Aucune session ouverte pour l’instant."
                       : "No open session right now."
@@ -840,7 +867,7 @@ function DashboardContent() {
                 <div className="row" style={{ alignItems: "center", gap: 10 }}>
                   <SessionIcon />
                   <div className="section-title">
-                    {uiLanguage === "fr" ? "Session active détectée" : "Active session detected"}
+                    {uiLanguage === "fr" ? "Session en cours" : "Session in progress"}
                   </div>
                 </div>
 
@@ -848,10 +875,10 @@ function DashboardContent() {
                   {uiLanguage === "fr"
                     ? `La session #${openSession.session_id}, démarrée le ${new Date(
                         openSession.started_at,
-                      ).toLocaleString()}, est toujours ouverte.`
+                      ).toLocaleString("fr-BE")}, est toujours ouverte.`
                     : `Session #${openSession.session_id} started on ${new Date(
                         openSession.started_at,
-                      ).toLocaleString()} is still open.`}
+                      ).toLocaleString("en-GB")} is still open.`}
                 </div>
 
                 <div className="row" style={{ flexWrap: "wrap" }}>
@@ -879,8 +906,8 @@ function DashboardContent() {
                         ? "Clôture..."
                         : "Closing..."
                       : uiLanguage === "fr"
-                        ? "Clôturer maintenant et générer l’analyse"
-                        : "Close now and generate analysis"}
+                        ? "Clôturer et générer l’analyse"
+                        : "Close and generate analysis"}
                   </button>
                 </div>
               </CoachSectionCard>
@@ -932,7 +959,7 @@ function DashboardContent() {
                 <div className="row" style={{ alignItems: "center", gap: 10 }}>
                   <ClockIcon />
                   <div className="section-title">
-                    {uiLanguage === "fr" ? "Chronologie récente" : "Recent timeline"}
+                    {uiLanguage === "fr" ? "Activité récente" : "Recent activity"}
                   </div>
                 </div>
 
@@ -961,7 +988,7 @@ function DashboardContent() {
                           <strong>Session #{item.session_id}</strong>
 
                           <BadgePill icon={<ClockIcon size={14} />}>
-                            {new Date(item.started_at).toLocaleDateString()}
+                            {new Date(item.started_at).toLocaleDateString(uiLanguage === "fr" ? "fr-BE" : "en-GB")}
                           </BadgePill>
                         </div>
 
@@ -986,8 +1013,8 @@ function DashboardContent() {
                     <TargetIcon />
                     <div className="section-title">
                       {uiLanguage === "fr"
-                        ? "Analyse des écarts de trajectoire"
-                        : "Career gap analysis"}
+                        ? "Écarts de trajectoire"
+                        : "Career gaps"}
                     </div>
                   </div>
 
@@ -1150,7 +1177,7 @@ function DashboardContent() {
                   <div className="row" style={{ alignItems: "center", gap: 10 }}>
                     <BrainIcon />
                     <div className="section-title">
-                      {uiLanguage === "fr" ? "Patterns récurrents" : "Recurring patterns"}
+                      {uiLanguage === "fr" ? "Tendances récurrentes" : "Recurring trends"}
                     </div>
                   </div>
 
@@ -1158,8 +1185,8 @@ function DashboardContent() {
                     <div>
                       <strong>
                         {uiLanguage === "fr"
-                          ? "Problème principal dominant"
-                          : "Dominant primary problem"}
+                          ? "Sujet principal récurrent"
+                          : "Recurring main topic"}
                       </strong>
 
                       <div className="muted" style={{ color: "var(--coach-muted)", marginTop: 4 }}>

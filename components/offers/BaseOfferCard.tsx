@@ -19,16 +19,16 @@ function getBaseOfferCtaLabel(
 ): string {
   if (offer.lever_category === "ai-enabled-developer") {
     if (hasExistingArtifactForFormat) {
-      return uiLanguage === "fr" ? "Ouvrir ce format" : "Open this format";
+      return uiLanguage === "fr" ? "Ouvrir ce guide" : "Open this guide";
     }
 
     return uiLanguage === "fr"
-      ? "Commencer avec ce guide"
-      : "Start with this guide";
+      ? "Découvrir ce guide"
+      : "Explore this guide";
   }
 
   if (offer.url) {
-    return uiLanguage === "fr" ? "Découvrir cette offre" : "Explore this offer";
+    return uiLanguage === "fr" ? "Voir cette offre" : "View this offer";
   }
 
   return uiLanguage === "fr" ? "Découvrir" : "Discover";
@@ -43,10 +43,10 @@ function getBaseOfferSectionLabel(
       return uiLanguage === "fr" ? "Guide audio recommandé" : "Recommended audio guide";
     }
 
-    return uiLanguage === "fr" ? "Guide IA recommandé" : "Recommended AI guide";
+    return uiLanguage === "fr" ? "Guide personnalisé recommandé" : "Recommended personalized guide";
   }
 
-  return uiLanguage === "fr" ? "Offre principale" : "Main offer";
+  return uiLanguage === "fr" ? "Option recommandée" : "Recommended option";
 }
 
 function getBaseOfferEyebrow(
@@ -55,24 +55,25 @@ function getBaseOfferEyebrow(
 ): string {
   if (offer.lever_category === "ai-enabled-developer") {
     return uiLanguage === "fr"
-      ? "Pour transformer cette action en plan concret"
-      : "To turn this action into a concrete plan";
+      ? "Pour transformer cette recommandation en plan concret"
+      : "To turn this recommendation into a concrete plan";
   }
 
   return uiLanguage === "fr"
-    ? "Le levier le plus directement aligné"
-    : "The most directly aligned lever";
+    ? "Le levier le plus adapté à cette recommandation"
+    : "The lever best aligned with this recommendation";
 }
 
 export function BaseOfferCard({
   offer,
-  uiLanguage = "en",
+  uiLanguage = "fr",
   hasExistingArtifactForFormat = false,
   onClick,
 }: BaseOfferCardProps) {
   return (
     <div
       className="stack"
+      lang={uiLanguage}
       style={{
         gap: 10,
       }}
@@ -83,14 +84,22 @@ export function BaseOfferCard({
           gap: 12,
           flexWrap: "wrap",
           alignItems: "center",
-          borderRadius: 24,
+          borderRadius: 20,
           background:
             "linear-gradient(135deg, rgba(255,241,220,0.86), rgba(255,255,255,0.76))",
           border: "1px solid rgba(255,122,89,0.16)",
           boxShadow: "inset 0 1px 0 rgba(255,255,255,0.72)",
         }}
       >
-        <div className="row" style={{ gap: 10, alignItems: "center" }}>
+        <div
+          className="row"
+          style={{
+            gap: 10,
+            alignItems: "center",
+            minWidth: 0,
+            flex: "1 1 280px",
+          }}
+        >
           <span
             style={{
               width: 38,
@@ -107,7 +116,7 @@ export function BaseOfferCard({
             <TargetIcon size={18} />
           </span>
 
-          <div className="stack" style={{ gap: 2 }}>
+          <div className="stack" style={{ gap: 2, minWidth: 0 }}>
             <div
               className="section-title"
               style={{
@@ -132,6 +141,11 @@ export function BaseOfferCard({
 
         <span
           className="badge"
+          aria-label={
+            uiLanguage === "fr"
+              ? "Point de départ recommandé"
+              : "Recommended starting point"
+          }
           style={{
             background: "rgba(255,122,89,0.12)",
             borderColor: "rgba(255,122,89,0.22)",
@@ -140,7 +154,7 @@ export function BaseOfferCard({
           }}
         >
           <SparkIcon size={14} />
-          {uiLanguage === "fr" ? "Meilleur point de départ" : "Best starting point"}
+          {uiLanguage === "fr" ? "Point de départ recommandé" : "Recommended starting point"}
         </span>
       </div>
 

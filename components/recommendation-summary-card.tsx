@@ -12,14 +12,14 @@ import type { SupportedUiLanguage } from "@/lib/user-locales";
 
 function getPriorityLabel(priority: string, uiLanguage: SupportedUiLanguage): string {
   if (uiLanguage === "fr") {
-    if (priority === "high") return "priorité haute";
-    if (priority === "medium") return "priorité moyenne";
-    if (priority === "low") return "priorité basse";
+    if (priority === "high") return "Priorité élevée";
+    if (priority === "medium") return "Priorité moyenne";
+    if (priority === "low") return "Priorité faible";
   }
 
-  if (priority === "high") return "high priority";
-  if (priority === "medium") return "medium priority";
-  if (priority === "low") return "low priority";
+  if (priority === "high") return "High priority";
+  if (priority === "medium") return "Medium priority";
+  if (priority === "low") return "Low priority";
 
   return priority;
 }
@@ -29,16 +29,16 @@ function getStatusLabel(
   uiLanguage: SupportedUiLanguage,
 ): string {
   if (uiLanguage === "fr") {
-    if (status === "open") return "ouverte";
-    if (status === "in_progress") return "en cours";
-    if (status === "completed") return "terminée";
-    if (status === "dismissed") return "fermée";
+    if (status === "open") return "À démarrer";
+    if (status === "in_progress") return "En cours";
+    if (status === "completed") return "Terminée";
+    if (status === "dismissed") return "Masquée";
   }
 
-  if (status === "open") return "open";
-  if (status === "in_progress") return "in progress";
-  if (status === "completed") return "completed";
-  if (status === "dismissed") return "dismissed";
+  if (status === "open") return "To start";
+  if (status === "in_progress") return "In progress";
+  if (status === "completed") return "Completed";
+  if (status === "dismissed") return "Hidden";
 
   return status;
 }
@@ -100,12 +100,15 @@ function getStatusTone(status: Recommendation["status"]) {
 }
 
 function prettify(value: string): string {
-  return value.replaceAll("_", " ");
+  const normalized = value.replaceAll("_", " ").trim();
+  if (!normalized) return "";
+
+  return `${normalized.charAt(0).toUpperCase()}${normalized.slice(1)}`;
 }
 
 export function RecommendationSummaryCard({
   item,
-  uiLanguage = "en",
+  uiLanguage = "fr",
   onOpen,
 }: {
   item: Recommendation;
@@ -114,7 +117,7 @@ export function RecommendationSummaryCard({
 }) {
   const shortDescription =
     item.description.length > 180
-      ? `${item.description.slice(0, 177).trim()}...`
+      ? `${item.description.slice(0, 177).trim()}…`
       : item.description;
 
   const priorityTone = getPriorityTone(item.priority);
@@ -126,11 +129,12 @@ export function RecommendationSummaryCard({
   return (
     <div
       className="card-soft stack"
+      lang={uiLanguage}
       style={{
-        gap: 14,
+        gap: 12,
         position: "relative",
         overflow: "hidden",
-        borderRadius: 28,
+        borderRadius: 24,
         background:
           item.priority === "high"
             ? "linear-gradient(135deg, rgba(255,241,220,0.92), rgba(255,255,255,0.88))"
@@ -166,7 +170,8 @@ export function RecommendationSummaryCard({
         className="row space-between"
         style={{
           alignItems: "flex-start",
-          gap: 14,
+          gap: 12,
+          flexWrap: "wrap",
           position: "relative",
           zIndex: 1,
         }}
@@ -266,7 +271,7 @@ export function RecommendationSummaryCard({
             }}
           >
             <SparkIcon size={14} />
-            {uiLanguage === "fr" ? "Guide IA possible" : "AI guide available"}
+            {uiLanguage === "fr" ? "Guide disponible" : "Guide available"}
           </span>
         ) : null}
       </div>
@@ -295,18 +300,23 @@ export function RecommendationSummaryCard({
             <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
               <ClockIcon size={14} />
               {uiLanguage === "fr"
-                ? `Action clé : ${actionTrackLabel}`
-                : `Key action: ${actionTrackLabel}`}
+                ? `Prochaine action : ${actionTrackLabel}`
+                : `Next action: ${actionTrackLabel}`}
             </span>
           ) : uiLanguage === "fr" ? (
-            "Ouvre cette recommandation pour voir les prochaines étapes."
+            "Consulte cette recommandation pour voir les prochaines étapes."
           ) : (
-            "Open this recommendation to view the next steps."
+            "View this recommendation to see the next steps."
           )}
         </div>
 
         <button
           className="button"
+          aria-label={
+            uiLanguage === "fr"
+              ? `Voir la recommandation ${item.title}`
+              : `View recommendation ${item.title}`
+          }
           onClick={onOpen}
           type="button"
           style={{
@@ -315,7 +325,7 @@ export function RecommendationSummaryCard({
             minHeight: 42,
           }}
         >
-          {uiLanguage === "fr" ? "Voir détails" : "View details"}
+          {uiLanguage === "fr" ? "Voir la recommandation" : "View recommendation"}
         </button>
       </div>
     </div>

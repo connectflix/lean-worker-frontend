@@ -25,32 +25,32 @@ type RecommendationArtifactStatus = AIArtifactStatusResponse & {
 
 function getPriorityLabel(priority: string, uiLanguage: SupportedUiLanguage): string {
   if (uiLanguage === "fr") {
-    if (priority === "high") return "priorité haute";
-    if (priority === "medium") return "priorité moyenne";
-    if (priority === "low") return "priorité basse";
+    if (priority === "high") return "Priorité élevée";
+    if (priority === "medium") return "Priorité moyenne";
+    if (priority === "low") return "Priorité faible";
   }
 
-  if (priority === "high") return "high priority";
-  if (priority === "medium") return "medium priority";
-  if (priority === "low") return "low priority";
+  if (priority === "high") return "High priority";
+  if (priority === "medium") return "Medium priority";
+  if (priority === "low") return "Low priority";
 
   return priority;
 }
 
 function getArtifactStatusLabel(status: string, uiLanguage: SupportedUiLanguage): string {
   if (uiLanguage === "fr") {
-    if (status === "completed") return "débloqué";
-    if (status === "generating") return "génération";
-    if (status === "paid") return "payé";
-    if (status === "pending_payment") return "paiement en attente";
-    if (status === "failed") return "échec";
+    if (status === "completed") return "Disponible";
+    if (status === "generating") return "En préparation";
+    if (status === "paid") return "Paiement confirmé";
+    if (status === "pending_payment") return "Paiement en attente";
+    if (status === "failed") return "Échec de génération";
   }
 
-  if (status === "completed") return "unlocked";
-  if (status === "generating") return "generating";
-  if (status === "paid") return "paid";
-  if (status === "pending_payment") return "pending payment";
-  if (status === "failed") return "failed";
+  if (status === "completed") return "Available";
+  if (status === "generating") return "Preparing";
+  if (status === "paid") return "Payment confirmed";
+  if (status === "pending_payment") return "Payment pending";
+  if (status === "failed") return "Generation failed";
 
   return status;
 }
@@ -129,7 +129,7 @@ function CoachPanel({
       className="card-soft stack"
       style={{
         gap: 10,
-        borderRadius: 24,
+        borderRadius: 20,
         background: warm
           ? "linear-gradient(135deg, rgba(255,241,220,0.86), rgba(255,255,255,0.76))"
           : "rgba(255,255,255,0.68)",
@@ -145,7 +145,7 @@ function CoachPanel({
 export function RecommendationCard({
   item,
   onUpdated,
-  uiLanguage = "en",
+  uiLanguage = "fr",
   focusMode = false,
 }: {
   item: Recommendation;
@@ -226,11 +226,20 @@ export function RecommendationCard({
     };
   }, [item.id, item.artifact_generation_available]);
 
+  const [updateError, setUpdateError] = useState<string | null>(null);
+
   async function handleUpdate(status: Recommendation["status"]) {
     try {
       setSaving(true);
+      setUpdateError(null);
       const updated = await updateRecommendation(item.id, { status });
       await onUpdated(updated);
+    } catch {
+      setUpdateError(
+        uiLanguage === "fr"
+          ? "Impossible de mettre à jour cette recommandation."
+          : "Unable to update this recommendation.",
+      );
     } finally {
       setSaving(false);
     }
@@ -263,15 +272,15 @@ export function RecommendationCard({
     if (!hasAnyArtifact) return null;
 
     if (bothFormatsUnlocked) {
-      return uiLanguage === "fr" ? "e-book + audio débloqués" : "e-book + audio unlocked";
+      return uiLanguage === "fr" ? "E-book et audio disponibles" : "E-book and audio available";
     }
 
     if (ebookArtifact?.status === "completed") {
-      return uiLanguage === "fr" ? "mini e-book débloqué" : "mini e-book unlocked";
+      return uiLanguage === "fr" ? "Mini e-book disponible" : "Mini e-book available";
     }
 
     if (audiobookArtifact?.status === "completed") {
-      return uiLanguage === "fr" ? "mini audiobook débloqué" : "mini audiobook unlocked";
+      return uiLanguage === "fr" ? "Mini audio disponible" : "Mini audio available";
     }
 
     if (primaryArtifact) {
@@ -323,13 +332,14 @@ export function RecommendationCard({
   return (
     <div
       className="card stack"
+      lang={uiLanguage}
       style={{
-        gap: 18,
-        maxWidth: focusMode ? 1080 : undefined,
+        gap: 16,
+        maxWidth: focusMode ? 1040 : undefined,
         margin: focusMode ? "0 auto" : undefined,
         position: "relative",
         overflow: "hidden",
-        borderRadius: 32,
+        borderRadius: 28,
         border: "1px solid rgba(43,33,24,0.08)",
         background:
           item.priority === "high"
@@ -455,7 +465,7 @@ export function RecommendationCard({
               flexShrink: 0,
             }}
           >
-            <TargetIcon size={24} />
+            <TargetIcon size={21} />
           </div>
         </div>
       </div>
@@ -473,7 +483,7 @@ export function RecommendationCard({
         <CoachPanel warm>
           <div className="row" style={{ gap: 8, alignItems: "center" }}>
             <SparkIcon size={16} />
-            <strong>{uiLanguage === "fr" ? "Ce que nous te proposons" : "What we recommend next"}</strong>
+            <strong>{uiLanguage === "fr" ? "Proposition associée" : "Related proposal"}</strong>
           </div>
 
           <div className="muted" style={{ color: "var(--coach-muted)", lineHeight: 1.65 }}>
@@ -495,14 +505,14 @@ export function RecommendationCard({
               }}
             >
               <SparkIcon size={14} />
-              {uiLanguage === "fr" ? "Bundle actif" : "Bundle active"}
+              {uiLanguage === "fr" ? "Avantage groupé" : "Bundle offer"}
             </span>
           </div>
 
           <div className="muted" style={{ color: "var(--coach-muted)", lineHeight: 1.65 }}>
             {uiLanguage === "fr"
-              ? "L’e-book principal et le format audio complémentaire bénéficient actuellement d’un avantage groupé."
-              : "The main e-book and complementary audio format currently benefit from a combined bundle advantage."}
+              ? "L’e-book et le format audio bénéficient actuellement d’une offre groupée."
+              : "The e-book and audio format currently benefit from a bundle offer."}
           </div>
         </CoachPanel>
       ) : null}
@@ -521,7 +531,7 @@ export function RecommendationCard({
           <CoachPanel>
             <div className="row" style={{ gap: 8, alignItems: "center" }}>
               <SparkIcon size={16} />
-              <strong>{uiLanguage === "fr" ? "Solution recommandée" : "Recommended solution"}</strong>
+              <strong>{uiLanguage === "fr" ? "Levier recommandé" : "Recommended lever"}</strong>
             </div>
 
             <div
@@ -540,7 +550,7 @@ export function RecommendationCard({
 
               {bestLever.is_highlighted ? (
                 <BadgePill icon={<SparkIcon size={14} />}>
-                  {uiLanguage === "fr" ? "Meilleur choix" : "Best match"}
+                  {uiLanguage === "fr" ? "Le plus pertinent" : "Best fit"}
                 </BadgePill>
               ) : null}
             </div>
@@ -552,7 +562,7 @@ export function RecommendationCard({
         <CoachPanel>
           <div className="row" style={{ gap: 8, alignItems: "center" }}>
             <SparkIcon size={16} />
-            <strong>{uiLanguage === "fr" ? "Guide IA associé" : "Related AI guide"}</strong>
+            <strong>{uiLanguage === "fr" ? "Guide associé" : "Related guide"}</strong>
           </div>
 
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
@@ -591,8 +601,8 @@ export function RecommendationCard({
 
           <div className="muted" style={{ color: "var(--coach-muted)", lineHeight: 1.65 }}>
             {uiLanguage === "fr"
-              ? "Ce guide ne peut plus être redébloqué. Tu peux l’ouvrir ou découvrir le format complémentaire."
-              : "This guide cannot be unlocked again. You can open it or discover the complementary format."}
+              ? "Ce guide est déjà associé à cette recommandation. Tu peux l’ouvrir ou découvrir l’autre format."
+              : "This guide is already linked to this recommendation. You can open it or explore the other format."}
           </div>
         </CoachPanel>
       ) : null}
@@ -603,19 +613,36 @@ export function RecommendationCard({
             <ArrowRightIcon size={16} />
             <strong>
               {uiLanguage === "fr"
-                ? "Prochaine étape recommandée"
-                : "Recommended next step"}
+                ? "Étape complémentaire"
+                : "Complementary next step"}
             </strong>
           </div>
 
           <div className="muted" style={{ color: "var(--coach-muted)", lineHeight: 1.65 }}>
             {uiLanguage === "fr"
-              ? `Après le guide IA, le levier complémentaire "${complementaryLever.name}" peut aider à transformer cette recommandation en action réelle.`
-              : `After the AI guide, the complementary lever "${complementaryLever.name}" can help turn this recommendation into real action.`}
+              ? `Après le guide, le levier "${complementaryLever.name}" peut t’aider à transformer cette recommandation en action concrète.`
+              : `After the guide, the "${complementaryLever.name}" lever can help turn this recommendation into concrete action.`}
           </div>
 
           <BadgePill icon={<SparkIcon size={14} />}>{complementaryLever.name}</BadgePill>
         </CoachPanel>
+      ) : null}
+
+      {updateError ? (
+        <div
+          role="alert"
+          className="card-soft"
+          style={{
+            position: "relative",
+            zIndex: 1,
+            color: "var(--danger)",
+            borderRadius: 18,
+            background: "rgba(239,68,68,0.08)",
+            border: "1px solid rgba(239,68,68,0.18)",
+          }}
+        >
+          {updateError}
+        </div>
       ) : null}
 
       <div
@@ -631,6 +658,11 @@ export function RecommendationCard({
         {item.status === "open" ? (
           <button
             className="button secondary"
+            aria-label={
+              uiLanguage === "fr"
+                ? `Démarrer la recommandation ${item.title}`
+                : `Start recommendation ${item.title}`
+            }
             disabled={saving}
             onClick={() => void handleUpdate("in_progress")}
             type="button"
@@ -660,6 +692,7 @@ export function RecommendationCard({
               {primaryArtifact ? (
                 <button
                   className="button"
+                  aria-label={uiLanguage === "fr" ? "Ouvrir le guide associé" : "Open related guide"}
                   onClick={() => openArtifact(primaryArtifact.id)}
                   type="button"
                   style={{
@@ -677,6 +710,15 @@ export function RecommendationCard({
               {secondaryFormatToSuggest ? (
                 <button
                   className="button ghost"
+                  aria-label={
+                    secondaryFormatToSuggest === "ebook"
+                      ? uiLanguage === "fr"
+                        ? "Découvrir la version e-book"
+                        : "Explore e-book version"
+                      : uiLanguage === "fr"
+                        ? "Découvrir la version audio"
+                        : "Explore audio version"
+                  }
                   onClick={() => openPreview(secondaryFormatToSuggest)}
                   type="button"
                 >
@@ -693,6 +735,7 @@ export function RecommendationCard({
           ) : (
             <button
               className="button"
+              aria-label={uiLanguage === "fr" ? "Découvrir le guide associé" : "Explore related guide"}
               onClick={() =>
                 openPreview(
                   item.artifact_default_format === "audiobook" ? "audiobook" : "ebook",
@@ -706,7 +749,7 @@ export function RecommendationCard({
             >
               <span style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
                 <ArrowRightIcon size={14} />
-                {uiLanguage === "fr" ? "Voir le guide IA" : "View AI guide"}
+                {uiLanguage === "fr" ? "Découvrir le guide" : "Explore guide"}
               </span>
             </button>
           )

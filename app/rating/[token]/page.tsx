@@ -3,6 +3,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
+import { useUiLanguage } from "@/lib/use-ui-language";
 import {
   getPublicExperienceRatingForm,
   submitPublicExperienceRatingForm,
@@ -60,18 +61,26 @@ function getQuestionFieldNames(key: string): {
   return null;
 }
 
-function formatTargetType(value?: string | null): string {
-  if (!value) return "interaction";
+function formatTargetType(
+  value: string | null | undefined,
+  uiLanguage: "fr" | "en",
+): string {
+  const labels: Record<string, { fr: string; en: string }> = {
+    interaction: { fr: "Interaction", en: "Interaction" },
+    conversation: { fr: "Conversation", en: "Conversation" },
+    session: { fr: "Session", en: "Session" },
+    recommendation: { fr: "Recommandation", en: "Recommendation" },
+    lever: { fr: "Levier", en: "Lever" },
+    booking: { fr: "Rendez-vous", en: "Appointment" },
+    artifact: { fr: "Contenu personnalisé", en: "Personalized content" },
+    external_conversation: {
+      fr: "Conversation externe",
+      en: "External conversation",
+    },
+  };
 
-  if (value === "conversation") return "conversation";
-  if (value === "session") return "session";
-  if (value === "recommendation") return "recommandation";
-  if (value === "lever") return "levier";
-  if (value === "booking") return "rendez-vous";
-  if (value === "artifact") return "contenu personnalisé";
-  if (value === "external_conversation") return "conversation externe";
-
-  return value.replaceAll("_", " ");
+  const key = value || "interaction";
+  return labels[key]?.[uiLanguage] ?? key.replaceAll("_", " ");
 }
 
 function RatingOptionButton({
@@ -88,8 +97,8 @@ function RatingOptionButton({
       type="button"
       onClick={onClick}
       style={{
-        minHeight: 58,
-        borderRadius: 18,
+        minHeight: 54,
+        borderRadius: 16,
         border: selected
           ? "1px solid rgba(37,99,235,0.42)"
           : "1px solid rgba(15,23,42,0.10)",
@@ -120,12 +129,14 @@ function RatingQuestionCard({
   scaleOptions,
   form,
   setForm,
+  uiLanguage,
 }: {
   index: number;
   question: ExperienceRatingQuestionResponse;
   scaleOptions: ExperienceRatingScaleOptionResponse[];
   form: RatingFormState;
   setForm: React.Dispatch<React.SetStateAction<RatingFormState>>;
+  uiLanguage: "fr" | "en";
 }) {
   const fieldNames = getQuestionFieldNames(question.key);
   const selectedRating = fieldNames ? form[fieldNames.ratingField] : null;
@@ -138,8 +149,8 @@ function RatingQuestionCard({
       className="stack"
       style={{
         gap: 14,
-        padding: 20,
-        borderRadius: 28,
+        padding: "clamp(16px, 3vw, 20px)",
+        borderRadius: 24,
         border: "1px solid rgba(15,23,42,0.08)",
         background: "rgba(255,255,255,0.84)",
         boxShadow: "0 18px 44px rgba(15,23,42,0.06)",
@@ -176,8 +187,9 @@ function RatingQuestionCard({
           </h2>
 
           <div style={{ color: "#64748b", lineHeight: 1.55 }}>
-            Choisissez une note de 1 à 5, puis ajoutez un commentaire si vous souhaitez préciser
-            votre perception.
+            {uiLanguage === "fr"
+              ? "Choisissez une note de 1 à 5. Le commentaire est optionnel."
+              : "Choose a rating from 1 to 5. The comment is optional."}
           </div>
         </div>
       </div>
@@ -206,7 +218,7 @@ function RatingQuestionCard({
 
       <label className="stack" style={{ gap: 7 }}>
         <span style={{ fontSize: 13, fontWeight: 850, color: "#334155" }}>
-          Commentaire
+          {uiLanguage === "fr" ? "Commentaire" : "Comment"}
         </span>
 
         <textarea
@@ -218,7 +230,7 @@ function RatingQuestionCard({
             }))
           }
           rows={4}
-          placeholder="Votre commentaire..."
+          placeholder={uiLanguage === "fr" ? "Ajoutez un commentaire..." : "Add a comment..."}
           style={{
             width: "100%",
             resize: "vertical",
@@ -265,8 +277,10 @@ function isFormComplete(form: RatingFormState): boolean {
 
 function RatingExpiredOrCompleted({
   formData,
+  uiLanguage,
 }: {
   formData: PublicExperienceRatingFormResponse;
+  uiLanguage: "fr" | "en";
 }) {
   const isCompleted = formData.status === "completed";
 
@@ -297,7 +311,13 @@ function RatingExpiredOrCompleted({
           textTransform: "uppercase",
         }}
       >
-        {isCompleted ? "Évaluation déjà envoyée" : "Lien non disponible"}
+        {isCompleted
+          ? uiLanguage === "fr"
+            ? "Évaluation déjà envoyée"
+            : "Rating already submitted"
+          : uiLanguage === "fr"
+            ? "Lien non disponible"
+            : "Link unavailable"}
       </span>
 
       <h1
@@ -310,14 +330,22 @@ function RatingExpiredOrCompleted({
         }}
       >
         {isCompleted
-          ? "Merci, votre retour a déjà été enregistré."
-          : "Cette demande d’évaluation n’est plus active."}
+          ? uiLanguage === "fr"
+            ? "Merci, votre retour a déjà été enregistré."
+            : "Thank you, your feedback has already been recorded."
+          : uiLanguage === "fr"
+            ? "Cette demande d’évaluation n’est plus active."
+            : "This rating request is no longer active."}
       </h1>
 
       <p style={{ maxWidth: 680, margin: 0, lineHeight: 1.7, color: "#64748b" }}>
         {isCompleted
-          ? "Votre retour contribue à améliorer l’expérience LeanWorker pour vous et pour les autres Workers."
-          : "Le lien peut être expiré, annulé ou déjà clôturé. Vous pouvez contacter l’équipe LeanWorker si vous pensez qu’il s’agit d’une erreur."}
+          ? uiLanguage === "fr"
+            ? "Votre retour contribue à améliorer l’expérience LeanWorker."
+            : "Your feedback helps improve the LeanWorker experience."
+          : uiLanguage === "fr"
+            ? "Le lien a peut-être expiré, été annulé ou déjà clôturé."
+            : "The link may have expired, been cancelled, or already been closed."}
       </p>
     </section>
   );
@@ -325,6 +353,7 @@ function RatingExpiredOrCompleted({
 
 export default function PublicExperienceRatingPage() {
   const params = useParams();
+  const { uiLanguage } = useUiLanguage("fr");
 
   const ratingToken = useMemo(() => {
     const raw = params?.token;
@@ -341,9 +370,56 @@ export default function PublicExperienceRatingPage() {
   const [submittedScore, setSubmittedScore] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const copy = useMemo(
+    () =>
+      uiLanguage === "fr"
+        ? {
+            badge: "Évaluation LeanWorker",
+            heroTitle: "Votre retour nous aide à améliorer LeanWorker.",
+            heroBody:
+              "Trois questions rapides pour évaluer la qualité de l’échange, du contenu et du service.",
+            invalidLink: "Lien d’évaluation invalide.",
+            loadError: "Impossible de charger le formulaire d’évaluation.",
+            incompleteForm:
+              "Merci de répondre aux trois questions avant d’envoyer votre évaluation.",
+            submitError: "Impossible d’envoyer votre évaluation.",
+            loading: "Chargement du formulaire...",
+            submittedBadge: "Évaluation envoyée",
+            submittedTitle: "Merci pour votre retour.",
+            overallScore: "Score global",
+            greeting: (name: string) => `Bonjour ${name},`,
+            intro: "Merci d’évaluer votre expérience récente avec LeanWorker.",
+            footerHint:
+              "Les commentaires sont optionnels. Les trois notes sont obligatoires.",
+            submitting: "Envoi en cours...",
+            submit: "Envoyer mon évaluation",
+          }
+        : {
+            badge: "LeanWorker rating",
+            heroTitle: "Your feedback helps us improve LeanWorker.",
+            heroBody:
+              "Three quick questions to rate the quality of the interaction, content, and service.",
+            invalidLink: "Invalid rating link.",
+            loadError: "Unable to load the rating form.",
+            incompleteForm:
+              "Please answer all three questions before submitting your rating.",
+            submitError: "Unable to submit your rating.",
+            loading: "Loading the rating form...",
+            submittedBadge: "Rating submitted",
+            submittedTitle: "Thank you for your feedback.",
+            overallScore: "Overall score",
+            greeting: (name: string) => `Hello ${name},`,
+            intro: "Please rate your recent experience with LeanWorker.",
+            footerHint: "Comments are optional. All three ratings are required.",
+            submitting: "Submitting...",
+            submit: "Submit my rating",
+          },
+    [uiLanguage],
+  );
+
   async function loadForm() {
     if (!ratingToken) {
-      setError("Lien d’évaluation invalide.");
+      setError(copy.invalidLink);
       setLoading(false);
       return;
     }
@@ -356,9 +432,7 @@ export default function PublicExperienceRatingPage() {
       setFormData(data);
     } catch (err) {
       setError(
-        err instanceof Error
-          ? err.message
-          : "Impossible de charger le formulaire d’évaluation.",
+        err instanceof Error ? err.message : copy.loadError,
       );
     } finally {
       setLoading(false);
@@ -374,7 +448,7 @@ export default function PublicExperienceRatingPage() {
     event.preventDefault();
 
     if (!isFormComplete(form)) {
-      setError("Merci de répondre aux trois questions avant d’envoyer votre évaluation.");
+      setError(copy.incompleteForm);
       return;
     }
 
@@ -391,9 +465,7 @@ export default function PublicExperienceRatingPage() {
       setSubmittedScore(result.overall_score);
     } catch (err) {
       setError(
-        err instanceof Error
-          ? err.message
-          : "Impossible d’envoyer votre évaluation.",
+        err instanceof Error ? err.message : copy.submitError,
       );
     } finally {
       setSubmitting(false);
@@ -402,19 +474,22 @@ export default function PublicExperienceRatingPage() {
 
   return (
     <main
+      lang={uiLanguage}
+      translate="no"
+      suppressHydrationWarning
       style={{
         minHeight: "100vh",
         background:
           "radial-gradient(circle at top left, rgba(37,99,235,0.12), transparent 32%), linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%)",
-        padding: 24,
+        padding: "clamp(14px, 3vw, 24px)",
       }}
     >
       <div
         className="stack"
         style={{
-          gap: 18,
+          gap: 16,
           width: "100%",
-          maxWidth: 980,
+          maxWidth: 900,
           margin: "0 auto",
         }}
       >
@@ -424,10 +499,10 @@ export default function PublicExperienceRatingPage() {
             gap: 16,
             position: "relative",
             overflow: "hidden",
-            padding: 28,
-            borderRadius: 34,
+            padding: "clamp(22px, 4vw, 28px)",
+            borderRadius: 24,
             background:
-              "linear-gradient(135deg, rgba(15,23,42,0.98), rgba(30,64,175,0.92))",
+              "linear-gradient(135deg, rgba(43,33,24,0.97), rgba(88,180,174,0.90))",
             color: "#ffffff",
             boxShadow: "0 26px 70px rgba(15,23,42,0.18)",
           }}
@@ -467,14 +542,14 @@ export default function PublicExperienceRatingPage() {
             style={{
               margin: 0,
               maxWidth: 840,
-              fontSize: 42,
+              fontSize: "clamp(34px, 5vw, 42px)",
               lineHeight: 1.04,
               fontWeight: 950,
               letterSpacing: "-0.065em",
               position: "relative",
             }}
           >
-            Votre retour nous aide à améliorer l’expérience LeanWorker.
+            {copy.heroTitle}
           </h1>
 
           <p
@@ -486,8 +561,7 @@ export default function PublicExperienceRatingPage() {
               position: "relative",
             }}
           >
-            L’évaluation prend moins de deux minutes. Elle porte sur la qualité de
-            l’interlocuteur, du contenu échangé et du service mis en place.
+            {copy.heroBody}
           </p>
         </section>
 
@@ -501,7 +575,7 @@ export default function PublicExperienceRatingPage() {
               color: "#334155",
             }}
           >
-            Chargement du formulaire d’évaluation...
+            {copy.loading}
           </section>
         ) : error && !formData ? (
           <section
@@ -543,7 +617,7 @@ export default function PublicExperienceRatingPage() {
                 textTransform: "uppercase",
               }}
             >
-              Évaluation envoyée
+              {copy.submittedBadge}
             </span>
 
             <h2
@@ -555,7 +629,7 @@ export default function PublicExperienceRatingPage() {
                 color: "#0f172a",
               }}
             >
-              Merci pour votre retour.
+              {copy.submittedTitle}
             </h2>
 
             <p style={{ maxWidth: 680, margin: 0, lineHeight: 1.7, color: "#64748b" }}>
@@ -574,12 +648,12 @@ export default function PublicExperienceRatingPage() {
                   fontWeight: 900,
                 }}
               >
-                Score global : {submittedScore}/5
+                {copy.overallScore}: {submittedScore}/5
               </div>
             ) : null}
           </section>
         ) : formData && !formData.is_submittable ? (
-          <RatingExpiredOrCompleted formData={formData} />
+          <RatingExpiredOrCompleted formData={formData} uiLanguage={uiLanguage} />
         ) : formData ? (
           <form className="stack" style={{ gap: 18 }} onSubmit={handleSubmit}>
             <section
@@ -605,7 +679,7 @@ export default function PublicExperienceRatingPage() {
                     fontWeight: 900,
                   }}
                 >
-                  {formatTargetType(formData.target_type)}
+                  {formatTargetType(formData.target_type, uiLanguage)}
                 </span>
 
                 {formData.target_title ? (
@@ -627,12 +701,12 @@ export default function PublicExperienceRatingPage() {
 
               {formData.worker_name ? (
                 <div style={{ color: "#0f172a", fontSize: 20, fontWeight: 900 }}>
-                  Bonjour {formData.worker_name},
+                  {copy.greeting(formData.worker_name)}
                 </div>
               ) : null}
 
               <div style={{ color: "#64748b", lineHeight: 1.65 }}>
-                Merci d’évaluer votre expérience récente avec LeanWorker.
+                {copy.intro}
               </div>
             </section>
 
@@ -644,6 +718,7 @@ export default function PublicExperienceRatingPage() {
                 scaleOptions={formData.scale_options}
                 form={form}
                 setForm={setForm}
+                uiLanguage={uiLanguage}
               />
             ))}
 
@@ -675,7 +750,7 @@ export default function PublicExperienceRatingPage() {
               }}
             >
               <div style={{ color: "#64748b", lineHeight: 1.55 }}>
-                Les commentaires sont optionnels, mais les trois notes sont nécessaires.
+                {copy.footerHint}
               </div>
 
               <button
@@ -696,7 +771,7 @@ export default function PublicExperienceRatingPage() {
                   font: "inherit",
                 }}
               >
-                {submitting ? "Envoi en cours..." : "Envoyer mon évaluation"}
+                {submitting ? copy.submitting : copy.submit}
               </button>
             </section>
           </form>

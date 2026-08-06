@@ -4,25 +4,36 @@ import type { SupportedUiLanguage } from "@/lib/user-locales";
 import { BadgePill, SparkIcon, UserCardIcon } from "@/components/ui-flat-icons";
 
 export function Topbar({
-  uiLanguage,
+  uiLanguage = "fr",
   title,
   firstName,
 }: {
-  uiLanguage: SupportedUiLanguage;
+  uiLanguage?: SupportedUiLanguage;
   title: string;
   firstName?: string | null;
 }) {
-  const initial = firstName?.trim()?.charAt(0)?.toUpperCase() || "U";
-  const displayName = firstName || (uiLanguage === "fr" ? "Utilisateur" : "User");
+  const normalizedFirstName = firstName?.trim() || "";
+  const initial =
+    normalizedFirstName.charAt(0).toLocaleUpperCase(
+      uiLanguage === "fr" ? "fr-BE" : "en-BE",
+    ) || "U";
+  const displayName =
+    normalizedFirstName || (uiLanguage === "fr" ? "Utilisateur" : "User");
 
   return (
     <header
       className="topbar coach-topbar"
+      lang={uiLanguage}
+      aria-label={
+        uiLanguage === "fr"
+          ? `En-tête de la page : ${title}`
+          : `Page header: ${title}`
+      }
       style={{
-        minHeight: 78,
+        minHeight: 74,
         height: "auto",
-        padding: "14px 22px",
-        gap: 16,
+        padding: "13px 20px",
+        gap: 14,
         background:
           "linear-gradient(180deg, rgba(255,255,255,0.82), rgba(255,248,239,0.88))",
         borderBottom: "1px solid rgba(43,33,24,0.08)",
@@ -47,7 +58,7 @@ export function Topbar({
               fontWeight: 800,
             }}
           >
-            {uiLanguage === "fr" ? "LeanWorker App" : "LeanWorker App"}
+            {uiLanguage === "fr" ? "Espace LeanWorker" : "LeanWorker workspace"}
           </span>
 
           <span
@@ -60,21 +71,19 @@ export function Topbar({
               fontWeight: 800,
             }}
           >
-            {uiLanguage === "fr" ? "Espace calme" : "Calm workspace"}
+            {uiLanguage === "fr" ? "Espace de réflexion" : "Reflection space"}
           </span>
         </div>
 
         <div
           className="topbar-title"
           style={{
-            fontSize: 20,
-            lineHeight: 1.15,
+            fontSize: "clamp(19px, 2.4vw, 21px)",
+            lineHeight: 1.18,
             fontWeight: 850,
             letterSpacing: "-0.045em",
             color: "var(--coach-ink)",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
+            overflowWrap: "anywhere",
           }}
           title={title}
         >
@@ -87,14 +96,13 @@ export function Topbar({
             fontSize: 13,
             lineHeight: 1.45,
             color: "var(--coach-muted)",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
+            maxWidth: 760,
+            overflowWrap: "anywhere",
           }}
         >
           {uiLanguage === "fr"
-            ? "Clarifie ta situation, choisis la prochaine action et avance avec sérénité."
-            : "Clarify your situation, choose the next action, and move forward calmly."}
+            ? "Clarifie ta situation, choisis ta prochaine action et avance avec confiance."
+            : "Clarify your situation, choose your next action, and move forward with confidence."}
         </div>
       </div>
 
@@ -106,21 +114,29 @@ export function Topbar({
         }}
       >
         <BadgePill icon={<SparkIcon size={14} />}>
-          {uiLanguage === "fr" ? "Coach actif" : "Coach active"}
+          {uiLanguage === "fr" ? "Coach disponible" : "Coach available"}
         </BadgePill>
 
         <div
           className="user-pill"
+          role="group"
+          aria-label={
+            uiLanguage === "fr"
+              ? `Profil utilisateur : ${displayName}`
+              : `User profile: ${displayName}`
+          }
           style={{
             background: "rgba(255,255,255,0.72)",
             border: "1px solid rgba(43,33,24,0.08)",
             boxShadow: "inset 0 1px 0 rgba(255,255,255,0.72)",
-            padding: "8px 12px",
+            padding: "8px 11px",
             borderRadius: 999,
+            maxWidth: "100%",
           }}
         >
           <span
             className="avatar-circle"
+            aria-hidden="true"
             style={{
               background:
                 "linear-gradient(135deg, rgba(255,122,89,0.18), rgba(88,180,174,0.14))",
@@ -159,7 +175,7 @@ export function Topbar({
                 whiteSpace: "nowrap",
               }}
             >
-              {uiLanguage === "fr" ? "Session active" : "Active session"}
+              {uiLanguage === "fr" ? "Espace personnel" : "Personal workspace"}
             </span>
           </span>
         </div>

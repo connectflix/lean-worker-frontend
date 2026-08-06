@@ -1,25 +1,34 @@
 "use client";
 
+import type { SupportedUiLanguage } from "@/lib/user-locales";
+
 type OfferPriceBlockProps = {
   currency?: string;
   originalPrice?: number | null;
   finalPrice?: number | null;
   priceMin?: number | null;
   priceMax?: number | null;
+  uiLanguage?: SupportedUiLanguage;
 };
 
-function formatPrice(value?: number | null, currency = "EUR"): string | null {
-  if (typeof value !== "number" || Number.isNaN(value)) return null;
+function formatPrice(
+  value: number | null | undefined,
+  currency: string,
+  uiLanguage: SupportedUiLanguage,
+): string | null {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+
+  const locale = uiLanguage === "fr" ? "fr-BE" : "en-BE";
 
   try {
-    return new Intl.NumberFormat("fr-BE", {
+    return new Intl.NumberFormat(locale, {
       style: "currency",
       currency,
       minimumFractionDigits: value % 1 === 0 ? 0 : 2,
       maximumFractionDigits: 2,
     }).format(value);
   } catch {
-    return `${value} €`;
+    return `${value.toLocaleString(locale)} ${currency}`;
   }
 }
 
@@ -29,16 +38,36 @@ export function OfferPriceBlock({
   finalPrice,
   priceMin,
   priceMax,
+  uiLanguage = "fr",
 }: OfferPriceBlockProps) {
   const hasDiscount =
     typeof originalPrice === "number" &&
     typeof finalPrice === "number" &&
     finalPrice < originalPrice;
 
-  const formattedOriginal = formatPrice(originalPrice, currency);
-  const formattedFinal = formatPrice(finalPrice, currency);
-  const formattedMin = formatPrice(priceMin, currency);
-  const formattedMax = formatPrice(priceMax, currency);
+  const formattedOriginal = formatPrice(originalPrice, currency, uiLanguage);
+  const formattedFinal = formatPrice(finalPrice, currency, uiLanguage);
+  const formattedMin = formatPrice(priceMin, currency, uiLanguage);
+  const formattedMax = formatPrice(priceMax, currency, uiLanguage);
+
+  const labels =
+    uiLanguage === "fr"
+      ? {
+          originalPrice: "Prix initial",
+          currentPrice: "Prix actuel",
+          priceRange: "Fourchette de prix",
+          minimumPrice: "Prix minimum",
+          maximumPrice: "Prix maximum",
+          discount: "Meilleur tarif",
+        }
+      : {
+          originalPrice: "Original price",
+          currentPrice: "Current price",
+          priceRange: "Price range",
+          minimumPrice: "Minimum price",
+          maximumPrice: "Maximum price",
+          discount: "Better value",
+        };
 
   const hasRange =
     typeof priceMin === "number" &&
@@ -63,6 +92,17 @@ export function OfferPriceBlock({
   return (
     <div
       className="offer-price-wrap"
+      lang={uiLanguage}
+      role="group"
+      aria-label={
+        formattedFinal
+          ? labels.currentPrice
+          : hasRange
+            ? labels.priceRange
+            : hasSingleMin
+              ? labels.minimumPrice
+              : labels.maximumPrice
+      }
       style={{
         alignItems: "flex-end",
         minWidth: 118,
@@ -71,6 +111,7 @@ export function OfferPriceBlock({
       {hasDiscount && formattedOriginal ? (
         <div
           className="offer-price-original"
+          aria-label={`${labels.originalPrice}: ${formattedOriginal}`}
           style={{
             color: "var(--coach-muted)",
             fontSize: 13,
@@ -85,6 +126,7 @@ export function OfferPriceBlock({
       {formattedFinal ? (
         <div
           className="offer-price-final"
+          aria-label={`${labels.currentPrice}: ${formattedFinal}`}
           style={{
             color: "var(--coach-ink)",
             fontSize: 26,
@@ -98,6 +140,7 @@ export function OfferPriceBlock({
       ) : hasRange ? (
         <div
           className="offer-price-range"
+          aria-label={`${labels.priceRange}: ${formattedMin} – ${formattedMax}`}
           style={{
             color: "var(--coach-ink)",
             fontSize: 20,
@@ -112,6 +155,7 @@ export function OfferPriceBlock({
       ) : hasSingleMin ? (
         <div
           className="offer-price-range"
+          aria-label={`${labels.minimumPrice}: ${formattedMin}`}
           style={{
             color: "var(--coach-ink)",
             fontSize: 20,
@@ -126,6 +170,7 @@ export function OfferPriceBlock({
       ) : hasSingleMax ? (
         <div
           className="offer-price-range"
+          aria-label={`${labels.maximumPrice}: ${formattedMax}`}
           style={{
             color: "var(--coach-ink)",
             fontSize: 20,
@@ -149,7 +194,7 @@ export function OfferPriceBlock({
             letterSpacing: "-0.01em",
           }}
         >
-          Better value
+          {labels.discount}
         </div>
       ) : null}
     </div>

@@ -106,8 +106,8 @@ function SoftFeatureCard({
     <div
       className="card-soft stack"
       style={{
-        gap: 12,
-        minHeight: 154,
+        gap: 10,
+        minHeight: 138,
         borderRadius: 26,
         background: "rgba(255,255,255,0.68)",
         border: "1px solid rgba(43,33,24,0.08)",
@@ -194,7 +194,7 @@ function BulletLine({
 
 export default function HomePage() {
   const router = useRouter();
-  const { uiLanguage } = useUiLanguage("en");
+  const { uiLanguage } = useUiLanguage("fr");
 
   const [checkingSession, setCheckingSession] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -225,7 +225,13 @@ export default function HomePage() {
       const url = await getLinkedInAuthorizationUrl();
       window.location.href = url;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to start LinkedIn login.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : uiLanguage === "fr"
+            ? "Impossible de démarrer la connexion LinkedIn."
+            : "Unable to start LinkedIn login.",
+      );
       setLoading(false);
     }
   }
@@ -234,92 +240,94 @@ export default function HomePage() {
     () =>
       uiLanguage === "fr"
         ? {
-            eyebrow: "Plateforme de coaching carrière",
+            eyebrow: "Coaching carrière personnalisé",
             heroTitle:
-              "Clarifie ta trajectoire. Avance sans te perdre dans le bruit.",
+              "Clarifie ta trajectoire. Passe à l’action.",
             heroSubtitle:
-              "LeanWorker t’aide à comprendre ce que tu vis au travail, à relier tes enjeux à ta trajectoire, puis à transformer tes sessions en actions utiles, réalistes et personnalisées.",
-            checkingSession: "Vérification de ta session en cours...",
+              "Un coach intelligent pour prendre du recul, définir tes priorités et avancer avec un plan adapté à ta situation.",
+            checkingSession: "Ouverture de ton espace...",
             checkingSessionBody:
-              "Préparation de ton espace, de ta mémoire et de tes sessions.",
+              "Nous préparons ton profil et tes dernières sessions.",
             card1Title: "Coach adaptatif",
             card1Body:
-              "Le coach ajuste sa posture selon ton contexte, ton niveau de charge, ton besoin et ta trajectoire.",
+              "Un accompagnement qui s’adapte à ton contexte, tes objectifs et ton rythme.",
             card2Title: "Career Blueprint",
             card2Body:
-              "Structure ton identité, ta vision et tes horizons pour un coaching beaucoup plus précis.",
-            card3Title: "Recommandations actionnables",
+              "Structure ton rôle actuel, tes ambitions et les étapes de ton évolution.",
+            card3Title: "Plan d’action concret",
             card3Body:
-              "Transforme chaque session en actions concrètes avec des leviers utiles, priorisés et exploitables.",
-            card4Title: "Guides IA",
+              "Transforme chaque échange en prochaines étapes claires, réalistes et prioritaires.",
+            card4Title: "Ressources personnalisées",
             card4Body:
-              "Débloque des mini e-books et mini audiobooks personnalisés pour passer plus vite à l’action.",
-            trust1: "Mémoire continue",
-            trust2: "Sessions vocales & écrites",
-            trust3: "Suivi de progression",
-            panelTitle: "Entre dans ton espace LeanWorker",
+              "Retrouve des guides adaptés à tes besoins pour approfondir et progresser.",
+            trust1: "Contexte mémorisé",
+            trust2: "Voix et texte",
+            trust3: "Progression suivie",
+            panelTitle: "Commence ton parcours",
             panelBody:
-              "Connecte-toi avec LinkedIn pour initialiser ton contexte professionnel et lancer une expérience de coaching continue.",
+              "Connecte-toi avec LinkedIn pour créer ton profil professionnel et accéder à ton coach.",
             cta: "Continuer avec LinkedIn",
             ctaLoading: "Redirection...",
             panelHint:
-              "Une fois connecté, tu accèdes à un coach adaptatif, un historique intelligent, des recommandations et des guides IA.",
-            secondaryTitle: "Conçu pour une progression réelle",
+              "La connexion permet de personnaliser ton accompagnement dès la première session.",
+            secondaryTitle: "De la réflexion à l’action",
             secondaryBody:
-              "Pas seulement des conversations. Une vraie boucle entre réflexion, trajectoire, recommandation et exécution.",
+              "Chaque session t’aide à mieux comprendre ta situation, décider et avancer concrètement.",
             bottomNote:
-              "LeanWorker combine coaching, mémoire, recommandations et artefacts IA dans un même espace de travail.",
+              "Tes échanges, objectifs et recommandations restent réunis dans un même espace.",
             secureAccess: "Accès sécurisé",
-            bullet1: "Onboarding guidé et contextualisé",
-            bullet2: "Expérience écrite et vocale",
-            bullet3: "Guides IA personnalisés",
-            previewTitle: "Ton espace personnel",
+            loginTitle: "Connexion LinkedIn",
+            bullet1: "Profil professionnel personnalisé",
+            bullet2: "Coaching par écrit ou par la voix",
+            bullet3: "Recommandations et guides adaptés",
+            previewTitle: "Un espace simple et structuré",
             previewBody:
-              "Un environnement calme pour réfléchir, décider, agir et suivre ta progression dans le temps.",
+              "Retrouve tes sessions, ta trajectoire et tes prochaines actions au même endroit.",
           }
         : {
-            eyebrow: "Career coaching platform",
+            eyebrow: "Personalized career coaching",
             heroTitle:
-              "Clarify your trajectory. Move forward without getting lost in the noise.",
+              "Clarify your direction. Take action.",
             heroSubtitle:
-              "LeanWorker helps you understand what is happening at work, connect your challenges to your trajectory, and turn your sessions into useful, realistic, personalized action.",
-            checkingSession: "Checking your current session...",
+              "An intelligent coach to step back, set priorities, and move forward with a plan tailored to your situation.",
+            checkingSession: "Opening your workspace...",
             checkingSessionBody:
-              "Preparing your workspace, memory, and sessions.",
+              "Preparing your profile and latest sessions.",
             card1Title: "Adaptive coach",
             card1Body:
-              "Your coach adjusts its stance to your context, your cognitive load, your need, and your trajectory.",
+              "Guidance that adapts to your context, goals, and pace.",
             card2Title: "Career Blueprint",
             card2Body:
-              "Structure your identity, vision, and horizons for much more precise coaching.",
-            card3Title: "Actionable recommendations",
+              "Structure your current role, ambitions, and next career steps.",
+            card3Title: "Concrete action plan",
             card3Body:
-              "Turn every session into concrete action with useful, prioritized, and usable levers.",
-            card4Title: "AI Guides",
+              "Turn every conversation into clear, realistic, prioritized next steps.",
+            card4Title: "Personalized resources",
             card4Body:
-              "Unlock personalized mini e-books and mini audiobooks to move faster into execution.",
-            trust1: "Continuous memory",
-            trust2: "Voice & written sessions",
-            trust3: "Progress tracking",
-            panelTitle: "Enter your LeanWorker workspace",
+              "Access tailored guides to deepen your thinking and keep progressing.",
+            trust1: "Remembered context",
+            trust2: "Voice and text",
+            trust3: "Tracked progress",
+            panelTitle: "Start your journey",
             panelBody:
-              "Sign in with LinkedIn to initialize your professional context and start a continuous coaching experience.",
+              "Sign in with LinkedIn to create your professional profile and access your coach.",
             cta: "Continue with LinkedIn",
             ctaLoading: "Redirecting...",
             panelHint:
-              "Once connected, you access an adaptive coach, intelligent history, recommendations, and AI guides.",
-            secondaryTitle: "Built for real progress",
+              "Your connection helps personalize the experience from the first session.",
+            secondaryTitle: "From reflection to action",
             secondaryBody:
-              "Not just conversations. A real loop between reflection, trajectory, recommendation, and execution.",
+              "Each session helps you understand your situation, make decisions, and move forward.",
             bottomNote:
-              "LeanWorker combines coaching, memory, recommendations, and AI artifacts in one workspace.",
+              "Your conversations, goals, and recommendations stay together in one workspace.",
             secureAccess: "Secure access",
-            bullet1: "Guided and contextualized onboarding",
-            bullet2: "Written and voice experience",
-            bullet3: "Personalized AI guides",
-            previewTitle: "Your personal space",
+            loginTitle: "LinkedIn sign in",
+            bullet1: "Personalized professional profile",
+            bullet2: "Coaching by text or voice",
+            bullet3: "Tailored recommendations and guides",
+            previewTitle: "A simple, structured workspace",
             previewBody:
-              "A calm environment to reflect, decide, act, and track your progress over time.",
+              "Find your sessions, career direction, and next actions in one place.",
           },
     [uiLanguage],
   );
@@ -328,6 +336,7 @@ export default function HomePage() {
     return (
       <main
         className="page"
+        lang={uiLanguage}
         translate="no"
         suppressHydrationWarning
         style={{
@@ -335,7 +344,7 @@ export default function HomePage() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          padding: "40px 20px",
+          padding: "clamp(18px, 4vw, 40px) clamp(14px, 3vw, 20px)",
           background:
             "radial-gradient(circle at 18% 12%, rgba(255,122,89,0.16), transparent 30%), radial-gradient(circle at 82% 78%, rgba(88,180,174,0.14), transparent 32%), var(--coach-bg)",
         }}
@@ -389,13 +398,14 @@ export default function HomePage() {
   return (
     <main
       className="page"
+      lang={uiLanguage}
       translate="no"
       suppressHydrationWarning
       style={{
         minHeight: "100vh",
         display: "flex",
         alignItems: "center",
-        padding: "40px 20px",
+        padding: "clamp(18px, 4vw, 40px) clamp(14px, 3vw, 20px)",
         background:
           "radial-gradient(circle at 12% 8%, rgba(255,122,89,0.18), transparent 32%), radial-gradient(circle at 88% 18%, rgba(88,180,174,0.14), transparent 28%), radial-gradient(circle at 60% 92%, rgba(255,241,220,0.80), transparent 34%), var(--coach-bg)",
       }}
@@ -411,7 +421,7 @@ export default function HomePage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 340px), 1fr))",
             gap: 22,
             alignItems: "stretch",
           }}
@@ -420,9 +430,9 @@ export default function HomePage() {
             className="card stack"
             style={{
               justifyContent: "space-between",
-              minHeight: 640,
-              padding: 32,
-              gap: 28,
+              minHeight: 580,
+              padding: "clamp(22px, 4vw, 32px)",
+              gap: 24,
               position: "relative",
               overflow: "hidden",
               borderRadius: 34,
@@ -487,7 +497,7 @@ export default function HomePage() {
                 <h1
                   style={{
                     margin: 0,
-                    fontSize: "clamp(38px, 5vw, 62px)",
+                    fontSize: "clamp(36px, 5vw, 58px)",
                     lineHeight: 0.98,
                     letterSpacing: "-0.08em",
                     maxWidth: 840,
@@ -502,8 +512,8 @@ export default function HomePage() {
                   className="subtitle"
                   style={{
                     margin: 0,
-                    maxWidth: 760,
-                    fontSize: 18,
+                    maxWidth: 700,
+                    fontSize: 17,
                     lineHeight: 1.7,
                     color: "var(--coach-muted)",
                   }}
@@ -593,8 +603,8 @@ export default function HomePage() {
             className="card stack"
             style={{
               justifyContent: "space-between",
-              minHeight: 640,
-              padding: 32,
+              minHeight: 580,
+              padding: "clamp(22px, 4vw, 32px)",
               gap: 24,
               position: "relative",
               overflow: "hidden",
@@ -692,7 +702,7 @@ export default function HomePage() {
                       color: "var(--coach-ink)",
                     }}
                   >
-                    {uiLanguage === "fr" ? "Connexion LinkedIn" : "LinkedIn sign in"}
+                    {copy.loginTitle}
                   </div>
 
                   <div

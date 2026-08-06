@@ -14,8 +14,8 @@ import {
   SparkIcon,
 } from "@/components/ui-flat-icons";
 import { getSessionDetail, getSessionProblemDetection } from "@/lib/api";
-import { useCurrentUser } from "@/components/user-context";
-import { resolveUiLanguage, type SupportedUiLanguage } from "@/lib/user-locales";
+import { useUiLanguage } from "@/lib/use-ui-language";
+import type { SupportedUiLanguage } from "@/lib/user-locales";
 import type { ProblemDetection, SessionDetail } from "@/lib/types";
 
 export default function SessionDetailPage() {
@@ -76,7 +76,7 @@ function CoachSectionCard({
       className="card stack"
       style={{
         gap: 16,
-        borderRadius: 28,
+        borderRadius: 24,
         border: "1px solid rgba(43,33,24,0.08)",
         background: warm
           ? "linear-gradient(135deg, rgba(255,241,220,0.92), rgba(255,255,255,0.90))"
@@ -92,88 +92,89 @@ function CoachSectionCard({
 function SessionDetailContent() {
   const params = useParams<{ sessionId: string }>();
   const router = useRouter();
-  const { user } = useCurrentUser();
+  const { uiLanguage } = useUiLanguage("fr");
 
   const [item, setItem] = useState<SessionDetail | null>(null);
   const [analysis, setAnalysis] = useState<ProblemDetection | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const uiLanguage: SupportedUiLanguage = resolveUiLanguage({
-    language: user?.language,
-    locale: user?.locale,
-  });
-
   const sessionId = useMemo(() => Number(params.sessionId), [params.sessionId]);
 
   const copy =
     uiLanguage === "fr"
       ? {
-          title: "Détail de session",
-          loading: "Chargement du détail de session...",
+          title: "Détail de la session",
+          loading: "Chargement de la session...",
           loadingBody:
-            "Nous récupérons la conversation, le résumé et l’analyse associée.",
+            "Nous récupérons la synthèse, l’analyse et la conversation.",
           errorTitle: "Impossible de charger cette session",
+          invalidSession: "Identifiant de session invalide.",
+          loadError: "Impossible de charger le détail de la session.",
           notFound: "Session introuvable",
           notFoundBody:
             "Cette session n’existe pas ou n’est plus accessible depuis ton historique.",
           retry: "Réessayer",
           backToHistory: "Retour à l’historique",
           started: "Démarrée",
-          closed: "Clôturée",
+          closed: "Terminée",
           transcript: "Conversation",
           transcriptIntro:
-            "Retrouve le fil complet de l’échange pour comprendre comment les signaux de coaching ont émergé.",
-          noTranscript: "Aucun transcript disponible pour cette session.",
+            "Consulte le fil complet de l’échange et retrouve le contexte de la session.",
+          noTranscript: "Aucun message n’est disponible pour cette session.",
           noAnalysis:
-            "Aucune analyse complémentaire n’a encore été générée pour cette session.",
-          noSummary: "Aucun résumé n’est encore disponible pour cette session.",
+            "Aucune analyse complémentaire n’est disponible pour cette session.",
+          noSummary: "Aucune synthèse n’est encore disponible pour cette session.",
           you: "Toi",
           agent: "Coach",
-          sessionTrace: "Trace de coaching",
+          sessionTrace: "Vue d’ensemble",
           sessionTraceBody:
-            "Cette page rassemble la synthèse, les signaux détectés et la conversation complète de la session.",
+            "Cette page réunit les informations essentielles, la synthèse, l’analyse et la conversation.",
           synthesisAvailable: "Synthèse disponible",
           analysisAvailable: "Analyse disponible",
-          transcriptAvailable: "Transcript disponible",
+          transcriptAvailable: "Conversation disponible",
           noAnalysisTitle: "Analyse complémentaire",
-          loadingTitle: "Préparation de la lecture de session",
+          loadingTitle: "Préparation de la session",
+          messageCount: (count: number) => `${count} message${count > 1 ? "s" : ""}`,
         }
       : {
           title: "Session detail",
-          loading: "Loading session detail...",
+          loading: "Loading session...",
           loadingBody:
-            "We are retrieving the conversation, summary, and related analysis.",
+            "We are retrieving the summary, analysis, and conversation.",
           errorTitle: "Unable to load this session",
+          invalidSession: "Invalid session id.",
+          loadError: "Unable to load the session detail.",
           notFound: "Session not found",
           notFoundBody:
             "This session does not exist or is no longer accessible from your history.",
           retry: "Try again",
           backToHistory: "Back to history",
           started: "Started",
-          closed: "Closed",
+          closed: "Completed",
           transcript: "Conversation",
           transcriptIntro:
-            "Review the full exchange to understand how the coaching signals emerged.",
-          noTranscript: "No transcript is available for this session.",
+            "Review the full exchange and recover the context of the session.",
+          noTranscript: "No messages are available for this session.",
           noAnalysis:
-            "No additional analysis has been generated yet for this session.",
+            "No additional analysis is available for this session.",
           noSummary: "No summary is available for this session yet.",
           you: "You",
           agent: "Coach",
-          sessionTrace: "Coaching trace",
+          sessionTrace: "Overview",
           sessionTraceBody:
-            "This page brings together the summary, detected signals, and full conversation from the session.",
+            "This page brings together the key information, summary, analysis, and conversation.",
           synthesisAvailable: "Summary available",
           analysisAvailable: "Analysis available",
-          transcriptAvailable: "Transcript available",
+          transcriptAvailable: "Conversation available",
           noAnalysisTitle: "Additional analysis",
-          loadingTitle: "Preparing session reading",
+          loadingTitle: "Preparing the session",
+          messageCount: (count: number) => `${count} message${count > 1 ? "s" : ""}`,
         };
 
   const loadDetail = useCallback(async () => {
     if (!Number.isFinite(sessionId) || sessionId <= 0) {
-      setError("Invalid session id.");
+      setError(copy.invalidSession);
       setLoading(false);
       return;
     }
@@ -190,11 +191,11 @@ function SessionDetailContent() {
       setItem(sessionData);
       setAnalysis(analysisData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load session detail.");
+      setError(err instanceof Error ? err.message : copy.loadError);
     } finally {
       setLoading(false);
     }
-  }, [sessionId]);
+  }, [sessionId, copy.invalidSession, copy.loadError]);
 
   useEffect(() => {
     void loadDetail();
@@ -327,7 +328,7 @@ function SessionDetailContent() {
               style={{
                 position: "relative",
                 flexWrap: "wrap",
-                gap: 18,
+                gap: 16,
                 alignItems: "flex-start",
               }}
             >
@@ -434,7 +435,7 @@ function SessionDetailContent() {
                   {copy.started}
                 </div>
                 <strong style={{ color: "var(--coach-ink)" }}>
-                  {new Date(item.started_at).toLocaleString()}
+                  {new Date(item.started_at).toLocaleString(uiLanguage === "fr" ? "fr-BE" : "en-GB")}
                 </strong>
               </div>
 
@@ -451,7 +452,11 @@ function SessionDetailContent() {
                   {copy.closed}
                 </div>
                 <strong style={{ color: "var(--coach-ink)" }}>
-                  {item.ended_at ? new Date(item.ended_at).toLocaleString() : "—"}
+                  {item.ended_at
+                    ? new Date(item.ended_at).toLocaleString(
+                        uiLanguage === "fr" ? "fr-BE" : "en-GB",
+                      )
+                    : "—"}
                 </strong>
               </div>
 
@@ -468,16 +473,16 @@ function SessionDetailContent() {
                   {copy.transcript}
                 </div>
                 <strong style={{ color: "var(--coach-ink)" }}>
-                  {item.transcript.length} message{item.transcript.length > 1 ? "s" : ""}
+                  {copy.messageCount(item.transcript.length)}
                 </strong>
               </div>
             </div>
           </div>
 
           <SessionSummaryCard
-  summary={item.summary || copy.noSummary}
-  uiLanguage={uiLanguage}
-/>
+            summary={item.summary || copy.noSummary}
+            uiLanguage={uiLanguage}
+          />
 
           {analysis ? (
             <ProblemDetectionCard item={analysis} />

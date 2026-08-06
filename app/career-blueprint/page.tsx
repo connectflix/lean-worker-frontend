@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
-import { useCurrentUser } from "@/components/user-context";
 import {
   BadgePill,
   ChartIcon,
@@ -18,7 +17,7 @@ import {
   getCareerGap,
   saveCareerBlueprint,
 } from "@/lib/api";
-import { resolveUiLanguage, type SupportedUiLanguage } from "@/lib/user-locales";
+import { useUiLanguage } from "@/lib/use-ui-language";
 
 type Level = "Starter" | "Junior" | "Senior" | "Expert" | "Master" | "Elite";
 
@@ -73,6 +72,15 @@ type CareerGap = {
 
 const LEVELS: Level[] = ["Starter", "Junior", "Senior", "Expert", "Master", "Elite"];
 
+const LEVEL_LABELS: Record<Level, { fr: string; en: string }> = {
+  Starter: { fr: "Débutant", en: "Starter" },
+  Junior: { fr: "Junior", en: "Junior" },
+  Senior: { fr: "Senior", en: "Senior" },
+  Expert: { fr: "Expert", en: "Expert" },
+  Master: { fr: "Maître", en: "Master" },
+  Elite: { fr: "Élite", en: "Elite" },
+};
+
 const DEFAULT_STARTING_POINT: StartingPoint = {
   my_profession_percent: 20,
   my_work_percent: 20,
@@ -92,8 +100,8 @@ function CoachSectionCard({
     <div
       className="card stack"
       style={{
-        gap: 18,
-        borderRadius: 30,
+        gap: 16,
+        borderRadius: 26,
         border: "1px solid rgba(43,33,24,0.08)",
         background: warm
           ? "linear-gradient(135deg, rgba(255,241,220,0.96), rgba(255,255,255,0.92) 55%, rgba(232,248,246,0.82))"
@@ -110,10 +118,12 @@ function SelectableLevelCard({
   level,
   selected,
   onClick,
+  uiLanguage,
 }: {
   level: Level;
   selected: boolean;
   onClick: () => void;
+  uiLanguage: "fr" | "en";
 }) {
   return (
     <button
@@ -124,7 +134,7 @@ function SelectableLevelCard({
         gap: 8,
         textAlign: "center",
         cursor: "pointer",
-        borderRadius: 22,
+        borderRadius: 18,
         border: selected
           ? "2px solid var(--coach-accent)"
           : "1px solid rgba(43,33,24,0.08)",
@@ -132,8 +142,8 @@ function SelectableLevelCard({
           ? "linear-gradient(135deg, rgba(255,122,89,0.14), rgba(255,255,255,0.88))"
           : "rgba(255,255,255,0.72)",
         boxShadow: selected
-          ? "0 14px 34px rgba(255,122,89,0.12)"
-          : "0 8px 24px rgba(43,33,24,0.04)",
+          ? "0 12px 28px rgba(255,122,89,0.10)"
+          : "0 6px 18px rgba(43,33,24,0.035)",
       }}
     >
       <div
@@ -154,7 +164,7 @@ function SelectableLevelCard({
             color: "var(--coach-ink)",
           }}
         >
-          {level}
+          {LEVEL_LABELS[level][uiLanguage]}
         </div>
       </div>
     </button>
@@ -171,9 +181,7 @@ export default function CareerBlueprintPage() {
 
 function CareerBlueprintContent() {
   const router = useRouter();
-  const { user } = useCurrentUser();
-
-  const [uiLanguage, setUiLanguage] = useState<SupportedUiLanguage>("en");
+  const { uiLanguage } = useUiLanguage("fr");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
@@ -206,15 +214,6 @@ function CareerBlueprintContent() {
     starting_point: DEFAULT_STARTING_POINT,
     is_completed: false,
   });
-
-  useEffect(() => {
-    setUiLanguage(
-      resolveUiLanguage({
-        language: user?.language,
-        locale: user?.locale,
-      }),
-    );
-  }, [user]);
 
   useEffect(() => {
     async function load() {
@@ -254,14 +253,20 @@ function CareerBlueprintContent() {
           });
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load career blueprint.");
+        setError(
+          err instanceof Error
+            ? err.message
+            : uiLanguage === "fr"
+              ? "Impossible de charger le Career Blueprint."
+              : "Failed to load the Career Blueprint.",
+        );
       } finally {
         setLoading(false);
       }
     }
 
     void load();
-  }, []);
+  }, [uiLanguage]);
 
   const copy = useMemo(() => {
     if (uiLanguage === "fr") {
@@ -269,73 +274,85 @@ function CareerBlueprintContent() {
         shellTitle: "Career Blueprint",
         title: "Career Blueprint",
         subtitle:
-          "Clarifie ton identité, ta vision, tes horizons de carrière et ton point de départ.",
-        save: "Enregistrer le blueprint",
+          "Structure ton point de départ, tes ambitions et la direction qui guidera ton coaching.",
+        save: "Enregistrer",
         saving: "Enregistrement...",
-        saved: "Blueprint enregistré.",
+        saved: "Career Blueprint enregistré.",
         back: "Retour",
         next: "Continuer",
         finish: "Retour au tableau de bord",
-        loading: "Chargement du blueprint...",
+        loading: "Chargement du Career Blueprint...",
+        loadingBody: "Nous récupérons ta trajectoire et tes informations enregistrées.",
         progress: "Progression",
         activeBlueprint: "Blueprint actif",
-        incompleteBlueprint: "Blueprint à compléter",
-        journey: "Parcours personnel",
+        incompleteBlueprint: "À compléter",
+        journey: "Étapes du parcours",
         stepLabel: (current: number, total: number) => `Étape ${current} sur ${total}`,
         noGap: "Aucun écart majeur détecté pour le moment.",
-        totalMustBe100: "La somme doit faire 100%.",
-        currentSignals: "Signaux actuels",
+        totalMustBe100: "La répartition doit totaliser 100 %.",
+        currentSignals: "Lecture actuelle",
+        heroTitle: "Définis la trajectoire qui guidera ton coaching.",
+        targetRole: "Fonction ou rôle visé",
+        targetCompensation: "Rémunération souhaitée (optionnel)",
+        targetLevel: "Niveau visé",
+        identityPlaceholder:
+          "Décris les principes, valeurs et conditions que tu veux préserver.",
+        visionPlaceholder:
+          "Décris ce que tu veux accomplir ou rendre possible grâce à ton travail.",
+        talentPlaceholder:
+          "Quelles compétences, connaissances ou expertises veux-tu développer ?",
+        careerPlaceholder:
+          "Quels domaines de vocation, de passion ou d’impact veux-tu approfondir ?",
+        inspirationPlaceholder: "Personne qui t’inspire aujourd’hui",
+        aspirationPlaceholder: "Personne ou modèle que tu souhaites égaler",
         steps: [
           {
             key: "identity",
             title: "Identité",
             subtitle:
-              "Quels principes et valeurs veux-tu préserver dans ta vie professionnelle ?",
+              "Quels principes, valeurs et conditions sont essentiels dans ta vie professionnelle ?",
           },
           {
             key: "vision",
             title: "Vision",
-            subtitle:
-              "Quels accomplissements cherches-tu à atteindre à travers ton travail ?",
+            subtitle: "Quelle contribution ou quel accomplissement souhaites-tu construire ?",
           },
           {
             key: "short_term_mission",
-            title: "Mission",
-            subtitle: "Quel résultat veux-tu atteindre à court terme ?",
+            title: "Court terme",
+            subtitle: "Quelle priorité souhaites-tu atteindre dans les prochains mois ?",
           },
           {
             key: "mid_term_ambition",
-            title: "Ambition",
-            subtitle: "Quel résultat veux-tu atteindre à moyen terme ?",
+            title: "Moyen terme",
+            subtitle: "Quelle évolution importante souhaites-tu engager ensuite ?",
           },
           {
             key: "long_term_goal",
-            title: "But",
-            subtitle: "Quel résultat veux-tu atteindre à long terme ?",
+            title: "Long terme",
+            subtitle: "Quelle direction professionnelle souhaites-tu construire durablement ?",
           },
           {
             key: "talent_focus",
-            title: "Talent",
-            subtitle:
-              "Quels domaines veux-tu développer côté compétences, connaissances ou expertise ?",
+            title: "Talents",
+            subtitle: "Quelles capacités veux-tu renforcer pour progresser ?",
           },
           {
             key: "career_focus",
             title: "Carrière",
-            subtitle:
-              "Quels domaines veux-tu développer côté vocation, passion ou impact ?",
+            subtitle: "Quels domaines de passion, de vocation ou d’impact veux-tu développer ?",
           },
           {
             key: "starting_point",
             title: "Point de départ",
             subtitle:
-              "Comment perçois-tu ton job actuel ? La somme doit faire 100.",
+              "Comment perçois-tu ton travail aujourd’hui ? Répartis les cinq dimensions sur 100 %.",
           },
           {
             key: "inspiration",
-            title: "Inspiration & aspiration",
+            title: "Inspiration",
             subtitle:
-              "Qui t’inspire aujourd’hui, et qui rêves-tu d’égaler un jour ?",
+              "Quels modèles nourrissent aujourd’hui ta manière de penser ou d’évoluer ?",
           },
         ],
       };
@@ -345,71 +362,85 @@ function CareerBlueprintContent() {
       shellTitle: "Career Blueprint",
       title: "Career Blueprint",
       subtitle:
-        "Clarify your identity, vision, career horizons, and starting point.",
-      save: "Save blueprint",
+        "Structure your starting point, ambitions, and the direction that will guide your coaching.",
+      save: "Save",
       saving: "Saving...",
-      saved: "Blueprint saved.",
+      saved: "Career Blueprint saved.",
       back: "Back",
       next: "Continue",
       finish: "Back to dashboard",
-      loading: "Loading blueprint...",
+      loading: "Loading the Career Blueprint...",
+      loadingBody: "We are retrieving your trajectory and saved information.",
       progress: "Progress",
       activeBlueprint: "Blueprint active",
-      incompleteBlueprint: "Blueprint to complete",
-      journey: "Personal journey",
+      incompleteBlueprint: "To complete",
+      journey: "Journey steps",
       stepLabel: (current: number, total: number) => `Step ${current} of ${total}`,
       noGap: "No major gap detected for now.",
-      totalMustBe100: "The total must equal 100%.",
-      currentSignals: "Current signals",
+      totalMustBe100: "The distribution must total 100%.",
+      currentSignals: "Current reading",
+      heroTitle: "Define the trajectory that will guide your coaching.",
+      targetRole: "Target role",
+      targetCompensation: "Target compensation (optional)",
+      targetLevel: "Target level",
+      identityPlaceholder:
+        "Describe the principles, values, and conditions you want to preserve.",
+      visionPlaceholder:
+        "Describe what you want to accomplish or make possible through your work.",
+      talentPlaceholder:
+        "Which skills, knowledge, or expertise do you want to develop?",
+      careerPlaceholder:
+        "Which areas of vocation, passion, or impact do you want to deepen?",
+      inspirationPlaceholder: "Person who inspires you today",
+      aspirationPlaceholder: "Person or role model you would like to emulate",
       steps: [
         {
           key: "identity",
           title: "Identity",
           subtitle:
-            "Which principles and values do you want to preserve in your professional life?",
+            "Which principles, values, and conditions are essential in your professional life?",
         },
         {
           key: "vision",
           title: "Vision",
-          subtitle: "What accomplishments are you seeking through your work?",
+          subtitle: "What contribution or achievement do you want to build?",
         },
         {
           key: "short_term_mission",
-          title: "Mission",
-          subtitle: "What result do you want to reach in the short term?",
+          title: "Short term",
+          subtitle: "What priority do you want to achieve over the next few months?",
         },
         {
           key: "mid_term_ambition",
-          title: "Ambition",
-          subtitle: "What result do you want to reach in the mid term?",
+          title: "Mid term",
+          subtitle: "What important development do you want to pursue next?",
         },
         {
           key: "long_term_goal",
-          title: "Goal",
-          subtitle: "What result do you want to reach in the long term?",
+          title: "Long term",
+          subtitle: "What professional direction do you want to build over time?",
         },
         {
           key: "talent_focus",
-          title: "Talent",
-          subtitle:
-            "Which areas do you want to develop in terms of skills, knowledge, or expertise?",
+          title: "Talents",
+          subtitle: "Which capabilities do you want to strengthen to progress?",
         },
         {
           key: "career_focus",
           title: "Career",
-          subtitle:
-            "Which areas do you want to develop in terms of vocation, passion, or impact?",
+          subtitle: "Which areas of passion, vocation, or impact do you want to develop?",
         },
         {
           key: "starting_point",
           title: "Starting point",
-          subtitle: "How do you perceive your current job? The total must equal 100.",
+          subtitle:
+            "How do you perceive your work today? Distribute the five dimensions across 100%.",
         },
         {
           key: "inspiration",
-          title: "Inspiration & aspiration",
+          title: "Inspiration",
           subtitle:
-            "Who inspires you most today, and who do you dream of equaling one day?",
+            "Which role models currently shape the way you think or grow?",
         },
       ],
     };
@@ -471,7 +502,13 @@ function CareerBlueprintContent() {
       const refreshedGap = await getCareerGap();
       setCareerGap(refreshedGap);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save career blueprint.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : uiLanguage === "fr"
+            ? "Impossible d’enregistrer le Career Blueprint."
+            : "Failed to save the Career Blueprint.",
+      );
     } finally {
       setSaving(false);
     }
@@ -497,16 +534,16 @@ function CareerBlueprintContent() {
     return (
       <textarea
         className="textarea"
-        rows={7}
+        rows={6}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         style={{
-          borderRadius: 22,
+          borderRadius: 18,
           borderColor: "rgba(43,33,24,0.10)",
           background: "rgba(255,255,255,0.82)",
           lineHeight: 1.7,
-          minHeight: 220,
+          minHeight: 180,
         }}
       />
     );
@@ -517,12 +554,12 @@ function CareerBlueprintContent() {
     data: Horizon,
   ) {
     return (
-      <div className="stack" style={{ gap: 18 }}>
+      <div className="stack" style={{ gap: 16 }}>
         <input
           className="input"
           value={data.target_role}
           onChange={(event) => updateHorizon(key, { target_role: event.target.value })}
-          placeholder={uiLanguage === "fr" ? "Rôle cible" : "Target role"}
+          placeholder={copy.targetRole}
           style={{
             minHeight: 54,
             borderRadius: 18,
@@ -537,7 +574,7 @@ function CareerBlueprintContent() {
           onChange={(event) =>
             updateHorizon(key, { target_compensation: event.target.value })
           }
-          placeholder={uiLanguage === "fr" ? "Compensation cible" : "Target compensation"}
+          placeholder={copy.targetCompensation}
           style={{
             minHeight: 54,
             borderRadius: 18,
@@ -548,7 +585,7 @@ function CareerBlueprintContent() {
 
         <div className="stack" style={{ gap: 10 }}>
           <div className="muted" style={{ color: "var(--coach-muted)" }}>
-            {uiLanguage === "fr" ? "Niveau cible" : "Target level"}
+            {copy.targetLevel}
           </div>
 
           <div className="grid grid-3">
@@ -558,6 +595,7 @@ function CareerBlueprintContent() {
                 level={level}
                 selected={data.target_level === level}
                 onClick={() => updateHorizon(key, { target_level: level })}
+                uiLanguage={uiLanguage}
               />
             ))}
           </div>
@@ -577,11 +615,11 @@ function CareerBlueprintContent() {
     const rows = [
       {
         key: "my_profession_percent" as const,
-        label: uiLanguage === "fr" ? "Mon métier" : "My profession",
+        label: uiLanguage === "fr" ? "Métier" : "Profession",
       },
       {
         key: "my_work_percent" as const,
-        label: uiLanguage === "fr" ? "Mon travail" : "My work",
+        label: uiLanguage === "fr" ? "Travail" : "Work",
       },
       {
         key: "chore_percent" as const,
@@ -589,11 +627,11 @@ function CareerBlueprintContent() {
       },
       {
         key: "destiny_percent" as const,
-        label: uiLanguage === "fr" ? "Destinée" : "Destiny",
+        label: uiLanguage === "fr" ? "Vocation" : "Calling",
       },
       {
         key: "hobby_percent" as const,
-        label: uiLanguage === "fr" ? "Hobby" : "Hobby",
+        label: uiLanguage === "fr" ? "Loisir" : "Hobby",
       },
     ];
 
@@ -669,18 +707,14 @@ function CareerBlueprintContent() {
         return renderTextArea(
           form.identity_text,
           (value) => updateField("identity_text", value),
-          uiLanguage === "fr"
-            ? "Décris les principes et valeurs que tu veux préserver"
-            : "Describe the principles and values you want to preserve",
+          copy.identityPlaceholder,
         );
 
       case "vision":
         return renderTextArea(
           form.vision_text,
           (value) => updateField("vision_text", value),
-          uiLanguage === "fr"
-            ? "Décris ce que tu veux accomplir à travers ton travail"
-            : "Describe what you want to accomplish through your work",
+          copy.visionPlaceholder,
         );
 
       case "short_term_mission":
@@ -696,18 +730,14 @@ function CareerBlueprintContent() {
         return renderTextArea(
           form.talent_focus_text,
           (value) => updateField("talent_focus_text", value),
-          uiLanguage === "fr"
-            ? "Quelles compétences ou expertises veux-tu développer ?"
-            : "Which skills or expertise do you want to develop?",
+          copy.talentPlaceholder,
         );
 
       case "career_focus":
         return renderTextArea(
           form.career_focus_text,
           (value) => updateField("career_focus_text", value),
-          uiLanguage === "fr"
-            ? "Quels domaines de vocation, de passion ou d’impact veux-tu développer ?"
-            : "Which areas of vocation, passion, or impact do you want to develop?",
+          copy.careerPlaceholder,
         );
 
       case "starting_point":
@@ -720,11 +750,7 @@ function CareerBlueprintContent() {
               className="input"
               value={form.inspiration_person}
               onChange={(event) => updateField("inspiration_person", event.target.value)}
-              placeholder={
-                uiLanguage === "fr"
-                  ? "Personne qui t’inspire"
-                  : "Person who inspires you"
-              }
+              placeholder={copy.inspirationPlaceholder}
               style={{
                 minHeight: 54,
                 borderRadius: 18,
@@ -737,11 +763,7 @@ function CareerBlueprintContent() {
               className="input"
               value={form.aspiration_person}
               onChange={(event) => updateField("aspiration_person", event.target.value)}
-              placeholder={
-                uiLanguage === "fr"
-                  ? "Personne que tu rêves d’égaler"
-                  : "Person you dream of equaling"
-              }
+              placeholder={copy.aspirationPlaceholder}
               style={{
                 minHeight: 54,
                 borderRadius: 18,
@@ -796,10 +818,13 @@ function CareerBlueprintContent() {
     return (
       <main
         className="page"
+        lang={uiLanguage}
+        translate="no"
+        suppressHydrationWarning
         style={{
           minHeight: "100vh",
           background: "var(--coach-bg)",
-          padding: 24,
+          padding: "clamp(16px, 3vw, 24px)",
         }}
       >
         <div className="page-wrap">
@@ -809,9 +834,7 @@ function CareerBlueprintContent() {
               <div className="stack" style={{ gap: 4 }}>
                 <div className="section-title">{copy.loading}</div>
                 <div className="muted" style={{ color: "var(--coach-muted)" }}>
-                  {uiLanguage === "fr"
-                    ? "Nous récupérons ta trajectoire et ton point de départ."
-                    : "We are retrieving your trajectory and starting point."}
+                  {copy.loadingBody}
                 </div>
               </div>
             </div>
@@ -830,7 +853,7 @@ function CareerBlueprintContent() {
             gap: 18,
             position: "relative",
             overflow: "hidden",
-            borderRadius: 32,
+            borderRadius: 28,
             border: "1px solid rgba(43,33,24,0.08)",
             background:
               "linear-gradient(135deg, rgba(255,241,220,0.96), rgba(255,255,255,0.92) 52%, rgba(232,248,246,0.88))",
@@ -879,22 +902,20 @@ function CareerBlueprintContent() {
             <div
               style={{
                 maxWidth: 920,
-                fontSize: 44,
+                fontSize: "clamp(34px, 5vw, 44px)",
                 lineHeight: 1.02,
                 fontWeight: 950,
                 letterSpacing: "-0.07em",
                 color: "var(--coach-ink)",
               }}
             >
-              {uiLanguage === "fr"
-                ? "Dessine la trajectoire qui doit guider ton coaching."
-                : "Shape the trajectory that should guide your coaching."}
+              {copy.heroTitle}
             </div>
 
             <p
               className="subtitle"
               style={{
-                maxWidth: 760,
+                maxWidth: 700,
                 color: "var(--coach-muted)",
                 fontSize: 16,
                 lineHeight: 1.7,
@@ -928,7 +949,7 @@ function CareerBlueprintContent() {
         <div
           className="grid"
           style={{
-            gridTemplateColumns: "minmax(260px, 0.72fr) minmax(0, 1.28fr)",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 360px), 1fr))",
             gap: 18,
             alignItems: "start",
           }}
@@ -992,19 +1013,19 @@ function CareerBlueprintContent() {
               <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                 {careerGap?.role_gap_short_term ? (
                   <BadgePill icon={<TargetIcon size={14} />}>
-                    {uiLanguage === "fr" ? "Écart court terme" : "Short-term gap"}
+                    {uiLanguage === "fr" ? "Écart à court terme" : "Short-term gap"}
                   </BadgePill>
                 ) : null}
 
                 {careerGap?.role_gap_mid_term ? (
                   <BadgePill icon={<PathIcon size={14} />}>
-                    {uiLanguage === "fr" ? "Écart moyen terme" : "Mid-term gap"}
+                    {uiLanguage === "fr" ? "Écart à moyen terme" : "Mid-term gap"}
                   </BadgePill>
                 ) : null}
 
                 {careerGap?.role_gap_long_term ? (
                   <BadgePill icon={<ChartIcon size={14} />}>
-                    {uiLanguage === "fr" ? "Écart long terme" : "Long-term gap"}
+                    {uiLanguage === "fr" ? "Écart à long terme" : "Long-term gap"}
                   </BadgePill>
                 ) : null}
 
@@ -1012,7 +1033,7 @@ function CareerBlueprintContent() {
                 !careerGap?.role_gap_mid_term &&
                 !careerGap?.role_gap_long_term ? (
                   <BadgePill icon={<CheckCircleIcon size={14} />}>
-                    {uiLanguage === "fr" ? "Lecture stable" : "Stable reading"}
+                    {uiLanguage === "fr" ? "Trajectoire cohérente" : "Trajectory aligned"}
                   </BadgePill>
                 ) : null}
               </div>
@@ -1023,12 +1044,12 @@ function CareerBlueprintContent() {
             <div
               className="stack"
               style={{
-                gap: 24,
-                minHeight: 560,
+                gap: 20,
+                minHeight: 500,
                 justifyContent: "space-between",
               }}
             >
-              <div className="stack" style={{ gap: 22 }}>
+              <div className="stack" style={{ gap: 18 }}>
                 <div className="stack" style={{ gap: 10 }}>
                   <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                     <BadgePill icon={<SparkIcon size={14} />}>
@@ -1042,7 +1063,7 @@ function CareerBlueprintContent() {
 
                   <div
                     style={{
-                      fontSize: 34,
+                      fontSize: 31,
                       lineHeight: 1.08,
                       fontWeight: 950,
                       letterSpacing: "-0.06em",

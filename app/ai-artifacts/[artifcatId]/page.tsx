@@ -21,10 +21,10 @@ import type { AIArtifactResponse } from "@/lib/types";
 
 function formatArtifactType(format: string, uiLanguage: "fr" | "en"): string {
   if (format === "audiobook") {
-    return uiLanguage === "fr" ? "Mini audiobook" : "Mini audiobook";
+    return uiLanguage === "fr" ? "Mini livre audio" : "Mini audiobook";
   }
 
-  return uiLanguage === "fr" ? "Mini e-book" : "Mini e-book";
+  return uiLanguage === "fr" ? "Mini guide numérique" : "Mini e-book";
 }
 
 function formatArtifactStatus(status: string, uiLanguage: "fr" | "en"): string {
@@ -47,9 +47,9 @@ function formatArtifactStatus(status: string, uiLanguage: "fr" | "en"): string {
   return (uiLanguage === "fr" ? fr : en)[status] ?? status;
 }
 
-function formatPrice(price: number): string {
+function formatPrice(price: number, uiLanguage: "fr" | "en"): string {
   try {
-    return new Intl.NumberFormat("fr-BE", {
+    return new Intl.NumberFormat(uiLanguage === "fr" ? "fr-BE" : "en-BE", {
       style: "currency",
       currency: "EUR",
       minimumFractionDigits: price % 1 === 0 ? 0 : 2,
@@ -168,8 +168,8 @@ function localizeArtifactSubtitle(
   const normalized = subtitle.trim();
 
   const knownTranslations: Record<string, string> = {
-    "Personalized AI-generated mini e-book": "Mini e-book personnalisé généré par IA",
-    "Personalized AI-generated mini audiobook": "Mini audiobook personnalisé généré par IA",
+    "Personalized AI-generated mini e-book": "Mini guide numérique personnalisé généré par IA",
+    "Personalized AI-generated mini audiobook": "Mini livre audio personnalisé généré par IA",
   };
 
   return knownTranslations[normalized] ?? subtitle;
@@ -205,7 +205,7 @@ function DetailInfoCard({
       className="card-soft stack"
       style={{
         gap: 8,
-        borderRadius: 24,
+        borderRadius: 20,
         background: "rgba(255,248,239,0.68)",
         border: "1px solid rgba(43,33,24,0.08)",
       }}
@@ -371,7 +371,7 @@ function PremiumAudioPlayer({
       className="card-soft stack"
       style={{
         gap: 16,
-        borderRadius: 28,
+        borderRadius: 24,
         background: "linear-gradient(135deg, rgba(255,255,255,0.82), rgba(232,248,246,0.72))",
         border: "1px solid rgba(43,33,24,0.08)",
       }}
@@ -385,8 +385,8 @@ function PremiumAudioPlayer({
 
         <div className="muted" style={{ color: "var(--coach-muted)" }}>
           {uiLanguage === "fr"
-            ? "Écoute directement ton mini audiobook et reprends automatiquement là où tu t’es arrêté."
-            : "Listen directly to your mini audiobook and resume where you left off."}
+            ? "Écoute ton guide audio et reprends automatiquement là où tu t’es arrêté."
+            : "Listen to your audio guide and resume where you left off."}
         </div>
       </div>
 
@@ -398,7 +398,7 @@ function PremiumAudioPlayer({
           disabled={!isReady}
           style={{ minWidth: 120, background: "var(--coach-accent)" }}
         >
-          {isPlaying ? "Pause" : uiLanguage === "fr" ? "Lecture" : "Play"}
+          {isPlaying ? "Pause" : uiLanguage === "fr" ? "Lire" : "Play"}
         </button>
 
         <button
@@ -476,7 +476,7 @@ function AIArtifactDetailContent() {
   const pathname = usePathname();
   const artifactId = parseArtifactIdFromSources(params, pathname);
 
-  const { uiLanguage, loadingLanguage } = useUiLanguage("en");
+  const { uiLanguage, loadingLanguage } = useUiLanguage("fr");
   const copy = getUiCopy(uiLanguage);
 
   const [artifact, setArtifact] = useState<AIArtifactResponse | null>(null);
@@ -556,8 +556,8 @@ function AIArtifactDetailContent() {
 
   const supportPlaceholder =
     uiLanguage === "fr"
-      ? "Décris brièvement le problème rencontré sur ce guide : paiement, accès, génération, lecture audio, contenu indisponible, etc."
-      : "Briefly describe the issue you encountered with this guide: payment, access, generation, audio playback, unavailable content, etc.";
+      ? "Décris brièvement le problème rencontré : paiement, accès, génération, audio ou contenu indisponible."
+      : "Briefly describe the issue: payment, access, generation, audio, or unavailable content.";
 
   async function handleSubmitSupport() {
     const trimmed = supportMessage.trim();
@@ -565,8 +565,8 @@ function AIArtifactDetailContent() {
     if (!trimmed) {
       setSupportError(
         uiLanguage === "fr"
-          ? "Merci de décrire ton problème avant l’envoi."
-          : "Please describe your issue before sending.",
+          ? "Décris le problème avant l’envoi."
+          : "Describe the issue before sending.",
       );
       setSupportSuccess(null);
       return;
@@ -575,8 +575,8 @@ function AIArtifactDetailContent() {
     if (!artifact) {
       setSupportError(
         uiLanguage === "fr"
-          ? "Impossible d’envoyer la demande sans artefact chargé."
-          : "Cannot submit the request without a loaded artifact.",
+          ? "Impossible d’envoyer la demande sans guide chargé."
+          : "Cannot submit the request without a loaded guide.",
       );
       setSupportSuccess(null);
       return;
@@ -602,8 +602,8 @@ function AIArtifactDetailContent() {
 
       setSupportSuccess(
         uiLanguage === "fr"
-          ? "Ton signal a bien été envoyé. Nous allons analyser le problème."
-          : "Your report has been sent successfully. We will analyze the issue.",
+          ? "Ta demande a bien été envoyée."
+          : "Your request has been sent.",
       );
       setSupportMessage("");
       setSupportOpen(false);
@@ -612,8 +612,8 @@ function AIArtifactDetailContent() {
         err instanceof Error
           ? err.message
           : uiLanguage === "fr"
-            ? "Impossible d’envoyer le signal pour le moment."
-            : "Unable to send the report right now.",
+            ? "Impossible d’envoyer la demande pour le moment."
+            : "Unable to send the request right now.",
       );
     } finally {
       setSupportSubmitting(false);
@@ -624,10 +624,13 @@ function AIArtifactDetailContent() {
     return (
       <main
         className="page"
+        lang={uiLanguage}
+        translate="no"
+        suppressHydrationWarning
         style={{
           minHeight: "100vh",
           background: "var(--coach-bg)",
-          padding: 24,
+          padding: "clamp(16px, 3vw, 24px)",
         }}
       >
         <div className="page-wrap">
@@ -649,7 +652,7 @@ function AIArtifactDetailContent() {
   return (
     <AppShell
       uiLanguage={uiLanguage}
-      title={uiLanguage === "fr" ? "Détail du guide IA" : "AI Guide Details"}
+      title={uiLanguage === "fr" ? "Guide IA" : "AI Guide"}
     >
       {loading ? (
         <div
@@ -662,13 +665,13 @@ function AIArtifactDetailContent() {
           }}
         >
           <div className="section-title">
-            {uiLanguage === "fr" ? "Chargement du guide IA" : "Loading AI guide"}
+            {uiLanguage === "fr" ? "Chargement du guide" : "Loading guide"}
           </div>
 
           <div className="muted" style={{ color: "var(--coach-muted)" }}>
             {uiLanguage === "fr"
-              ? "Nous récupérons ton contenu généré."
-              : "We are retrieving your generated content."}
+              ? "Nous récupérons ton guide personnalisé."
+              : "We are retrieving your personalized guide."}
           </div>
         </div>
       ) : error ? (
@@ -682,8 +685,8 @@ function AIArtifactDetailContent() {
         >
           <div className="section-title" style={{ color: "var(--danger)" }}>
             {uiLanguage === "fr"
-              ? "Impossible de charger le guide IA"
-              : "Unable to load AI guide"}
+              ? "Impossible de charger le guide"
+              : "Unable to load guide"}
           </div>
 
           <div className="muted">{error}</div>
@@ -703,7 +706,7 @@ function AIArtifactDetailContent() {
               onClick={() => router.push("/ai-artifacts")}
               type="button"
             >
-              {uiLanguage === "fr" ? "Retour à mes guides IA" : "Back to my AI guides"}
+              {uiLanguage === "fr" ? "Retour aux guides" : "Back to guides"}
             </button>
           </div>
         </div>
@@ -717,7 +720,7 @@ function AIArtifactDetailContent() {
           }}
         >
           <div className="section-title">
-            {uiLanguage === "fr" ? "Artefact introuvable" : "Artifact not found"}
+            {uiLanguage === "fr" ? "Guide introuvable" : "Guide not found"}
           </div>
 
           <div className="muted" style={{ color: "var(--coach-muted)" }}>
@@ -727,7 +730,7 @@ function AIArtifactDetailContent() {
           </div>
         </div>
       ) : (
-        <div className="stack" style={{ gap: 18 }}>
+        <div className="stack" style={{ gap: 16 }}>
           <div
             className="card stack"
             style={{
@@ -831,17 +834,17 @@ function AIArtifactDetailContent() {
 
               <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
                 <BadgePill icon={<LayerIcon size={14} />}>
-                  {formatPrice(artifact.price_eur)}
+                  {formatPrice(artifact.price_eur, uiLanguage)}
                 </BadgePill>
 
                 <BadgePill icon={<ClockIcon size={14} />}>
                   {uiLanguage === "fr" ? "Mis à jour" : "Updated"}{" "}
-                  {new Date(artifact.updated_at).toLocaleDateString()}
+                  {new Date(artifact.updated_at).toLocaleDateString(uiLanguage === "fr" ? "fr-BE" : "en-GB")}
                 </BadgePill>
 
                 {artifact.estimated_effort_score != null ? (
                   <BadgePill icon={<TargetIcon size={14} />}>
-                    {`Effort ${artifact.estimated_effort_score}/5`}
+                    {`${uiLanguage === "fr" ? "Effort" : "Effort"} ${artifact.estimated_effort_score}/5`}
                   </BadgePill>
                 ) : null}
               </div>
@@ -882,7 +885,7 @@ function AIArtifactDetailContent() {
                   borderColor: "rgba(255,122,89,0.28)",
                 }}
               >
-                {uiLanguage === "fr" ? "Retour à mes guides IA" : "Back to my AI guides"}
+                {uiLanguage === "fr" ? "Retour aux guides" : "Back to guides"}
               </button>
 
               <button
@@ -896,11 +899,11 @@ function AIArtifactDetailContent() {
               >
                 {supportOpen
                   ? uiLanguage === "fr"
-                    ? "Masquer le support"
-                    : "Hide support"
+                    ? "Masquer le formulaire"
+                    : "Hide form"
                   : uiLanguage === "fr"
-                    ? "Signaler un problème"
-                    : "Report an issue"}
+                    ? "Obtenir de l’aide"
+                    : "Get help"}
               </button>
             </div>
           </div>
@@ -929,7 +932,7 @@ function AIArtifactDetailContent() {
                 <DetailInfoCard
                   title={
                     uiLanguage === "fr"
-                      ? "Personnalisation Purpose Canvas"
+                      ? "Personnalisation du Purpose Canvas"
                       : "Purpose Canvas personalization"
                   }
                   icon={<SparkIcon size={16} />}
@@ -996,13 +999,13 @@ function AIArtifactDetailContent() {
               }}
             >
               <div className="section-title">
-                {uiLanguage === "fr" ? "Décrire le problème" : "Describe the issue"}
+                {uiLanguage === "fr" ? "Décris le problème" : "Describe the issue"}
               </div>
 
               <div className="muted" style={{ color: "var(--coach-muted)" }}>
                 {uiLanguage === "fr"
-                  ? "Utilise ce formulaire seulement si le problème persiste. LeanWorker tente déjà de détecter certains incidents automatiquement."
-                  : "Use this form only if the issue persists. LeanWorker already tries to detect some incidents automatically."}
+                  ? "Utilise ce formulaire si le problème persiste après avoir actualisé la page."
+                  : "Use this form if the issue persists after refreshing the page."}
               </div>
 
               <textarea
@@ -1059,18 +1062,18 @@ function AIArtifactDetailContent() {
             <div className="row" style={{ alignItems: "center", gap: 10 }}>
               <SparkIcon />
               <div className="section-title">
-                {uiLanguage === "fr" ? "Résultat disponible" : "Available result"}
+                {uiLanguage === "fr" ? "Contenu du guide" : "Guide content"}
               </div>
             </div>
 
             <div className="muted" style={{ color: "var(--coach-muted)", lineHeight: 1.65 }}>
               {artifact.format === "ebook"
                 ? uiLanguage === "fr"
-                  ? "Cet achat correspond à un mini e-book uniquement."
-                  : "This purchase corresponds to a mini e-book only."
+                  ? "Ce guide est disponible au format numérique."
+                  : "This guide is available as a digital guide."
                 : uiLanguage === "fr"
-                  ? "Cet achat correspond à un mini audiobook uniquement."
-                  : "This purchase corresponds to a mini audiobook only."}
+                  ? "Ce guide est disponible au format audio."
+                  : "This guide is available as an audio guide."}
             </div>
 
             {artifact.status !== "completed" ? (
@@ -1086,20 +1089,20 @@ function AIArtifactDetailContent() {
               >
                 {artifact.status === "pending_payment"
                   ? uiLanguage === "fr"
-                    ? "Le paiement n’est pas encore confirmé pour ce guide."
-                    : "Payment has not been confirmed for this guide yet."
+                    ? "Le paiement est encore en attente de confirmation."
+                    : "Payment is still awaiting confirmation."
                   : artifact.status === "paid"
                     ? uiLanguage === "fr"
-                      ? "Le paiement est confirmé. La génération peut démarrer."
-                      : "Payment is confirmed. Generation can start."
+                      ? "Le paiement est confirmé. Le guide sera bientôt généré."
+                      : "Payment is confirmed. The guide will be generated shortly."
                     : artifact.status === "generating"
                       ? uiLanguage === "fr"
-                        ? "La génération est en cours. Actualise cette page dans quelques secondes."
-                        : "Generation is in progress. Refresh this page in a few seconds."
+                        ? "Le guide est en cours de génération. Actualise la page dans quelques instants."
+                        : "The guide is being generated. Refresh the page shortly."
                       : artifact.status === "failed"
                         ? uiLanguage === "fr"
-                          ? "La génération a échoué. Tu peux signaler le problème via le support."
-                          : "Generation failed. You can report the issue via support."
+                          ? "La génération a échoué. Utilise le formulaire d’aide pour nous contacter."
+                          : "Generation failed. Use the help form to contact us."
                         : uiLanguage === "fr"
                           ? "Le guide n’est pas encore disponible."
                           : "The guide is not available yet."}
@@ -1130,8 +1133,8 @@ function AIArtifactDetailContent() {
             !artifact.content_markdown ? (
               <div className="muted" style={{ color: "var(--coach-muted)" }}>
                 {uiLanguage === "fr"
-                  ? "Le mini e-book est prêt, mais son contenu détaillé n’est pas encore affichable ici."
-                  : "The mini e-book is ready, but its detailed content is not yet displayable here."}
+                  ? "Le guide numérique est prêt, mais son contenu n’est pas encore affichable ici."
+                  : "The digital guide is ready, but its content is not yet available here."}
               </div>
             ) : null}
 
@@ -1140,8 +1143,8 @@ function AIArtifactDetailContent() {
             !canPlayAudio ? (
               <div className="muted" style={{ color: "var(--coach-muted)" }}>
                 {uiLanguage === "fr"
-                  ? "Le mini audiobook est prêt, mais le fichier audio n’est pas encore lisible ici."
-                  : "The mini audiobook is ready, but the audio file is not yet playable here."}
+                  ? "Le guide audio est prêt, mais le fichier n’est pas encore lisible ici."
+                  : "The audio guide is ready, but the file is not yet playable here."}
               </div>
             ) : null}
           </div>
@@ -1159,7 +1162,7 @@ function AIArtifactDetailContent() {
             >
               <div className="row space-between" style={{ alignItems: "center", gap: 12 }}>
                 <div className="section-title">
-                  {uiLanguage === "fr" ? "Script audio" : "Audio script"}
+                  {uiLanguage === "fr" ? "Texte du guide audio" : "Audio guide script"}
                 </div>
 
                 <button
@@ -1169,11 +1172,11 @@ function AIArtifactDetailContent() {
                 >
                   {showAudioScript
                     ? uiLanguage === "fr"
-                      ? "Masquer le script"
-                      : "Hide script"
+                      ? "Masquer le texte"
+                      : "Hide text"
                     : uiLanguage === "fr"
-                      ? "Voir le script"
-                      : "Show script"}
+                      ? "Afficher le texte"
+                      : "Show text"}
                 </button>
               </div>
 
@@ -1193,8 +1196,8 @@ function AIArtifactDetailContent() {
               ) : (
                 <div className="muted" style={{ color: "var(--coach-muted)" }}>
                   {uiLanguage === "fr"
-                    ? "Le script est masqué par défaut. Tu peux l’ouvrir si besoin."
-                    : "The script is hidden by default. You can open it if needed."}
+                    ? "Le texte est masqué par défaut."
+                    : "The text is hidden by default."}
                 </div>
               )}
             </div>

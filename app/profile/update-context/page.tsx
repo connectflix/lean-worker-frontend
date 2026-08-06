@@ -6,7 +6,7 @@ import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
 import { useCurrentUser } from "@/components/user-context";
 import { getProfile, updateProfile } from "@/lib/api";
-import { resolveUiLanguage, type SupportedUiLanguage } from "@/lib/user-locales";
+import { useUiLanguage } from "@/lib/use-ui-language";
 import {
   BadgePill,
   BrainIcon,
@@ -26,36 +26,20 @@ type FormState = {
 };
 
 const IMPROVEMENT_OPTIONS = [
-  "organization",
-  "prioritization",
-  "confidence",
-  "stress management",
-  "communication",
-  "career growth",
-];
-
-const IMPROVEMENT_OPTIONS_FR = [
-  "organisation",
-  "priorisation",
-  "confiance",
-  "gestion du stress",
-  "communication",
-  "évolution de carrière",
-];
+  { value: "organization", fr: "Organisation", en: "Organization" },
+  { value: "prioritization", fr: "Priorisation", en: "Prioritization" },
+  { value: "confidence", fr: "Confiance", en: "Confidence" },
+  { value: "stress management", fr: "Gestion du stress", en: "Stress management" },
+  { value: "communication", fr: "Communication", en: "Communication" },
+  { value: "career growth", fr: "Évolution de carrière", en: "Career growth" },
+] as const;
 
 const COACHING_STYLE_OPTIONS = [
-  "empathic",
-  "direct",
-  "structured",
-  "motivational",
-];
-
-const COACHING_STYLE_OPTIONS_FR = [
-  "empathique",
-  "direct",
-  "structuré",
-  "motivant",
-];
+  { value: "empathic", fr: "Empathique", en: "Empathic" },
+  { value: "direct", fr: "Direct", en: "Direct" },
+  { value: "structured", fr: "Structuré", en: "Structured" },
+  { value: "motivational", fr: "Motivant", en: "Motivational" },
+] as const;
 
 function CoachSectionCard({
   children,
@@ -68,8 +52,8 @@ function CoachSectionCard({
     <div
       className="card stack"
       style={{
-        gap: 18,
-        borderRadius: 30,
+        gap: 16,
+        borderRadius: 26,
         border: "1px solid rgba(43,33,24,0.08)",
         background: warm
           ? "linear-gradient(135deg, rgba(255,241,220,0.96), rgba(255,255,255,0.92) 55%, rgba(232,248,246,0.82))"
@@ -100,7 +84,7 @@ function CoachChoiceCard({
         gap: 10,
         textAlign: "left",
         cursor: "pointer",
-        borderRadius: 24,
+        borderRadius: 20,
         border: selected
           ? "2px solid var(--coach-accent)"
           : "1px solid rgba(43,33,24,0.08)",
@@ -108,8 +92,8 @@ function CoachChoiceCard({
           ? "linear-gradient(135deg, rgba(255,122,89,0.14), rgba(255,255,255,0.88))"
           : "rgba(255,255,255,0.72)",
         boxShadow: selected
-          ? "0 14px 34px rgba(255,122,89,0.12)"
-          : "0 8px 24px rgba(43,33,24,0.04)",
+          ? "0 12px 28px rgba(255,122,89,0.10)"
+          : "0 6px 18px rgba(43,33,24,0.035)",
       }}
     >
       <div className="row" style={{ gap: 10, alignItems: "center" }}>
@@ -156,8 +140,7 @@ export default function ProfileUpdateContextPage() {
 function ProfileUpdateContextContent() {
   const router = useRouter();
   const { user } = useCurrentUser();
-
-  const [uiLanguage, setUiLanguage] = useState<SupportedUiLanguage>("en");
+  const { uiLanguage } = useUiLanguage("fr");
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [saving, setSaving] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
@@ -172,15 +155,6 @@ function ProfileUpdateContextContent() {
     improvement_focus: "",
     preferred_coaching_style: "",
   });
-
-  useEffect(() => {
-    setUiLanguage(
-      resolveUiLanguage({
-        language: user?.language,
-        locale: user?.locale,
-      }),
-    );
-  }, [user]);
 
   async function loadProfile() {
     try {
@@ -197,7 +171,13 @@ function ProfileUpdateContextContent() {
         preferred_coaching_style: profile.preferred_coaching_style || "",
       });
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : "Failed to load profile.");
+      setLoadError(
+        err instanceof Error
+          ? err.message
+          : uiLanguage === "fr"
+            ? "Impossible de charger le profil."
+            : "Failed to load profile.",
+      );
     } finally {
       setLoadingProfile(false);
     }
@@ -205,141 +185,150 @@ function ProfileUpdateContextContent() {
 
   useEffect(() => {
     void loadProfile();
-  }, []);
-
-  const steps = useMemo(
-    () => [
-      {
-        key: "current_role",
-        title:
-          uiLanguage === "fr"
-            ? "Ton rôle actuel a-t-il changé ?"
-            : "Has your current role changed?",
-        subtitle:
-          uiLanguage === "fr"
-            ? "Mets à jour ta fonction actuelle si nécessaire."
-            : "Update your current role if needed.",
-      },
-      {
-        key: "industry",
-        title:
-          uiLanguage === "fr"
-            ? "Ton secteur a-t-il changé ?"
-            : "Has your industry changed?",
-        subtitle:
-          uiLanguage === "fr"
-            ? "Cela aide le coach à rester pertinent."
-            : "This helps your coach stay relevant.",
-      },
-      {
-        key: "primary_goal",
-        title:
-          uiLanguage === "fr"
-            ? "Quel est ton objectif principal maintenant ?"
-            : "What is your main goal now?",
-        subtitle:
-          uiLanguage === "fr"
-            ? "Ton objectif peut évoluer avec ton contexte."
-            : "Your goal may evolve with your context.",
-      },
-      {
-        key: "main_challenge",
-        title:
-          uiLanguage === "fr"
-            ? "Quel est ton principal défi actuellement ?"
-            : "What is your main challenge right now?",
-        subtitle:
-          uiLanguage === "fr"
-            ? "Partage ce qui te semble le plus bloquant."
-            : "Share what feels most blocking right now.",
-      },
-      {
-        key: "improvement_focus",
-        title:
-          uiLanguage === "fr"
-            ? "Sur quoi veux-tu progresser en priorité ?"
-            : "What do you want to improve the most?",
-        subtitle:
-          uiLanguage === "fr"
-            ? "Choisis l’axe le plus important aujourd’hui."
-            : "Choose the area that matters most today.",
-      },
-      {
-        key: "preferred_coaching_style",
-        title:
-          uiLanguage === "fr"
-            ? "Ton style de coaching préféré a-t-il changé ?"
-            : "Has your preferred coaching style changed?",
-        subtitle:
-          uiLanguage === "fr"
-            ? "Nous ajusterons le ton du coach en conséquence."
-            : "We will adapt the coach’s tone accordingly.",
-      },
-    ],
-    [uiLanguage],
-  );
-
-  const currentStep = steps[stepIndex];
-  const totalSteps = steps.length;
-  const progress = Math.round(((stepIndex + 1) / totalSteps) * 100);
+  }, [uiLanguage]);
 
   const firstName = user?.given_name || user?.display_name || null;
 
-  const labels = useMemo(() => {
+  const copy = useMemo(() => {
     if (uiLanguage === "fr") {
       return {
-        shellTitle: "Mise à jour du contexte",
+        shellTitle: "Profil",
         heroTitle: firstName
-          ? `${firstName}, ajustons ton contexte professionnel.`
-          : "Ajustons ton contexte professionnel.",
+          ? `${firstName}, mets ton profil à jour.`
+          : "Mets ton profil à jour.",
         heroSubtitle:
-          "Ces informations permettent au coach de rester aligné avec ta réalité actuelle, tes priorités et ton style préféré.",
-        contextUpdate: "Mise à jour du contexte",
+          "Actualise uniquement les éléments qui ont changé pour garder un coaching pertinent.",
+        contextUpdate: "Mise à jour du profil",
         activeProfile: "Profil actif",
-        coachCalibration: "Calibration coach",
+        coachCalibration: "Coach personnalisé",
         stepLabel: (current: number, total: number) => `Étape ${current} sur ${total}`,
         progress: "Progression",
-        currentSnapshot: "Contexte actuel",
+        currentSnapshot: "Informations du profil",
         currentSnapshotText:
-          "Relis chaque point et corrige uniquement ce qui a changé. Le coach utilisera ce contexte dans les prochaines sessions.",
-        loading: "Chargement du contexte...",
-        loadingBody: "Nous récupérons ton profil actuel.",
-        loadingErrorTitle: "Impossible de charger ton contexte actuel",
+          "Vérifie chaque rubrique et ajuste ce qui ne correspond plus à ta situation actuelle.",
+        contextImpact:
+          "Ces informations seront utilisées dans les prochaines sessions pour adapter les questions et recommandations.",
+        loading: "Chargement du profil...",
+        loadingBody: "Nous récupérons tes informations actuelles.",
+        loadingErrorTitle: "Impossible de charger le profil",
         retry: "Réessayer",
         backToDashboard: "Retour au tableau de bord",
-        save: "Mettre à jour mon profil",
+        save: "Enregistrer les modifications",
         saving: "Enregistrement...",
         continue: "Continuer",
         back: "Retour",
+        placeholders: {
+          currentRole: "Ex. Senior Business Analyst",
+          industry: "Ex. Banque, technologie, santé",
+          primaryGoal: "Décris ton objectif principal actuel.",
+          mainChallenge: "Décris ce qui te freine ou te préoccupe le plus.",
+        },
+        steps: [
+          {
+            key: "current_role",
+            title: "Rôle actuel",
+            subtitle: "Quelle est ta fonction ou ton activité principale aujourd’hui ?",
+          },
+          {
+            key: "industry",
+            title: "Secteur",
+            subtitle: "Dans quel environnement professionnel évolues-tu actuellement ?",
+          },
+          {
+            key: "primary_goal",
+            title: "Objectif principal",
+            subtitle: "Quel résultat souhaites-tu atteindre en priorité ?",
+          },
+          {
+            key: "main_challenge",
+            title: "Défi principal",
+            subtitle: "Quel obstacle ou sujet mérite le plus d’attention aujourd’hui ?",
+          },
+          {
+            key: "improvement_focus",
+            title: "Axe de progression",
+            subtitle: "Sur quel domaine souhaites-tu progresser en priorité ?",
+          },
+          {
+            key: "preferred_coaching_style",
+            title: "Style de coaching",
+            subtitle: "Comment souhaites-tu être accompagné par le coach ?",
+          },
+        ],
       };
     }
 
     return {
-      shellTitle: "Context update",
+      shellTitle: "Profile",
       heroTitle: firstName
-        ? `${firstName}, let’s tune your professional context.`
-        : "Let’s tune your professional context.",
+        ? `${firstName}, update your profile.`
+        : "Update your profile.",
       heroSubtitle:
-        "These details help your coach stay aligned with your current reality, priorities, and preferred coaching style.",
-      contextUpdate: "Context update",
+        "Update only what has changed to keep your coaching relevant.",
+      contextUpdate: "Profile update",
       activeProfile: "Active profile",
-      coachCalibration: "Coach calibration",
+      coachCalibration: "Personalized coach",
       stepLabel: (current: number, total: number) => `Step ${current} of ${total}`,
       progress: "Progress",
-      currentSnapshot: "Current context",
+      currentSnapshot: "Profile information",
       currentSnapshotText:
-        "Review each point and adjust only what has changed. Your coach will use this context in the next sessions.",
-      loading: "Loading context...",
-      loadingBody: "We are retrieving your current profile.",
-      loadingErrorTitle: "Unable to load your current context",
+        "Review each section and adjust anything that no longer reflects your current situation.",
+      contextImpact:
+        "This information will be used in future sessions to tailor questions and recommendations.",
+      loading: "Loading profile...",
+      loadingBody: "We are retrieving your current information.",
+      loadingErrorTitle: "Unable to load profile",
       retry: "Try again",
       backToDashboard: "Back to dashboard",
-      save: "Update my profile",
+      save: "Save changes",
       saving: "Saving...",
       continue: "Continue",
       back: "Back",
+      placeholders: {
+        currentRole: "e.g. Senior Business Analyst",
+        industry: "e.g. Banking, technology, healthcare",
+        primaryGoal: "Describe your current main goal.",
+        mainChallenge: "Describe what is holding you back or concerning you most.",
+      },
+      steps: [
+        {
+          key: "current_role",
+          title: "Current role",
+          subtitle: "What is your main role or professional activity today?",
+        },
+        {
+          key: "industry",
+          title: "Industry",
+          subtitle: "Which professional environment do you currently work in?",
+        },
+        {
+          key: "primary_goal",
+          title: "Main goal",
+          subtitle: "What result do you want to prioritize?",
+        },
+        {
+          key: "main_challenge",
+          title: "Main challenge",
+          subtitle: "Which obstacle or issue needs the most attention today?",
+        },
+        {
+          key: "improvement_focus",
+          title: "Development focus",
+          subtitle: "Which area do you want to improve first?",
+        },
+        {
+          key: "preferred_coaching_style",
+          title: "Coaching style",
+          subtitle: "How would you like the coach to support you?",
+        },
+      ],
     };
   }, [uiLanguage, firstName]);
+
+  const steps = copy.steps;
+  const currentStep = steps[stepIndex];
+  const totalSteps = steps.length;
+  const progress = Math.round(((stepIndex + 1) / totalSteps) * 100);
 
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setError(null);
@@ -380,7 +369,13 @@ function ProfileUpdateContextContent() {
       await updateProfile(form);
       router.push("/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update profile.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : uiLanguage === "fr"
+            ? "Impossible de mettre à jour le profil."
+            : "Failed to update profile.",
+      );
     } finally {
       setSaving(false);
     }
@@ -406,8 +401,8 @@ function ProfileUpdateContextContent() {
         placeholder={placeholder}
         autoFocus
         style={{
-          minHeight: 56,
-          borderRadius: 20,
+          minHeight: 52,
+          borderRadius: 18,
           borderColor: "rgba(43,33,24,0.10)",
           background: "rgba(255,255,255,0.82)",
           fontSize: 15,
@@ -430,8 +425,8 @@ function ProfileUpdateContextContent() {
         autoFocus
         placeholder={placeholder}
         style={{
-          minHeight: 180,
-          borderRadius: 22,
+          minHeight: 160,
+          borderRadius: 18,
           borderColor: "rgba(43,33,24,0.10)",
           background: "rgba(255,255,255,0.82)",
           lineHeight: 1.7,
@@ -442,17 +437,17 @@ function ProfileUpdateContextContent() {
   }
 
   function renderChoiceGrid(
-    options: string[],
+    options: readonly { value: string; fr: string; en: string }[],
     field: "improvement_focus" | "preferred_coaching_style",
   ) {
     return (
       <div className="grid grid-2">
         {options.map((option) => (
           <CoachChoiceCard
-            key={option}
-            label={option}
-            selected={form[field] === option}
-            onClick={() => updateField(field, option)}
+            key={option.value}
+            label={option[uiLanguage]}
+            selected={form[field] === option.value}
+            onClick={() => updateField(field, option.value)}
           />
         ))}
       </div>
@@ -465,49 +460,35 @@ function ProfileUpdateContextContent() {
         return renderTextInput(
           form.current_role,
           (value) => updateField("current_role", value),
-          uiLanguage === "fr"
-            ? "Ex. Senior Business Analyst"
-            : "e.g. Senior Business Analyst",
+          copy.placeholders.currentRole,
         );
 
       case "industry":
         return renderTextInput(
           form.industry,
           (value) => updateField("industry", value),
-          uiLanguage === "fr"
-            ? "Ex. Banque, Tech, Santé"
-            : "e.g. Banking, Tech, Healthcare",
+          copy.placeholders.industry,
         );
 
       case "primary_goal":
         return renderTextArea(
           form.primary_goal,
           (value) => updateField("primary_goal", value),
-          uiLanguage === "fr"
-            ? "Décris ton objectif principal actuel"
-            : "Describe your current primary goal",
+          copy.placeholders.primaryGoal,
         );
 
       case "main_challenge":
         return renderTextArea(
           form.main_challenge,
           (value) => updateField("main_challenge", value),
-          uiLanguage === "fr"
-            ? "Décris ce qui te bloque le plus actuellement"
-            : "Describe what feels most blocking right now",
+          copy.placeholders.mainChallenge,
         );
 
       case "improvement_focus":
-        return renderChoiceGrid(
-          uiLanguage === "fr" ? IMPROVEMENT_OPTIONS_FR : IMPROVEMENT_OPTIONS,
-          "improvement_focus",
-        );
+        return renderChoiceGrid(IMPROVEMENT_OPTIONS, "improvement_focus");
 
       case "preferred_coaching_style":
-        return renderChoiceGrid(
-          uiLanguage === "fr" ? COACHING_STYLE_OPTIONS_FR : COACHING_STYLE_OPTIONS,
-          "preferred_coaching_style",
-        );
+        return renderChoiceGrid(COACHING_STYLE_OPTIONS, "preferred_coaching_style");
 
       default:
         return null;
@@ -518,10 +499,13 @@ function ProfileUpdateContextContent() {
     return (
       <main
         className="page"
+        lang={uiLanguage}
+        translate="no"
+        suppressHydrationWarning
         style={{
           minHeight: "100vh",
           background: "var(--coach-bg)",
-          padding: 24,
+          padding: "clamp(16px, 3vw, 24px)",
         }}
       >
         <div className="page-wrap">
@@ -530,9 +514,9 @@ function ProfileUpdateContextContent() {
               <div className="loader" />
 
               <div className="stack" style={{ gap: 4 }}>
-                <div className="section-title">{labels.loading}</div>
+                <div className="section-title">{copy.loading}</div>
                 <div className="muted" style={{ color: "var(--coach-muted)" }}>
-                  {labels.loadingBody}
+                  {copy.loadingBody}
                 </div>
               </div>
             </div>
@@ -544,10 +528,10 @@ function ProfileUpdateContextContent() {
 
   if (loadError) {
     return (
-      <AppShell uiLanguage={uiLanguage} title={labels.shellTitle}>
+      <AppShell uiLanguage={uiLanguage} title={copy.shellTitle}>
         <CoachSectionCard>
           <div className="section-title" style={{ color: "var(--danger)" }}>
-            {labels.loadingErrorTitle}
+            {copy.loadingErrorTitle}
           </div>
 
           <div className="muted" style={{ color: "var(--coach-muted)" }}>
@@ -564,7 +548,7 @@ function ProfileUpdateContextContent() {
               style={{ background: "var(--coach-accent)" }}
               type="button"
             >
-              {labels.retry}
+              {copy.retry}
             </button>
 
             <button
@@ -572,7 +556,7 @@ function ProfileUpdateContextContent() {
               onClick={() => router.push("/dashboard")}
               type="button"
             >
-              {labels.backToDashboard}
+              {copy.backToDashboard}
             </button>
           </div>
         </CoachSectionCard>
@@ -581,15 +565,15 @@ function ProfileUpdateContextContent() {
   }
 
   return (
-    <AppShell uiLanguage={uiLanguage} title={labels.shellTitle}>
-      <div className="stack" style={{ gap: 18 }}>
+    <AppShell uiLanguage={uiLanguage} title={copy.shellTitle}>
+      <div className="stack" style={{ gap: 16 }}>
         <div
           className="card stack"
           style={{
             gap: 18,
             position: "relative",
             overflow: "hidden",
-            borderRadius: 32,
+            borderRadius: 28,
             border: "1px solid rgba(43,33,24,0.08)",
             background:
               "linear-gradient(135deg, rgba(255,241,220,0.96), rgba(255,255,255,0.92) 52%, rgba(232,248,246,0.88))",
@@ -625,41 +609,41 @@ function ProfileUpdateContextContent() {
           <div className="stack" style={{ gap: 16, position: "relative" }}>
             <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
               <BadgePill icon={<PathIcon size={14} />}>
-                {labels.contextUpdate}
+                {copy.contextUpdate}
               </BadgePill>
 
               <BadgePill icon={<SparkIcon size={14} />}>
-                {labels.activeProfile}
+                {copy.activeProfile}
               </BadgePill>
 
               <BadgePill icon={<BrainIcon size={14} />}>
-                {labels.coachCalibration}
+                {copy.coachCalibration}
               </BadgePill>
             </div>
 
             <div
               style={{
                 maxWidth: 900,
-                fontSize: 44,
+                fontSize: "clamp(34px, 5vw, 44px)",
                 lineHeight: 1.02,
                 fontWeight: 950,
                 letterSpacing: "-0.07em",
                 color: "var(--coach-ink)",
               }}
             >
-              {labels.heroTitle}
+              {copy.heroTitle}
             </div>
 
             <p
               className="subtitle"
               style={{
-                maxWidth: 760,
+                maxWidth: 700,
                 color: "var(--coach-muted)",
                 fontSize: 16,
                 lineHeight: 1.7,
               }}
             >
-              {labels.heroSubtitle}
+              {copy.heroSubtitle}
             </p>
 
             <div
@@ -687,17 +671,17 @@ function ProfileUpdateContextContent() {
         <div
           className="grid"
           style={{
-            gridTemplateColumns: "minmax(260px, 0.72fr) minmax(0, 1.28fr)",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 360px), 1fr))",
             gap: 18,
             alignItems: "start",
           }}
         >
           <div className="stack" style={{ gap: 18 }}>
             <CoachSectionCard>
-              <div className="section-title">{labels.currentSnapshot}</div>
+              <div className="section-title">{copy.currentSnapshot}</div>
 
               <div className="muted" style={{ color: "var(--coach-muted)", lineHeight: 1.65 }}>
-                {labels.currentSnapshotText}
+                {copy.currentSnapshotText}
               </div>
 
               <div className="stack" style={{ gap: 8 }}>
@@ -748,11 +732,11 @@ function ProfileUpdateContextContent() {
             <CoachSectionCard warm>
               <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
                 <BadgePill icon={<SparkIcon size={14} />}>
-                  {labels.stepLabel(stepIndex + 1, totalSteps)}
+                  {copy.stepLabel(stepIndex + 1, totalSteps)}
                 </BadgePill>
 
                 <BadgePill icon={<TargetIcon size={14} />}>
-                  {labels.progress} {progress}%
+                  {copy.progress} {progress}%
                 </BadgePill>
               </div>
 
@@ -768,16 +752,16 @@ function ProfileUpdateContextContent() {
             <div
               className="stack"
               style={{
-                gap: 24,
-                minHeight: 540,
+                gap: 20,
+                minHeight: 500,
                 justifyContent: "space-between",
               }}
             >
-              <div className="stack" style={{ gap: 22 }}>
+              <div className="stack" style={{ gap: 18 }}>
                 <div className="stack" style={{ gap: 10 }}>
                   <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                     <BadgePill icon={<SparkIcon size={14} />}>
-                      {labels.stepLabel(stepIndex + 1, totalSteps)}
+                      {copy.stepLabel(stepIndex + 1, totalSteps)}
                     </BadgePill>
 
                     <BadgePill icon={<TargetIcon size={14} />}>
@@ -787,7 +771,7 @@ function ProfileUpdateContextContent() {
 
                   <div
                     style={{
-                      fontSize: 34,
+                      fontSize: 31,
                       lineHeight: 1.08,
                       fontWeight: 950,
                       letterSpacing: "-0.06em",
@@ -835,7 +819,7 @@ function ProfileUpdateContextContent() {
                     onClick={handleBack}
                     disabled={stepIndex === 0 || saving}
                   >
-                    {labels.back}
+                    {copy.back}
                   </button>
 
                   <button
@@ -850,10 +834,10 @@ function ProfileUpdateContextContent() {
                     }}
                   >
                     {saving
-                      ? labels.saving
+                      ? copy.saving
                       : stepIndex === totalSteps - 1
-                        ? labels.save
-                        : labels.continue}
+                        ? copy.save
+                        : copy.continue}
                   </button>
                 </div>
               </div>

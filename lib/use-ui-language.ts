@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getMe } from "@/lib/api";
+import { isAuthenticated } from "@/lib/auth";
 import {
   isSupportedUiLanguage,
   resolveUiLanguage,
@@ -26,6 +27,28 @@ function readPersistedUiLanguage(): SupportedUiLanguage | null {
   }
 }
 
+function readBrowserUiLanguage(): SupportedUiLanguage | null {
+  if (typeof window === "undefined") return null;
+
+  const candidates = [
+    window.navigator.language,
+    ...(window.navigator.languages || []),
+  ];
+
+  for (const candidate of candidates) {
+    const resolved = resolveUiLanguage({
+      language: candidate,
+      locale: candidate,
+    });
+
+    if (isSupportedUiLanguage(resolved)) {
+      return resolved;
+    }
+  }
+
+  return null;
+}
+
 export function persistUiLanguage(language: SupportedUiLanguage) {
   if (typeof window !== "undefined") {
     try {
@@ -42,13 +65,14 @@ export function persistUiLanguage(language: SupportedUiLanguage) {
 
 export function useUiLanguage(defaultLanguage: SupportedUiLanguage = "en") {
   const [uiLanguage, setUiLanguage] = useState<SupportedUiLanguage>(() => {
-    return readPersistedUiLanguage() ?? defaultLanguage;
+    return readPersistedUiLanguage() ?? readBrowserUiLanguage() ?? defaultLanguage;
   });
 
   const [loadingLanguage, setLoadingLanguage] = useState(true);
 
   useEffect(() => {
-    const initialLanguage = readPersistedUiLanguage() ?? defaultLanguage;
+    const initialLanguage =
+      readPersistedUiLanguage() ?? readBrowserUiLanguage() ?? defaultLanguage;
     setUiLanguage(initialLanguage);
     persistUiLanguage(initialLanguage);
   }, [defaultLanguage]);
@@ -57,6 +81,16 @@ export function useUiLanguage(defaultLanguage: SupportedUiLanguage = "en") {
     let cancelled = false;
 
     async function loadLanguage() {
+      if (!isAuthenticated()) {
+        const fallback =
+          readPersistedUiLanguage() ?? readBrowserUiLanguage() ?? defaultLanguage;
+
+        setUiLanguage(fallback);
+        persistUiLanguage(fallback);
+        setLoadingLanguage(false);
+        return;
+      }
+
       try {
         const me = await getMe();
 
@@ -72,7 +106,8 @@ export function useUiLanguage(defaultLanguage: SupportedUiLanguage = "en") {
       } catch {
         if (cancelled) return;
 
-        const fallback = readPersistedUiLanguage() ?? defaultLanguage;
+        const fallback =
+          readPersistedUiLanguage() ?? readBrowserUiLanguage() ?? defaultLanguage;
 
         setUiLanguage(fallback);
         persistUiLanguage(fallback);

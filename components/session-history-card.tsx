@@ -14,14 +14,14 @@ import {
 
 function getStatusLabel(status: string, uiLanguage: SupportedUiLanguage): string {
   if (uiLanguage === "fr") {
-    if (status === "open") return "ouverte";
-    if (status === "closed") return "clôturée";
-    if (status === "force_closed") return "clôturée de force";
+    if (status === "open") return "En cours";
+    if (status === "closed") return "Terminée";
+    if (status === "force_closed") return "Interrompue";
   }
 
-  if (status === "open") return "open";
-  if (status === "closed") return "closed";
-  if (status === "force_closed") return "force closed";
+  if (status === "open") return "In progress";
+  if (status === "closed") return "Completed";
+  if (status === "force_closed") return "Interrupted";
 
   return status;
 }
@@ -62,7 +62,7 @@ function truncateSummary(value: string, maxLength = 420): string {
 
 export function SessionHistoryCard({
   item,
-  uiLanguage = "en",
+  uiLanguage = "fr",
 }: {
   item: SessionHistoryItem;
   uiLanguage?: SupportedUiLanguage;
@@ -73,15 +73,22 @@ export function SessionHistoryCard({
 
   const startedAt = new Date(item.started_at);
   const endedAt = item.ended_at ? new Date(item.ended_at) : null;
+  const locale = uiLanguage === "fr" ? "fr-BE" : "en-BE";
+
+  const dateTimeFormatter = new Intl.DateTimeFormat(locale, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
 
   return (
     <div
       className="card stack"
+      lang={uiLanguage}
       style={{
         gap: 16,
         position: "relative",
         overflow: "hidden",
-        borderRadius: 28,
+        borderRadius: 24,
         border: "1px solid rgba(43,33,24,0.08)",
         background:
           "linear-gradient(135deg, rgba(255,255,255,0.82), rgba(255,248,239,0.76))",
@@ -158,8 +165,8 @@ export function SessionHistoryCard({
                 }}
               >
                 {uiLanguage === "fr"
-                  ? "Trace de session et lecture contextuelle"
-                  : "Session trace and contextual reading"}
+                  ? "Résumé et contexte de la session"
+                  : "Session summary and context"}
               </div>
             </div>
           </div>
@@ -185,24 +192,24 @@ export function SessionHistoryCard({
         }}
       >
         <BadgePill icon={<ClockIcon size={14} />}>
-          {uiLanguage === "fr" ? "Démarrée" : "Started"} ·{" "}
-          {startedAt.toLocaleString()}
+          {uiLanguage === "fr" ? "Début" : "Started"} ·{" "}
+          {dateTimeFormatter.format(startedAt)}
         </BadgePill>
 
         {endedAt ? (
           <BadgePill icon={<ClockIcon size={14} />}>
-            {uiLanguage === "fr" ? "Clôturée" : "Closed"} ·{" "}
-            {endedAt.toLocaleString()}
+            {uiLanguage === "fr" ? "Fin" : "Ended"} ·{" "}
+            {dateTimeFormatter.format(endedAt)}
           </BadgePill>
         ) : null}
 
         {summary ? (
           <BadgePill icon={<BrainIcon size={14} />}>
-            {uiLanguage === "fr" ? "Synthèse disponible" : "Summary available"}
+            {uiLanguage === "fr" ? "Résumé disponible" : "Summary available"}
           </BadgePill>
         ) : (
           <BadgePill icon={<SparkIcon size={14} />}>
-            {uiLanguage === "fr" ? "Signaux à enrichir" : "Signals to enrich"}
+            {uiLanguage === "fr" ? "Résumé à venir" : "Summary pending"}
           </BadgePill>
         )}
       </div>
@@ -236,8 +243,8 @@ export function SessionHistoryCard({
             }}
           >
             {uiLanguage === "fr"
-              ? "Pas encore d’insights — interagis davantage pour faire émerger les signaux du coaching."
-              : "No insights yet — start interacting more to unlock coaching insights."}
+              ? "Aucun résumé n’est encore disponible pour cette session."
+              : "No summary is available for this session yet."}
           </span>
         )}
       </div>
@@ -253,6 +260,15 @@ export function SessionHistoryCard({
       >
         <button
           className="button"
+          aria-label={
+            item.status === "open"
+              ? uiLanguage === "fr"
+                ? `Reprendre la session ${item.session_id}`
+                : `Resume session ${item.session_id}`
+              : uiLanguage === "fr"
+                ? `Consulter la session ${item.session_id}`
+                : `Open session ${item.session_id}`
+          }
           onClick={() => router.push(`/session?sessionId=${item.session_id}`)}
           type="button"
           style={{
@@ -267,13 +283,18 @@ export function SessionHistoryCard({
                 ? "Reprendre la session"
                 : "Resume session"
               : uiLanguage === "fr"
-                ? "Réouvrir la session"
+                ? "Consulter la session"
                 : "Open session"}
           </span>
         </button>
 
         <button
           className="button ghost"
+          aria-label={
+            uiLanguage === "fr"
+              ? `Voir le résumé de la session ${item.session_id}`
+              : `View summary for session ${item.session_id}`
+          }
           onClick={() => router.push(`/history/${item.session_id}`)}
           type="button"
           style={{
@@ -282,7 +303,7 @@ export function SessionHistoryCard({
             background: "rgba(255,255,255,0.62)",
           }}
         >
-          {uiLanguage === "fr" ? "Voir le détail" : "View detail"}
+          {uiLanguage === "fr" ? "Voir le résumé" : "View summary"}
         </button>
       </div>
     </div>

@@ -7,6 +7,7 @@ import { clearToken, getToken } from "@/lib/auth";
 import type { Me } from "@/lib/types";
 import { BadgePill, SparkIcon } from "@/components/ui-flat-icons";
 import { UserProvider } from "@/components/user-context";
+import { useUiLanguage } from "@/lib/use-ui-language";
 
 function BrandMark() {
   return (
@@ -35,15 +36,38 @@ function BrandMark() {
 }
 
 function AuthLoadingScreen() {
+  const { uiLanguage } = useUiLanguage("fr");
+
+  const copy =
+    uiLanguage === "fr"
+      ? {
+          badge: "Espace de coaching",
+          title: "Préparation de ton espace...",
+          description:
+            "Nous restaurons ton contexte, tes sessions et tes recommandations personnalisées.",
+          status: "Vérification de ton accès en cours",
+        }
+      : {
+          badge: "Coaching workspace",
+          title: "Preparing your workspace...",
+          description:
+            "We are restoring your context, sessions, and personalized recommendations.",
+          status: "Checking your access",
+        };
+
   return (
     <main
       className="page"
+      lang={uiLanguage}
+      translate="no"
+      aria-busy="true"
+      aria-live="polite"
       style={{
         minHeight: "100vh",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: 24,
+        padding: "clamp(16px, 3vw, 24px)",
         background:
           "radial-gradient(circle at top left, rgba(255,122,89,0.12), transparent 30%), radial-gradient(circle at bottom right, rgba(88,180,174,0.12), transparent 34%), var(--coach-bg)",
       }}
@@ -102,7 +126,7 @@ function AuthLoadingScreen() {
             style={{
               position: "relative",
               zIndex: 1,
-              gap: 18,
+              gap: 16,
               maxWidth: 580,
             }}
           >
@@ -111,7 +135,7 @@ function AuthLoadingScreen() {
 
               <div className="row center" style={{ gap: 8, flexWrap: "wrap" }}>
                 <BadgePill icon={<SparkIcon size={14} />}>LeanWorker</BadgePill>
-                <BadgePill icon={<SparkIcon size={14} />}>Coach workspace</BadgePill>
+                <BadgePill icon={<SparkIcon size={14} />}>{copy.badge}</BadgePill>
               </div>
             </div>
 
@@ -124,7 +148,7 @@ function AuthLoadingScreen() {
                 color: "var(--coach-ink)",
               }}
             >
-              Loading your workspace...
+              {copy.title}
             </div>
 
             <div
@@ -135,8 +159,7 @@ function AuthLoadingScreen() {
                 lineHeight: 1.7,
               }}
             >
-              Restoring your coaching context, sessions, recommendations, and personalized
-              workspace.
+              {copy.description}
             </div>
 
             <div
@@ -150,6 +173,22 @@ function AuthLoadingScreen() {
                 border: "1px solid rgba(255,122,89,0.22)",
               }}
             >
+              <span
+                style={{
+                  position: "absolute",
+                  width: 1,
+                  height: 1,
+                  padding: 0,
+                  margin: -1,
+                  overflow: "hidden",
+                  clip: "rect(0, 0, 0, 0)",
+                  whiteSpace: "nowrap",
+                  border: 0,
+                }}
+              >
+                {copy.status}
+              </span>
+
               <div
                 className="loader"
                 style={{

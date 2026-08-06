@@ -98,7 +98,7 @@ function ThinkingDots() {
 export function ConversationPanel({
   sessionId,
   onClosed,
-  uiLanguage = "en",
+  uiLanguage = "fr",
   onCoachStateChange,
   variant = "standard",
 }: {
@@ -231,8 +231,8 @@ export function ConversationPanel({
       uiLanguage === "fr"
         ? "Préparation de l’espace écrit..."
         : "Preparing written workspace...",
-    typing: uiLanguage === "fr" ? "Le coach réfléchit" : "Coach is thinking",
-    inputTitle: uiLanguage === "fr" ? "Ton message" : "Your message",
+    typing: uiLanguage === "fr" ? "Le coach prépare sa réponse" : "The coach is preparing a response",
+    inputTitle: uiLanguage === "fr" ? "Écris ton message" : "Write your message",
     inputHint:
       uiLanguage === "fr"
         ? "Écris naturellement. Entrée pour envoyer, Maj+Entrée pour aller à la ligne."
@@ -253,6 +253,14 @@ export function ConversationPanel({
         : "The coach will answer here using the available active context.",
     you: uiLanguage === "fr" ? "Toi" : "You",
     coach: "Coach",
+    emptyTitle:
+      uiLanguage === "fr"
+        ? "Commence la conversation"
+        : "Start the conversation",
+    emptyText:
+      uiLanguage === "fr"
+        ? "Décris ce que tu veux clarifier, résoudre ou faire avancer."
+        : "Describe what you want to clarify, solve, or move forward.",
   };
 
   const isCockpit = variant === "cockpit";
@@ -260,11 +268,13 @@ export function ConversationPanel({
   return (
     <div
       className="chat-surface"
+      lang={uiLanguage}
+      aria-busy={bootstrapping || loading || closing}
       style={{
         display: "flex",
         flexDirection: "column",
         minHeight: 0,
-        height: isCockpit ? "clamp(520px, calc(100dvh - 230px), 920px)" : "100%",
+        height: isCockpit ? "clamp(500px, calc(100dvh - 230px), 900px)" : "100%",
         maxHeight: isCockpit ? "calc(100dvh - 230px)" : undefined,
         border: isCockpit ? "none" : "1px solid rgba(43,33,24,0.08)",
         background: isCockpit
@@ -276,14 +286,17 @@ export function ConversationPanel({
     >
       <div
         className="chat-messages"
+        role="log"
+        aria-live="polite"
+        aria-relevant="additions text"
         style={{
           flex: 1,
           minHeight: 0,
           overflowY: "auto",
-          padding: isCockpit ? "20px" : 24,
+          padding: isCockpit ? "clamp(14px, 2.5vw, 20px)" : "clamp(16px, 3vw, 24px)",
           display: "flex",
           flexDirection: "column",
-          gap: 18,
+          gap: 14,
           background:
             "radial-gradient(circle at top left, rgba(255,122,89,0.07), transparent 30%), radial-gradient(circle at bottom right, rgba(88,180,174,0.07), transparent 28%), linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,248,239,0.92))",
         }}
@@ -307,7 +320,25 @@ export function ConversationPanel({
               </div>
             </div>
           </div>
-        ) : turns.length === 0 ? null : (
+        ) : turns.length === 0 ? (
+          <div
+            className="card-soft stack"
+            style={{
+              gap: 8,
+              maxWidth: 560,
+              borderRadius: 20,
+              background: "rgba(255,255,255,0.72)",
+              border: "1px solid rgba(43,33,24,0.08)",
+            }}
+          >
+            <div className="section-title" style={{ fontSize: 17 }}>
+              {labels.emptyTitle}
+            </div>
+            <div className="muted" style={{ color: "var(--coach-muted)", lineHeight: 1.6 }}>
+              {labels.emptyText}
+            </div>
+          </div>
+        ) : (
           turns.map((turn, index) => {
             const isUser = turn.speaker === "user";
 
@@ -323,7 +354,7 @@ export function ConversationPanel({
                   className={`chat-bubble ${isUser ? "chat-user" : "chat-agent"}`}
                   style={{
                     maxWidth: isUser ? "74%" : "78%",
-                    padding: "15px 17px",
+                    padding: "13px 15px",
                     borderRadius: isUser ? "24px 24px 8px 24px" : "24px 24px 24px 8px",
                     lineHeight: 1.6,
                     background: isUser
@@ -447,6 +478,7 @@ export function ConversationPanel({
 
             <textarea
               className="textarea chat-input-textarea"
+              aria-label={labels.inputTitle}
               placeholder={copy.session.typeMessage}
               value={message}
               onChange={(event) => setMessage(event.target.value)}
@@ -459,7 +491,7 @@ export function ConversationPanel({
                 boxSizing: "border-box",
                 display: "block",
                 lineHeight: 1.6,
-                borderRadius: 24,
+                borderRadius: 20,
                 border: "1px solid rgba(43,33,24,0.10)",
                 background: "#ffffff",
                 color: "var(--coach-ink)",
@@ -495,6 +527,7 @@ export function ConversationPanel({
               <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
                 <button
                   className="button"
+                  aria-label={uiLanguage === "fr" ? "Envoyer le message" : "Send message"}
                   onClick={() => void handleSend()}
                   disabled={!message.trim() || loading || closing}
                   style={{
@@ -509,6 +542,7 @@ export function ConversationPanel({
 
                 <button
                   className="button secondary"
+                  aria-label={uiLanguage === "fr" ? "Terminer la session" : "Close session"}
                   onClick={() => void handleCloseSession()}
                   disabled={loading || closing}
                   style={{
@@ -545,6 +579,7 @@ export function ConversationPanel({
             >
               <textarea
                 className="textarea chat-input-textarea"
+                aria-label={labels.inputTitle}
                 placeholder={copy.session.typeMessage}
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
@@ -557,7 +592,7 @@ export function ConversationPanel({
                   boxSizing: "border-box",
                   display: "block",
                   lineHeight: 1.6,
-                  borderRadius: 24,
+                  borderRadius: 18,
                   border: "1px solid rgba(43,33,24,0.10)",
                   background: "#ffffff",
                   color: "var(--coach-ink)",
@@ -583,6 +618,7 @@ export function ConversationPanel({
             >
               <button
                 className="button"
+                aria-label={uiLanguage === "fr" ? "Envoyer le message" : "Send message"}
                 onClick={() => void handleSend()}
                 disabled={!message.trim() || loading || closing}
                 style={{
@@ -597,6 +633,7 @@ export function ConversationPanel({
 
               <button
                 className="button secondary"
+                aria-label={uiLanguage === "fr" ? "Terminer la session" : "Close session"}
                 onClick={() => void handleCloseSession()}
                 disabled={loading || closing}
                 style={{

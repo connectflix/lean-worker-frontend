@@ -5,32 +5,37 @@ import type { SupportedUiLanguage } from "@/lib/user-locales";
 
 type SessionSummaryCardProps = {
   summary: string;
-  uiLanguage: SupportedUiLanguage;
+  uiLanguage?: SupportedUiLanguage;
 };
 
 export function SessionSummaryCard({
   summary,
-  uiLanguage,
+  uiLanguage = "fr",
 }: SessionSummaryCardProps) {
   const copy =
     uiLanguage === "fr"
       ? {
           title: "Résumé de la session",
           description:
-            "Principaux éléments identifiés lors de votre conversation de coaching.",
-          badge: "Synthèse IA",
+            "Les principaux éléments retenus de ta conversation de coaching.",
+          badge: "Synthèse de session",
+          empty:
+            "Aucun résumé n’est encore disponible pour cette session.",
         }
       : {
           title: "Session summary",
-          description: "Key signals captured from your coaching conversation.",
-          badge: "AI synthesis",
+          description: "The main points captured from your coaching conversation.",
+          badge: "Session synthesis",
+          empty:
+            "No summary is available for this session yet.",
         };
   return (
     <div
       className="card stack"
+      lang={uiLanguage}
       style={{
-        gap: 16,
-        borderRadius: 28,
+        gap: 14,
+        borderRadius: 24,
         border: "1px solid rgba(43,33,24,0.08)",
         background:
           "linear-gradient(135deg, rgba(255,241,220,0.92), rgba(255,255,255,0.90))",
@@ -76,7 +81,15 @@ export function SessionSummaryCard({
           flexWrap: "wrap",
         }}
       >
-        <div className="row" style={{ gap: 10, alignItems: "center" }}>
+        <div
+          className="row"
+          style={{
+            gap: 10,
+            alignItems: "center",
+            minWidth: 0,
+            flex: "1 1 280px",
+          }}
+        >
           <div
             style={{
               width: 42,
@@ -93,7 +106,7 @@ export function SessionSummaryCard({
             <BrainIcon size={18} />
           </div>
 
-          <div className="stack" style={{ gap: 3 }}>
+          <div className="stack" style={{ gap: 3, minWidth: 0 }}>
             <div
               className="section-title"
               style={{
@@ -132,7 +145,7 @@ export function SessionSummaryCard({
           position: "relative",
         }}
       >
-        {summary}
+        {summary.trim() || copy.empty}
       </div>
     </div>
   );

@@ -29,7 +29,7 @@ function CoachSectionCard({
       className="card stack"
       style={{
         gap: 16,
-        borderRadius: 28,
+        borderRadius: 20,
         border: "1px solid rgba(43,33,24,0.08)",
         background: warm
           ? "linear-gradient(135deg, rgba(255,241,220,0.92), rgba(255,255,255,0.90))"
@@ -148,7 +148,7 @@ export default function HistoryPage() {
 
 function HistoryContent() {
   const router = useRouter();
-  const { uiLanguage, loadingLanguage } = useUiLanguage("en");
+  const { uiLanguage, loadingLanguage } = useUiLanguage("fr");
   const copy = getUiCopy(uiLanguage);
 
   const [items, setItems] = useState<SessionHistoryItem[]>([]);
@@ -163,7 +163,13 @@ function HistoryContent() {
       const data = await getSessions();
       setItems(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load session history.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : uiLanguage === "fr"
+            ? "Impossible de charger l’historique des sessions."
+            : "Failed to load session history.",
+      );
     } finally {
       setLoading(false);
     }
@@ -181,10 +187,13 @@ function HistoryContent() {
     return (
       <main
         className="page"
+        lang={uiLanguage}
+        translate="no"
+        suppressHydrationWarning
         style={{
           minHeight: "100vh",
           background: "var(--coach-bg)",
-          padding: 24,
+          padding: "clamp(16px, 3vw, 24px)",
         }}
       >
         <div className="page-wrap">
@@ -201,14 +210,14 @@ function HistoryContent() {
       uiLanguage={uiLanguage}
       title={uiLanguage === "fr" ? "Historique" : "History"}
     >
-      <div className="stack" style={{ gap: 18 }}>
+      <div className="stack" style={{ gap: 16 }}>
         <div
           className="card stack"
           style={{
-            gap: 18,
+            gap: 16,
             position: "relative",
             overflow: "hidden",
-            borderRadius: 32,
+            borderRadius: 28,
             border: "1px solid rgba(43,33,24,0.08)",
             background:
               "linear-gradient(135deg, rgba(255,241,220,0.96), rgba(255,255,255,0.92) 52%, rgba(232,248,246,0.88))",
@@ -260,7 +269,7 @@ function HistoryContent() {
                   fontWeight: 850,
                 }}
               >
-                {uiLanguage === "fr" ? "Mémoire continue" : "Continuous memory"}
+                {uiLanguage === "fr" ? "Historique personnel" : "Personal history"}
               </span>
 
               <span
@@ -272,14 +281,14 @@ function HistoryContent() {
                   fontWeight: 850,
                 }}
               >
-                {uiLanguage === "fr" ? "Sessions conservées" : "Saved sessions"}
+                {uiLanguage === "fr" ? "Sessions enregistrées" : "Saved sessions"}
               </span>
             </div>
 
             <div
               style={{
                 maxWidth: 900,
-                fontSize: 44,
+                fontSize: "clamp(34px, 5vw, 44px)",
                 lineHeight: 1.02,
                 fontWeight: 950,
                 letterSpacing: "-0.07em",
@@ -287,35 +296,35 @@ function HistoryContent() {
               }}
             >
               {uiLanguage === "fr"
-                ? "Retrouve ce que tes sessions ont déjà révélé."
-                : "Revisit what your sessions have already revealed."}
+                ? "Retrouve tes sessions et les enseignements clés."
+                : "Review your sessions and key insights."}
             </div>
 
             <p
               className="subtitle"
               style={{
-                maxWidth: 780,
+                maxWidth: 700,
                 color: "var(--coach-muted)",
                 fontSize: 16,
                 lineHeight: 1.7,
               }}
             >
               {uiLanguage === "fr"
-                ? "Ton historique t’aide à relire tes conversations passées, repérer les signaux récurrents et suivre l’évolution de ta trajectoire au fil du temps."
-                : "Your history helps you review past conversations, spot recurring signals, and follow how your trajectory evolves over time."}
+                ? "Consulte tes conversations passées, leurs synthèses et les évolutions importantes de ton parcours."
+                : "Review past conversations, their summaries, and the important changes in your journey."}
             </p>
 
             <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
               <BadgePill icon={<SparkIcon size={14} />}>
-                {uiLanguage === "fr" ? "Synthèses IA" : "AI summaries"}
+                {uiLanguage === "fr" ? "Synthèses disponibles" : "Available summaries"}
               </BadgePill>
 
               <BadgePill icon={<BrainIcon size={14} />}>
-                {uiLanguage === "fr" ? "Mémoire de coaching" : "Coaching memory"}
+                {uiLanguage === "fr" ? "Contexte mémorisé" : "Remembered context"}
               </BadgePill>
 
               <BadgePill icon={<ClockIcon size={14} />}>
-                {uiLanguage === "fr" ? "Progression dans le temps" : "Progress over time"}
+                {uiLanguage === "fr" ? "Évolution suivie" : "Tracked progress"}
               </BadgePill>
             </div>
 
@@ -346,24 +355,24 @@ function HistoryContent() {
 
         <div className="grid grid-3">
           <HistoryMetricCard
-            label={uiLanguage === "fr" ? "Sessions totales" : "Total sessions"}
+            label={uiLanguage === "fr" ? "Toutes les sessions" : "All sessions"}
             value={items.length}
             helper={
               uiLanguage === "fr"
-                ? "Toutes les conversations enregistrées."
-                : "All saved coaching conversations."
+                ? "Ensemble des sessions enregistrées."
+                : "All recorded sessions."
             }
             icon={<SessionIcon size={18} />}
             tone="warm"
           />
 
           <HistoryMetricCard
-            label={uiLanguage === "fr" ? "Sessions clôturées" : "Closed sessions"}
+            label={uiLanguage === "fr" ? "Sessions terminées" : "Completed sessions"}
             value={completedSessions}
             helper={
               uiLanguage === "fr"
-                ? "Sessions avec fin enregistrée."
-                : "Sessions with a recorded ending."
+                ? "Sessions arrivées à leur terme."
+                : "Sessions that reached completion."
             }
             icon={<ClockIcon size={18} />}
             tone="calm"
@@ -374,8 +383,8 @@ function HistoryContent() {
             value={sessionsWithSummary}
             helper={
               uiLanguage === "fr"
-                ? "Sessions enrichies par une synthèse."
-                : "Sessions enriched with a summary."
+                ? "Sessions disposant d’une synthèse."
+                : "Sessions with an available summary."
             }
             icon={<BrainIcon size={18} />}
             tone="neutral"
@@ -387,17 +396,17 @@ function HistoryContent() {
             <div className="row space-between" style={{ gap: 12, flexWrap: "wrap" }}>
               <div className="stack" style={{ gap: 6 }}>
                 <div className="section-title">
-                  {uiLanguage === "fr" ? "Dernière session" : "Latest session"}
+                  {uiLanguage === "fr" ? "Session la plus récente" : "Most recent session"}
                 </div>
 
                 <div className="muted" style={{ color: "var(--coach-muted)" }}>
                   {uiLanguage === "fr"
                     ? `Session #${latestSession.session_id} démarrée le ${new Date(
                         latestSession.started_at,
-                      ).toLocaleString()}.`
+                      ).toLocaleString("fr-BE")}.`
                     : `Session #${latestSession.session_id} started on ${new Date(
                         latestSession.started_at,
-                      ).toLocaleString()}.`}
+                      ).toLocaleString("en-GB")}.`}
                 </div>
               </div>
 
@@ -406,7 +415,7 @@ function HistoryContent() {
                 type="button"
                 onClick={() => router.push(`/history/${latestSession.session_id}`)}
               >
-                {uiLanguage === "fr" ? "Voir le détail" : "View detail"}
+                {uiLanguage === "fr" ? "Ouvrir la session" : "Open session"}
               </button>
             </div>
           </CoachSectionCard>
@@ -415,19 +424,19 @@ function HistoryContent() {
         {loading ? (
           <CoachSectionCard>
             <div className="section-title">
-              {uiLanguage === "fr" ? "Chargement de l’historique" : "Loading history"}
+              {uiLanguage === "fr" ? "Chargement des sessions" : "Loading sessions"}
             </div>
 
             <div className="muted" style={{ color: "var(--coach-muted)" }}>
               {uiLanguage === "fr"
-                ? "Nous récupérons tes sessions précédentes."
-                : "We are retrieving your previous sessions."}
+                ? "Nous récupérons tes sessions et leurs synthèses."
+                : "We are retrieving your sessions and summaries."}
             </div>
           </CoachSectionCard>
         ) : error ? (
           <CoachSectionCard>
             <div className="section-title" style={{ color: "var(--danger)" }}>
-              {uiLanguage === "fr" ? "Impossible de charger l’historique" : "Unable to load history"}
+              {uiLanguage === "fr" ? "Impossible de charger les sessions" : "Unable to load sessions"}
             </div>
 
             <div className="muted">{error}</div>
@@ -449,19 +458,19 @@ function HistoryContent() {
         ) : items.length === 0 ? (
           <CoachSectionCard warm>
             <div className="section-title">
-              {uiLanguage === "fr" ? "Aucune session passée pour le moment" : "No past sessions yet"}
+              {uiLanguage === "fr" ? "Aucune session enregistrée" : "No saved sessions"}
             </div>
 
             <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
               <BadgePill icon={<ClockIcon size={14} />}>
-                {uiLanguage === "fr" ? "Aucune session" : "No sessions yet"}
+                {uiLanguage === "fr" ? "Historique vide" : "Empty history"}
               </BadgePill>
             </div>
 
             <div className="muted" style={{ color: "var(--coach-muted)" }}>
               {uiLanguage === "fr"
-                ? "Démarre une première session de coaching pour construire ton historique, tes résumés et tes recommandations."
-                : "Start your first coaching session to build your history, summaries, and recommendations."}
+                ? "Démarre une première session pour créer ton historique et obtenir tes premières synthèses."
+                : "Start your first session to build your history and receive your first summaries."}
             </div>
 
             <div className="row" style={{ flexWrap: "wrap" }}>
@@ -481,14 +490,14 @@ function HistoryContent() {
               className="card-soft stack"
               style={{
                 gap: 8,
-                borderRadius: 24,
+                borderRadius: 20,
                 background: "rgba(255,255,255,0.70)",
                 border: "1px solid rgba(43,33,24,0.08)",
                 boxShadow: "inset 0 1px 0 rgba(255,255,255,0.72)",
               }}
             >
               <div className="section-title">
-                {uiLanguage === "fr" ? "Toutes tes sessions" : "All your sessions"}
+                {uiLanguage === "fr" ? "Sessions enregistrées" : "Saved sessions"}
               </div>
 
               <div className="muted" style={{ color: "var(--coach-muted)" }}>

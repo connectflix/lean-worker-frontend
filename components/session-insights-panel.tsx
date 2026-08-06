@@ -138,6 +138,23 @@ function formatActionTrack(value?: string | null): string | null {
     .join(" ");
 }
 
+function getPriorityLabel(
+  priority: string | null | undefined,
+  uiLanguage: SupportedUiLanguage,
+): string {
+  if (uiLanguage === "fr") {
+    if (priority === "high") return "Élevée";
+    if (priority === "medium") return "Moyenne";
+    if (priority === "low") return "Faible";
+    return "Non définie";
+  }
+
+  if (priority === "high") return "High";
+  if (priority === "medium") return "Medium";
+  if (priority === "low") return "Low";
+  return "Not defined";
+}
+
 function getPriorityTone(priority?: string | null): {
   background: string;
   border: string;
@@ -167,7 +184,7 @@ function getPriorityTone(priority?: string | null): {
 }
 
 export function SessionInsightsPanel({
-  uiLanguage = "en",
+  uiLanguage = "fr",
   sessionId,
   careerGap,
   recommendations,
@@ -185,72 +202,72 @@ export function SessionInsightsPanel({
     () =>
       uiLanguage === "fr"
         ? {
-            live: "Session en cours",
+            live: "Session active",
             liveText:
-              "Le coach ajuste sa posture selon ton niveau de charge, ton contexte et ta trajectoire.",
-            focus: "Focus du coaching",
+              "Le coach adapte sa posture à ton contexte, à ta trajectoire et à ce qui émerge dans l’échange.",
+            focus: "Orientation du coaching",
             focusText:
-              "Clarification, trajectoire, régulation ou passage à l’action selon ce qui émerge.",
-            currentCoachStyle: "Style actuel du coach",
+              "Clarification, prise de recul, trajectoire ou passage à l’action selon ton besoin du moment.",
+            currentCoachStyle: "Posture actuelle du coach",
             currentCoachStyleText:
-              "Le ton du coach évolue selon ton besoin du moment et ton style préféré.",
-            currentMode: "Mode courant",
-            currentIntent: "Intention courante",
-            gap: "Écart de trajectoire",
+              "La posture du coach évolue selon ton besoin et le déroulement de la conversation.",
+            currentMode: "Mode",
+            currentIntent: "Intention",
+            gap: "Lecture de trajectoire",
             noGap:
-              "Aucun écart majeur détecté pour le moment. Le coach continue d’affiner la lecture de ta trajectoire.",
-            recs: "Actions utiles",
+              "Aucun écart majeur n’est encore identifié. Cette lecture s’affinera au fil de tes sessions.",
+            recs: "Recommandations actives",
             noRecs:
-              "Le coach est encore en train d’analyser ta trajectoire. Les actions utiles apparaîtront à mesure que les signaux se clarifient.",
+              "Aucune recommandation active pour le moment. De nouvelles actions pourront apparaître après l’analyse de la session.",
             short: "Court terme",
             mid: "Moyen terme",
             long: "Long terme",
-            current: "Point de départ",
-            notDefined: "Non défini pour le moment",
-            activeRecommendations: "Recommandations actives",
-            statusOpen: "ouverte",
-            statusInProgress: "en cours",
-            statusOther: "à suivre",
+            current: "Situation actuelle",
+            notDefined: "Pas encore défini",
+            activeRecommendations: "À considérer maintenant",
+            statusOpen: "À démarrer",
+            statusInProgress: "En cours",
+            statusOther: "À suivre",
             adaptiveDefault: "Adaptatif",
             contextActive: "Contexte actif",
-            softSignal: "Signal vivant",
-            coachingMemory: "Mémoire active",
-            nextSteps: "Prochains pas",
+            softSignal: "Posture adaptative",
+            coachingMemory: "Contexte mémorisé",
+            nextSteps: "Prochaines étapes",
             trajectory: "Trajectoire",
             sessionLabel: "Session",
             priority: "Priorité",
           }
         : {
-            live: "Live session",
+            live: "Active session",
             liveText:
-              "Your coach adjusts its stance to your load, context, and trajectory.",
-            focus: "Coaching focus",
+              "Your coach adapts its stance to your context, trajectory, and what emerges in the conversation.",
+            focus: "Coaching direction",
             focusText:
-              "Clarification, trajectory, regulation, or action depending on what emerges.",
-            currentCoachStyle: "Current coach style",
+              "Clarification, reflection, trajectory, or action depending on your current need.",
+            currentCoachStyle: "Current coach stance",
             currentCoachStyleText:
-              "The coach tone evolves based on your current need and your preferred coaching style.",
-            currentMode: "Current mode",
-            currentIntent: "Current intent",
-            gap: "Trajectory gap",
+              "The coach stance evolves with your needs and the flow of the conversation.",
+            currentMode: "Mode",
+            currentIntent: "Intent",
+            gap: "Trajectory reading",
             noGap:
-              "No major gap detected for now. Your coach is still refining its reading of your trajectory.",
-            recs: "Useful actions",
+              "No major gap has been identified yet. This reading will become more precise over time.",
+            recs: "Active recommendations",
             noRecs:
-              "Your coach is still analyzing your trajectory. Useful actions will appear as the signals become clearer.",
+              "There are no active recommendations yet. New actions may appear after the session is analyzed.",
             short: "Short term",
             mid: "Mid term",
             long: "Long term",
-            current: "Starting point",
+            current: "Current situation",
             notDefined: "Not defined yet",
-            activeRecommendations: "Active recommendations",
-            statusOpen: "open",
-            statusInProgress: "in progress",
-            statusOther: "to follow",
+            activeRecommendations: "To consider now",
+            statusOpen: "To start",
+            statusInProgress: "In progress",
+            statusOther: "To follow",
             adaptiveDefault: "Adaptive",
             contextActive: "Active context",
-            softSignal: "Live signal",
-            coachingMemory: "Active memory",
+            softSignal: "Adaptive stance",
+            coachingMemory: "Context memory",
             nextSteps: "Next steps",
             trajectory: "Trajectory",
             sessionLabel: "Session",
@@ -291,16 +308,18 @@ export function SessionInsightsPanel({
             lineHeight: 1.5,
           }}
         >
-          {hasValue ? `${role || "—"} ${level || ""}`.trim() : copy.notDefined}
+          {hasValue
+            ? [role, level].filter(Boolean).join(" · ")
+            : copy.notDefined}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="session-insights-shell">
+    <div className="session-insights-shell" lang={uiLanguage}>
       <div className="session-insights-scroll">
-        <div className="stack" style={{ gap: 16 }}>
+        <div className="stack" style={{ gap: 14 }}>
           <div
             className="card stack"
             style={{
@@ -561,6 +580,7 @@ export function SessionInsightsPanel({
 
               <div className="section-title" style={{ color: "var(--coach-ink)" }}>
                 {copy.recs}
+                {activeRecommendations.length > 0 ? ` (${activeRecommendations.length})` : ""}
               </div>
             </div>
 
@@ -568,7 +588,7 @@ export function SessionInsightsPanel({
               <div
                 className="card-soft"
                 style={{
-                  borderRadius: 22,
+                  borderRadius: 18,
                   background: "rgba(255,255,255,0.72)",
                   border: "1px solid rgba(43,33,24,0.08)",
                 }}
@@ -605,7 +625,7 @@ export function SessionInsightsPanel({
                       className="card-soft stack"
                       style={{
                         gap: 10,
-                        borderRadius: 22,
+                        borderRadius: 18,
                         background: "rgba(255,255,255,0.74)",
                         border: "1px solid rgba(43,33,24,0.08)",
                       }}
@@ -638,7 +658,7 @@ export function SessionInsightsPanel({
                           }}
                         >
                           <TargetIcon size={14} />
-                          {copy.priority}: {recommendation.priority}
+                          {copy.priority}: {getPriorityLabel(recommendation.priority, uiLanguage)}
                         </span>
 
                         <BadgePill

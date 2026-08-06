@@ -55,6 +55,7 @@ function NavLink({
     <Link
       className="button ghost"
       href={href}
+      aria-label={label}
       style={{
         minHeight: 40,
         borderRadius: 999,
@@ -72,7 +73,7 @@ function NavLink({
 }
 
 export function Header({
-  uiLanguage = "en",
+  uiLanguage = "fr",
 }: {
   uiLanguage?: SupportedUiLanguage;
 }) {
@@ -87,15 +88,21 @@ export function Header({
   return (
     <header
       className="card row space-between"
+      lang={uiLanguage}
+      aria-label={
+        uiLanguage === "fr"
+          ? "En-tête principal de LeanWorker"
+          : "LeanWorker main header"
+      }
       style={{
         position: "relative",
         overflow: "hidden",
         marginBottom: 16,
         alignItems: "center",
-        padding: "16px 20px",
-        gap: 16,
+        padding: "14px 18px",
+        gap: 14,
         flexWrap: "wrap",
-        borderRadius: 28,
+        borderRadius: 24,
         border: "1px solid rgba(43,33,24,0.08)",
         background:
           "linear-gradient(135deg, rgba(255,248,239,0.92), rgba(255,255,255,0.88) 55%, rgba(232,248,246,0.78))",
@@ -141,7 +148,7 @@ export function Header({
       >
         <BrandMark />
 
-        <div className="stack" style={{ gap: 4 }}>
+        <div className="stack" style={{ gap: 4, minWidth: 0 }}>
           <div
             className="section-title"
             style={{
@@ -162,14 +169,19 @@ export function Header({
             }}
           >
             {uiLanguage === "fr"
-              ? "Intelligence de carrière amplifiée"
-              : "Career intelligence amplified"}
+              ? "Ton intelligence de carrière augmentée"
+              : "Your career intelligence, amplified"}
           </div>
         </div>
       </div>
 
       <nav
         className="row"
+        aria-label={
+          uiLanguage === "fr"
+            ? "Navigation principale"
+            : "Primary navigation"
+        }
         style={{
           position: "relative",
           zIndex: 1,
@@ -205,17 +217,18 @@ export function Header({
         <NavLink
           href="/ai-artifacts"
           icon={<LayerIcon size={14} />}
-          label={uiLanguage === "fr" ? "Guides IA" : "AI Guides"}
+          label={uiLanguage === "fr" ? "Guides" : "Guides"}
         />
 
         <NavLink
           href="/career-blueprint"
           icon={<PathIcon size={14} />}
-          label={uiLanguage === "fr" ? "Blueprint" : "Blueprint"}
+          label={uiLanguage === "fr" ? "Plan de carrière" : "Career blueprint"}
         />
 
         <button
           className="button ghost"
+          aria-label={uiLanguage === "fr" ? "Se déconnecter" : "Log out"}
           onClick={handleLogout}
           type="button"
           style={{
@@ -228,7 +241,7 @@ export function Header({
         >
           <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
             <ArrowRightIcon size={14} />
-            {uiLanguage === "fr" ? "Déconnexion" : "Logout"}
+            {uiLanguage === "fr" ? "Se déconnecter" : "Log out"}
           </span>
         </button>
       </nav>

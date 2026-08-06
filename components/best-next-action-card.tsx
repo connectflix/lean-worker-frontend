@@ -21,14 +21,14 @@ function localizePriority(
   const value = (priority || "").trim().toLowerCase();
 
   if (uiLanguage === "fr") {
-    if (value === "high") return "priorité haute";
-    if (value === "medium") return "priorité moyenne";
-    if (value === "low") return "priorité basse";
+    if (value === "high") return "Priorité élevée";
+    if (value === "medium") return "Priorité moyenne";
+    if (value === "low") return "Priorité faible";
   }
 
-  if (value === "high") return "high priority";
-  if (value === "medium") return "medium priority";
-  if (value === "low") return "low priority";
+  if (value === "high") return "High priority";
+  if (value === "medium") return "Medium priority";
+  if (value === "low") return "Low priority";
 
   return priority || "—";
 }
@@ -40,16 +40,16 @@ function localizeStatus(
   const value = (status || "").trim().toLowerCase();
 
   if (uiLanguage === "fr") {
-    if (value === "open") return "ouverte";
-    if (value === "in_progress") return "en cours";
-    if (value === "completed") return "terminée";
-    if (value === "dismissed") return "écartée";
+    if (value === "open") return "À démarrer";
+    if (value === "in_progress") return "En cours";
+    if (value === "completed") return "Terminée";
+    if (value === "dismissed") return "Masquée";
   }
 
-  if (value === "open") return "open";
-  if (value === "in_progress") return "in progress";
-  if (value === "completed") return "completed";
-  if (value === "dismissed") return "dismissed";
+  if (value === "open") return "To start";
+  if (value === "in_progress") return "In progress";
+  if (value === "completed") return "Completed";
+  if (value === "dismissed") return "Hidden";
 
   return status || "—";
 }
@@ -61,13 +61,13 @@ function localizeLeverType(
   const value = (leverType || "").trim().toLowerCase();
 
   if (uiLanguage === "fr") {
-    if (value === "ai guide") return "guide IA";
-    if (value === "coach") return "coach";
-    if (value === "mentor") return "mentor";
-    if (value === "therapist") return "thérapeute";
-    if (value === "book") return "livre";
-    if (value === "training") return "formation";
-    if (value === "job opportunity") return "opportunité d’emploi";
+    if (value === "ai guide") return "Guide IA";
+    if (value === "coach") return "Coach";
+    if (value === "mentor") return "Mentor";
+    if (value === "therapist") return "Thérapeute";
+    if (value === "book") return "Livre";
+    if (value === "training") return "Formation";
+    if (value === "job opportunity") return "Opportunité professionnelle";
   }
 
   return leverType || "—";
@@ -104,7 +104,7 @@ function getPriorityTone(priority: string | null | undefined) {
 
 export function BestNextActionCard({
   recommendation,
-  uiLanguage = "en",
+  uiLanguage = "fr",
 }: {
   recommendation: Recommendation;
   uiLanguage?: SupportedUiLanguage;
@@ -118,15 +118,20 @@ export function BestNextActionCard({
   const localizedStatus = localizeStatus(recommendation.status, uiLanguage);
   const localizedLeverType = localizeLeverType(bestLever?.type, uiLanguage);
   const priorityTone = getPriorityTone(recommendation.priority);
+  const locale = uiLanguage === "fr" ? "fr-BE" : "en-BE";
+  const dateFormatter = new Intl.DateTimeFormat(locale, {
+    dateStyle: "medium",
+  });
 
   return (
     <div
       className="card stack"
+      lang={uiLanguage}
       style={{
-        gap: 18,
+        gap: 16,
         position: "relative",
         overflow: "hidden",
-        borderRadius: 32,
+        borderRadius: 28,
         border: "1px solid rgba(43,33,24,0.08)",
         background:
           "linear-gradient(135deg, rgba(255,241,220,0.94), rgba(255,255,255,0.92) 54%, rgba(232,248,246,0.88))",
@@ -177,7 +182,7 @@ export function BestNextActionCard({
             flexWrap: "wrap",
           }}
         >
-          <div className="stack" style={{ gap: 8, maxWidth: 760 }}>
+          <div className="stack" style={{ gap: 8, maxWidth: 760, minWidth: 0, flex: 1 }}>
             <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
               <span
                 className="badge"
@@ -189,7 +194,7 @@ export function BestNextActionCard({
                 }}
               >
                 <SparkIcon size={14} />
-                {uiLanguage === "fr" ? "Action prioritaire" : "Priority action"}
+                {uiLanguage === "fr" ? "Action recommandée" : "Recommended action"}
               </span>
 
               <span
@@ -202,7 +207,7 @@ export function BestNextActionCard({
                 }}
               >
                 <TargetIcon size={14} />
-                {uiLanguage === "fr" ? "Recommandation coach" : "Coach recommendation"}
+                {uiLanguage === "fr" ? "Recommandation du coach" : "Coach recommendation"}
               </span>
             </div>
 
@@ -215,7 +220,7 @@ export function BestNextActionCard({
                 color: "var(--coach-accent)",
               }}
             >
-              {uiLanguage === "fr" ? "Prochaine meilleure action" : "Best next action"}
+              {uiLanguage === "fr" ? "Meilleure prochaine action" : "Best next action"}
             </div>
 
             <div
@@ -356,6 +361,11 @@ export function BestNextActionCard({
               {bestLever.url ? (
                 <a
                   href={bestLever.url}
+                  aria-label={
+                    uiLanguage === "fr"
+                      ? `Ouvrir ${bestLever.name} dans un nouvel onglet`
+                      : `Open ${bestLever.name} in a new tab`
+                  }
                   target="_blank"
                   rel="noopener noreferrer"
                   className="button"
@@ -384,7 +394,7 @@ export function BestNextActionCard({
           {recommendation.started_at ? (
             <BadgePill icon={<ClockIcon size={14} />}>
               {copy.recommendations.started}:{" "}
-              {new Date(recommendation.started_at).toLocaleDateString()}
+              {dateFormatter.format(new Date(recommendation.started_at))}
             </BadgePill>
           ) : null}
         </div>
