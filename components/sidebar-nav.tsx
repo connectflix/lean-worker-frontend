@@ -138,7 +138,9 @@ export function SidebarNav({
         boxShadow:
           "0 26px 70px rgba(120,72,42,0.10), inset 0 1px 0 rgba(255,255,255,0.78)",
         backdropFilter: "blur(14px)",
-        minHeight: "calc(100vh - 32px)",
+        height: "calc(100dvh - 32px)",
+        minHeight: 0,
+        maxHeight: "calc(100dvh - 32px)",
         overflow: "hidden",
       }}
     >
@@ -160,7 +162,8 @@ export function SidebarNav({
           position: "relative",
           zIndex: 1,
           height: "100%",
-          gap: 20,
+          minHeight: 0,
+          gap: 18,
         }}
       >
         <div
@@ -267,6 +270,13 @@ export function SidebarNav({
             display: "flex",
             flexDirection: "column",
             gap: 8,
+            flex: "1 1 auto",
+            minHeight: 0,
+            overflowY: "auto",
+            overflowX: "hidden",
+            paddingRight: 2,
+            scrollbarWidth: "thin",
+            overscrollBehavior: "contain",
           }}
         >
           <span
@@ -398,6 +408,7 @@ export function SidebarNav({
           className="card-soft stack coach-sidebar__personal-card"
           style={{
             gap: 9,
+            flexShrink: 0,
             padding: 15,
             borderRadius: 22,
             background:
@@ -431,7 +442,10 @@ export function SidebarNav({
           </div>
         </div>
 
-        <div style={{ marginTop: "auto" }} className="stack">
+        <div
+          style={{ marginTop: "auto", flexShrink: 0 }}
+          className="stack coach-sidebar__footer"
+        >
           <button
             className="button ghost"
             style={{
@@ -474,6 +488,104 @@ export function SidebarNav({
         .coach-sidebar__toggle {
           display: inline-grid;
           place-items: center;
+        }
+
+        /*
+         * Compact-height desktop mode for smaller laptop screens.
+         * Keep all primary navigation and footer actions reachable.
+         */
+        @media (min-width: 981px) and (max-height: 850px) {
+          .coach-sidebar {
+            height: calc(100dvh - 20px) !important;
+            max-height: calc(100dvh - 20px) !important;
+            min-height: 0 !important;
+            padding: 10px !important;
+            border-radius: 22px !important;
+          }
+
+          .coach-sidebar__content {
+            gap: 10px !important;
+            min-height: 0 !important;
+          }
+
+          .coach-sidebar .brand-block {
+            gap: 9px !important;
+            padding: 4px 4px 8px !important;
+          }
+
+          .coach-sidebar .brand-block > div:first-child {
+            width: 42px !important;
+            height: 42px !important;
+            border-radius: 15px !important;
+          }
+
+          .coach-sidebar .brand-title {
+            font-size: 16px !important;
+          }
+
+          .coach-sidebar .brand-subtitle {
+            font-size: 11px !important;
+          }
+
+          .coach-sidebar .nav-section {
+            gap: 5px !important;
+            padding-right: 3px !important;
+          }
+
+          .coach-sidebar .nav-section-label {
+            font-size: 10px !important;
+            padding: 0 8px !important;
+          }
+
+          .coach-sidebar .nav-section > .stack {
+            gap: 4px !important;
+          }
+
+          .coach-sidebar .nav-item {
+            min-height: 44px !important;
+            padding: 7px 9px !important;
+            border-radius: 14px !important;
+          }
+
+          .coach-sidebar .nav-item > span:first-of-type {
+            gap: 8px !important;
+          }
+
+          .coach-sidebar .nav-item > span:first-of-type > span:first-child {
+            width: 30px !important;
+            height: 30px !important;
+            border-radius: 10px !important;
+          }
+
+          .coach-sidebar__nav-label {
+            font-size: 13px !important;
+          }
+
+          .coach-sidebar__personal-card {
+            gap: 5px !important;
+            padding: 10px 11px !important;
+            border-radius: 16px !important;
+          }
+
+          .coach-sidebar__personal-card .section-title {
+            font-size: 12px !important;
+          }
+
+          .coach-sidebar__personal-card .muted {
+            display: -webkit-box !important;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            font-size: 10.5px !important;
+            line-height: 1.35 !important;
+          }
+
+          .coach-sidebar__footer .button {
+            min-height: 40px !important;
+            border-radius: 14px !important;
+            padding-top: 8px !important;
+            padding-bottom: 8px !important;
+          }
         }
 
         .coach-sidebar--collapsed {
@@ -537,6 +649,22 @@ export function SidebarNav({
         }
 
         @media (max-width: 980px) {
+          .coach-sidebar {
+            height: auto !important;
+            max-height: none !important;
+            min-height: 0 !important;
+            overflow: visible !important;
+          }
+
+          .coach-sidebar__content {
+            height: auto !important;
+            min-height: 0 !important;
+          }
+
+          .coach-sidebar .nav-section {
+            overflow: visible !important;
+          }
+
           .coach-sidebar--collapsed .brand-title,
           .coach-sidebar--collapsed .brand-subtitle,
           .coach-sidebar--collapsed .nav-section-label,
