@@ -1,12 +1,19 @@
 "use client";
 
-import type { AdminOrganizationWorkerSummary } from "@/lib/types";
+import type {
+  AdminOrganizationWorkerSummary,
+  OrganizationWorkerGuidanceResponse,
+} from "@/lib/types";
+import { OrganizationWorkerGuidanceCard } from "./organization-worker-guidance-card";
 
 type LeverSortMode = "highlighted" | "most_used" | "name";
 
 type OrganizationInsightsTabProps = {
   selectedWorkerSummary: AdminOrganizationWorkerSummary | null;
   workerSummaryLoading: boolean;
+
+  organizationGuidance: OrganizationWorkerGuidanceResponse | null;
+  organizationGuidanceLoading: boolean;
 
   leverSearch: string;
   leverCategoryFilter: string;
@@ -146,6 +153,8 @@ function ScrollSection({
 export function OrganizationInsightsTab({
   selectedWorkerSummary,
   workerSummaryLoading,
+  organizationGuidance,
+  organizationGuidanceLoading,
   leverSearch,
   leverCategoryFilter,
   leverSortMode,
@@ -245,6 +254,11 @@ export function OrganizationInsightsTab({
           </div>
         </div>
       </div>
+
+      <OrganizationWorkerGuidanceCard
+        guidance={organizationGuidance}
+        loading={organizationGuidanceLoading}
+      />
 
       <div className="grid grid-2" style={{ alignItems: "start" }}>
         <div className="card stack" style={{ gap: 14 }}>

@@ -17,6 +17,7 @@ import {
   getAdminOrganizationDetail,
   getAdminOrganizationWorkerSummary,
   getAdminOrganizations,
+  getAdminWorkerOrganizationGuidance,
   getAdminWorkerEngagements,
   getAdminWorkerPurposeCanvases,
   getAdminWorkerSignificanceCanvases,
@@ -78,6 +79,7 @@ import type {
   AdminOrganizationType,
   AdminOrganizationUpdate,
   AdminOrganizationWorkerSummary,
+  OrganizationWorkerGuidanceResponse,
   AdminWorker,
   AdminWorkerEngagement,
   AdminWorkerEngagementCreate,
@@ -1158,6 +1160,11 @@ function AdminOrganizationsContent() {
   const [selectedWorkerSummary, setSelectedWorkerSummary] =
     useState<AdminOrganizationWorkerSummary | null>(null);
   
+
+  const [organizationGuidance, setOrganizationGuidance] =
+    useState<OrganizationWorkerGuidanceResponse | null>(null);
+  const [organizationGuidanceLoading, setOrganizationGuidanceLoading] = useState(false);
+
   const [selectedWorkerConversations, setSelectedWorkerConversations] =
     useState<AdminOrganizationWorkerConversations | null>(null);
 
@@ -1337,6 +1344,20 @@ const [calendlyEventTypesError, setCalendlyEventTypesError] = useState<string | 
     selectedWorkerSummary?.worker.display_name ||
     (selectedWorkerId ? `Worker #${selectedWorkerId}` : "Worker non renseigné");
 
+  async function loadOrganizationGuidance(workerId: number) {
+    setOrganizationGuidance(null);
+    setOrganizationGuidanceLoading(true);
+
+    try {
+      const guidance = await getAdminWorkerOrganizationGuidance(workerId);
+      setOrganizationGuidance(guidance);
+    } catch {
+      setOrganizationGuidance(null);
+    } finally {
+      setOrganizationGuidanceLoading(false);
+    }
+  }
+
   useEffect(() => {
     async function load() {
       try {
@@ -1402,6 +1423,8 @@ const [calendlyEventTypesError, setCalendlyEventTypesError] = useState<string | 
           setSelectedWorkerId(firstWorkerId);
 
           if (firstWorkerId) {
+            void loadOrganizationGuidance(firstWorkerId);
+
             const summary = await getAdminOrganizationWorkerSummary(
               firstOrganizationId,
               firstWorkerId,
@@ -1413,6 +1436,8 @@ const [calendlyEventTypesError, setCalendlyEventTypesError] = useState<string | 
             resetSignificanceCanvas(firstWorkerId);
           } else {
             setSelectedWorkerSummary(null);
+            setOrganizationGuidance(null);
+            setOrganizationGuidanceLoading(false);
             resetEngagementCanvas(null, "current");
             resetPurposeCanvas(null);
             resetTimeCanvas(null);
@@ -1424,6 +1449,8 @@ const [calendlyEventTypesError, setCalendlyEventTypesError] = useState<string | 
           setEditingOrganizationId(null);
           setSelectedWorkerId(null);
           setSelectedWorkerSummary(null);
+          setOrganizationGuidance(null);
+          setOrganizationGuidanceLoading(false);
           setForm(EMPTY_FORM);
           resetEngagementCanvas(null, "current");
           resetPurposeCanvas(null);
@@ -1634,6 +1661,8 @@ const [calendlyEventTypesError, setCalendlyEventTypesError] = useState<string | 
     setSelectedWorkerIdToAssign("");
     setSelectedWorkerId(null);
     setSelectedWorkerSummary(null);
+    setOrganizationGuidance(null);
+    setOrganizationGuidanceLoading(false);
     setLeverSearch("");
     setLeverCategoryFilter("all");
     setLeverSortMode("highlighted");
@@ -1663,6 +1692,8 @@ const [calendlyEventTypesError, setCalendlyEventTypesError] = useState<string | 
       setSelectedWorkerId(firstWorkerId);
 
       if (firstWorkerId) {
+        void loadOrganizationGuidance(firstWorkerId);
+
         setWorkerSummaryLoading(true);
         try {
           const summary = await getAdminOrganizationWorkerSummary(organizationId, firstWorkerId);
@@ -1684,6 +1715,8 @@ const [calendlyEventTypesError, setCalendlyEventTypesError] = useState<string | 
 
   async function openWorker(workerId: number) {
     if (!selectedOrganizationId) return;
+
+    void loadOrganizationGuidance(workerId);
 
     setSelectedWorkerId(workerId);
     setActiveWorkspaceTab("insights");
@@ -1717,6 +1750,8 @@ function handleNewOrganization() {
   setAssignedWorkers([]);
   setSelectedWorkerId(null);
   setSelectedWorkerSummary(null);
+    setOrganizationGuidance(null);
+    setOrganizationGuidanceLoading(false);
   setSelectedWorkerIdToAssign("");
   setAccessAccountResult(null);
   setForm(EMPTY_FORM);
@@ -1833,6 +1868,7 @@ function handleNewOrganization() {
 
       setSelectedWorkerIdToAssign("");
       setSelectedWorkerId(assignedWorkerId);
+      void loadOrganizationGuidance(assignedWorkerId);
       setActiveCanvasTab("engagement");
       setActiveWorkspaceTab("insights");
 
@@ -1880,6 +1916,8 @@ function handleNewOrganization() {
         resetWorkerConversations();
 
         if (fallbackWorkerId) {
+          void loadOrganizationGuidance(fallbackWorkerId);
+
           const summary = await getAdminOrganizationWorkerSummary(
             selectedOrganizationId,
             fallbackWorkerId,
@@ -1887,6 +1925,8 @@ function handleNewOrganization() {
           setSelectedWorkerSummary(summary);
         } else {
           setSelectedWorkerSummary(null);
+          setOrganizationGuidance(null);
+          setOrganizationGuidanceLoading(false);
         }
       }
     } catch (err) {
@@ -3241,6 +3281,8 @@ const relatedLeversByRecommendationId = useMemo(() => {
               <OrganizationInsightsTab
                 selectedWorkerSummary={selectedWorkerSummary}
                 workerSummaryLoading={workerSummaryLoading}
+                organizationGuidance={organizationGuidance}
+                organizationGuidanceLoading={organizationGuidanceLoading}
                 leverSearch={leverSearch}
                 leverCategoryFilter={leverCategoryFilter}
                 leverSortMode={leverSortMode}

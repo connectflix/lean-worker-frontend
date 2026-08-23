@@ -27,6 +27,17 @@ import type {
   SessionCreateResponse,
   SessionDetail,
   SessionHistoryItem,
+  TrajectorySignalResponse,
+  ExecutionFollowUpResponse,
+  ExecutionResultRecord,
+  ExecutionResultResponse,
+  TrajectoryUpdateResponse,
+  ProgressExperienceRecord,
+  ProgressRealizationResponse,
+  ProfessionalDecisionBundleResponse,
+  TalentTrajectoryIntelligenceResponse,
+  CareerTrajectoryIntelligenceResponse,
+  LongTermCareerTrajectoryRead,
   VoiceTranscriptionResponse,
   VoiceTurnResponse,
   AdminDashboardSummary,
@@ -80,6 +91,7 @@ import type {
   AdminOrganizationWorkerConversations,
   AdminOrganizationWorkerConversationDeleteResponse,
   AdminOrganizationAccessAccount,
+  OrganizationWorkerGuidanceResponse,
   AdminOrganizationAccessAccountCreate,
   AdminSubscriptionPlan,
   AdminWorkerSubscriptionSummary,
@@ -490,6 +502,126 @@ export async function closeSession(sessionId: number): Promise<SessionCloseRespo
 
 export async function getSessions(): Promise<SessionHistoryItem[]> {
   return apiFetch<SessionHistoryItem[]>("/sessions");
+}
+
+export async function getMyTrajectorySignal(): Promise<TrajectorySignalResponse> {
+  return apiFetch<TrajectorySignalResponse>(
+    "/professional-context/me/trajectory-signal",
+  );
+}
+
+export async function getSessionProfessionalDecision(
+  sessionId: number,
+): Promise<ProfessionalDecisionBundleResponse> {
+  return apiFetch<ProfessionalDecisionBundleResponse>(
+    `/professional-decision/sessions/${sessionId}`,
+  );
+}
+
+export async function getActionExecutionFollowUp(
+  decisiveActionId: number,
+): Promise<ExecutionFollowUpResponse> {
+  return apiFetch<ExecutionFollowUpResponse>(
+    `/professional-outcome/actions/${decisiveActionId}/execution-follow-up`,
+  );
+}
+
+export async function getTalentTrajectoryIntelligence(): Promise<TalentTrajectoryIntelligenceResponse> {
+  return apiFetch<TalentTrajectoryIntelligenceResponse>(
+    "/professional-outcome/talent-trajectory-intelligence",
+  );
+}
+
+export async function recordActionExecutionResult(
+  decisiveActionId: number,
+  record: ExecutionResultRecord,
+  attemptNumber = 1,
+  leverDecisionId?: number | null,
+  commercialOfferResolutionId?: number | null,
+): Promise<ExecutionResultResponse> {
+  const params = new URLSearchParams({
+    attempt_number: String(attemptNumber),
+  });
+
+  if (leverDecisionId != null) {
+    params.set("lever_decision_id", String(leverDecisionId));
+  }
+
+  if (commercialOfferResolutionId != null) {
+    params.set(
+      "commercial_offer_resolution_id",
+      String(commercialOfferResolutionId),
+    );
+  }
+
+  return apiFetch<ExecutionResultResponse>(
+    `/professional-outcome/actions/${decisiveActionId}/execution-results?${params.toString()}`,
+    {
+      method: "POST",
+      body: JSON.stringify(record),
+    },
+  );
+}
+
+
+export async function finalizeExecutionResult(
+  executionResultId: number,
+  record: ExecutionResultRecord,
+): Promise<ExecutionResultResponse> {
+  return apiFetch<ExecutionResultResponse>(
+    `/professional-outcome/execution-results/${executionResultId}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(record),
+    },
+  );
+}
+
+
+export async function reconcilePendingTrajectory(): Promise<
+  TrajectoryUpdateResponse | null
+> {
+  return apiFetch<TrajectoryUpdateResponse | null>(
+    "/professional-outcome/trajectory/reconcile-pending",
+    {
+      method: "POST",
+    },
+  );
+}
+
+
+export async function createProgressRealization(
+  trajectoryUpdateId: number,
+): Promise<ProgressRealizationResponse> {
+  return apiFetch<ProgressRealizationResponse>(
+    `/professional-outcome/trajectory/${trajectoryUpdateId}/progress-realization`,
+    {
+      method: "POST",
+    },
+  );
+}
+
+
+export async function getProgressRealization(
+  trajectoryUpdateId: number,
+): Promise<ProgressRealizationResponse> {
+  return apiFetch<ProgressRealizationResponse>(
+    `/professional-outcome/trajectory/${trajectoryUpdateId}/progress-realization`,
+  );
+}
+
+
+export async function recordProgressExperience(
+  trajectoryUpdateId: number,
+  record: ProgressExperienceRecord,
+): Promise<ProgressRealizationResponse> {
+  return apiFetch<ProgressRealizationResponse>(
+    `/professional-outcome/trajectory/${trajectoryUpdateId}/progress-realization/experience`,
+    {
+      method: "PUT",
+      body: JSON.stringify(record),
+    },
+  );
 }
 
 export async function getCurrentOpenSession(): Promise<OpenSessionResponse | null> {
@@ -1569,6 +1701,18 @@ export async function getCareerTrajectory(): Promise<CareerTrajectoryResponse> {
   return apiFetch<CareerTrajectoryResponse>("/dashboard/career-trajectory");
 }
 
+export async function getCareerTrajectoryIntelligence(): Promise<CareerTrajectoryIntelligenceResponse> {
+  return apiFetch<CareerTrajectoryIntelligenceResponse>(
+    "/dashboard/career-trajectory-intelligence",
+  );
+}
+
+export async function getLongTermCareerTrajectory(): Promise<LongTermCareerTrajectoryRead> {
+  return apiFetch<LongTermCareerTrajectoryRead>(
+    "/dashboard/long-term-career-trajectory",
+  );
+}
+
 /* ---------------- ADMIN ORGANIZATIONS ---------------- */
 
 export async function getAdminOrganizations(): Promise<AdminOrganization[]> {
@@ -1645,6 +1789,15 @@ export async function getAdminOrganizationWorkerSummary(
     `/admin/organizations/${organizationId}/workers/${workerId}/summary`,
   );
 }
+
+export async function getAdminWorkerOrganizationGuidance(
+  workerId: number,
+): Promise<OrganizationWorkerGuidanceResponse> {
+  return adminApiFetch<OrganizationWorkerGuidanceResponse>(
+    `/admin/workers/${workerId}/organization-guidance`,
+  );
+}
+
 
 export async function getAdminOrganizationWorkerConversations(
   organizationId: number,
@@ -1859,4 +2012,3 @@ export async function reactivateAdminWorkerSubscription(
     },
   );
 }
-

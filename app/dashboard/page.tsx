@@ -6,6 +6,15 @@ import { useRouter } from "next/navigation";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
 import { BestNextActionCard } from "@/components/best-next-action-card";
+import { DecisiveActionCard } from "@/components/decisive-action-card";
+import { DeterminingLeverCard } from "@/components/determining-lever-card";
+import { ExecutionFeedbackForm } from "@/components/execution-feedback-form";
+import { ExecutionFollowUpCard } from "@/components/execution-follow-up-card";
+import { ProgressExperienceForm } from "@/components/progress-experience-form";
+import { CareerTrajectoryIntelligenceCard } from "@/components/career-trajectory-intelligence-card";
+import { LongTermCareerTrajectoryCard } from "@/components/long-term-career-trajectory-card";
+import { TalentTrajectoryIntelligenceCard } from "@/components/talent-trajectory-intelligence-card";
+import { TrajectorySignalCard } from "@/components/trajectory-signal-card";
 import { useCurrentUser } from "@/components/user-context";
 import {
   BadgePill,
@@ -20,24 +29,49 @@ import {
 } from "@/components/ui-flat-icons";
 import {
   confirmCurrentProfileContext,
+  createProgressRealization,
   createSession,
+  finalizeExecutionResult,
   forceCloseSession,
+  getActionExecutionFollowUp,
   getCareerBlueprint,
   getCareerGap,
   getCareerTrajectory,
+  getCareerTrajectoryIntelligence,
+  getLongTermCareerTrajectory,
   getCurrentOpenSession,
   getDashboardSummary,
   getDashboardTimeline,
+  getMyTrajectorySignal,
+  getProgressRealization,
   getRecommendations,
+  reconcilePendingTrajectory,
+  getSessionProfessionalDecision,
+  getTalentTrajectoryIntelligence,
+  recordActionExecutionResult,
+  recordProgressExperience,
 } from "@/lib/api";
 import { getUiCopy } from "@/lib/ui-copy";
 import { useUiLanguage } from "@/lib/use-ui-language";
 import type {
   CareerBlueprintResponse,
+  CareerTrajectoryIntelligenceResponse,
+  LongTermCareerTrajectoryRead,
   DashboardSummary,
   DashboardTimelineItem,
+  DecisiveActionResponse,
+  ExecutionFollowUpResponse,
+  ExecutionResultRecord,
+  ExecutionResultResponse,
+  LeverDecisionResponse,
+  LeverLearningExperience,
   OpenSessionResponse,
+  ProgressExperienceRecord,
+  ProgressRealizationResponse,
+  ProfessionalDecisionAdaptationExplanation,
   Recommendation,
+  TalentTrajectoryIntelligenceResponse,
+  TrajectorySignalResponse,
 } from "@/lib/types";
 
 type ApiErrorLike = {
@@ -75,6 +109,51 @@ type CareerTrajectory = {
 
 function prettify(value: string): string {
   return value.replaceAll("_", " ");
+}
+
+function localizeProblemLabel(
+  value: string,
+  uiLanguage: "fr" | "en",
+): string {
+  const normalized = value.trim().toLowerCase().replaceAll("_", " ");
+
+  if (uiLanguage !== "fr") {
+    return prettify(value);
+  }
+
+  const frenchLabels: Record<string, string> = {
+    "market visibility gap": "manque de visibilité sur le marché",
+    "career confusion": "confusion de trajectoire",
+    "confidence gap": "manque de confiance",
+    "direction gap": "manque de clarté sur la direction",
+    "execution gap": "écart d’exécution",
+    "capability gap": "écart de compétences",
+    "role gap": "écart de rôle",
+    "prioritization gap": "problème de priorisation",
+  };
+
+  return frenchLabels[normalized] ?? prettify(value);
+}
+
+function localizeSignalLevel(
+  value: string | null | undefined,
+  uiLanguage: "fr" | "en",
+): string {
+  if (!value) return "—";
+
+  if (uiLanguage !== "fr") {
+    return prettify(value);
+  }
+
+  const normalized = value.trim().toLowerCase();
+
+  const frenchLevels: Record<string, string> = {
+    low: "Faible",
+    medium: "Moyenne",
+    high: "Élevée",
+  };
+
+  return frenchLevels[normalized] ?? prettify(value);
 }
 
 function looksLikeTranslationKey(value: string | null | undefined): boolean {
@@ -121,7 +200,11 @@ function buildLocalizedTrajectorySummary(
   if (
     rawSummary &&
     !looksLikeTranslationKey(rawSummary) &&
-    !looksLikeTranslationKey(strategicBridge)
+    !looksLikeTranslationKey(strategicBridge) &&
+    !(
+      uiLanguage === "fr" &&
+      rawSummary.toLowerCase() === "career trajectory summary"
+    )
   ) {
     return rawSummary;
   }
@@ -134,6 +217,13 @@ function buildLocalizedTrajectorySummary(
       : strategicBridge;
 
   if (!currentPosition && !targetPosition && !safeBridge) {
+    if (
+      uiLanguage === "fr" &&
+      rawSummary.toLowerCase() === "career trajectory summary"
+    ) {
+      return "La trajectoire de carrière est en cours d’analyse.";
+    }
+
     return rawSummary || null;
   }
 
@@ -172,6 +262,36 @@ function buildLocalizedTrajectorySummary(
   }
 
   return rawSummary || null;
+}
+
+const TERMINAL_EXECUTION_STATUSES = new Set([
+  "completed",
+  "blocked",
+  "abandoned",
+]);
+
+function getLatestOpenExecutionAttempt(
+  followUp: ExecutionFollowUpResponse | null,
+): ExecutionResultResponse | null {
+  const executions = followUp?.execution_results ?? [];
+
+  if (executions.length === 0) {
+    return null;
+  }
+
+  const latest = [...executions].sort((left, right) => {
+    if (right.attempt_number !== left.attempt_number) {
+      return right.attempt_number - left.attempt_number;
+    }
+
+    return right.id - left.id;
+  })[0];
+
+  if (!latest || TERMINAL_EXECUTION_STATUSES.has(latest.execution_status)) {
+    return null;
+  }
+
+  return latest;
 }
 
 function CoachMetricCard({
@@ -219,7 +339,7 @@ function CoachMetricCard({
         gap: 10,
         background: "rgba(255,255,255,0.68)",
         border: "1px solid rgba(43,33,24,0.08)",
-        borderRadius: 20,
+        borderRadius: 24,
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.72)",
       }}
     >
@@ -287,8 +407,8 @@ function CoachSectionCard({
     <div
       className="card stack"
       style={{
-        gap: 14,
-        borderRadius: 24,
+        gap: 16,
+        borderRadius: 28,
         border: "1px solid rgba(43,33,24,0.08)",
         background: warm
           ? "linear-gradient(135deg, rgba(255,241,220,0.92), rgba(255,255,255,0.90))"
@@ -312,7 +432,7 @@ export default function DashboardPage() {
 function DashboardContent() {
   const router = useRouter();
   const { user } = useCurrentUser();
-  const { uiLanguage, loadingLanguage } = useUiLanguage("fr");
+  const { uiLanguage, loadingLanguage } = useUiLanguage("en");
   const copy = getUiCopy(uiLanguage);
 
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
@@ -323,12 +443,181 @@ function DashboardContent() {
   const [careerGap, setCareerGap] = useState<CareerGap | null>(null);
   const [trajectory, setTrajectory] = useState<CareerTrajectory | null>(null);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [trajectorySignal, setTrajectorySignal] =
+    useState<TrajectorySignalResponse>({});
+  const [careerTrajectoryIntelligence, setCareerTrajectoryIntelligence] =
+    useState<CareerTrajectoryIntelligenceResponse | null>(null);
+  const [longTermCareerTrajectory, setLongTermCareerTrajectory] =
+    useState<LongTermCareerTrajectoryRead | null>(null);
+  const [talentTrajectoryIntelligence, setTalentTrajectoryIntelligence] =
+    useState<TalentTrajectoryIntelligenceResponse | null>(null);
+  const [progressRealization, setProgressRealization] =
+    useState<ProgressRealizationResponse | null>(null);
+  const [progressRealizationTrajectoryUpdateId, setProgressRealizationTrajectoryUpdateId] =
+    useState<number | null>(null);
+  const [decisiveAction, setDecisiveAction] =
+    useState<DecisiveActionResponse | null>(null);
+  const [decisionAdaptationExplanation, setDecisionAdaptationExplanation] =
+    useState<ProfessionalDecisionAdaptationExplanation | null>(null);
+  const [determiningLeverDecision, setDeterminingLeverDecision] =
+    useState<LeverDecisionResponse | null>(null);
+  const [leverLearningExperience, setLeverLearningExperience] =
+    useState<LeverLearningExperience | null>(null);
+  const [executionFollowUp, setExecutionFollowUp] =
+    useState<ExecutionFollowUpResponse | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [forceClosing, setForceClosing] = useState(false);
   const [confirmingProfile, setConfirmingProfile] = useState(false);
+
+  const openExecutionAttempt = useMemo(
+    () => getLatestOpenExecutionAttempt(executionFollowUp),
+    [executionFollowUp],
+  );
+
+  async function submitExecutionFeedback(
+    record: ExecutionResultRecord,
+    targetExecution: ExecutionResultResponse | null,
+  ): Promise<void> {
+    if (!decisiveAction) {
+      throw new Error("No DecisiveAction is available for execution feedback.");
+    }
+
+    let persistedExecutionResult: ExecutionResultResponse;
+
+    if (targetExecution) {
+      persistedExecutionResult = await finalizeExecutionResult(
+        targetExecution.id,
+        record,
+      );
+    } else {
+      const nextAttemptNumber =
+        Math.max(
+          0,
+          ...(executionFollowUp?.execution_results ?? []).map(
+            (result) => result.attempt_number,
+          ),
+        ) + 1;
+
+      persistedExecutionResult = await recordActionExecutionResult(
+        decisiveAction.id,
+        record,
+        nextAttemptNumber,
+        determiningLeverDecision?.id ?? null,
+      );
+    }
+
+    const refreshedFollowUp = await getActionExecutionFollowUp(
+      decisiveAction.id,
+    );
+
+    setExecutionFollowUp(refreshedFollowUp);
+
+    if (
+      record.execution_status === "completed" ||
+      record.execution_status === "blocked" ||
+      record.execution_status === "abandoned"
+    ) {
+      let refreshedTrajectorySignal: TrajectorySignalResponse = {};
+      let trajectoryUpdateId: number | null = null;
+
+      try {
+        // Read the canonical projection once after the terminal execution.
+        // When lineage is present and already points to the execution just
+        // persisted, automatic server-side trajectory synthesis succeeded and
+        // no recovery mutation is necessary.
+        refreshedTrajectorySignal = await getMyTrajectorySignal();
+        setTrajectorySignal(refreshedTrajectorySignal);
+
+        if (
+          refreshedTrajectorySignal.source_execution_result_id ===
+          persistedExecutionResult.id
+        ) {
+          trajectoryUpdateId =
+            refreshedTrajectorySignal.trajectory_update_id ?? null;
+        }
+      } catch {
+        // The read projection is supplemental. Keep the persisted execution
+        // follow-up visible even if trajectory is temporarily unavailable.
+      }
+
+      if (trajectoryUpdateId == null) {
+        try {
+          // Recovery remains idempotent, but never trust its returned id unless
+          // it belongs to the execution that was just persisted. This prevents
+          // an older pending execution from being mistaken for the Worker's
+          // current Progress Realization source.
+          const reconciledTrajectory = await reconcilePendingTrajectory();
+
+          if (
+            reconciledTrajectory?.execution_result_id ===
+            persistedExecutionResult.id
+          ) {
+            trajectoryUpdateId = reconciledTrajectory.id;
+
+            try {
+              // Re-read the canonical projection only after successful recovery
+              // so the worker-facing trajectory card is immediately aligned
+              // with the newly persisted TrajectoryUpdate.
+              refreshedTrajectorySignal = await getMyTrajectorySignal();
+              setTrajectorySignal(refreshedTrajectorySignal);
+            } catch {
+              // The recovered TrajectoryUpdate remains authoritative even when
+              // its read projection is temporarily unavailable.
+            }
+          } else if (
+            reconciledTrajectory == null &&
+            refreshedTrajectorySignal.source_execution_result_id == null
+          ) {
+            // Backward-compatible projection contract: older/non-lineage mocks
+            // and deployments may omit source_execution_result_id. When there
+            // is no pending terminal execution to reconcile, the latest
+            // trajectory id is the only persisted candidate and can be reused.
+            trajectoryUpdateId =
+              refreshedTrajectorySignal.trajectory_update_id ?? null;
+          }
+        } catch {
+          // Reconciliation is supplemental. Execution feedback remains
+          // authoritative and must never be rolled back client-side.
+        }
+      }
+
+      if (trajectoryUpdateId != null) {
+        try {
+          const realizedProgress = await createProgressRealization(
+            trajectoryUpdateId,
+          );
+          setProgressRealization(realizedProgress);
+          setProgressRealizationTrajectoryUpdateId(trajectoryUpdateId);
+        } catch {
+          // Progress Realization is downstream from persisted trajectory truth.
+          // Its temporary unavailability must never hide execution feedback or
+          // the longitudinal trajectory signal already available to the Worker.
+        }
+      }
+    }
+  }
+
+  async function submitProgressExperience(
+    record: ProgressExperienceRecord,
+  ): Promise<void> {
+    if (progressRealizationTrajectoryUpdateId == null) {
+      throw new Error(
+        uiLanguage === "fr"
+          ? "Impossible d’identifier la trajectoire associée à ce ressenti."
+          : "Unable to identify the trajectory associated with this reflection.",
+      );
+    }
+
+    const updatedRealization = await recordProgressExperience(
+      progressRealizationTrajectoryUpdateId,
+      record,
+    );
+
+    setProgressRealization(updatedRealization);
+  }
 
   async function loadDashboard() {
     try {
@@ -341,6 +630,10 @@ function DashboardContent() {
         careerBlueprintData,
         careerGapData,
         trajectoryData,
+        trajectorySignalData,
+        careerTrajectoryIntelligenceData,
+        longTermCareerTrajectoryData,
+        talentTrajectoryIntelligenceData,
         recommendationsData,
       ] = await Promise.all([
         getDashboardSummary(),
@@ -349,8 +642,111 @@ function DashboardContent() {
         getCareerBlueprint(),
         getCareerGap(),
         getCareerTrajectory(),
+        getMyTrajectorySignal().catch(
+          () => ({} as TrajectorySignalResponse),
+        ),
+        getCareerTrajectoryIntelligence().catch(() => null),
+        getLongTermCareerTrajectory().catch(() => null),
+        getTalentTrajectoryIntelligence().catch(() => null),
         getRecommendations(),
       ]);
+
+      const latestDecisionSession =
+        dashboardData.recent_sessions.find(
+          (session) =>
+            Boolean(session.ended_at) ||
+            session.status === "closed" ||
+            session.status === "completed",
+        ) ?? null;
+
+      let latestDecisiveAction: DecisiveActionResponse | null = null;
+      let latestDecisionAdaptationExplanation:
+        | ProfessionalDecisionAdaptationExplanation
+        | null = null;
+      let latestDeterminingLeverDecision: LeverDecisionResponse | null = null;
+      let latestLeverLearningExperience: LeverLearningExperience | null = null;
+      let latestExecutionFollowUp: ExecutionFollowUpResponse | null = null;
+      let latestProgressRealization: ProgressRealizationResponse | null = null;
+
+      if (latestDecisionSession) {
+        try {
+          const decisionBundle = await getSessionProfessionalDecision(
+            latestDecisionSession.session_id,
+          );
+
+          latestDecisionAdaptationExplanation =
+            decisionBundle.adaptation_explanation ?? null;
+
+          latestDecisiveAction =
+            [...decisionBundle.decisive_actions]
+              .sort((left, right) => {
+                if (right.sequence !== left.sequence) {
+                  return right.sequence - left.sequence;
+                }
+                return right.id - left.id;
+              })[0] ?? null;
+
+          if (latestDecisiveAction) {
+            latestDeterminingLeverDecision =
+              [...decisionBundle.lever_decisions]
+                .filter(
+                  (decision) =>
+                    decision.decisive_action_id === latestDecisiveAction?.id &&
+                    decision.lever_needed === true &&
+                    decision.selected_lever_id != null,
+                )
+                .sort((left, right) => right.id - left.id)[0] ?? null;
+
+            const bundleLeverLearningExperience =
+              decisionBundle.lever_learning_experience ?? null;
+
+            if (
+              latestDeterminingLeverDecision?.selected_lever_id != null &&
+              bundleLeverLearningExperience?.learning_signal.lever_id ===
+                latestDeterminingLeverDecision.selected_lever_id
+            ) {
+              latestLeverLearningExperience =
+                bundleLeverLearningExperience;
+            }
+          }
+        } catch {
+          // Wave 2 explanation is supplemental to the dashboard. A missing or
+          // temporarily unavailable decision read must never block the worker.
+          latestDecisiveAction = null;
+          latestDecisionAdaptationExplanation = null;
+          latestDeterminingLeverDecision = null;
+          latestLeverLearningExperience = null;
+        }
+
+        if (latestDecisiveAction) {
+          try {
+            latestExecutionFollowUp = await getActionExecutionFollowUp(
+              latestDecisiveAction.id,
+            );
+          } catch {
+            // Execution follow-up is a separate, read-only worker surface.
+            // Its temporary unavailability must not hide the DecisiveAction,
+            // the determining Lever, or the rest of the dashboard.
+            latestExecutionFollowUp = null;
+          }
+        }
+      }
+
+      const latestTrajectoryUpdateId =
+        trajectorySignalData.trajectory_update_id ?? null;
+
+      if (latestTrajectoryUpdateId != null) {
+        try {
+          latestProgressRealization = await getProgressRealization(
+            latestTrajectoryUpdateId,
+          );
+        } catch {
+          // Persisted Progress Realization is supplemental to the dashboard.
+          // A missing realization (404) or temporary read failure must never
+          // trigger creation/LLM work or block the rest of the worker surface.
+          latestProgressRealization = null;
+        }
+      }
 
       setSummary(dashboardData);
       setTimeline(timelineData);
@@ -358,16 +754,21 @@ function DashboardContent() {
       setCareerBlueprint(careerBlueprintData);
       setCareerGap(careerGapData);
       setTrajectory(trajectoryData as CareerTrajectory);
+      setTrajectorySignal(trajectorySignalData);
+      setCareerTrajectoryIntelligence(careerTrajectoryIntelligenceData);
+      setLongTermCareerTrajectory(longTermCareerTrajectoryData);
+      setTalentTrajectoryIntelligence(talentTrajectoryIntelligenceData);
+      setProgressRealization(latestProgressRealization);
+      setProgressRealizationTrajectoryUpdateId(latestTrajectoryUpdateId);
+      setDecisiveAction(latestDecisiveAction);
+      setDecisionAdaptationExplanation(latestDecisionAdaptationExplanation);
+      setDeterminingLeverDecision(latestDeterminingLeverDecision);
+      setLeverLearningExperience(latestLeverLearningExperience);
+      setExecutionFollowUp(latestExecutionFollowUp);
       setRecommendations(recommendationsData);
     } catch (err: unknown) {
       const apiError = err as ApiErrorLike;
-      setError(
-      apiError.detail ||
-        apiError.message ||
-        (uiLanguage === "fr"
-          ? "Impossible de charger le tableau de bord."
-          : "Failed to load dashboard."),
-    );
+      setError(apiError.detail || apiError.message || "Failed to load dashboard.");
     } finally {
       setLoading(false);
     }
@@ -391,13 +792,7 @@ function DashboardContent() {
       router.push(`/session?sessionId=${session.session_id}`);
     } catch (err: unknown) {
       const apiError = err as ApiErrorLike;
-      setError(
-      apiError.detail ||
-        apiError.message ||
-        (uiLanguage === "fr"
-          ? "Impossible de démarrer une session."
-          : "Failed to create session."),
-    );
+      setError(apiError.detail || apiError.message || "Failed to create session.");
       setStarting(false);
     }
   }
@@ -413,13 +808,7 @@ function DashboardContent() {
       await loadDashboard();
     } catch (err: unknown) {
       const apiError = err as ApiErrorLike;
-      setError(
-      apiError.detail ||
-        apiError.message ||
-        (uiLanguage === "fr"
-          ? "Impossible de clôturer la session active."
-          : "Failed to close active session."),
-    );
+      setError(apiError.detail || apiError.message || "Failed to close active session.");
     } finally {
       setForceClosing(false);
     }
@@ -434,13 +823,7 @@ function DashboardContent() {
       await loadDashboard();
     } catch (err: unknown) {
       const apiError = err as ApiErrorLike;
-      setError(
-      apiError.detail ||
-        apiError.message ||
-        (uiLanguage === "fr"
-          ? "Impossible de confirmer le profil."
-          : "Failed to confirm profile."),
-    );
+      setError(apiError.detail || apiError.message || "Failed to confirm profile.");
     } finally {
       setConfirmingProfile(false);
     }
@@ -464,6 +847,8 @@ function DashboardContent() {
     !!bestRecommendation ||
     !!careerGap ||
     !!trajectory ||
+    Object.keys(trajectorySignal).length > 0 ||
+    !!progressRealization ||
     timeline.length > 0;
 
   const firstName = user?.given_name || user?.display_name || null;
@@ -475,13 +860,10 @@ function DashboardContent() {
     return (
       <main
         className="page"
-        lang={uiLanguage}
-        translate="no"
-        suppressHydrationWarning
         style={{
           minHeight: "100vh",
           background: "var(--coach-bg)",
-          padding: "clamp(16px, 3vw, 24px)",
+          padding: 24,
         }}
       >
         <div className="page-wrap">
@@ -501,7 +883,7 @@ function DashboardContent() {
       <div
         className="stack"
         style={{
-          gap: 16,
+          gap: 18,
         }}
       >
         {loading ? (
@@ -525,8 +907,8 @@ function DashboardContent() {
                 <div className="section-title">{copy.dashboard.loading}</div>
                 <div className="muted" style={{ color: "var(--coach-muted)" }}>
                   {uiLanguage === "fr"
-                    ? "Nous préparons ton espace, tes sessions et tes prochaines actions."
-                    : "We are preparing your workspace, sessions, and next actions."}
+                    ? "Nous préparons ton espace, tes sessions et tes signaux de progression."
+                    : "We are preparing your workspace, sessions, and progress signals."}
                 </div>
               </div>
             </div>
@@ -563,14 +945,14 @@ function DashboardContent() {
               }}
             >
               {uiLanguage === "fr"
-                ? "Ton espace est prêt"
-                : "Your workspace is ready"}
+                ? "Ton espace est prêt, mais encore vide"
+                : "Your workspace is ready, but still empty"}
             </div>
 
             <div className="muted" style={{ color: "var(--coach-muted)", maxWidth: 720 }}>
               {uiLanguage === "fr"
-                ? "Démarre une première session pour obtenir tes premières recommandations et définir tes prochaines priorités."
-                : "Start your first session to get your first recommendations and define your next priorities."}
+                ? "Démarre une première session pour faire émerger tes premiers insights, recommandations et signaux de trajectoire."
+                : "Start your first session to surface your first insights, recommendations, and trajectory signals."}
             </div>
 
             <div className="row" style={{ flexWrap: "wrap" }}>
@@ -595,14 +977,14 @@ function DashboardContent() {
               <CoachSectionCard>
                 <div className="section-title">
                   {uiLanguage === "fr"
-                    ? "Ton profil semble avoir évolué"
-                    : "Your profile may have changed"}
+                    ? "Ton contexte professionnel a peut-être évolué"
+                    : "Your professional context may have changed"}
                 </div>
 
                 <div className="muted" style={{ color: "var(--coach-muted)" }}>
                   {uiLanguage === "fr"
-                    ? "Un changement de rôle, de secteur ou d’objectif a peut-être été détecté. Vérifie ton profil pour garder un accompagnement pertinent."
-                    : "A change in your role, industry, or goals may have been detected. Review your profile to keep your coaching relevant."}
+                    ? "Le coach a détecté un possible changement de rôle, d’industrie ou d’objectif. Mets à jour ton profil pour garder un coaching pertinent."
+                    : "The coach detected a possible change in your role, industry, or goals. Update your profile to keep your coaching relevant."}
                 </div>
 
                 <div className="row" style={{ flexWrap: "wrap", gap: 10 }}>
@@ -637,8 +1019,8 @@ function DashboardContent() {
 
                 <div className="muted" style={{ color: "var(--coach-muted)" }}>
                   {uiLanguage === "fr"
-                    ? "Définis ton point de départ, tes ambitions et ta direction pour personnaliser davantage ton coaching."
-                    : "Define your starting point, ambitions, and direction to personalize your coaching."}
+                    ? "Clarifie ton identité, ta vision, tes horizons de carrière et ton point de départ pour rendre ton coaching beaucoup plus précis."
+                    : "Clarify your identity, vision, career horizons, and starting point to make your coaching much more precise."}
                 </div>
 
                 <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
@@ -647,7 +1029,7 @@ function DashboardContent() {
                   </button>
 
                   <button className="button ghost" onClick={() => router.push("/career-blueprint")}>
-                    {uiLanguage === "fr" ? "Ouvrir le blueprint" : "Open blueprint"}
+                    {uiLanguage === "fr" ? "En savoir plus" : "Learn more"}
                   </button>
                 </div>
               </CoachSectionCard>
@@ -659,7 +1041,7 @@ function DashboardContent() {
                 gap: 18,
                 position: "relative",
                 overflow: "hidden",
-                borderRadius: 28,
+                borderRadius: 32,
                 border: "1px solid rgba(43,33,24,0.08)",
                 background:
                   "linear-gradient(135deg, rgba(255,241,220,0.96), rgba(255,255,255,0.92) 52%, rgba(232,248,246,0.88))",
@@ -709,7 +1091,7 @@ function DashboardContent() {
                       fontWeight: 850,
                     }}
                   >
-                    {uiLanguage === "fr" ? "Espace personnel" : "Personal workspace"}
+                    {uiLanguage === "fr" ? "Espace actif" : "Active workspace"}
                   </span>
 
                   <span
@@ -728,7 +1110,7 @@ function DashboardContent() {
                 <div
                   style={{
                     maxWidth: 900,
-                    fontSize: "clamp(34px, 5vw, 44px)",
+                    fontSize: 44,
                     lineHeight: 1.02,
                     fontWeight: 950,
                     letterSpacing: "-0.07em",
@@ -736,14 +1118,14 @@ function DashboardContent() {
                   }}
                 >
                   {uiLanguage === "fr"
-                    ? `Bonjour ${firstName || "toi"}, quelle est ta priorité aujourd’hui ?`
-                    : `Hello ${firstName || "there"}, what is your priority today?`}
+                    ? `Bonjour ${firstName || "toi"}, où veux-tu avancer aujourd’hui ?`
+                    : `Hello ${firstName || "there"}, where do you want to move forward today?`}
                 </div>
 
                 <p
                   className="subtitle"
                   style={{
-                    maxWidth: 700,
+                    maxWidth: 760,
                     color: "var(--coach-muted)",
                     fontSize: 16,
                     lineHeight: 1.7,
@@ -754,15 +1136,15 @@ function DashboardContent() {
 
                 <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
                   <BadgePill icon={<SparkIcon size={14} />}>
-                    {uiLanguage === "fr" ? "Coach disponible" : "Coach available"}
+                    {uiLanguage === "fr" ? "Coach actif" : "Coach active"}
                   </BadgePill>
 
                   <BadgePill icon={<BrainIcon size={14} />}>
-                    {uiLanguage === "fr" ? "Contexte mémorisé" : "Remembered context"}
+                    {uiLanguage === "fr" ? "Mémoire continue" : "Continuous memory"}
                   </BadgePill>
 
                   <BadgePill icon={<TargetIcon size={14} />}>
-                    {uiLanguage === "fr" ? "Progression suivie" : "Progress tracking"}
+                    {uiLanguage === "fr" ? "Trajectoire suivie" : "Trajectory tracking"}
                   </BadgePill>
                 </div>
 
@@ -806,12 +1188,12 @@ function DashboardContent() {
 
             <div className="grid grid-4">
               <CoachMetricCard
-                label={uiLanguage === "fr" ? "Sessions" : "Sessions"}
+                label={uiLanguage === "fr" ? "Sessions récentes" : "Recent sessions"}
                 value={timeline.length}
                 helper={
                   uiLanguage === "fr"
-                    ? "Éléments récents dans ton historique."
-                    : "Recent items in your history."
+                    ? "Activités détectées dans ton historique."
+                    : "Activities detected in your history."
                 }
                 icon={<ClockIcon size={18} />}
                 tone="warm"
@@ -822,8 +1204,8 @@ function DashboardContent() {
                 value={activeRecommendations}
                 helper={
                   uiLanguage === "fr"
-                    ? "Actions à traiter ou déjà engagées."
-                    : "Actions to review or already in progress."
+                    ? "Recommandations ouvertes ou en cours."
+                    : "Open or in-progress recommendations."
                 }
                 icon={<TargetIcon size={18} />}
                 tone="calm"
@@ -835,11 +1217,11 @@ function DashboardContent() {
                 helper={
                   blueprintCompleted
                     ? uiLanguage === "fr"
-                      ? "Ton profil de trajectoire est prêt."
-                      : "Your career profile is ready."
+                      ? "Utilisé pour personnaliser ton coaching."
+                      : "Used to personalize your coaching."
                     : uiLanguage === "fr"
-                      ? "À compléter pour affiner le coaching."
-                      : "Complete it to refine your coaching."
+                      ? "À compléter pour améliorer le coaching."
+                      : "Complete it to improve coaching."
                 }
                 icon={<PathIcon size={18} />}
                 tone={blueprintCompleted ? "calm" : "neutral"}
@@ -851,8 +1233,8 @@ function DashboardContent() {
                 helper={
                   openSession
                     ? uiLanguage === "fr"
-                      ? "Une session peut être reprise."
-                      : "A session is ready to resume."
+                      ? "Une conversation est prête à reprendre."
+                      : "A conversation is ready to resume."
                     : uiLanguage === "fr"
                       ? "Aucune session ouverte pour l’instant."
                       : "No open session right now."
@@ -867,7 +1249,7 @@ function DashboardContent() {
                 <div className="row" style={{ alignItems: "center", gap: 10 }}>
                   <SessionIcon />
                   <div className="section-title">
-                    {uiLanguage === "fr" ? "Session en cours" : "Session in progress"}
+                    {uiLanguage === "fr" ? "Session active détectée" : "Active session detected"}
                   </div>
                 </div>
 
@@ -875,10 +1257,10 @@ function DashboardContent() {
                   {uiLanguage === "fr"
                     ? `La session #${openSession.session_id}, démarrée le ${new Date(
                         openSession.started_at,
-                      ).toLocaleString("fr-BE")}, est toujours ouverte.`
+                      ).toLocaleString()}, est toujours ouverte.`
                     : `Session #${openSession.session_id} started on ${new Date(
                         openSession.started_at,
-                      ).toLocaleString("en-GB")} is still open.`}
+                      ).toLocaleString()} is still open.`}
                 </div>
 
                 <div className="row" style={{ flexWrap: "wrap" }}>
@@ -906,8 +1288,8 @@ function DashboardContent() {
                         ? "Clôture..."
                         : "Closing..."
                       : uiLanguage === "fr"
-                        ? "Clôturer et générer l’analyse"
-                        : "Close and generate analysis"}
+                        ? "Clôturer maintenant et générer l’analyse"
+                        : "Close now and generate analysis"}
                   </button>
                 </div>
               </CoachSectionCard>
@@ -931,6 +1313,198 @@ function DashboardContent() {
                 </div>
               </CoachSectionCard>
             )}
+
+            <DecisiveActionCard
+              action={decisiveAction}
+              adaptationExplanation={decisionAdaptationExplanation}
+              uiLanguage={uiLanguage}
+            />
+
+            <DeterminingLeverCard
+              decision={determiningLeverDecision}
+              learningExperience={leverLearningExperience}
+              uiLanguage={uiLanguage}
+            />
+
+            <ExecutionFollowUpCard
+              followUp={executionFollowUp}
+              uiLanguage={uiLanguage}
+            />
+
+            {decisiveAction ? (
+              <ExecutionFeedbackForm
+                key={
+                  openExecutionAttempt
+                    ? `execution-${openExecutionAttempt.id}`
+                    : "execution-new"
+                }
+                uiLanguage={uiLanguage}
+                existingExecution={openExecutionAttempt}
+                hasSelectedLever={determiningLeverDecision != null}
+                onSubmit={(record) =>
+                  submitExecutionFeedback(
+                    record,
+                    openExecutionAttempt,
+                  )
+                }
+              />
+            ) : null}
+
+            <TrajectorySignalCard
+              signal={trajectorySignal}
+              uiLanguage={uiLanguage}
+            />
+
+            {careerTrajectoryIntelligence ||
+            longTermCareerTrajectory ||
+            talentTrajectoryIntelligence ? (
+              <div
+                style={{
+                  display: "grid",
+                  gap: 18,
+                  gridTemplateColumns:
+                    "repeat(auto-fit, minmax(min(100%, 420px), 1fr))",
+                  alignItems: "stretch",
+                }}
+              >
+                {careerTrajectoryIntelligence ? (
+                  <CareerTrajectoryIntelligenceCard
+                    intelligence={careerTrajectoryIntelligence}
+                    language={uiLanguage}
+                  />
+                ) : null}
+
+                {longTermCareerTrajectory ? (
+                  <LongTermCareerTrajectoryCard
+                    trajectory={longTermCareerTrajectory}
+                    language={uiLanguage}
+                  />
+                ) : null}
+
+                {talentTrajectoryIntelligence ? (
+                  <TalentTrajectoryIntelligenceCard
+                    intelligence={talentTrajectoryIntelligence}
+                    language={uiLanguage}
+                  />
+                ) : null}
+              </div>
+            ) : null}
+
+            {progressRealization ? (
+              <CoachSectionCard warm>
+                <div className="row" style={{ alignItems: "center", gap: 10 }}>
+                  <SparkIcon />
+                  <div className="section-title">
+                    {uiLanguage === "fr"
+                      ? "Ce qui a réellement changé"
+                      : "What actually changed"}
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    fontSize: 20,
+                    lineHeight: 1.45,
+                    fontWeight: 850,
+                    color: "var(--coach-ink)",
+                  }}
+                >
+                  {progressRealization.worker_message}
+                </div>
+
+                <div
+                  className="muted"
+                  style={{
+                    color: "var(--coach-muted)",
+                    lineHeight: 1.7,
+                  }}
+                >
+                  {progressRealization.change_summary}
+                </div>
+
+                <div className="grid grid-2">
+                  <div
+                    className="card-soft stack"
+                    style={{
+                      gap: 6,
+                      borderRadius: 20,
+                      background: "rgba(255,248,239,0.68)",
+                      border: "1px solid rgba(43,33,24,0.08)",
+                    }}
+                  >
+                    <strong>
+                      {uiLanguage === "fr"
+                        ? "Pourquoi cela compte maintenant"
+                        : "Why this matters now"}
+                    </strong>
+                    <div
+                      className="muted"
+                      style={{ color: "var(--coach-muted)", lineHeight: 1.6 }}
+                    >
+                      {progressRealization.why_it_matters_now}
+                    </div>
+                  </div>
+
+                  <div
+                    className="card-soft stack"
+                    style={{
+                      gap: 6,
+                      borderRadius: 20,
+                      background: "rgba(232,248,246,0.68)",
+                      border: "1px solid rgba(88,180,174,0.14)",
+                    }}
+                  >
+                    <strong>
+                      {uiLanguage === "fr"
+                        ? "Lien avec ta direction"
+                        : "Connection to your direction"}
+                    </strong>
+                    <div
+                      className="muted"
+                      style={{ color: "var(--coach-muted)", lineHeight: 1.6 }}
+                    >
+                      {progressRealization.intention_connection}
+                    </div>
+                  </div>
+                </div>
+
+                {progressRealization.learning_value ? (
+                  <div
+                    className="card-soft"
+                    style={{
+                      borderRadius: 20,
+                      background: "rgba(255,255,255,0.68)",
+                      border: "1px solid rgba(43,33,24,0.08)",
+                    }}
+                  >
+                    <strong>
+                      {uiLanguage === "fr" ? "Apprentissage" : "Learning"}
+                    </strong>
+                    <div
+                      className="muted"
+                      style={{
+                        marginTop: 6,
+                        color: "var(--coach-muted)",
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      {progressRealization.learning_value}
+                    </div>
+                  </div>
+                ) : null}
+
+              </CoachSectionCard>
+            ) : null}
+
+            {progressRealization && progressRealizationTrajectoryUpdateId != null ? (
+              <ProgressExperienceForm
+                uiLanguage={uiLanguage}
+                reflectionPrompt={progressRealization.reflection_prompt}
+                initialExperience={progressRealization.experienced_progress}
+                initialExplanation={progressRealization.worker_explanation}
+                onSubmit={submitProgressExperience}
+              />
+            ) : null}
 
             <div className="grid grid-2">
               <CoachSectionCard>
@@ -959,7 +1533,7 @@ function DashboardContent() {
                 <div className="row" style={{ alignItems: "center", gap: 10 }}>
                   <ClockIcon />
                   <div className="section-title">
-                    {uiLanguage === "fr" ? "Activité récente" : "Recent activity"}
+                    {uiLanguage === "fr" ? "Chronologie récente" : "Recent timeline"}
                   </div>
                 </div>
 
@@ -988,13 +1562,18 @@ function DashboardContent() {
                           <strong>Session #{item.session_id}</strong>
 
                           <BadgePill icon={<ClockIcon size={14} />}>
-                            {new Date(item.started_at).toLocaleDateString(uiLanguage === "fr" ? "fr-BE" : "en-GB")}
+                            {new Date(item.started_at).toLocaleDateString(
+                              uiLanguage === "fr" ? "fr-BE" : "en-GB",
+                            )}
                           </BadgePill>
                         </div>
 
                         <div className="muted" style={{ marginTop: 8, color: "var(--coach-muted)" }}>
                           {item.primary_problem
-                            ? prettify(item.primary_problem)
+                            ? localizeProblemLabel(
+                                item.primary_problem,
+                                uiLanguage,
+                              )
                             : uiLanguage === "fr"
                               ? "Pas encore de problème principal détecté"
                               : "No primary problem detected yet"}
@@ -1013,8 +1592,8 @@ function DashboardContent() {
                     <TargetIcon />
                     <div className="section-title">
                       {uiLanguage === "fr"
-                        ? "Écarts de trajectoire"
-                        : "Career gaps"}
+                        ? "Analyse des écarts de trajectoire"
+                        : "Career gap analysis"}
                     </div>
                   </div>
 
@@ -1177,7 +1756,7 @@ function DashboardContent() {
                   <div className="row" style={{ alignItems: "center", gap: 10 }}>
                     <BrainIcon />
                     <div className="section-title">
-                      {uiLanguage === "fr" ? "Tendances récurrentes" : "Recurring trends"}
+                      {uiLanguage === "fr" ? "Patterns récurrents" : "Recurring patterns"}
                     </div>
                   </div>
 
@@ -1185,13 +1764,16 @@ function DashboardContent() {
                     <div>
                       <strong>
                         {uiLanguage === "fr"
-                          ? "Sujet principal récurrent"
-                          : "Recurring main topic"}
+                          ? "Problème principal dominant"
+                          : "Dominant primary problem"}
                       </strong>
 
                       <div className="muted" style={{ color: "var(--coach-muted)", marginTop: 4 }}>
                         {summary.problem_trends.top_primary_problem
-                          ? prettify(summary.problem_trends.top_primary_problem)
+                          ? localizeProblemLabel(
+                              summary.problem_trends.top_primary_problem,
+                              uiLanguage,
+                            )
                           : uiLanguage === "fr"
                             ? "Pas encore assez de données"
                             : "Not enough data yet"}
@@ -1209,7 +1791,10 @@ function DashboardContent() {
                       >
                         <strong>{uiLanguage === "fr" ? "Sévérité moyenne" : "Average severity"}</strong>
                         <div className="muted" style={{ marginTop: 6, color: "var(--coach-muted)" }}>
-                          {summary.problem_trends.average_severity || "—"}
+                          {localizeSignalLevel(
+                            summary.problem_trends.average_severity,
+                            uiLanguage,
+                          )}
                         </div>
                       </div>
 
@@ -1223,7 +1808,10 @@ function DashboardContent() {
                       >
                         <strong>{uiLanguage === "fr" ? "Urgence moyenne" : "Average urgency"}</strong>
                         <div className="muted" style={{ marginTop: 6, color: "var(--coach-muted)" }}>
-                          {summary.problem_trends.average_urgency || "—"}
+                          {localizeSignalLevel(
+                            summary.problem_trends.average_urgency,
+                            uiLanguage,
+                          )}
                         </div>
                       </div>
                     </div>

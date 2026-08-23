@@ -394,6 +394,489 @@ export type SessionDetail = {
   transcript: TranscriptTurn[];
 };
 
+/* ---------------- PROFESSIONAL TRAJECTORY SIGNAL ---------------- */
+
+export type TrajectorySignalValue =
+  | "positive"
+  | "mixed"
+  | "neutral"
+  | "negative"
+  | "insufficient_evidence";
+
+export type TrajectorySignalResponse = {
+  trajectory_update_id?: number | null;
+  source_session_id?: number | null;
+  source_context_snapshot_id?: number | null;
+  source_decisive_action_id?: number | null;
+  source_execution_result_id?: number | null;
+
+  trajectory_signal?: TrajectorySignalValue | null;
+  trajectory_summary?: string | null;
+
+  attention_shift?: Record<string, unknown> | null;
+  learned_constraints?: unknown[] | null;
+  capability_signals?: unknown[] | null;
+  effective_lever_signals?: unknown[] | null;
+  next_attention_candidates?: unknown[] | null;
+
+  recommended_next_focus?: string | null;
+  confidence?: number | null;
+};
+
+
+export type TrajectoryUpdateResponse = {
+  id: number;
+
+  worker_id: number;
+  source_session_id: number;
+
+  context_snapshot_id: number;
+  decisive_action_id: number;
+  execution_result_id: number;
+
+  trajectory_signal: TrajectorySignalValue;
+  trajectory_summary: string;
+
+  attention_shift_json: Record<string, unknown>;
+  intention_progress_evidence_json: unknown[];
+  mandate_preservation_evidence_json: unknown[];
+
+  attention_resolution_score: number;
+  intention_progress_score: number;
+  mandate_preservation_score: number;
+
+  learned_constraints_json: unknown[];
+  capability_signals_json: unknown[];
+  effective_lever_signals_json: unknown[];
+  next_attention_candidates_json: unknown[];
+
+  recommended_next_focus: string | null;
+  confidence: number;
+
+  rationale_json: Record<string, unknown>;
+
+  created_at: string;
+};
+
+
+/* ---------------- PROGRESS REALIZATION ---------------- */
+
+export type ProgressRealizationType =
+  | "outcome_progress"
+  | "learning_progress"
+  | "capability_progress"
+  | "direction_change"
+  | "no_confirmed_progress"
+  | "insufficient_evidence";
+
+export type ExperiencedProgressValue =
+  | "not_really"
+  | "a_little"
+  | "clearly";
+
+export type ProgressExperienceRecord = {
+  experienced_progress: ExperiencedProgressValue;
+  worker_explanation?: string | null;
+};
+
+export type ProgressRealizationResponse = {
+  progress_type: ProgressRealizationType;
+  progress_confirmed: boolean;
+
+  change_summary: string;
+  why_it_matters_now: string;
+
+  intention_connection: string;
+  mandate_connection: string;
+
+  evidence: unknown[];
+
+  learning_value: string | null;
+
+  worker_message: string;
+  reflection_prompt: string;
+
+  confidence: number;
+
+  experienced_progress: ExperiencedProgressValue | null;
+  worker_explanation: string | null;
+};
+
+
+/* ---------------- CAREER TRAJECTORY INTELLIGENCE ---------------- */
+
+export type CareerBlockerPersistence =
+  | "emerging"
+  | "repeated"
+  | "persistent";
+
+export type CareerProgressionState =
+  | "insufficient_evidence"
+  | "progressing"
+  | "consolidating"
+  | "changing_direction"
+  | "stagnating"
+  | "contradictory";
+
+export type CareerProgressionVelocity =
+  | "insufficient_evidence"
+  | "slow"
+  | "steady"
+  | "accelerating"
+  | "decelerating";
+
+export type PersistentCareerBlocker = {
+  blocker: string;
+  persistence: CareerBlockerPersistence;
+  evidence: string[];
+};
+
+export type CareerDirectionChange = {
+  from_direction: string;
+  to_direction: string;
+  evidence: string[];
+  interpretation: string;
+};
+
+export type CareerTrajectoryIntelligenceResponse = {
+  current_direction: string | null;
+  progression_state: CareerProgressionState;
+  progression_velocity: CareerProgressionVelocity;
+  persistent_blockers: PersistentCareerBlocker[];
+  direction_changes: CareerDirectionChange[];
+  stagnation_signals: string[];
+  career_summary: string | null;
+};
+
+
+/* ---------------- LONG-TERM CAREER TRAJECTORY ---------------- */
+
+export type LongTermTemporalEvidenceState =
+  | "insufficient_evidence"
+  | "single_episode"
+  | "single_active_day"
+  | "longitudinal";
+
+export type LongTermTemporalTrend = "insufficient_evidence";
+
+export type LongTermActivityVelocity =
+  | "insufficient_evidence"
+  | "steady"
+  | "accelerating"
+  | "decelerating";
+
+export type LongTermTemporalActivityChange =
+  | "insufficient_evidence"
+  | "more_activity"
+  | "less_activity"
+  | "similar_activity"
+  | "mixed_activity";
+
+export type LongTermVelocityEvidenceState =
+  | "insufficient_evidence"
+  | "comparable_windows";
+
+export type LongTermCareerTemporalProfile = {
+  temporal_evidence_state: LongTermTemporalEvidenceState;
+  episode_count: number;
+  ignored_episode_count: number;
+  recent_episode_count: number;
+  historical_episode_count: number;
+  active_day_count: number;
+  coverage_days: number;
+  first_observed_at: string | null;
+  last_observed_at: string | null;
+  temporal_trend: LongTermTemporalTrend;
+};
+
+export type LongTermTemporalWindowCounts = {
+  episode_count: number;
+  active_day_count: number;
+};
+
+export type LongTermCareerTemporalWindows = {
+  recent: LongTermTemporalWindowCounts;
+  previous: LongTermTemporalWindowCounts;
+};
+
+export type LongTermCareerTemporalActivityComparison = {
+  activity_change: LongTermTemporalActivityChange;
+};
+
+export type LongTermCareerVelocityEvidence = {
+  velocity_evidence_state: LongTermVelocityEvidenceState;
+};
+
+export type LongTermCareerTemporalVelocityInterpretation = {
+  activity_velocity: LongTermActivityVelocity;
+};
+
+export type LongTermCareerTrajectoryRead = {
+  temporal_profile: LongTermCareerTemporalProfile;
+  temporal_windows: LongTermCareerTemporalWindows;
+  activity_comparison: LongTermCareerTemporalActivityComparison;
+  velocity_evidence: LongTermCareerVelocityEvidence;
+  velocity_interpretation: LongTermCareerTemporalVelocityInterpretation;
+};
+
+
+/* ---------------- PROFESSIONAL DECISION / WAVE 2 ---------------- */
+
+export type ActionCandidateResponse = {
+  id: number;
+  worker_id: number;
+  session_id: number;
+  context_snapshot_id: number;
+  context_alignment_id: number;
+
+  candidate_key: string;
+  title: string;
+  description: string;
+
+  expected_outcome: string | null;
+  proposed_time_horizon: string | null;
+  success_criteria_json: unknown[];
+
+  attention_resolution: string;
+  intention_progress: string;
+  mandate_alignment: string;
+
+  attention_relevance_score: number;
+  intention_progress_score: number;
+  mandate_alignment_score: number;
+  decisiveness_score: number;
+  overall_validity_score: number;
+
+  violates_mandate: boolean;
+  blocking_constraint_codes_json: unknown[];
+  mandate_veto_reason: string | null;
+
+  risks_json: unknown[];
+  is_selected: boolean;
+  rejection_reason: string | null;
+
+  created_at: string;
+};
+
+export type DecisiveActionResponse = {
+  id: number;
+  worker_id: number;
+  session_id: number;
+  context_snapshot_id: number;
+  context_alignment_id: number;
+  selected_candidate_id: number | null;
+
+  selection_reason: string;
+  decision_confidence: number;
+
+  sequence: number;
+  title: string;
+  description: string;
+  expected_outcome: string;
+
+  time_horizon: string | null;
+  deadline_at: string | null;
+  success_criteria_json: unknown[];
+
+  attention_resolution: string;
+  intention_progress: string;
+  mandate_alignment: string;
+
+  attention_relevance_score: number;
+  intention_progress_score: number;
+  mandate_alignment_score: number;
+  decisiveness_score: number;
+  overall_validity_score: number;
+
+  risks_json: unknown[];
+
+  mandate_veto_cleared: boolean;
+  respected_blocking_constraint_codes_json: unknown[];
+
+  status: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ExecutionGapResponse = {
+  id: number;
+  worker_id: number;
+  session_id: number;
+  decisive_action_id: number;
+
+  primary_gap: string;
+  secondary_gaps_json: unknown[];
+
+  description: string;
+  severity: string;
+  severity_score: number;
+
+  worker_can_execute_without_lever: boolean;
+  no_lever_reason: string | null;
+
+  evidence_json: unknown[];
+
+  created_at: string;
+};
+
+export type LeverCandidateEvaluationResponse = {
+  id: number;
+  lever_decision_id: number;
+  lever_id: number;
+
+  action_enablement_score: number;
+  context_alignment_score: number;
+  pragmatic_fit_score: number;
+  determinacy_score: number;
+  conviction_score: number;
+  overall_score: number;
+
+  pragmatic_fit_json: Record<string, unknown>;
+
+  is_selected: boolean;
+  rejection_reason: string | null;
+
+  created_at: string;
+};
+
+export type LeverDecisionResponse = {
+  id: number;
+  worker_id: number;
+  session_id: number;
+  decisive_action_id: number;
+  execution_gap_id: number;
+
+  lever_needed: boolean;
+  selected_lever_id: number | null;
+
+  selected_lever_name?: string | null;
+  selected_lever_type?: string | null;
+  selected_lever_description?: string | null;
+  selected_lever_url?: string | null;
+
+  necessity: string;
+
+  selection_reason: string;
+  determinacy_reason: string | null;
+  pragmatic_reason: string | null;
+
+  action_enablement_score: number;
+  attention_contribution_score: number;
+  intention_contribution_score: number;
+  mandate_contribution_score: number;
+  confidence: number;
+
+  pragmatic_fit_json: Record<string, unknown>;
+
+  created_at: string;
+};
+
+export type ProfessionalDecisionAdaptationExplanation = {
+  previous_learning: string;
+  focus_change: string;
+  why_this_focus_now: string;
+};
+
+export type LeverLearningSignal = {
+  lever_id: number;
+  evidence_state: string;
+  consistency: string;
+  recent_episode_count: number;
+  historical_episode_count: number;
+  latest_signal: string | null;
+  evidence_strength: string;
+  cautions: string[];
+};
+
+export type LeverLearningExperience = {
+  learning_signal: LeverLearningSignal;
+  learning_explanation: string;
+};
+
+export type ProfessionalDecisionBundleResponse = {
+  adaptation_explanation?: ProfessionalDecisionAdaptationExplanation | null;
+  lever_learning_experience?: LeverLearningExperience | null;
+  action_candidates: ActionCandidateResponse[];
+  decisive_actions: DecisiveActionResponse[];
+  execution_gaps: ExecutionGapResponse[];
+  lever_decisions: LeverDecisionResponse[];
+  lever_candidate_evaluations: LeverCandidateEvaluationResponse[];
+};
+
+export type ExecutionStatus =
+  | "not_started"
+  | "in_progress"
+  | "completed"
+  | "blocked"
+  | "abandoned";
+
+export type OutcomeStatus =
+  | "unknown"
+  | "achieved"
+  | "partially_achieved"
+  | "not_achieved";
+
+export type ExecutionResultRecord = {
+  execution_status: ExecutionStatus;
+  outcome_status: OutcomeStatus;
+
+  observed_result?: string | null;
+  worker_reflection?: string | null;
+
+  evidence?: unknown[];
+  blockers?: unknown[];
+
+  outcome_score?: number | null;
+  worker_confidence_after?: number | null;
+
+  lever_used?: boolean;
+  lever_helpfulness_score?: number | null;
+  lever_usage_evidence?: unknown[];
+
+  started_at?: string | null;
+  completed_at?: string | null;
+};
+
+export type ExecutionResultResponse = {
+  id: number;
+  worker_id: number;
+  session_id: number;
+  context_snapshot_id: number;
+
+  decisive_action_id: number;
+  lever_decision_id: number | null;
+  commercial_offer_resolution_id: number | null;
+
+  attempt_number: number;
+
+  execution_status: ExecutionStatus;
+  outcome_status: OutcomeStatus;
+
+  observed_result: string | null;
+  worker_reflection: string | null;
+
+  evidence_json: unknown[];
+  blockers_json: unknown[];
+
+  outcome_score: number | null;
+  worker_confidence_after: number | null;
+
+  lever_used: boolean;
+  lever_helpfulness_score: number | null;
+  lever_usage_evidence_json: unknown[];
+
+  started_at: string | null;
+  completed_at: string | null;
+  recorded_at: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ExecutionFollowUpResponse = {
+  decisive_action_id: number;
+  execution_results: ExecutionResultResponse[];
+};
+
 export type ProblemDetection = {
   id: number;
   session_id: number;
@@ -1685,6 +2168,60 @@ export type AdminOrganizationWorkerSummary = {
   lever_count: number;
 };
 
+
+export type OrganizationWorkerMandateConstraint = {
+  code: string;
+  description: string;
+  severity: string;
+};
+
+export type OrganizationWorkerMandateSummary = {
+  mandate_summary: string;
+  professional_identity?: string | null;
+  expected_outcomes: string[];
+  success_definition: string[];
+  meaning_drivers: string[];
+  engagement_drivers: string[];
+  contribution_drivers: string[];
+  hard_constraints: OrganizationWorkerMandateConstraint[];
+  soft_constraints: OrganizationWorkerMandateConstraint[];
+  time_capacity: string[];
+  energy_constraints: string[];
+  risks_to_avoid: string[];
+  non_negotiables: string[];
+};
+
+export type OrganizationWorkerMandateMilestone = {
+  sequence: number;
+  title: string;
+  objective: string;
+  timing: string;
+  expected_progress: string[];
+  organization_support: string[];
+  dependencies: string[];
+};
+
+export type OrganizationWorkerMandatePlan = {
+  plan_summary: string;
+  planning_horizon: string;
+  approach: string[];
+  milestones: OrganizationWorkerMandateMilestone[];
+  assumptions: string[];
+};
+
+export type OrganizationSupportRecommendation = {
+  title: string;
+  action: string;
+  rationale: string;
+  timing: string | null;
+};
+
+export type OrganizationWorkerGuidanceResponse = {
+  mandate_summary: OrganizationWorkerMandateSummary | null;
+  mandate_plan: OrganizationWorkerMandatePlan | null;
+  organization_recommendations: OrganizationSupportRecommendation[];
+};
+
 export type AdminOrganizationWorkerTranscriptTurn = {
   id: number;
   speaker: string;
@@ -2377,3 +2914,174 @@ export type SubscriptionChangePackResponse = {
 };
 
 export type AdminRenderableNode = ReactNode;
+
+/* ---------------- TALENT TRAJECTORY INTELLIGENCE ---------------- */
+
+export type TalentEvidenceStrength =
+  | "none"
+  | "limited"
+  | "moderate"
+  | "strong";
+
+export type CapabilityProgressionState =
+  | "insufficient_evidence"
+  | "emerging"
+  | "strengthening"
+  | "repeatedly_demonstrated"
+  | "sustained"
+  | "stalled"
+  | "contradictory"
+  | "historical_only";
+
+export type CapabilityRepetition =
+  | "not_observed"
+  | "isolated"
+  | "repeated"
+  | "sustained";
+
+export type CapabilityConsistency =
+  | "unknown"
+  | "inconsistent"
+  | "mixed"
+  | "mostly_consistent"
+  | "consistent";
+
+export type CapabilityIndependence =
+  | "unknown"
+  | "support_needed"
+  | "partially_independent"
+  | "increasing"
+  | "independent";
+
+export type CapabilityContextBreadth =
+  | "unknown"
+  | "single_context"
+  | "limited"
+  | "expanding"
+  | "broad";
+
+export type CapabilityComplexity =
+  | "unknown"
+  | "familiar"
+  | "moderate"
+  | "increasing"
+  | "high";
+
+export type CapabilityTrajectory = {
+  capability_key: string;
+  capability_label: string;
+
+  progression_state: CapabilityProgressionState;
+
+  recent_episode_count: number;
+  historical_episode_count: number;
+
+  repetition: CapabilityRepetition;
+  consistency: CapabilityConsistency;
+  independence: CapabilityIndependence;
+  context_breadth: CapabilityContextBreadth;
+  complexity: CapabilityComplexity;
+
+  evidence_strength: TalentEvidenceStrength;
+  evidence: string[];
+
+  progression_explanation: string;
+};
+
+export type ValueProgressionState =
+  | "insufficient_evidence"
+  | "emerging"
+  | "repeated_contribution"
+  | "transferable"
+  | "sustained"
+  | "contradictory"
+  | "historical_only";
+
+export type ValueRecurrence =
+  | "not_observed"
+  | "isolated"
+  | "repeated"
+  | "sustained";
+
+export type ValueContextBreadth =
+  | "unknown"
+  | "single_context"
+  | "limited"
+  | "expanding"
+  | "broad";
+
+export type TalentMateriality =
+  | "unknown"
+  | "limited"
+  | "meaningful"
+  | "material";
+
+export type ValueContributionTrajectory = {
+  value_domain: string;
+  value_label: string;
+
+  progression_state: ValueProgressionState;
+
+  recent_episode_count: number;
+  historical_episode_count: number;
+
+  recurrence: ValueRecurrence;
+  context_breadth: ValueContextBreadth;
+  materiality: TalentMateriality;
+
+  evidence_strength: TalentEvidenceStrength;
+  beneficiaries: string[];
+  evidence: string[];
+
+  progression_explanation: string;
+};
+
+export type ImpactProgressionState =
+  | "insufficient_evidence"
+  | "isolated_impact"
+  | "repeated_impact"
+  | "sustained_impact"
+  | "contradictory"
+  | "historical_only";
+
+export type ImpactReliability =
+  | "not_observed"
+  | "isolated"
+  | "repeated"
+  | "sustained";
+
+export type ImpactScope =
+  | "unknown"
+  | "individual"
+  | "team"
+  | "cross_team"
+  | "organization"
+  | "customer"
+  | "ecosystem";
+
+export type ImpactTrajectory = {
+  impact_domain: string;
+  impact_label: string;
+
+  progression_state: ImpactProgressionState;
+
+  recent_episode_count: number;
+  historical_episode_count: number;
+
+  reliability: ImpactReliability;
+  scope: ImpactScope;
+  materiality: TalentMateriality;
+
+  evidence_strength: TalentEvidenceStrength;
+  evidence: string[];
+
+  progression_explanation: string;
+};
+
+export type TalentTrajectoryIntelligenceResponse = {
+  capability_trajectories: CapabilityTrajectory[];
+  value_trajectories: ValueContributionTrajectory[];
+  impact_trajectories: ImpactTrajectory[];
+
+  talent_summary: string | null;
+};
