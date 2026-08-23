@@ -31,10 +31,10 @@ function SectionTitle({
     <h3
       style={{
         margin: 0,
-        fontSize: 17,
-        lineHeight: 1.3,
-        fontWeight: 750,
-        letterSpacing: "-0.01em",
+        fontSize: 15,
+        lineHeight: 1.35,
+        fontWeight: 700,
+        letterSpacing: 0,
       }}
     >
       {children}
@@ -85,8 +85,8 @@ function CapabilityItem({
     <article
       className="card-soft stack"
       style={{
-        gap: 8,
-        padding: 14,
+        gap: 7,
+        padding: 12,
         background: "rgba(255, 250, 244, 0.72)",
       }}
     >
@@ -115,8 +115,8 @@ function ValueItem({
     <article
       className="card-soft stack"
       style={{
-        gap: 8,
-        padding: 14,
+        gap: 7,
+        padding: 12,
         background: "rgba(255, 250, 244, 0.72)",
       }}
     >
@@ -145,8 +145,8 @@ function ImpactItem({
     <article
       className="card-soft stack"
       style={{
-        gap: 8,
-        padding: 14,
+        gap: 7,
+        padding: 12,
         background: "rgba(255, 250, 244, 0.72)",
       }}
     >
@@ -214,7 +214,7 @@ export function TalentTrajectoryIntelligenceCard({
       }
       className="card stack"
       style={{
-        gap: 14,
+        gap: 12,
       }}
     >
       <div
@@ -241,7 +241,7 @@ export function TalentTrajectoryIntelligenceCard({
         <div
           className="muted"
           style={{
-            lineHeight: 1.6,
+            lineHeight: 1.55,
             maxWidth: 900,
           }}
         >
@@ -264,8 +264,12 @@ export function TalentTrajectoryIntelligenceCard({
         <div
           style={{
             display: "grid",
-            gap: 18,
+            gap: 16,
             gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+            maxHeight: 430,
+            overflowY: "auto",
+            overscrollBehavior: "contain",
+            paddingRight: 4,
           }}
         >
           <section

@@ -24,10 +24,10 @@ function SectionTitle({
     <h3
       style={{
         margin: 0,
-        fontSize: 17,
-        lineHeight: 1.3,
-        fontWeight: 750,
-        letterSpacing: "-0.01em",
+        fontSize: 15,
+        lineHeight: 1.35,
+        fontWeight: 700,
+        letterSpacing: 0,
       }}
     >
       {children}
@@ -221,7 +221,7 @@ export function LongTermCareerTrajectoryCard({
       aria-label={copy.title}
       className="card stack"
       style={{
-        gap: 18,
+        gap: 14,
         position: "relative",
         overflow: "hidden",
         borderRadius: 32,
@@ -248,16 +248,16 @@ export function LongTermCareerTrajectoryCard({
       <div
         className="stack"
         style={{
-          gap: 18,
+          gap: 14,
           position: "relative",
           zIndex: 1,
         }}
       >
-        <header className="stack" style={{ gap: 8, maxWidth: 860 }}>
+        <header className="stack" style={{ gap: 6, maxWidth: 860 }}>
           <div
             style={{
-              fontSize: 13,
-              fontWeight: 750,
+              fontSize: 12,
+              fontWeight: 700,
               textTransform: "uppercase",
               letterSpacing: "0.08em",
               opacity: 0.65,
@@ -267,11 +267,9 @@ export function LongTermCareerTrajectoryCard({
           </div>
 
           <h2
+            className="section-title"
             style={{
               margin: 0,
-              fontSize: 24,
-              lineHeight: 1.2,
-              letterSpacing: "-0.025em",
             }}
           >
             {copy.title}
@@ -290,7 +288,17 @@ export function LongTermCareerTrajectoryCard({
             {copy.empty}
           </div>
         ) : (
-          <>
+          <div
+            style={{
+              display: "grid",
+              gap: 14,
+              maxHeight: 430,
+              overflowY: "auto",
+              paddingRight: 4,
+              overscrollBehavior: "contain",
+              scrollbarGutter: "stable",
+            }}
+          >
             <div
               style={{
                 display: "grid",
@@ -342,7 +350,7 @@ export function LongTermCareerTrajectoryCard({
                 </strong>
               </InfoPanel>
             </div>
-          </>
+          </div>
         )}
       </div>
     </section>

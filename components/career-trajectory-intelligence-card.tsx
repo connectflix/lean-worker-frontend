@@ -32,10 +32,10 @@ function SectionTitle({
     <h3
       style={{
         margin: 0,
-        fontSize: 17,
-        lineHeight: 1.3,
-        fontWeight: 750,
-        letterSpacing: "-0.01em",
+        fontSize: 15,
+        lineHeight: 1.35,
+        fontWeight: 700,
+        letterSpacing: 0,
       }}
     >
       {children}
@@ -183,8 +183,8 @@ function MetricPanel({
         className="muted"
         style={{
           margin: 0,
-          fontSize: 13,
-          lineHeight: 1.35,
+          fontSize: 12,
+          lineHeight: 1.4,
           fontWeight: 600,
           letterSpacing: 0,
         }}
@@ -193,8 +193,9 @@ function MetricPanel({
       </h3>
       <div
         style={{
-          fontWeight: 750,
-          lineHeight: 1.4,
+          fontSize: 14,
+          fontWeight: 700,
+          lineHeight: 1.45,
         }}
       >
         {children}
@@ -215,8 +216,10 @@ function BlockerItem({
     <article
       className="card-soft stack"
       style={{
-        gap: 8,
-        padding: 14,
+        gap: 7,
+        padding: 13,
+        fontSize: 13,
+        lineHeight: 1.5,
       }}
     >
       <strong>{blocker.blocker}</strong>
@@ -240,8 +243,10 @@ function DirectionChangeItem({
     <article
       className="card-soft stack"
       style={{
-        gap: 8,
-        padding: 14,
+        gap: 7,
+        padding: 13,
+        fontSize: 13,
+        lineHeight: 1.5,
       }}
     >
       <div
@@ -411,41 +416,63 @@ export function CareerTrajectoryIntelligenceCard({
             <section
               aria-label={copy.persistentBlockers}
               className="stack"
-              style={{ gap: 8 }}
+              style={{ gap: 8, minWidth: 0 }}
             >
               <SectionTitle>{copy.persistentBlockers}</SectionTitle>
 
-              {intelligence.persistent_blockers.length > 0 ? (
-                intelligence.persistent_blockers.map((blocker) => (
-                  <BlockerItem
-                    key={`${blocker.persistence}:${blocker.blocker}`}
-                    blocker={blocker}
-                    language={language}
-                  />
-                ))
-              ) : (
-                <div className="muted">{copy.noBlockers}</div>
-              )}
+              <div
+                className="stack"
+                style={{
+                  gap: 8,
+                  maxHeight: 430,
+                  overflowY: "auto",
+                  overscrollBehavior: "contain",
+                  paddingRight: 4,
+                }}
+              >
+                {intelligence.persistent_blockers.length > 0 ? (
+                  intelligence.persistent_blockers.map((blocker) => (
+                    <BlockerItem
+                      key={`${blocker.persistence}:${blocker.blocker}`}
+                      blocker={blocker}
+                      language={language}
+                    />
+                  ))
+                ) : (
+                  <div className="muted">{copy.noBlockers}</div>
+                )}
+              </div>
             </section>
 
             <section
               aria-label={copy.directionChanges}
               className="stack"
-              style={{ gap: 8 }}
+              style={{ gap: 8, minWidth: 0 }}
             >
               <SectionTitle>{copy.directionChanges}</SectionTitle>
 
-              {intelligence.direction_changes.length > 0 ? (
-                intelligence.direction_changes.map((change) => (
-                  <DirectionChangeItem
-                    key={`${change.from_direction}:${change.to_direction}`}
-                    change={change}
-                    language={language}
-                  />
-                ))
-              ) : (
-                <div className="muted">{copy.noChanges}</div>
-              )}
+              <div
+                className="stack"
+                style={{
+                  gap: 8,
+                  maxHeight: 430,
+                  overflowY: "auto",
+                  overscrollBehavior: "contain",
+                  paddingRight: 4,
+                }}
+              >
+                {intelligence.direction_changes.length > 0 ? (
+                  intelligence.direction_changes.map((change) => (
+                    <DirectionChangeItem
+                      key={`${change.from_direction}:${change.to_direction}`}
+                      change={change}
+                      language={language}
+                    />
+                  ))
+                ) : (
+                  <div className="muted">{copy.noChanges}</div>
+                )}
+              </div>
             </section>
           </div>
 
