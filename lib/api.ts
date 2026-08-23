@@ -1702,8 +1702,16 @@ export async function getCareerTrajectory(): Promise<CareerTrajectoryResponse> {
 }
 
 export async function getCareerTrajectoryIntelligence(): Promise<CareerTrajectoryIntelligenceResponse> {
+  const language = getPreferredUiLanguage();
+  const query = buildQueryString({ language });
+
   return apiFetch<CareerTrajectoryIntelligenceResponse>(
-    "/dashboard/career-trajectory-intelligence",
+    `/dashboard/career-trajectory-intelligence${query}`,
+    {
+      headers: {
+        "Accept-Language": language,
+      },
+    },
   );
 }
 

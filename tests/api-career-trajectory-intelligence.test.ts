@@ -71,7 +71,7 @@ describe("Career Trajectory Intelligence API client", () => {
     const [url, options] = fetchMock.mock.calls[0];
 
     expect(url).toBe(
-      "http://api.test/dashboard/career-trajectory-intelligence",
+      "http://api.test/dashboard/career-trajectory-intelligence?language=fr",
     );
     expect(options?.method).toBeUndefined();
     expect(options?.body).toBeUndefined();
@@ -91,6 +91,25 @@ describe("Career Trajectory Intelligence API client", () => {
     expect(headers.get("Authorization")).toBe("Bearer worker-token");
     expect(headers.get("Accept-Language")).toBe("fr");
     expect(headers.get("Content-Type")).toBeNull();
+  });
+
+  it("propagates the resolved English UI language in the CTI query string", async () => {
+    const { resolveUiLanguage } = await import("@/lib/user-locales");
+    vi.mocked(resolveUiLanguage).mockReturnValueOnce("en");
+
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(emptyCareerTrajectoryIntelligence()),
+    );
+
+    await getCareerTrajectoryIntelligence();
+
+    const [url, options] = fetchMock.mock.calls[0];
+    const headers = options?.headers as Headers;
+
+    expect(url).toBe(
+      "http://api.test/dashboard/career-trajectory-intelligence?language=en",
+    );
+    expect(headers.get("Accept-Language")).toBe("en");
   });
 
   it("keeps the bounded CTI career dimensions distinct", async () => {
