@@ -1511,7 +1511,7 @@ function DashboardContent() {
                 <div className="row" style={{ alignItems: "center", gap: 10 }}>
                   <PathIcon />
                   <div className="section-title">
-                    {uiLanguage === "fr" ? "Trajectoire de carrière" : "Career trajectory"}
+                    {uiLanguage === "fr" ? "Cap de carrière" : "Career direction"}
                   </div>
                 </div>
 

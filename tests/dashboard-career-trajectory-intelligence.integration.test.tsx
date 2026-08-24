@@ -253,6 +253,13 @@ describe("Dashboard Talent Trajectory Intelligence integration", () => {
     setSuccessfulDashboardDefaults();
   });
 
+  it("labels the positioning block as Cap de carrière in French", async () => {
+    render(<DashboardPage />);
+
+    expect(await screen.findByText("Cap de carrière")).toBeInTheDocument();
+    expect(screen.queryByText("Trajectoire de carrière")).not.toBeInTheDocument();
+  });
+
   it("loads the worker-level read-only TTI once and renders its dedicated card", async () => {
     const payload = talentIntelligence();
 
