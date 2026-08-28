@@ -21,6 +21,7 @@ import {
   getAdminWorkerSignificanceCanvases,
   getAdminWorkerSignificanceQuestions,
   getAdminWorkerTimeCanvases,
+  getAdminWorkerProfessionalIntentionSupport,
   getAdminWorkers,
   updateAdminWorker,
   updateAdminWorkerConversation,
@@ -32,6 +33,7 @@ import {
 import type {
   AdminLearningWorkerPerformance,
   AdminMe,
+  AdminProfessionalIntentionSupportResponse,
   AdminWorker,
   AdminWorkerCreate,
   AdminWorkerConversation,
@@ -3055,6 +3057,10 @@ function AdminWorkersContent() {
   >("all");
   const [selectedWorkerId, setSelectedWorkerId] = useState<number | null>(null);
   const [workerForm, setWorkerForm] = useState<WorkerFormState>(EMPTY_WORKER_FORM);
+  const [professionalIntentionSupport, setProfessionalIntentionSupport] =
+    useState<AdminProfessionalIntentionSupportResponse | null>(null);
+  const [professionalIntentionSupportLoading, setProfessionalIntentionSupportLoading] =
+    useState(false);
 
   const [conversationWorkerFilter, setConversationWorkerFilter] = useState<string>("all");
   const [editingConversationId, setEditingConversationId] = useState<number | null>(null);
@@ -3345,6 +3351,20 @@ function AdminWorkersContent() {
     setSignificanceSaveState("saved");
   }
 
+  async function loadProfessionalIntentionSupport(workerId: number) {
+    setProfessionalIntentionSupport(null);
+    setProfessionalIntentionSupportLoading(true);
+
+    try {
+      const support = await getAdminWorkerProfessionalIntentionSupport(workerId);
+      setProfessionalIntentionSupport(support);
+    } catch {
+      setProfessionalIntentionSupport(null);
+    } finally {
+      setProfessionalIntentionSupportLoading(false);
+    }
+  }
+
   function fillWorkerForm(worker: AdminWorker) {
     setSelectedWorkerId(worker.id);
     setWorkerForm({
@@ -3359,6 +3379,7 @@ function AdminWorkersContent() {
 
   function openWorkerContext(worker: AdminWorker, nextViewMode?: WorkersViewMode) {
     fillWorkerForm(worker);
+    void loadProfessionalIntentionSupport(worker.id);
 
     if (nextViewMode) {
       setViewMode(nextViewMode);
@@ -3379,6 +3400,8 @@ function AdminWorkersContent() {
   function resetWorkerForm() {
     setSelectedWorkerId(null);
     setWorkerForm(EMPTY_WORKER_FORM);
+    setProfessionalIntentionSupport(null);
+    setProfessionalIntentionSupportLoading(false);
     setConversationWorkerFilter("all");
     setConversationForm((prev) => ({
       ...prev,
@@ -4634,11 +4657,11 @@ function AdminWorkersContent() {
                       className="card-soft stack"
                       role="button"
                       tabIndex={0}
-                      onClick={() => fillWorkerForm(worker)}
+                      onClick={() => openWorkerContext(worker)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ") {
                           e.preventDefault();
-                          fillWorkerForm(worker);
+                          openWorkerContext(worker);
                         }
                       }}
                       style={{
@@ -5096,6 +5119,131 @@ function AdminWorkersContent() {
                         Organization: {selectedWorker.organization_id || "—"}
                       </div>
                     </div>
+                  </div>
+
+                  <div className="card-soft stack" style={{ gap: 12 }}>
+                    <div className="row space-between" style={{ gap: 10, flexWrap: "wrap" }}>
+                      <div className="section-title" style={{ fontSize: 15 }}>
+                        Professional Intention
+                      </div>
+                      {professionalIntentionSupportLoading ? (
+                        <span className="badge">Loading...</span>
+                      ) : null}
+                    </div>
+
+                    {!professionalIntentionSupportLoading && !professionalIntentionSupport ? (
+                      <div className="muted">
+                        No current Professional Intention support is available for this worker.
+                      </div>
+                    ) : null}
+
+                    {professionalIntentionSupport?.intention ? (
+                      <div className="stack" style={{ gap: 8 }}>
+                        <div>
+                          <strong>{professionalIntentionSupport.intention.intention_summary}</strong>
+                        </div>
+
+                        {professionalIntentionSupport.intention.target_identity ? (
+                          <div className="muted">
+                            Target identity: {professionalIntentionSupport.intention.target_identity}
+                          </div>
+                        ) : null}
+
+                        {professionalIntentionSupport.intention.desired_roles.length > 0 ? (
+                          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                            {professionalIntentionSupport.intention.desired_roles.map((role, index) => (
+                              <span className="badge" key={`desired-role-${index}`}>
+                                {String(role)}
+                              </span>
+                            ))}
+                          </div>
+                        ) : null}
+
+                        <div className="muted">
+                          Target horizon: {professionalIntentionSupport.intention.target_horizon_months != null
+                            ? `${professionalIntentionSupport.intention.target_horizon_months} month(s)`
+                            : "not clarified"}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {professionalIntentionSupport?.readiness ? (
+                      <div className="card-soft stack" style={{ gap: 8 }}>
+                        <div className="row space-between" style={{ gap: 8, flexWrap: "wrap" }}>
+                          <strong>Intention Readiness</strong>
+                          <span className="badge">
+                            {normalizeDisplayLabel(
+                              professionalIntentionSupport.readiness.readiness_state,
+                            )}
+                          </span>
+                        </div>
+
+                        <div className="stack" style={{ gap: 6 }}>
+                          {professionalIntentionSupport.readiness.dimensions.map((dimension) => (
+                            <div
+                              className="row space-between"
+                              key={dimension.dimension}
+                              style={{ gap: 10, alignItems: "flex-start" }}
+                            >
+                              <div className="stack" style={{ gap: 2 }}>
+                                <strong>{normalizeDisplayLabel(dimension.dimension)}</strong>
+                                <div className="muted">{dimension.reason}</div>
+                              </div>
+                              <span className="badge">
+                                {normalizeDisplayLabel(dimension.state)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="muted">
+                          {professionalIntentionSupport.readiness.plan_generation_allowed
+                            ? "The intention is sufficiently clear for future temporal plan generation."
+                            : "Temporal plan generation stays blocked until the required intention context is sufficiently clear."}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {professionalIntentionSupport?.completion_guidance ? (
+                      <div className="card-soft stack" style={{ gap: 8 }}>
+                        <strong>Completion Guidance</strong>
+
+                        {professionalIntentionSupport.completion_guidance.guidance.length === 0 ? (
+                          <div className="muted">
+                            No completion intervention is currently required.
+                          </div>
+                        ) : (
+                          professionalIntentionSupport.completion_guidance.guidance.map(
+                            (item, index) => (
+                              <div
+                                className="stack"
+                                key={`${item.dimension}-${index}`}
+                                style={{
+                                  gap: 6,
+                                  padding: "10px 12px",
+                                  borderRadius: 12,
+                                  border: "1px solid var(--border)",
+                                }}
+                              >
+                                <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                                  <span className="badge">
+                                    {normalizeDisplayLabel(item.completion_priority)}
+                                  </span>
+                                  <span className="badge">
+                                    {normalizeDisplayLabel(item.dimension)}
+                                  </span>
+                                  <span className="badge">
+                                    {normalizeDisplayLabel(item.intervention_type)}
+                                  </span>
+                                </div>
+                                <div>{item.prompt}</div>
+                                <div className="muted">{item.purpose}</div>
+                              </div>
+                            ),
+                          )
+                        )}
+                      </div>
+                    ) : null}
                   </div>
 
                   <div className="stack">

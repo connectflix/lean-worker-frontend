@@ -1325,6 +1325,98 @@ export type AdminWorkerUpdate = {
   profession?: string | null;
 };
 
+
+/* ---------------- ADMIN PROFESSIONAL INTENTION SUPPORT ---------------- */
+
+export type ProfessionalIntentionReadinessDimensionName =
+  | "movement_definition"
+  | "target_state"
+  | "desired_outcomes"
+  | "progress_markers"
+  | "target_horizon";
+
+export type ProfessionalIntentionReadinessDimensionState =
+  | "unknown"
+  | "partial"
+  | "sufficient"
+  | "conflicting"
+  | "stale";
+
+export type ProfessionalIntentionReadinessState =
+  | "insufficient"
+  | "partially_ready"
+  | "progress_evaluable"
+  | "plan_ready";
+
+export type ProfessionalIntentionPublicResponse = {
+  intention_summary: string;
+  target_identity: string | null;
+  long_term_vision: string | null;
+  long_term_goals: unknown[];
+  medium_term_ambitions: unknown[];
+  short_term_missions: unknown[];
+  desired_roles: unknown[];
+  desired_capabilities: unknown[];
+  desired_impact: unknown[];
+  career_direction: unknown[];
+  identity_shifts: unknown[];
+  target_horizon_months: number | null;
+};
+
+export type ProfessionalIntentionReadinessDimension = {
+  dimension: ProfessionalIntentionReadinessDimensionName;
+  state: ProfessionalIntentionReadinessDimensionState;
+  reason: string;
+};
+
+export type ProfessionalIntentionReadinessPublicResponse = {
+  readiness_state: ProfessionalIntentionReadinessState;
+  dimensions: ProfessionalIntentionReadinessDimension[];
+  blocking_dimensions: ProfessionalIntentionReadinessDimensionName[];
+  plan_generation_allowed: boolean;
+};
+
+export type ProfessionalIntentionCompletionGuidanceActor =
+  | "admin"
+  | "organization";
+
+export type ProfessionalIntentionCompletionGuidanceInterventionType =
+  | "question"
+  | "validation"
+  | "action";
+
+export type ProfessionalIntentionCompletionGuidanceSource =
+  | "worker"
+  | "admin"
+  | "organization";
+
+export type ProfessionalIntentionCompletionGuidancePriority =
+  | "now"
+  | "next"
+  | "later";
+
+export type ProfessionalIntentionCompletionGuidanceItem = {
+  dimension: ProfessionalIntentionReadinessDimensionName;
+  state: ProfessionalIntentionReadinessDimensionState;
+  recommended_actor: ProfessionalIntentionCompletionGuidanceActor;
+  intervention_type: ProfessionalIntentionCompletionGuidanceInterventionType;
+  prompt: string;
+  purpose: string;
+  source_scope: ProfessionalIntentionCompletionGuidanceSource[];
+  completion_priority: ProfessionalIntentionCompletionGuidancePriority;
+};
+
+export type ProfessionalIntentionCompletionGuidanceResponse = {
+  readiness_state: ProfessionalIntentionReadinessState;
+  guidance: ProfessionalIntentionCompletionGuidanceItem[];
+};
+
+export type AdminProfessionalIntentionSupportResponse = {
+  intention: ProfessionalIntentionPublicResponse | null;
+  readiness: ProfessionalIntentionReadinessPublicResponse | null;
+  completion_guidance: ProfessionalIntentionCompletionGuidanceResponse | null;
+};
+
 export type AdminSubscriptionPlan = {
   pack: AdminSubscriptionPack | string;
   label: string;

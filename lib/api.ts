@@ -92,6 +92,7 @@ import type {
   AdminOrganizationWorkerConversationDeleteResponse,
   AdminOrganizationAccessAccount,
   OrganizationWorkerGuidanceResponse,
+  AdminProfessionalIntentionSupportResponse,
   AdminOrganizationAccessAccountCreate,
   AdminSubscriptionPlan,
   AdminWorkerSubscriptionSummary,
@@ -1803,6 +1804,15 @@ export async function getAdminWorkerOrganizationGuidance(
 ): Promise<OrganizationWorkerGuidanceResponse> {
   return adminApiFetch<OrganizationWorkerGuidanceResponse>(
     `/admin/workers/${workerId}/organization-guidance`,
+  );
+}
+
+
+export async function getAdminWorkerProfessionalIntentionSupport(
+  workerId: number,
+): Promise<AdminProfessionalIntentionSupportResponse> {
+  return adminApiFetch<AdminProfessionalIntentionSupportResponse>(
+    `/admin/workers/${workerId}/professional-intention-support`,
   );
 }
 
