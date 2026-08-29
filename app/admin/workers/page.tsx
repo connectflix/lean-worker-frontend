@@ -4701,6 +4701,110 @@ function AdminWorkersContent() {
                         </div>
                       ) : null}
 
+                      <div
+                        className="card-soft stack"
+                        style={{
+                          gap: 10,
+                          border: "1px solid var(--border)",
+                          background: "rgba(15,23,42,0.025)",
+                        }}
+                      >
+                        <div
+                          className="row space-between"
+                          style={{ gap: 8, alignItems: "center", flexWrap: "wrap" }}
+                        >
+                          <strong>Professional Intention</strong>
+
+                          {worker.professional_intention_context?.exists ? (
+                            <span className="badge">Available</span>
+                          ) : (
+                            <span className="badge">Not available</span>
+                          )}
+                        </div>
+
+                        {worker.professional_intention_context?.exists ? (
+                          <>
+                            <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                              <span className="badge">
+                                Readiness:{" "}
+                                {normalizeDisplayLabel(
+                                  worker.professional_intention_context.readiness_state,
+                                )}
+                              </span>
+                            </div>
+
+                            <div className="stack" style={{ gap: 6 }}>
+                              <strong style={{ fontSize: 13 }}>Missing information</strong>
+
+                              {worker.professional_intention_context.missing_information.length > 0 ? (
+                                worker.professional_intention_context.missing_information.map(
+                                  (missingItem, index) => (
+                                    <div
+                                      key={`${worker.id}-missing-${missingItem.dimension}-${index}`}
+                                      className="card-soft stack"
+                                      style={{ gap: 5, padding: "9px 10px" }}
+                                    >
+                                      <div
+                                        className="row"
+                                        style={{ gap: 6, flexWrap: "wrap", alignItems: "center" }}
+                                      >
+                                        <span className="badge">
+                                          {normalizeDisplayLabel(missingItem.dimension)}
+                                        </span>
+                                        <span className="badge">
+                                          {normalizeDisplayLabel(missingItem.state)}
+                                        </span>
+                                      </div>
+                                      <div className="muted">{missingItem.reason}</div>
+                                    </div>
+                                  ),
+                                )
+                              ) : (
+                                <div className="muted">No missing information identified.</div>
+                              )}
+                            </div>
+
+                            <div className="stack" style={{ gap: 6 }}>
+                              <strong style={{ fontSize: 13 }}>Next guidance</strong>
+
+                              {worker.professional_intention_context.next_guidance.length > 0 ? (
+                                worker.professional_intention_context.next_guidance.map(
+                                  (guidanceItem, index) => (
+                                    <div
+                                      key={`${worker.id}-guidance-${guidanceItem.dimension}-${index}`}
+                                      className="card-soft stack"
+                                      style={{ gap: 5, padding: "9px 10px" }}
+                                    >
+                                      <div
+                                        className="row"
+                                        style={{ gap: 6, flexWrap: "wrap", alignItems: "center" }}
+                                      >
+                                        <span className="badge">
+                                          {normalizeDisplayLabel(guidanceItem.dimension)}
+                                        </span>
+                                        <span className="badge">
+                                          {normalizeDisplayLabel(guidanceItem.intervention_type)}
+                                        </span>
+                                        <span className="badge">
+                                          {normalizeDisplayLabel(guidanceItem.completion_priority)}
+                                        </span>
+                                      </div>
+                                      <div className="muted">{guidanceItem.prompt}</div>
+                                    </div>
+                                  ),
+                                )
+                              ) : (
+                                <div className="muted">No completion guidance needed.</div>
+                              )}
+                            </div>
+                          </>
+                        ) : (
+                          <div className="muted">
+                            No Professional Intention is currently available for this worker.
+                          </div>
+                        )}
+                      </div>
+
                       {learning ? (
                         <div className="card-soft stack" style={{ gap: 8 }}>
                           <div

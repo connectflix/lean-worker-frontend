@@ -1255,6 +1255,27 @@ export type AdminWorkerSubscriptionSummary = {
   stripe_subscription_id?: string | null;
 };
 
+export type AdminWorkerProfessionalIntentionMissingInformation = {
+  dimension: ProfessionalIntentionReadinessDimensionName;
+  state: ProfessionalIntentionReadinessDimensionState;
+  reason: string;
+};
+
+export type AdminWorkerProfessionalIntentionNextGuidance = {
+  dimension: ProfessionalIntentionReadinessDimensionName;
+  intervention_type: ProfessionalIntentionCompletionGuidanceInterventionType;
+  prompt: string;
+  completion_priority: ProfessionalIntentionCompletionGuidancePriority;
+};
+
+export type AdminWorkerProfessionalIntentionContext = {
+  exists: boolean;
+  readiness_state: ProfessionalIntentionReadinessState | null;
+  missing_information: AdminWorkerProfessionalIntentionMissingInformation[];
+  next_guidance: AdminWorkerProfessionalIntentionNextGuidance[];
+};
+
+
 export type AdminWorker = {
   id: number;
   auth_provider: string;
@@ -1295,6 +1316,8 @@ export type AdminWorker = {
   artifacts_spent_eur?: number;
   subscription_total_paid_eur?: number;
   active_subscription?: AdminWorkerSubscriptionSummary | null;
+
+  professional_intention_context?: AdminWorkerProfessionalIntentionContext | null;
 
   created_at: string;
 
