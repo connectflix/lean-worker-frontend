@@ -1,8 +1,11 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { getAdminWorkerProfessionalIntentionCompletionWorkspace } from "@/lib/api";
 import type {
   AdminOrganizationWorkerSummary,
   OrganizationWorkerGuidanceResponse,
+  ProfessionalIntentionCompletionWorkspaceResponse,
 } from "@/lib/types";
 import { OrganizationWorkerGuidanceCard } from "./organization-worker-guidance-card";
 
@@ -166,6 +169,42 @@ export function OrganizationInsightsTab({
   onLeverSortModeChange,
   onScrollToRecommendation,
 }: OrganizationInsightsTabProps) {
+  const [
+    professionalIntentionCompletionWorkspace,
+    setProfessionalIntentionCompletionWorkspace,
+  ] = useState<ProfessionalIntentionCompletionWorkspaceResponse | null>(null);
+  const [
+    professionalIntentionCompletionWorkspaceLoading,
+    setProfessionalIntentionCompletionWorkspaceLoading,
+  ] = useState(false);
+
+  async function loadProfessionalIntentionCompletionWorkspace(workerId: number) {
+    setProfessionalIntentionCompletionWorkspace(null);
+    setProfessionalIntentionCompletionWorkspaceLoading(true);
+
+    try {
+      const workspace =
+        await getAdminWorkerProfessionalIntentionCompletionWorkspace(workerId);
+      setProfessionalIntentionCompletionWorkspace(workspace);
+    } catch {
+      setProfessionalIntentionCompletionWorkspace(null);
+    } finally {
+      setProfessionalIntentionCompletionWorkspaceLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!selectedWorkerSummary) {
+      setProfessionalIntentionCompletionWorkspace(null);
+      setProfessionalIntentionCompletionWorkspaceLoading(false);
+      return;
+    }
+
+    void loadProfessionalIntentionCompletionWorkspace(
+      selectedWorkerSummary.worker.id
+    );
+  }, [selectedWorkerSummary?.worker.id]);
+
   if (workerSummaryLoading) {
     return (
       <div className="card stack">
@@ -573,6 +612,158 @@ export function OrganizationInsightsTab({
             </div>
           ))}
         </ScrollSection>
+      </div>
+
+      <div className="card stack" style={{ gap: 16 }}>
+        <div
+          className="row space-between"
+          style={{ gap: 12, flexWrap: "wrap", alignItems: "center" }}
+        >
+          <div className="stack" style={{ gap: 4 }}>
+            <div className="section-title">
+              Professional Intention Completion Workspace
+            </div>
+            <div className="muted">
+              Clarification support for the Organization coach. Candidate evidence
+              helps prepare the worker conversation without replacing worker-owned
+              professional truth.
+            </div>
+          </div>
+
+          {professionalIntentionCompletionWorkspaceLoading ? (
+            <span className="badge">Loading...</span>
+          ) : professionalIntentionCompletionWorkspace ? (
+            <span className="badge">
+              {professionalIntentionCompletionWorkspace.readiness_state
+                .replaceAll("_", " ")
+                .replace(/\b\w/g, (character) => character.toUpperCase())}
+            </span>
+          ) : null}
+        </div>
+
+        {!professionalIntentionCompletionWorkspaceLoading &&
+        !professionalIntentionCompletionWorkspace ? (
+          <div className="muted">
+            No clarification workspace is currently available for this worker.
+          </div>
+        ) : null}
+
+        {professionalIntentionCompletionWorkspace?.completion_closed ? (
+          <div className="card-soft muted">
+            Professional Intention clarification is complete. No further
+            clarification is currently required.
+          </div>
+        ) : null}
+
+        {professionalIntentionCompletionWorkspace?.items ? (
+          professionalIntentionCompletionWorkspace.items.length === 0 &&
+          !professionalIntentionCompletionWorkspace.completion_closed ? (
+            <div className="muted">
+              No blocking clarification item is currently available.
+            </div>
+          ) : (
+            <div className="stack" style={{ gap: 10 }}>
+              {professionalIntentionCompletionWorkspace.items.map(
+                (item, itemIndex) => (
+                  <div
+                    key={`${item.dimension}-${itemIndex}`}
+                    className="card-soft stack"
+                    style={{ gap: 10 }}
+                  >
+                    <div
+                      className="row space-between"
+                      style={{
+                        gap: 8,
+                        flexWrap: "wrap",
+                        alignItems: "flex-start",
+                      }}
+                    >
+                      <div className="stack" style={{ gap: 4 }}>
+                        <strong>
+                          {item.dimension
+                            .replaceAll("_", " ")
+                            .replace(/\b\w/g, (character) =>
+                              character.toUpperCase(),
+                            )}
+                        </strong>
+                        <div className="muted">{item.reason}</div>
+                      </div>
+
+                      <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
+                        <span className="badge">
+                          {item.current_state.replaceAll("_", " ")}
+                        </span>
+                        <span className="badge">
+                          {item.resolution_status.replaceAll("_", " ")}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="stack" style={{ gap: 4 }}>
+                      <strong>Suggested clarification</strong>
+                      <div>{item.suggested_question}</div>
+                    </div>
+
+                    <div className="stack" style={{ gap: 4 }}>
+                      <strong>Resolution condition</strong>
+                      <div className="muted">{item.resolution_condition}</div>
+                    </div>
+
+                    <div className="muted">
+                      Requested source:{" "}
+                      {item.requested_source_actor.replaceAll("_", " ")}
+                    </div>
+
+                    <div className="stack" style={{ gap: 8 }}>
+                      <strong>Evidence already known</strong>
+
+                      {item.evidence.length === 0 ? (
+                        <div className="muted">
+                          No candidate evidence is currently available for this
+                          dimension.
+                        </div>
+                      ) : (
+                        item.evidence.map((evidence, evidenceIndex) => (
+                          <div
+                            key={`${item.dimension}-evidence-${evidenceIndex}`}
+                            className="card-soft stack"
+                            style={{ gap: 6 }}
+                          >
+                            <div
+                              className="row"
+                              style={{ gap: 6, flexWrap: "wrap" }}
+                            >
+                              <span className="badge">
+                                {evidence.source_type.replaceAll("_", " ")}
+                              </span>
+                              <span className="badge">
+                                source:{" "}
+                                {evidence.source_actor.replaceAll("_", " ")}
+                              </span>
+                              <span className="badge">
+                                captured by:{" "}
+                                {evidence.captured_by_actor.replaceAll("_", " ")}
+                              </span>
+                            </div>
+
+                            <div className="muted">{evidence.summary}</div>
+
+                            <div className="muted">
+                              Candidate evidence only — resolution support:{" "}
+                              {evidence.supports_resolution
+                                ? "confirmed"
+                                : "not confirmed"}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                ),
+              )}
+            </div>
+          )
+        ) : null}
       </div>
     </div>
   );
