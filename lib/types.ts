@@ -1440,6 +1440,58 @@ export type AdminProfessionalIntentionSupportResponse = {
   completion_guidance: ProfessionalIntentionCompletionGuidanceResponse | null;
 };
 
+export type ProfessionalIntentionCompletionSourceActor =
+  | "worker"
+  | "admin"
+  | "organization";
+
+export type ProfessionalIntentionCompletionCaptureActor =
+  | "worker"
+  | "system"
+  | "admin"
+  | "organization";
+
+export type ProfessionalIntentionCompletionSourceType =
+  | "career_blueprint"
+  | "engagement_canvas"
+  | "purpose_canvas"
+  | "time_canvas"
+  | "significance_canvas"
+  | "conversation_transcript"
+  | "coaching_conversation"
+  | "explicit_answer";
+
+export type ProfessionalIntentionCompletionResolutionStatus =
+  | "open"
+  | "resolved"
+  | "needs_validation";
+
+export type ProfessionalIntentionCompletionEvidence = {
+  dimension: ProfessionalIntentionReadinessDimensionName;
+  source_actor: ProfessionalIntentionCompletionSourceActor;
+  captured_by_actor: ProfessionalIntentionCompletionCaptureActor;
+  source_type: ProfessionalIntentionCompletionSourceType;
+  summary: string;
+  supports_resolution: boolean;
+};
+
+export type ProfessionalIntentionCompletionItem = {
+  dimension: ProfessionalIntentionReadinessDimensionName;
+  current_state: ProfessionalIntentionReadinessDimensionState;
+  reason: string;
+  suggested_question: string;
+  requested_source_actor: ProfessionalIntentionCompletionSourceActor;
+  resolution_status: ProfessionalIntentionCompletionResolutionStatus;
+  resolution_condition: string;
+  evidence: ProfessionalIntentionCompletionEvidence[];
+};
+
+export type ProfessionalIntentionCompletionWorkspaceResponse = {
+  readiness_state: ProfessionalIntentionReadinessState;
+  completion_closed: boolean;
+  items: ProfessionalIntentionCompletionItem[];
+};
+
 export type AdminSubscriptionPlan = {
   pack: AdminSubscriptionPack | string;
   label: string;

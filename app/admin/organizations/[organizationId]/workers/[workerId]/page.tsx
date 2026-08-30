@@ -6,11 +6,15 @@ import { useParams } from "next/navigation";
 import { AdminGuard } from "@/components/admin-guard";
 import { AdminShell } from "@/components/admin-shell";
 import { clearAdminToken } from "@/lib/admin-auth";
-import { getAdminMe } from "@/lib/api";
+import {
+  getAdminMe,
+  getAdminWorkerProfessionalIntentionCompletionWorkspace,
+} from "@/lib/api";
 import type {
   AdminMe,
   AdminOrganizationDetail,
   AdminWorker,
+  ProfessionalIntentionCompletionWorkspaceResponse,
   AIArtifactStatusResponse,
   CareerBlueprintResponse,
   Recommendation,
@@ -247,9 +251,32 @@ function AdminOrganizationWorkerDetailContent() {
   const [admin, setAdmin] = useState<AdminMe | null>(null);
   const [organizationName, setOrganizationName] = useState<string>("");
   const [summary, setSummary] = useState<WorkerSummaryResponse | null>(null);
+  const [
+    professionalIntentionCompletionWorkspace,
+    setProfessionalIntentionCompletionWorkspace,
+  ] = useState<ProfessionalIntentionCompletionWorkspaceResponse | null>(null);
+  const [
+    professionalIntentionCompletionWorkspaceLoading,
+    setProfessionalIntentionCompletionWorkspaceLoading,
+  ] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  async function loadProfessionalIntentionCompletionWorkspace(workerId: number) {
+    setProfessionalIntentionCompletionWorkspace(null);
+    setProfessionalIntentionCompletionWorkspaceLoading(true);
+
+    try {
+      const workspace =
+        await getAdminWorkerProfessionalIntentionCompletionWorkspace(workerId);
+      setProfessionalIntentionCompletionWorkspace(workspace);
+    } catch {
+      setProfessionalIntentionCompletionWorkspace(null);
+    } finally {
+      setProfessionalIntentionCompletionWorkspaceLoading(false);
+    }
+  }
 
   useEffect(() => {
     async function load() {
@@ -267,6 +294,7 @@ function AdminOrganizationWorkerDetailContent() {
 
         setOrganizationName(organizationDetail.organization.name);
         setSummary(workerSummary);
+        void loadProfessionalIntentionCompletionWorkspace(workerId);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load worker detail.");
       } finally {
@@ -637,6 +665,129 @@ function AdminOrganizationWorkerDetailContent() {
                 ))}
               </div>
             )}
+          </div>
+
+
+          <div className="card stack" style={{ gap: 16 }}>
+            <div
+              className="row space-between"
+              style={{ gap: 12, flexWrap: "wrap", alignItems: "center" }}
+            >
+              <div className="section-title">Professional Intention Completion Workspace</div>
+
+              {professionalIntentionCompletionWorkspaceLoading ? (
+                <span className="badge">Loading...</span>
+              ) : professionalIntentionCompletionWorkspace ? (
+                <span className="badge">
+                  {normalizeDisplayLabel(
+                    professionalIntentionCompletionWorkspace.readiness_state,
+                  )}
+                </span>
+              ) : null}
+            </div>
+
+            {!professionalIntentionCompletionWorkspaceLoading &&
+            !professionalIntentionCompletionWorkspace ? (
+              <div className="muted">
+                No clarification workspace is currently available for this worker.
+              </div>
+            ) : null}
+
+            {professionalIntentionCompletionWorkspace?.completion_closed ? (
+              <div className="muted">
+                Professional Intention clarification is complete. No further clarification
+                is currently required.
+              </div>
+            ) : null}
+
+            {professionalIntentionCompletionWorkspace?.items ? (
+              professionalIntentionCompletionWorkspace.items.length === 0 &&
+              !professionalIntentionCompletionWorkspace.completion_closed ? (
+                <div className="muted">
+                  No blocking clarification item is currently available.
+                </div>
+              ) : (
+                <div className="stack" style={{ gap: 10 }}>
+                  {professionalIntentionCompletionWorkspace.items.map((item, index) => (
+                    <div
+                      key={`${item.dimension}-${index}`}
+                      className="card-soft stack"
+                      style={{ gap: 10 }}
+                    >
+                      <div
+                        className="row space-between"
+                        style={{ gap: 8, flexWrap: "wrap", alignItems: "flex-start" }}
+                      >
+                        <div className="stack" style={{ gap: 4 }}>
+                          <strong>{normalizeDisplayLabel(item.dimension)}</strong>
+                          <div className="muted">{item.reason}</div>
+                        </div>
+
+                        <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
+                          <span className="badge">
+                            {normalizeDisplayLabel(item.current_state)}
+                          </span>
+                          <span className="badge">
+                            {normalizeDisplayLabel(item.resolution_status)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="stack" style={{ gap: 4 }}>
+                        <strong>Suggested clarification</strong>
+                        <div>{item.suggested_question}</div>
+                      </div>
+
+                      <div className="stack" style={{ gap: 4 }}>
+                        <strong>Resolution condition</strong>
+                        <div className="muted">{item.resolution_condition}</div>
+                      </div>
+
+                      <div className="muted">
+                        Requested source: {normalizeDisplayLabel(item.requested_source_actor)}
+                      </div>
+
+                      <div className="stack" style={{ gap: 8 }}>
+                        <strong>Evidence already known</strong>
+
+                        {item.evidence.length === 0 ? (
+                          <div className="muted">
+                            No candidate evidence is currently available for this dimension.
+                          </div>
+                        ) : (
+                          item.evidence.map((evidence, evidenceIndex) => (
+                            <div
+                              key={`${item.dimension}-evidence-${evidenceIndex}`}
+                              className="card-soft stack"
+                              style={{ gap: 6 }}
+                            >
+                              <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
+                                <span className="badge">
+                                  {normalizeDisplayLabel(evidence.source_type)}
+                                </span>
+                                <span className="badge">
+                                  source: {normalizeDisplayLabel(evidence.source_actor)}
+                                </span>
+                                <span className="badge">
+                                  captured by: {normalizeDisplayLabel(evidence.captured_by_actor)}
+                                </span>
+                              </div>
+
+                              <div className="muted">{evidence.summary}</div>
+
+                              <div className="muted">
+                                Candidate evidence only — resolution support:{" "}
+                                {evidence.supports_resolution ? "confirmed" : "not confirmed"}
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+            ) : null}
           </div>
         </>
       )}

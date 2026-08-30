@@ -93,6 +93,7 @@ import type {
   AdminOrganizationAccessAccount,
   OrganizationWorkerGuidanceResponse,
   AdminProfessionalIntentionSupportResponse,
+  ProfessionalIntentionCompletionWorkspaceResponse,
   AdminOrganizationAccessAccountCreate,
   AdminSubscriptionPlan,
   AdminWorkerSubscriptionSummary,
@@ -1813,6 +1814,15 @@ export async function getAdminWorkerProfessionalIntentionSupport(
 ): Promise<AdminProfessionalIntentionSupportResponse> {
   return adminApiFetch<AdminProfessionalIntentionSupportResponse>(
     `/admin/workers/${workerId}/professional-intention-support`,
+  );
+}
+
+
+export async function getAdminWorkerProfessionalIntentionCompletionWorkspace(
+  workerId: number,
+): Promise<ProfessionalIntentionCompletionWorkspaceResponse> {
+  return adminApiFetch<ProfessionalIntentionCompletionWorkspaceResponse>(
+    `/admin/workers/${workerId}/professional-intention-completion-workspace`,
   );
 }
 

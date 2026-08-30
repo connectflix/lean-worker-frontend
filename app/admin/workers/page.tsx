@@ -22,6 +22,7 @@ import {
   getAdminWorkerSignificanceQuestions,
   getAdminWorkerTimeCanvases,
   getAdminWorkerProfessionalIntentionSupport,
+  getAdminWorkerProfessionalIntentionCompletionWorkspace,
   getAdminWorkers,
   updateAdminWorker,
   updateAdminWorkerConversation,
@@ -34,6 +35,7 @@ import type {
   AdminLearningWorkerPerformance,
   AdminMe,
   AdminProfessionalIntentionSupportResponse,
+  ProfessionalIntentionCompletionWorkspaceResponse,
   AdminWorker,
   AdminWorkerCreate,
   AdminWorkerConversation,
@@ -3061,6 +3063,14 @@ function AdminWorkersContent() {
     useState<AdminProfessionalIntentionSupportResponse | null>(null);
   const [professionalIntentionSupportLoading, setProfessionalIntentionSupportLoading] =
     useState(false);
+  const [
+    professionalIntentionCompletionWorkspace,
+    setProfessionalIntentionCompletionWorkspace,
+  ] = useState<ProfessionalIntentionCompletionWorkspaceResponse | null>(null);
+  const [
+    professionalIntentionCompletionWorkspaceLoading,
+    setProfessionalIntentionCompletionWorkspaceLoading,
+  ] = useState(false);
 
   const [conversationWorkerFilter, setConversationWorkerFilter] = useState<string>("all");
   const [editingConversationId, setEditingConversationId] = useState<number | null>(null);
@@ -3365,6 +3375,21 @@ function AdminWorkersContent() {
     }
   }
 
+  async function loadProfessionalIntentionCompletionWorkspace(workerId: number) {
+    setProfessionalIntentionCompletionWorkspace(null);
+    setProfessionalIntentionCompletionWorkspaceLoading(true);
+
+    try {
+      const workspace =
+        await getAdminWorkerProfessionalIntentionCompletionWorkspace(workerId);
+      setProfessionalIntentionCompletionWorkspace(workspace);
+    } catch {
+      setProfessionalIntentionCompletionWorkspace(null);
+    } finally {
+      setProfessionalIntentionCompletionWorkspaceLoading(false);
+    }
+  }
+
   function fillWorkerForm(worker: AdminWorker) {
     setSelectedWorkerId(worker.id);
     setWorkerForm({
@@ -3380,6 +3405,7 @@ function AdminWorkersContent() {
   function openWorkerContext(worker: AdminWorker, nextViewMode?: WorkersViewMode) {
     fillWorkerForm(worker);
     void loadProfessionalIntentionSupport(worker.id);
+    void loadProfessionalIntentionCompletionWorkspace(worker.id);
 
     if (nextViewMode) {
       setViewMode(nextViewMode);
@@ -3402,6 +3428,8 @@ function AdminWorkersContent() {
     setWorkerForm(EMPTY_WORKER_FORM);
     setProfessionalIntentionSupport(null);
     setProfessionalIntentionSupportLoading(false);
+    setProfessionalIntentionCompletionWorkspace(null);
+    setProfessionalIntentionCompletionWorkspaceLoading(false);
     setConversationWorkerFilter("all");
     setConversationForm((prev) => ({
       ...prev,
@@ -5348,6 +5376,138 @@ function AdminWorkersContent() {
                         )}
                       </div>
                     ) : null}
+
+                    <div className="card-soft stack" style={{ gap: 10 }}>
+                      <div
+                        className="row space-between"
+                        style={{ gap: 8, flexWrap: "wrap", alignItems: "center" }}
+                      >
+                        <strong>Professional Intention Completion Workspace</strong>
+
+                        {professionalIntentionCompletionWorkspaceLoading ? (
+                          <span className="badge">Loading...</span>
+                        ) : professionalIntentionCompletionWorkspace ? (
+                          <span className="badge">
+                            {normalizeDisplayLabel(
+                              professionalIntentionCompletionWorkspace.readiness_state,
+                            )}
+                          </span>
+                        ) : null}
+                      </div>
+
+                      {!professionalIntentionCompletionWorkspaceLoading &&
+                      !professionalIntentionCompletionWorkspace ? (
+                        <div className="muted">
+                          No clarification workspace is currently available for this worker.
+                        </div>
+                      ) : null}
+
+                      {professionalIntentionCompletionWorkspace?.completion_closed ? (
+                        <div className="muted">
+                          Professional Intention clarification is complete. No further clarification
+                          is currently required.
+                        </div>
+                      ) : null}
+
+                      {professionalIntentionCompletionWorkspace?.items ? (
+                        professionalIntentionCompletionWorkspace.items.length === 0 &&
+                        !professionalIntentionCompletionWorkspace.completion_closed ? (
+                          <div className="muted">
+                            No blocking clarification item is currently available.
+                          </div>
+                        ) : (
+                          <div className="stack" style={{ gap: 10 }}>
+                            {professionalIntentionCompletionWorkspace.items.map((item, index) => (
+                              <div
+                                className="stack"
+                                key={`${item.dimension}-${index}`}
+                                style={{
+                                  gap: 8,
+                                  padding: "12px",
+                                  borderRadius: 12,
+                                  border: "1px solid var(--border)",
+                                }}
+                              >
+                                <div
+                                  className="row space-between"
+                                  style={{ gap: 8, flexWrap: "wrap", alignItems: "flex-start" }}
+                                >
+                                  <div className="stack" style={{ gap: 3 }}>
+                                    <strong>{normalizeDisplayLabel(item.dimension)}</strong>
+                                    <div className="muted">{item.reason}</div>
+                                  </div>
+
+                                  <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
+                                    <span className="badge">
+                                      {normalizeDisplayLabel(item.current_state)}
+                                    </span>
+                                    <span className="badge">
+                                      {normalizeDisplayLabel(item.resolution_status)}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div className="stack" style={{ gap: 3 }}>
+                                  <strong style={{ fontSize: 13 }}>Suggested clarification</strong>
+                                  <div>{item.suggested_question}</div>
+                                </div>
+
+                                <div className="stack" style={{ gap: 3 }}>
+                                  <strong style={{ fontSize: 13 }}>Resolution condition</strong>
+                                  <div className="muted">{item.resolution_condition}</div>
+                                </div>
+
+                                <div className="muted">
+                                  Requested source:{" "}
+                                  {normalizeDisplayLabel(item.requested_source_actor)}
+                                </div>
+
+                                <div className="stack" style={{ gap: 6 }}>
+                                  <strong style={{ fontSize: 13 }}>Evidence already known</strong>
+
+                                  {item.evidence.length === 0 ? (
+                                    <div className="muted">
+                                      No candidate evidence is currently available for this dimension.
+                                    </div>
+                                  ) : (
+                                    item.evidence.map((evidence, evidenceIndex) => (
+                                      <div
+                                        className="card-soft stack"
+                                        key={`${item.dimension}-evidence-${evidenceIndex}`}
+                                        style={{ gap: 5, padding: "9px 10px" }}
+                                      >
+                                        <div
+                                          className="row"
+                                          style={{ gap: 6, flexWrap: "wrap", alignItems: "center" }}
+                                        >
+                                          <span className="badge">
+                                            {normalizeDisplayLabel(evidence.source_type)}
+                                          </span>
+                                          <span className="badge">
+                                            source: {normalizeDisplayLabel(evidence.source_actor)}
+                                          </span>
+                                          <span className="badge">
+                                            captured by:{" "}
+                                            {normalizeDisplayLabel(evidence.captured_by_actor)}
+                                          </span>
+                                        </div>
+
+                                        <div className="muted">{evidence.summary}</div>
+
+                                        <div className="muted">
+                                          Candidate evidence only — resolution support:{" "}
+                                          {evidence.supports_resolution ? "confirmed" : "not confirmed"}
+                                        </div>
+                                      </div>
+                                    ))
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )
+                      ) : null}
+                    </div>
                   </div>
 
                   <div className="stack">
