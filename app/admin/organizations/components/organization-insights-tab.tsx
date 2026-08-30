@@ -641,7 +641,11 @@ export function OrganizationInsightsTab({
           ) : null}
         </div>
 
-        {!professionalIntentionCompletionWorkspaceLoading &&
+        <div
+          className="stack scroll-panel"
+          style={{ gap: 12, maxHeight: 680 }}
+        >
+          {!professionalIntentionCompletionWorkspaceLoading &&
         !professionalIntentionCompletionWorkspace ? (
           <div className="muted">
             No clarification workspace is currently available for this worker.
@@ -764,6 +768,7 @@ export function OrganizationInsightsTab({
             </div>
           )
         ) : null}
+        </div>
       </div>
     </div>
   );
