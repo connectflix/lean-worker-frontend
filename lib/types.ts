@@ -1489,6 +1489,7 @@ export type ProfessionalIntentionCompletionItem = {
 export type ProfessionalIntentionCompletionWorkspaceResponse = {
   readiness_state: ProfessionalIntentionReadinessState;
   completion_closed: boolean;
+  initialization_available: boolean;
   items: ProfessionalIntentionCompletionItem[];
 };
 

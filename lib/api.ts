@@ -1827,6 +1827,18 @@ export async function getAdminWorkerProfessionalIntentionCompletionWorkspace(
 }
 
 
+export async function initializeAdminWorkerProfessionalIntention(
+  workerId: number,
+): Promise<{ initialized: boolean }> {
+  return adminApiFetch<{ initialized: boolean }>(
+    `/admin/workers/${workerId}/professional-intention/initialize`,
+    {
+      method: "POST",
+    },
+  );
+}
+
+
 export async function getAdminOrganizationWorkerConversations(
   organizationId: number,
   workerId: number,

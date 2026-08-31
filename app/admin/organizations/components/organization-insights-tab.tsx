@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getAdminWorkerProfessionalIntentionCompletionWorkspace } from "@/lib/api";
+import {
+  getAdminWorkerProfessionalIntentionCompletionWorkspace,
+  initializeAdminWorkerProfessionalIntention,
+} from "@/lib/api";
 import type {
   AdminOrganizationWorkerSummary,
   OrganizationWorkerGuidanceResponse,
@@ -177,6 +180,14 @@ export function OrganizationInsightsTab({
     professionalIntentionCompletionWorkspaceLoading,
     setProfessionalIntentionCompletionWorkspaceLoading,
   ] = useState(false);
+  const [
+    professionalIntentionInitializationLoading,
+    setProfessionalIntentionInitializationLoading,
+  ] = useState(false);
+  const [
+    professionalIntentionInitializationError,
+    setProfessionalIntentionInitializationError,
+  ] = useState<string | null>(null);
 
   async function loadProfessionalIntentionCompletionWorkspace(workerId: number) {
     setProfessionalIntentionCompletionWorkspace(null);
@@ -193,12 +204,39 @@ export function OrganizationInsightsTab({
     }
   }
 
+  async function handleInitializeProfessionalIntention() {
+    if (!selectedWorkerSummary) {
+      return;
+    }
+
+    setProfessionalIntentionInitializationError(null);
+    setProfessionalIntentionInitializationLoading(true);
+
+    try {
+      await initializeAdminWorkerProfessionalIntention(
+        selectedWorkerSummary.worker.id
+      );
+      await loadProfessionalIntentionCompletionWorkspace(
+        selectedWorkerSummary.worker.id
+      );
+    } catch {
+      setProfessionalIntentionInitializationError(
+        "Professional Intention initialization failed. Please try again."
+      );
+    } finally {
+      setProfessionalIntentionInitializationLoading(false);
+    }
+  }
+
   useEffect(() => {
     if (!selectedWorkerSummary) {
       setProfessionalIntentionCompletionWorkspace(null);
       setProfessionalIntentionCompletionWorkspaceLoading(false);
+      setProfessionalIntentionInitializationError(null);
       return;
     }
+
+    setProfessionalIntentionInitializationError(null);
 
     void loadProfessionalIntentionCompletionWorkspace(
       selectedWorkerSummary.worker.id
@@ -630,16 +668,43 @@ export function OrganizationInsightsTab({
             </div>
           </div>
 
-          {professionalIntentionCompletionWorkspaceLoading ? (
-            <span className="badge">Loading...</span>
-          ) : professionalIntentionCompletionWorkspace ? (
-            <span className="badge">
-              {professionalIntentionCompletionWorkspace.readiness_state
-                .replaceAll("_", " ")
-                .replace(/\b\w/g, (character) => character.toUpperCase())}
-            </span>
-          ) : null}
+          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+            {professionalIntentionCompletionWorkspaceLoading ? (
+              <span className="badge">Loading...</span>
+            ) : professionalIntentionCompletionWorkspace ? (
+              <span className="badge">
+                {professionalIntentionCompletionWorkspace.readiness_state
+                  .replaceAll("_", " ")
+                  .replace(/\b\w/g, (character) => character.toUpperCase())}
+              </span>
+            ) : null}
+
+            {professionalIntentionCompletionWorkspace?.initialization_available ? (
+              <button
+                type="button"
+                className="button"
+                disabled={professionalIntentionInitializationLoading}
+                onClick={handleInitializeProfessionalIntention}
+              >
+                {professionalIntentionInitializationLoading
+                  ? "Initializing..."
+                  : "Initialize Professional Intention"}
+              </button>
+            ) : null}
+          </div>
         </div>
+
+        {professionalIntentionInitializationError ? (
+          <div
+            style={{
+              color: "var(--danger)",
+              fontSize: 13,
+              lineHeight: 1.5,
+            }}
+          >
+            {professionalIntentionInitializationError}
+          </div>
+        ) : null}
 
         <div
           className="stack scroll-panel"
