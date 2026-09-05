@@ -134,7 +134,41 @@ describe(
       );
     });
 
-    it("keeps the Worker Insights workspace read-only and bounded", () => {
+    it("allows only the bounded explicit worker clarification mutation", () => {
+      expect(source).toContain(
+        "recordAdminWorkerProfessionalIntentionClarification",
+      );
+
+      expect(source).toContain(
+        'item.dimension === "target_horizon"',
+      );
+
+      const body = functionBody(
+        "handleRecordTargetHorizonClarification",
+      );
+
+      expect(body).toContain(
+        "recordAdminWorkerProfessionalIntentionClarification",
+      );
+
+      expect(body).toContain(
+        'dimension: "target_horizon"',
+      );
+
+      expect(body).toContain(
+        "answer_text: answerText",
+      );
+
+      expect(body).toContain(
+        "target_horizon_months: targetHorizonMonths",
+      );
+
+      expect(body).toContain(
+        "loadProfessionalIntentionCompletionWorkspace",
+      );
+    });
+
+    it("keeps the Worker Insights workspace bounded from unrelated mutations", () => {
       const workspaceStart = source.indexOf(
         "Professional Intention Completion Workspace",
       );
@@ -147,7 +181,6 @@ describe(
       );
 
       for (const forbidden of [
-        "record worker answer",
         "save clarification",
         "submit clarification",
         "professional_plan",

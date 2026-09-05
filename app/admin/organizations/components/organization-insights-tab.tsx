@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   getAdminWorkerProfessionalIntentionCompletionWorkspace,
   initializeAdminWorkerProfessionalIntention,
+  recordAdminWorkerProfessionalIntentionClarification,
 } from "@/lib/api";
 import type {
   AdminOrganizationWorkerSummary,
@@ -188,6 +189,22 @@ export function OrganizationInsightsTab({
     professionalIntentionInitializationError,
     setProfessionalIntentionInitializationError,
   ] = useState<string | null>(null);
+  const [
+    professionalIntentionClarificationAnswer,
+    setProfessionalIntentionClarificationAnswer,
+  ] = useState("");
+  const [
+    professionalIntentionClarificationHorizonMonths,
+    setProfessionalIntentionClarificationHorizonMonths,
+  ] = useState("");
+  const [
+    professionalIntentionClarificationLoading,
+    setProfessionalIntentionClarificationLoading,
+  ] = useState(false);
+  const [
+    professionalIntentionClarificationError,
+    setProfessionalIntentionClarificationError,
+  ] = useState<string | null>(null);
 
   async function loadProfessionalIntentionCompletionWorkspace(workerId: number) {
     setProfessionalIntentionCompletionWorkspace(null);
@@ -228,15 +245,72 @@ export function OrganizationInsightsTab({
     }
   }
 
+  async function handleRecordTargetHorizonClarification() {
+    if (!selectedWorkerSummary) {
+      return;
+    }
+
+    const answerText = professionalIntentionClarificationAnswer.trim();
+    const targetHorizonMonths = Number(
+      professionalIntentionClarificationHorizonMonths,
+    );
+
+    if (
+      !answerText ||
+      !Number.isInteger(targetHorizonMonths) ||
+      targetHorizonMonths < 1
+    ) {
+      setProfessionalIntentionClarificationError(
+        "Enter the worker's answer and a valid target horizon in months.",
+      );
+      return;
+    }
+
+    setProfessionalIntentionClarificationError(null);
+    setProfessionalIntentionClarificationLoading(true);
+
+    try {
+      await recordAdminWorkerProfessionalIntentionClarification(
+        selectedWorkerSummary.worker.id,
+        {
+          dimension: "target_horizon",
+          answer_text: answerText,
+          target_horizon_months: targetHorizonMonths,
+        },
+      );
+
+      setProfessionalIntentionClarificationAnswer("");
+      setProfessionalIntentionClarificationHorizonMonths("");
+
+      await loadProfessionalIntentionCompletionWorkspace(
+        selectedWorkerSummary.worker.id,
+      );
+    } catch {
+      setProfessionalIntentionClarificationError(
+        "Recording the worker clarification failed. Please try again.",
+      );
+    } finally {
+      setProfessionalIntentionClarificationLoading(false);
+    }
+  }
+
   useEffect(() => {
     if (!selectedWorkerSummary) {
       setProfessionalIntentionCompletionWorkspace(null);
       setProfessionalIntentionCompletionWorkspaceLoading(false);
       setProfessionalIntentionInitializationError(null);
+      setProfessionalIntentionClarificationAnswer("");
+      setProfessionalIntentionClarificationHorizonMonths("");
+      setProfessionalIntentionClarificationError(null);
+      setProfessionalIntentionClarificationLoading(false);
       return;
     }
 
     setProfessionalIntentionInitializationError(null);
+    setProfessionalIntentionClarificationAnswer("");
+    setProfessionalIntentionClarificationHorizonMonths("");
+    setProfessionalIntentionClarificationError(null);
+    setProfessionalIntentionClarificationLoading(false);
 
     void loadProfessionalIntentionCompletionWorkspace(
       selectedWorkerSummary.worker.id
@@ -706,6 +780,18 @@ export function OrganizationInsightsTab({
           </div>
         ) : null}
 
+        {professionalIntentionClarificationError ? (
+          <div
+            style={{
+              color: "var(--danger)",
+              fontSize: 13,
+              lineHeight: 1.5,
+            }}
+          >
+            {professionalIntentionClarificationError}
+          </div>
+        ) : null}
+
         <div
           className="stack scroll-panel"
           style={{ gap: 12, maxHeight: 680 }}
@@ -777,6 +863,64 @@ export function OrganizationInsightsTab({
                       <strong>Resolution condition</strong>
                       <div className="muted">{item.resolution_condition}</div>
                     </div>
+
+                    {item.dimension === "target_horizon" ? (
+                      <div className="card-soft stack" style={{ gap: 10 }}>
+                        <strong>Record worker answer</strong>
+
+                        <label className="stack" style={{ gap: 6 }}>
+                          <span>Worker answer</span>
+                          <textarea
+                            className="input"
+                            value={professionalIntentionClarificationAnswer}
+                            disabled={professionalIntentionClarificationLoading}
+                            onChange={(event) =>
+                              setProfessionalIntentionClarificationAnswer(
+                                event.target.value,
+                              )
+                            }
+                            rows={3}
+                            placeholder="Record the worker's exact answer."
+                          />
+                        </label>
+
+                        <label className="stack" style={{ gap: 6 }}>
+                          <span>Target horizon in months</span>
+                          <input
+                            className="input"
+                            type="number"
+                            min={1}
+                            step={1}
+                            value={professionalIntentionClarificationHorizonMonths}
+                            disabled={professionalIntentionClarificationLoading}
+                            onChange={(event) =>
+                              setProfessionalIntentionClarificationHorizonMonths(
+                                event.target.value,
+                              )
+                            }
+                          />
+                        </label>
+
+                        <div>
+                          <button
+                            type="button"
+                            className="button"
+                            disabled={professionalIntentionClarificationLoading}
+                            onClick={handleRecordTargetHorizonClarification}
+                          >
+                            {professionalIntentionClarificationLoading
+                              ? "Recording..."
+                              : "Record worker answer"}
+                          </button>
+                        </div>
+
+                        <div className="fine-print">
+                          The worker's exact answer is preserved as worker-authored
+                          truth. The horizon in months is the normalized structured
+                          value used to update the canonical Professional Intention.
+                        </div>
+                      </div>
+                    ) : null}
 
                     <div className="muted">
                       Requested source:{" "}

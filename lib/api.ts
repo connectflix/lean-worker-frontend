@@ -1839,6 +1839,24 @@ export async function initializeAdminWorkerProfessionalIntention(
 }
 
 
+export async function recordAdminWorkerProfessionalIntentionClarification(
+  workerId: number,
+  payload: {
+    dimension: "target_horizon";
+    answer_text: string;
+    target_horizon_months: number;
+  },
+): Promise<{ recorded: boolean }> {
+  return adminApiFetch<{ recorded: boolean }>(
+    `/admin/workers/${workerId}/professional-intention/clarifications`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+
 export async function getAdminOrganizationWorkerConversations(
   organizationId: number,
   workerId: number,
