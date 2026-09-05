@@ -915,7 +915,7 @@ export function OrganizationInsightsTab({
                         </div>
 
                         <div className="fine-print">
-                          The worker's exact answer is preserved as worker-authored
+                          The worker&apos;s exact answer is preserved as worker-authored
                           truth. The horizon in months is the normalized structured
                           value used to update the canonical Professional Intention.
                         </div>
