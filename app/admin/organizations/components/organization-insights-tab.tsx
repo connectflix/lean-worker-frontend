@@ -198,6 +198,22 @@ export function OrganizationInsightsTab({
     setProfessionalIntentionClarificationHorizonMonths,
   ] = useState("");
   const [
+    professionalIntentionClarificationMovementSummary,
+    setProfessionalIntentionClarificationMovementSummary,
+  ] = useState("");
+  const [
+    professionalIntentionClarificationTargetIdentity,
+    setProfessionalIntentionClarificationTargetIdentity,
+  ] = useState("");
+  const [
+    professionalIntentionClarificationDesiredImpact,
+    setProfessionalIntentionClarificationDesiredImpact,
+  ] = useState("");
+  const [
+    professionalIntentionClarificationShortTermMission,
+    setProfessionalIntentionClarificationShortTermMission,
+  ] = useState("");
+  const [
     professionalIntentionClarificationLoading,
     setProfessionalIntentionClarificationLoading,
   ] = useState(false);
@@ -294,6 +310,182 @@ export function OrganizationInsightsTab({
     }
   }
 
+  async function handleRecordMovementDefinitionClarification() {
+    if (!selectedWorkerSummary) {
+      return;
+    }
+
+    const answerText = professionalIntentionClarificationAnswer.trim();
+    const movementSummary =
+      professionalIntentionClarificationMovementSummary.trim();
+
+    if (!answerText || !movementSummary) {
+      setProfessionalIntentionClarificationError(
+        "Enter the worker's answer and a movement summary.",
+      );
+      return;
+    }
+
+    setProfessionalIntentionClarificationError(null);
+    setProfessionalIntentionClarificationLoading(true);
+
+    try {
+      await recordAdminWorkerProfessionalIntentionClarification(
+        selectedWorkerSummary.worker.id,
+        {
+          dimension: "movement_definition",
+          answer_text: answerText,
+          movement_summary: movementSummary,
+        },
+      );
+
+      setProfessionalIntentionClarificationAnswer("");
+      setProfessionalIntentionClarificationMovementSummary("");
+
+      await loadProfessionalIntentionCompletionWorkspace(
+        selectedWorkerSummary.worker.id,
+      );
+    } catch {
+      setProfessionalIntentionClarificationError(
+        "Recording the worker clarification failed. Please try again.",
+      );
+    } finally {
+      setProfessionalIntentionClarificationLoading(false);
+    }
+  }
+
+  async function handleRecordTargetStateClarification() {
+    if (!selectedWorkerSummary) {
+      return;
+    }
+
+    const answerText = professionalIntentionClarificationAnswer.trim();
+    const targetIdentity =
+      professionalIntentionClarificationTargetIdentity.trim();
+
+    if (!answerText || !targetIdentity) {
+      setProfessionalIntentionClarificationError(
+        "Enter the worker's answer and a target identity.",
+      );
+      return;
+    }
+
+    setProfessionalIntentionClarificationError(null);
+    setProfessionalIntentionClarificationLoading(true);
+
+    try {
+      await recordAdminWorkerProfessionalIntentionClarification(
+        selectedWorkerSummary.worker.id,
+        {
+          dimension: "target_state",
+          answer_text: answerText,
+          target_identity: targetIdentity,
+        },
+      );
+
+      setProfessionalIntentionClarificationAnswer("");
+      setProfessionalIntentionClarificationTargetIdentity("");
+
+      await loadProfessionalIntentionCompletionWorkspace(
+        selectedWorkerSummary.worker.id,
+      );
+    } catch {
+      setProfessionalIntentionClarificationError(
+        "Recording the worker clarification failed. Please try again.",
+      );
+    } finally {
+      setProfessionalIntentionClarificationLoading(false);
+    }
+  }
+
+  async function handleRecordDesiredOutcomesClarification() {
+    if (!selectedWorkerSummary) {
+      return;
+    }
+
+    const answerText = professionalIntentionClarificationAnswer.trim();
+    const desiredImpact =
+      professionalIntentionClarificationDesiredImpact.trim();
+
+    if (!answerText || !desiredImpact) {
+      setProfessionalIntentionClarificationError(
+        "Enter the worker's answer and a desired impact.",
+      );
+      return;
+    }
+
+    setProfessionalIntentionClarificationError(null);
+    setProfessionalIntentionClarificationLoading(true);
+
+    try {
+      await recordAdminWorkerProfessionalIntentionClarification(
+        selectedWorkerSummary.worker.id,
+        {
+          dimension: "desired_outcomes",
+          answer_text: answerText,
+          desired_impact: [desiredImpact],
+        },
+      );
+
+      setProfessionalIntentionClarificationAnswer("");
+      setProfessionalIntentionClarificationDesiredImpact("");
+
+      await loadProfessionalIntentionCompletionWorkspace(
+        selectedWorkerSummary.worker.id,
+      );
+    } catch {
+      setProfessionalIntentionClarificationError(
+        "Recording the worker clarification failed. Please try again.",
+      );
+    } finally {
+      setProfessionalIntentionClarificationLoading(false);
+    }
+  }
+
+  async function handleRecordProgressMarkersClarification() {
+    if (!selectedWorkerSummary) {
+      return;
+    }
+
+    const answerText = professionalIntentionClarificationAnswer.trim();
+    const shortTermMission =
+      professionalIntentionClarificationShortTermMission.trim();
+
+    if (!answerText || !shortTermMission) {
+      setProfessionalIntentionClarificationError(
+        "Enter the worker's answer and a short-term mission.",
+      );
+      return;
+    }
+
+    setProfessionalIntentionClarificationError(null);
+    setProfessionalIntentionClarificationLoading(true);
+
+    try {
+      await recordAdminWorkerProfessionalIntentionClarification(
+        selectedWorkerSummary.worker.id,
+        {
+          dimension: "progress_markers",
+          answer_text: answerText,
+          short_term_missions: [shortTermMission],
+        },
+      );
+
+      setProfessionalIntentionClarificationAnswer("");
+      setProfessionalIntentionClarificationShortTermMission("");
+
+      await loadProfessionalIntentionCompletionWorkspace(
+        selectedWorkerSummary.worker.id,
+      );
+    } catch {
+      setProfessionalIntentionClarificationError(
+        "Recording the worker clarification failed. Please try again.",
+      );
+    } finally {
+      setProfessionalIntentionClarificationLoading(false);
+    }
+  }
+
   useEffect(() => {
     if (!selectedWorkerSummary) {
       setProfessionalIntentionCompletionWorkspace(null);
@@ -301,6 +493,10 @@ export function OrganizationInsightsTab({
       setProfessionalIntentionInitializationError(null);
       setProfessionalIntentionClarificationAnswer("");
       setProfessionalIntentionClarificationHorizonMonths("");
+      setProfessionalIntentionClarificationMovementSummary("");
+      setProfessionalIntentionClarificationTargetIdentity("");
+      setProfessionalIntentionClarificationDesiredImpact("");
+      setProfessionalIntentionClarificationShortTermMission("");
       setProfessionalIntentionClarificationError(null);
       setProfessionalIntentionClarificationLoading(false);
       return;
@@ -309,6 +505,10 @@ export function OrganizationInsightsTab({
     setProfessionalIntentionInitializationError(null);
     setProfessionalIntentionClarificationAnswer("");
     setProfessionalIntentionClarificationHorizonMonths("");
+    setProfessionalIntentionClarificationMovementSummary("");
+    setProfessionalIntentionClarificationTargetIdentity("");
+    setProfessionalIntentionClarificationDesiredImpact("");
+    setProfessionalIntentionClarificationShortTermMission("");
     setProfessionalIntentionClarificationError(null);
     setProfessionalIntentionClarificationLoading(false);
 
@@ -917,6 +1117,234 @@ export function OrganizationInsightsTab({
                         <div className="fine-print">
                           The worker&apos;s exact answer is preserved as worker-authored
                           truth. The horizon in months is the normalized structured
+                          value used to update the canonical Professional Intention.
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {item.dimension === "movement_definition" ? (
+                      <div className="card-soft stack" style={{ gap: 10 }}>
+                        <strong>Record worker answer</strong>
+
+                        <label className="stack" style={{ gap: 6 }}>
+                          <span>Worker answer</span>
+                          <textarea
+                            className="input"
+                            value={professionalIntentionClarificationAnswer}
+                            disabled={professionalIntentionClarificationLoading}
+                            onChange={(event) =>
+                              setProfessionalIntentionClarificationAnswer(
+                                event.target.value,
+                              )
+                            }
+                            rows={3}
+                            placeholder="Record the worker's exact answer."
+                          />
+                        </label>
+
+                        <label className="stack" style={{ gap: 6 }}>
+                          <span>Movement summary</span>
+                          <textarea
+                            className="input"
+                            value={professionalIntentionClarificationMovementSummary}
+                            disabled={professionalIntentionClarificationLoading}
+                            onChange={(event) =>
+                              setProfessionalIntentionClarificationMovementSummary(
+                                event.target.value,
+                              )
+                            }
+                            rows={3}
+                            placeholder="Capture the normalized professional movement."
+                          />
+                        </label>
+
+                        <div>
+                          <button
+                            type="button"
+                            className="button"
+                            disabled={professionalIntentionClarificationLoading}
+                            onClick={handleRecordMovementDefinitionClarification}
+                          >
+                            {professionalIntentionClarificationLoading
+                              ? "Recording..."
+                              : "Record worker answer"}
+                          </button>
+                        </div>
+
+                        <div className="fine-print">
+                          The worker&apos;s exact answer is preserved as worker-authored
+                          truth. The movement summary is the normalized structured
+                          value used to update the canonical Professional Intention.
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {item.dimension === "target_state" ? (
+                      <div className="card-soft stack" style={{ gap: 10 }}>
+                        <strong>Record worker answer</strong>
+
+                        <label className="stack" style={{ gap: 6 }}>
+                          <span>Worker answer</span>
+                          <textarea
+                            className="input"
+                            value={professionalIntentionClarificationAnswer}
+                            disabled={professionalIntentionClarificationLoading}
+                            onChange={(event) =>
+                              setProfessionalIntentionClarificationAnswer(
+                                event.target.value,
+                              )
+                            }
+                            rows={3}
+                            placeholder="Record the worker's exact answer."
+                          />
+                        </label>
+
+                        <label className="stack" style={{ gap: 6 }}>
+                          <span>Target identity</span>
+                          <textarea
+                            className="input"
+                            value={professionalIntentionClarificationTargetIdentity}
+                            disabled={professionalIntentionClarificationLoading}
+                            onChange={(event) =>
+                              setProfessionalIntentionClarificationTargetIdentity(
+                                event.target.value,
+                              )
+                            }
+                            rows={3}
+                            placeholder="Capture the normalized target professional identity."
+                          />
+                        </label>
+
+                        <div>
+                          <button
+                            type="button"
+                            className="button"
+                            disabled={professionalIntentionClarificationLoading}
+                            onClick={handleRecordTargetStateClarification}
+                          >
+                            {professionalIntentionClarificationLoading
+                              ? "Recording..."
+                              : "Record worker answer"}
+                          </button>
+                        </div>
+
+                        <div className="fine-print">
+                          The worker&apos;s exact answer is preserved as worker-authored
+                          truth. The target identity is the normalized structured
+                          value used to update the canonical Professional Intention.
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {item.dimension === "desired_outcomes" ? (
+                      <div className="card-soft stack" style={{ gap: 10 }}>
+                        <strong>Record worker answer</strong>
+
+                        <label className="stack" style={{ gap: 6 }}>
+                          <span>Worker answer</span>
+                          <textarea
+                            className="input"
+                            value={professionalIntentionClarificationAnswer}
+                            disabled={professionalIntentionClarificationLoading}
+                            onChange={(event) =>
+                              setProfessionalIntentionClarificationAnswer(
+                                event.target.value,
+                              )
+                            }
+                            rows={3}
+                            placeholder="Record the worker's exact answer."
+                          />
+                        </label>
+
+                        <label className="stack" style={{ gap: 6 }}>
+                          <span>Desired impact</span>
+                          <textarea
+                            className="input"
+                            value={professionalIntentionClarificationDesiredImpact}
+                            disabled={professionalIntentionClarificationLoading}
+                            onChange={(event) =>
+                              setProfessionalIntentionClarificationDesiredImpact(
+                                event.target.value,
+                              )
+                            }
+                            rows={3}
+                            placeholder="Capture the normalized desired professional impact."
+                          />
+                        </label>
+
+                        <div>
+                          <button
+                            type="button"
+                            className="button"
+                            disabled={professionalIntentionClarificationLoading}
+                            onClick={handleRecordDesiredOutcomesClarification}
+                          >
+                            {professionalIntentionClarificationLoading
+                              ? "Recording..."
+                              : "Record worker answer"}
+                          </button>
+                        </div>
+
+                        <div className="fine-print">
+                          The worker&apos;s exact answer is preserved as worker-authored
+                          truth. The desired impact is the normalized structured
+                          value used to update the canonical Professional Intention.
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {item.dimension === "progress_markers" ? (
+                      <div className="card-soft stack" style={{ gap: 10 }}>
+                        <strong>Record worker answer</strong>
+
+                        <label className="stack" style={{ gap: 6 }}>
+                          <span>Worker answer</span>
+                          <textarea
+                            className="input"
+                            value={professionalIntentionClarificationAnswer}
+                            disabled={professionalIntentionClarificationLoading}
+                            onChange={(event) =>
+                              setProfessionalIntentionClarificationAnswer(
+                                event.target.value,
+                              )
+                            }
+                            rows={3}
+                            placeholder="Record the worker's exact answer."
+                          />
+                        </label>
+
+                        <label className="stack" style={{ gap: 6 }}>
+                          <span>Short-term mission</span>
+                          <textarea
+                            className="input"
+                            value={professionalIntentionClarificationShortTermMission}
+                            disabled={professionalIntentionClarificationLoading}
+                            onChange={(event) =>
+                              setProfessionalIntentionClarificationShortTermMission(
+                                event.target.value,
+                              )
+                            }
+                            rows={3}
+                            placeholder="Capture one normalized short-term mission."
+                          />
+                        </label>
+
+                        <div>
+                          <button
+                            type="button"
+                            className="button"
+                            disabled={professionalIntentionClarificationLoading}
+                            onClick={handleRecordProgressMarkersClarification}
+                          >
+                            {professionalIntentionClarificationLoading
+                              ? "Recording..."
+                              : "Record worker answer"}
+                          </button>
+                        </div>
+
+                        <div className="fine-print">
+                          The worker&apos;s exact answer is preserved as worker-authored
+                          truth. The short-term mission is the normalized structured
                           value used to update the canonical Professional Intention.
                         </div>
                       </div>

@@ -1841,11 +1841,32 @@ export async function initializeAdminWorkerProfessionalIntention(
 
 export async function recordAdminWorkerProfessionalIntentionClarification(
   workerId: number,
-  payload: {
-    dimension: "target_horizon";
-    answer_text: string;
-    target_horizon_months: number;
-  },
+  payload:
+    | {
+        dimension: "target_horizon";
+        answer_text: string;
+        target_horizon_months: number;
+      }
+    | {
+        dimension: "movement_definition";
+        answer_text: string;
+        movement_summary: string;
+      }
+    | {
+        dimension: "target_state";
+        answer_text: string;
+        target_identity: string;
+      }
+    | {
+        dimension: "desired_outcomes";
+        answer_text: string;
+        desired_impact: string[];
+      }
+    | {
+        dimension: "progress_markers";
+        answer_text: string;
+        short_term_missions: string[];
+      },
 ): Promise<{ recorded: boolean }> {
   return adminApiFetch<{ recorded: boolean }>(
     `/admin/workers/${workerId}/professional-intention/clarifications`,

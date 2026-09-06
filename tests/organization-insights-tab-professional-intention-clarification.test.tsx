@@ -75,6 +75,86 @@ const openWorkspace = {
   ],
 } as any;
 
+const movementWorkspace = {
+  readiness_state: "partially_ready",
+  completion_closed: false,
+  initialization_available: false,
+  items: [
+    {
+      dimension: "movement_definition",
+      current_state: "unknown",
+      reason: "The worker's current professional movement is not yet clear.",
+      suggested_question:
+        "What professional movement is the worker trying to accomplish now?",
+      requested_source_actor: "worker",
+      resolution_status: "open",
+      resolution_condition:
+        "A clear professional movement is established.",
+      evidence: [],
+    },
+  ],
+} as any;
+
+const targetStateWorkspace = {
+  readiness_state: "partially_ready",
+  completion_closed: false,
+  initialization_available: false,
+  items: [
+    {
+      dimension: "target_state",
+      current_state: "unknown",
+      reason: "The worker's target professional state is not yet clear.",
+      suggested_question:
+        "What role, professional identity, scope, or career direction does the worker want to reach?",
+      requested_source_actor: "worker",
+      resolution_status: "open",
+      resolution_condition:
+        "A sufficiently specific target role, identity, or direction is established.",
+      evidence: [],
+    },
+  ],
+} as any;
+
+const desiredOutcomesWorkspace = {
+  readiness_state: "partially_ready",
+  completion_closed: false,
+  initialization_available: false,
+  items: [
+    {
+      dimension: "desired_outcomes",
+      current_state: "unknown",
+      reason: "The worker's desired professional outcomes are not yet clear.",
+      suggested_question:
+        "What professional outcomes would make this movement meaningful for the worker?",
+      requested_source_actor: "worker",
+      resolution_status: "open",
+      resolution_condition:
+        "At least one sufficiently clear desired professional outcome is established.",
+      evidence: [],
+    },
+  ],
+} as any;
+
+const progressMarkersWorkspace = {
+  readiness_state: "partially_ready",
+  completion_closed: false,
+  initialization_available: false,
+  items: [
+    {
+      dimension: "progress_markers",
+      current_state: "unknown",
+      reason: "The worker's concrete progress markers are not yet clear.",
+      suggested_question:
+        "What concrete result, milestone, or change would show that the worker is making progress?",
+      requested_source_actor: "worker",
+      resolution_status: "open",
+      resolution_condition:
+        "At least one concrete progress marker is established.",
+      evidence: [],
+    },
+  ],
+} as any;
+
 const closedWorkspace = {
   readiness_state: "plan_ready",
   completion_closed: true,
@@ -194,20 +274,91 @@ describe("OrganizationInsightsTab Professional Intention clarification", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("does not expose the clarification form for non-target-horizon blockers", async () => {
+  it("records a worker movement definition answer and reloads the completion workspace", async () => {
     vi.mocked(
       getAdminWorkerProfessionalIntentionCompletionWorkspace,
-    ).mockResolvedValue({
-      ...openWorkspace,
-      items: [
-        {
-          ...openWorkspace.items[0],
-          dimension: "target_state",
-          suggested_question:
-            "What role, professional identity, scope, or career direction does the worker want to reach?",
+    )
+      .mockResolvedValueOnce(movementWorkspace)
+      .mockResolvedValueOnce(closedWorkspace);
+
+    renderComponent();
+
+    expect(
+      await screen.findByText("Movement Definition"),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText(
+        "What professional movement is the worker trying to accomplish now?",
+      ),
+    ).toBeInTheDocument();
+
+    fireEvent.change(
+      screen.getByLabelText("Worker answer"),
+      {
+        target: {
+          value:
+            "Je veux passer d'un rôle principalement opérationnel à un rôle de Business Architect.",
         },
-      ],
+      },
+    );
+
+    fireEvent.change(
+      screen.getByLabelText("Movement summary"),
+      {
+        target: {
+          value:
+            "Passer d'un rôle principalement opérationnel à un rôle de Business Architect.",
+        },
+      },
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Record worker answer",
+      }),
+    );
+
+    await waitFor(() => {
+      expect(
+        recordAdminWorkerProfessionalIntentionClarification,
+      ).toHaveBeenCalledWith(
+        7,
+        {
+          dimension: "movement_definition",
+          answer_text:
+            "Je veux passer d'un rôle principalement opérationnel à un rôle de Business Architect.",
+          movement_summary:
+            "Passer d'un rôle principalement opérationnel à un rôle de Business Architect.",
+        },
+      );
     });
+
+    await waitFor(() => {
+      expect(
+        getAdminWorkerProfessionalIntentionCompletionWorkspace,
+      ).toHaveBeenCalledTimes(2);
+    });
+
+    expect(
+      await screen.findByText(
+        "Professional Intention clarification is complete. No further clarification is currently required.",
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.queryByRole("button", {
+        name: "Record worker answer",
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("records a worker target state answer and reloads the completion workspace", async () => {
+    vi.mocked(
+      getAdminWorkerProfessionalIntentionCompletionWorkspace,
+    )
+      .mockResolvedValueOnce(targetStateWorkspace)
+      .mockResolvedValueOnce(closedWorkspace);
 
     renderComponent();
 
@@ -216,17 +367,228 @@ describe("OrganizationInsightsTab Professional Intention clarification", () => {
     ).toBeInTheDocument();
 
     expect(
+      screen.getByText(
+        "What role, professional identity, scope, or career direction does the worker want to reach?",
+      ),
+    ).toBeInTheDocument();
+
+    fireEvent.change(
+      screen.getByLabelText("Worker answer"),
+      {
+        target: {
+          value:
+            "Je veux devenir Business Architect avec un rôle plus stratégique et transverse.",
+        },
+      },
+    );
+
+    fireEvent.change(
+      screen.getByLabelText("Target identity"),
+      {
+        target: {
+          value:
+            "Business Architect avec un rôle stratégique et transverse.",
+        },
+      },
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Record worker answer",
+      }),
+    );
+
+    await waitFor(() => {
+      expect(
+        recordAdminWorkerProfessionalIntentionClarification,
+      ).toHaveBeenCalledWith(
+        7,
+        {
+          dimension: "target_state",
+          answer_text:
+            "Je veux devenir Business Architect avec un rôle plus stratégique et transverse.",
+          target_identity:
+            "Business Architect avec un rôle stratégique et transverse.",
+        },
+      );
+    });
+
+    await waitFor(() => {
+      expect(
+        getAdminWorkerProfessionalIntentionCompletionWorkspace,
+      ).toHaveBeenCalledTimes(2);
+    });
+
+    expect(
+      await screen.findByText(
+        "Professional Intention clarification is complete. No further clarification is currently required.",
+      ),
+    ).toBeInTheDocument();
+
+    expect(
       screen.queryByRole("button", {
         name: "Record worker answer",
       }),
     ).not.toBeInTheDocument();
+  });
+
+  it("records a worker desired outcomes answer and reloads the completion workspace", async () => {
+    vi.mocked(
+      getAdminWorkerProfessionalIntentionCompletionWorkspace,
+    )
+      .mockResolvedValueOnce(desiredOutcomesWorkspace)
+      .mockResolvedValueOnce(closedWorkspace);
+
+    renderComponent();
 
     expect(
-      screen.queryByLabelText("Worker answer"),
+      await screen.findByText("Desired Outcomes"),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText(
+        "What professional outcomes would make this movement meaningful for the worker?",
+      ),
+    ).toBeInTheDocument();
+
+    fireEvent.change(
+      screen.getByLabelText("Worker answer"),
+      {
+        target: {
+          value:
+            "Je veux avoir davantage d'impact sur les décisions stratégiques et sur la transformation de l'organisation.",
+        },
+      },
+    );
+
+    fireEvent.change(
+      screen.getByLabelText("Desired impact"),
+      {
+        target: {
+          value:
+            "Influencer les décisions stratégiques et contribuer directement à la transformation de l'organisation.",
+        },
+      },
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Record worker answer",
+      }),
+    );
+
+    await waitFor(() => {
+      expect(
+        recordAdminWorkerProfessionalIntentionClarification,
+      ).toHaveBeenCalledWith(
+        7,
+        {
+          dimension: "desired_outcomes",
+          answer_text:
+            "Je veux avoir davantage d'impact sur les décisions stratégiques et sur la transformation de l'organisation.",
+          desired_impact: [
+            "Influencer les décisions stratégiques et contribuer directement à la transformation de l'organisation.",
+          ],
+        },
+      );
+    });
+
+    await waitFor(() => {
+      expect(
+        getAdminWorkerProfessionalIntentionCompletionWorkspace,
+      ).toHaveBeenCalledTimes(2);
+    });
+
+    expect(
+      await screen.findByText(
+        "Professional Intention clarification is complete. No further clarification is currently required.",
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.queryByRole("button", {
+        name: "Record worker answer",
+      }),
     ).not.toBeInTheDocument();
+  });
+
+  it("records a worker progress markers answer and reloads the completion workspace", async () => {
+    vi.mocked(
+      getAdminWorkerProfessionalIntentionCompletionWorkspace,
+    )
+      .mockResolvedValueOnce(progressMarkersWorkspace)
+      .mockResolvedValueOnce(closedWorkspace);
+
+    renderComponent();
 
     expect(
-      screen.queryByLabelText("Target horizon in months"),
+      await screen.findByText("Progress Markers"),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText(
+        "What concrete result, milestone, or change would show that the worker is making progress?",
+      ),
+    ).toBeInTheDocument();
+
+    fireEvent.change(
+      screen.getByLabelText("Worker answer"),
+      {
+        target: {
+          value:
+            "Je saurai que j'avance si j'obtiens des échanges qualifiés pour des rôles de Business Architect.",
+        },
+      },
+    );
+
+    fireEvent.change(
+      screen.getByLabelText("Short-term mission"),
+      {
+        target: {
+          value:
+            "Obtenir des échanges qualifiés pour des rôles de Business Architect.",
+        },
+      },
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Record worker answer",
+      }),
+    );
+
+    await waitFor(() => {
+      expect(
+        recordAdminWorkerProfessionalIntentionClarification,
+      ).toHaveBeenCalledWith(
+        7,
+        {
+          dimension: "progress_markers",
+          answer_text:
+            "Je saurai que j'avance si j'obtiens des échanges qualifiés pour des rôles de Business Architect.",
+          short_term_missions: [
+            "Obtenir des échanges qualifiés pour des rôles de Business Architect.",
+          ],
+        },
+      );
+    });
+
+    await waitFor(() => {
+      expect(
+        getAdminWorkerProfessionalIntentionCompletionWorkspace,
+      ).toHaveBeenCalledTimes(2);
+    });
+
+    expect(
+      await screen.findByText(
+        "Professional Intention clarification is complete. No further clarification is currently required.",
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.queryByRole("button", {
+        name: "Record worker answer",
+      }),
     ).not.toBeInTheDocument();
   });
 });
