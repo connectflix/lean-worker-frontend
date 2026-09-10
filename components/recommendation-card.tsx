@@ -682,6 +682,31 @@ export function RecommendationCard({
           </button>
         ) : null}
 
+        {item.status !== "completed" && item.status !== "dismissed" ? (
+          <button
+            className="button"
+            aria-label={
+              uiLanguage === "fr"
+                ? `Marquer comme effectuée la recommandation ${item.title}`
+                : `Mark recommendation ${item.title} as completed`
+            }
+            disabled={saving}
+            onClick={() => void handleUpdate("completed")}
+            type="button"
+          >
+            <span style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
+              <CheckCircleIcon size={14} />
+              {saving
+                ? uiLanguage === "fr"
+                  ? "Mise à jour..."
+                  : "Updating..."
+                : uiLanguage === "fr"
+                  ? "Marquer comme effectuée"
+                  : "Mark as completed"}
+            </span>
+          </button>
+        ) : null}
+
         {item.artifact_generation_available ? (
           artifactsLoading ? (
             <button className="button ghost" type="button" disabled>

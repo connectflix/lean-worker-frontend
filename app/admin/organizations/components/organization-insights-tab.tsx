@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import {
+  completeAdminWorkerRecommendation,
   getAdminWorkerProfessionalIntentionCompletionWorkspace,
   initializeAdminWorkerProfessionalIntention,
   recordAdminWorkerProfessionalIntentionClarification,
@@ -221,6 +222,14 @@ export function OrganizationInsightsTab({
     professionalIntentionClarificationError,
     setProfessionalIntentionClarificationError,
   ] = useState<string | null>(null);
+
+  const [completedRecommendationIds, setCompletedRecommendationIds] = useState<Set<number>>(
+    () => new Set(),
+  );
+  const [recommendationCompletionLoadingId, setRecommendationCompletionLoadingId] =
+    useState<number | null>(null);
+  const [recommendationCompletionError, setRecommendationCompletionError] =
+    useState<string | null>(null);
 
   async function loadProfessionalIntentionCompletionWorkspace(workerId: number) {
     setProfessionalIntentionCompletionWorkspace(null);
@@ -442,6 +451,33 @@ export function OrganizationInsightsTab({
     }
   }
 
+  async function handleCompleteRecommendation(recommendationId: number) {
+    if (!selectedWorkerSummary) {
+      return;
+    }
+
+    setRecommendationCompletionError(null);
+    setRecommendationCompletionLoadingId(recommendationId);
+
+    try {
+      await completeAdminWorkerRecommendation(
+        selectedWorkerSummary.worker.id,
+        recommendationId,
+      );
+      setCompletedRecommendationIds((current) => {
+        const next = new Set(current);
+        next.add(recommendationId);
+        return next;
+      });
+    } catch {
+      setRecommendationCompletionError(
+        "Recommendation completion failed. Please try again.",
+      );
+    } finally {
+      setRecommendationCompletionLoadingId(null);
+    }
+  }
+
   async function handleRecordProgressMarkersClarification() {
     if (!selectedWorkerSummary) {
       return;
@@ -499,6 +535,9 @@ export function OrganizationInsightsTab({
       setProfessionalIntentionClarificationShortTermMission("");
       setProfessionalIntentionClarificationError(null);
       setProfessionalIntentionClarificationLoading(false);
+      setCompletedRecommendationIds(new Set());
+      setRecommendationCompletionLoadingId(null);
+      setRecommendationCompletionError(null);
       return;
     }
 
@@ -511,6 +550,9 @@ export function OrganizationInsightsTab({
     setProfessionalIntentionClarificationShortTermMission("");
     setProfessionalIntentionClarificationError(null);
     setProfessionalIntentionClarificationLoading(false);
+    setCompletedRecommendationIds(new Set());
+    setRecommendationCompletionLoadingId(null);
+    setRecommendationCompletionError(null);
 
     void loadProfessionalIntentionCompletionWorkspace(
       selectedWorkerSummary.worker.id
@@ -713,6 +755,19 @@ export function OrganizationInsightsTab({
         </div>
       </div>
 
+      {recommendationCompletionError ? (
+        <div
+          role="alert"
+          style={{
+            color: "var(--danger)",
+            fontSize: 13,
+            lineHeight: 1.5,
+          }}
+        >
+          {recommendationCompletionError}
+        </div>
+      ) : null}
+
       <div
         className="grid"
         style={{
@@ -757,6 +812,9 @@ export function OrganizationInsightsTab({
         >
           {selectedWorkerSummary.recommendations.map((recommendation) => {
             const relatedLevers = relatedLeversByRecommendationId.get(recommendation.id) ?? [];
+            const isCompleted =
+              recommendation.status === "completed" ||
+              completedRecommendationIds.has(recommendation.id);
 
             return (
               <div
@@ -771,7 +829,9 @@ export function OrganizationInsightsTab({
                 <div className="stack" style={{ gap: 8 }}>
                   <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                     <span className="badge">#{recommendation.id}</span>
-                    <span className="badge">{recommendation.status}</span>
+                    <span className="badge">
+                      {isCompleted ? "completed" : recommendation.status}
+                    </span>
                     <span className="badge">{recommendation.priority}</span>
                   </div>
 
@@ -782,6 +842,22 @@ export function OrganizationInsightsTab({
                   <div style={{ fontSize: 14, lineHeight: 1.55, wordBreak: "break-word" }}>
                     {recommendation.description}
                   </div>
+
+                  {!isCompleted && recommendation.status !== "dismissed" ? (
+                    <div>
+                      <button
+                        type="button"
+                        className="button"
+                        aria-label={`Mark recommendation ${recommendation.id} as completed`}
+                        disabled={recommendationCompletionLoadingId === recommendation.id}
+                        onClick={() => void handleCompleteRecommendation(recommendation.id)}
+                      >
+                        {recommendationCompletionLoadingId === recommendation.id
+                          ? "Marking completed..."
+                          : "Mark as completed"}
+                      </button>
+                    </div>
+                  ) : null}
 
                   {relatedLevers.length > 0 ? (
                     <div className="stack" style={{ gap: 6 }}>
