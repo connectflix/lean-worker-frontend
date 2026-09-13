@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   completeAdminWorkerRecommendation,
+  getAdminWorkerProfessionalExecutionPlan,
   getAdminWorkerProfessionalIntentionCompletionWorkspace,
   getAdminWorkerProfessionalMandateSupport,
   initializeAdminWorkerProfessionalIntention,
@@ -13,9 +14,11 @@ import type {
   AdminOrganizationWorkerSummary,
   AdminProfessionalMandateSupportResponse,
   OrganizationWorkerGuidanceResponse,
+  ProfessionalExecutionPlanResponse,
   ProfessionalIntentionCompletionWorkspaceResponse,
 } from "@/lib/types";
 import { OrganizationWorkerGuidanceCard } from "./organization-worker-guidance-card";
+import { ProfessionalExecutionPlanCard } from "./professional-execution-plan-card";
 
 type LeverSortMode = "highlighted" | "most_used" | "name";
 
@@ -227,6 +230,15 @@ export function OrganizationInsightsTab({
   ] = useState<string | null>(null);
 
   const [
+    professionalExecutionPlan,
+    setProfessionalExecutionPlan,
+  ] = useState<ProfessionalExecutionPlanResponse | null>(null);
+  const [
+    professionalExecutionPlanLoading,
+    setProfessionalExecutionPlanLoading,
+  ] = useState(false);
+
+  const [
     professionalMandateSupport,
     setProfessionalMandateSupport,
   ] = useState<AdminProfessionalMandateSupportResponse | null>(null);
@@ -307,6 +319,21 @@ export function OrganizationInsightsTab({
       setProfessionalIntentionCompletionWorkspace(null);
     } finally {
       setProfessionalIntentionCompletionWorkspaceLoading(false);
+    }
+  }
+
+  async function loadProfessionalExecutionPlan(workerId: number) {
+    setProfessionalExecutionPlan(null);
+    setProfessionalExecutionPlanLoading(true);
+
+    try {
+      const plan =
+        await getAdminWorkerProfessionalExecutionPlan(workerId);
+      setProfessionalExecutionPlan(plan);
+    } catch {
+      setProfessionalExecutionPlan(null);
+    } finally {
+      setProfessionalExecutionPlanLoading(false);
     }
   }
 
@@ -911,6 +938,9 @@ export function OrganizationInsightsTab({
       setProfessionalIntentionClarificationError(null);
       setProfessionalIntentionClarificationLoading(false);
 
+      setProfessionalExecutionPlan(null);
+      setProfessionalExecutionPlanLoading(false);
+
       setProfessionalMandateSupport(null);
       setProfessionalMandateSupportLoading(false);
       setProfessionalMandateClarificationAnswer("");
@@ -965,6 +995,9 @@ export function OrganizationInsightsTab({
       selectedWorkerSummary.worker.id
     );
     void loadProfessionalMandateSupport(
+      selectedWorkerSummary.worker.id,
+    );
+    void loadProfessionalExecutionPlan(
       selectedWorkerSummary.worker.id,
     );
   }, [selectedWorkerSummary?.worker.id]);
@@ -1061,6 +1094,11 @@ export function OrganizationInsightsTab({
       <OrganizationWorkerGuidanceCard
         guidance={organizationGuidance}
         loading={organizationGuidanceLoading}
+      />
+
+      <ProfessionalExecutionPlanCard
+        plan={professionalExecutionPlan}
+        loading={professionalExecutionPlanLoading}
       />
 
       <div className="grid grid-2" style={{ alignItems: "start" }}>

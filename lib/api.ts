@@ -93,6 +93,7 @@ import type {
   AdminOrganizationAccessAccount,
   OrganizationWorkerGuidanceResponse,
   AdminProfessionalIntentionSupportResponse,
+  ProfessionalExecutionPlanResponse,
   ProfessionalIntentionCompletionWorkspaceResponse,
   AdminOrganizationAccessAccountCreate,
   AdminSubscriptionPlan,
@@ -1835,6 +1836,16 @@ export async function getAdminWorkerProfessionalMandateSupport(
 ): Promise<AdminProfessionalMandateSupportResponse> {
   return adminApiFetch<AdminProfessionalMandateSupportResponse>(
     `/admin/workers/${workerId}/professional-mandate-support`,
+  );
+}
+
+
+
+export async function getAdminWorkerProfessionalExecutionPlan(
+  workerId: number,
+): Promise<ProfessionalExecutionPlanResponse> {
+  return adminApiFetch<ProfessionalExecutionPlanResponse>(
+    `/admin/workers/${workerId}/professional-execution-plan`,
   );
 }
 

@@ -1623,6 +1623,28 @@ export type AdminProfessionalMandateSupportResponse = {
 
 
 
+
+/* ---------------- PROFESSIONAL EXECUTION PLAN ---------------- */
+
+export type ProfessionalExecutionMilestone = {
+  sequence: number;
+  title: string;
+  objective: string;
+  timing: string;
+  expected_progress: string[];
+  completion_evidence: string[];
+  dependencies: string[];
+};
+
+export type ProfessionalExecutionPlanResponse = {
+  plan_summary: string;
+  planning_horizon_months: number;
+  milestones: ProfessionalExecutionMilestone[];
+  guardrails: string[];
+  assumptions: string[];
+};
+
+
 /* ---------------- ADMIN WORKER CONVERSATIONS ---------------- */
 
 export type AdminWorkerConversationSourceType =
