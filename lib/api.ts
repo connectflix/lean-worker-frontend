@@ -93,6 +93,7 @@ import type {
   AdminOrganizationAccessAccount,
   OrganizationWorkerGuidanceResponse,
   AdminProfessionalIntentionSupportResponse,
+  AdminProfessionalMandateSupportResponse,
   ProfessionalExecutionPlanResponse,
   ProfessionalIntentionCompletionWorkspaceResponse,
   AdminOrganizationAccessAccountCreate,
