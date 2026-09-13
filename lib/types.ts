@@ -1519,6 +1519,110 @@ export type AdminWorkerSubscriptionUpdate = {
   stripe_subscription_id?: string | null;
 };
 
+
+/* ---------------- ADMIN PROFESSIONAL MANDATE SUPPORT ---------------- */
+
+
+export type ProfessionalMandateReadinessDimensionName =
+  | "professional_identity"
+  | "expected_outcomes"
+  | "success_definition"
+  | "meaning_and_contribution"
+  | "constraints_and_non_negotiables"
+  | "capacity_and_sustainability";
+
+export type ProfessionalMandateReadinessDimensionState =
+  | "unknown"
+  | "partial"
+  | "sufficient"
+  | "conflicting"
+  | "stale";
+
+export type ProfessionalMandateReadinessState =
+  | "insufficient"
+  | "partially_grounded"
+  | "decision_ready";
+
+export type ProfessionalMandateReadinessDimension = {
+  dimension: ProfessionalMandateReadinessDimensionName;
+  state: ProfessionalMandateReadinessDimensionState;
+  reason: string;
+};
+
+export type ProfessionalMandatePublicResponse = {
+  mandate_summary: string;
+  professional_identity: string | null;
+
+  expected_outcomes: unknown[];
+  success_definition: unknown[];
+
+  meaning_drivers: unknown[];
+  engagement_drivers: unknown[];
+  contribution_drivers: unknown[];
+
+  hard_constraints: unknown[];
+  soft_constraints: unknown[];
+
+  time_capacity: unknown[];
+  energy_constraints: unknown[];
+
+  risks_to_avoid: unknown[];
+  non_negotiables: unknown[];
+};
+
+export type ProfessionalMandateReadinessPublicResponse = {
+  readiness_state: ProfessionalMandateReadinessState;
+  dimensions: ProfessionalMandateReadinessDimension[];
+  blocking_dimensions: ProfessionalMandateReadinessDimensionName[];
+  decision_ready: boolean;
+};
+
+export type ProfessionalMandateCompletionGuidanceActor =
+  | "admin"
+  | "organization";
+
+export type ProfessionalMandateCompletionGuidanceInterventionType =
+  | "question"
+  | "validation"
+  | "action";
+
+export type ProfessionalMandateCompletionGuidanceSource =
+  | "worker"
+  | "admin"
+  | "organization";
+
+export type ProfessionalMandateCompletionGuidancePriority =
+  | "now"
+  | "next"
+  | "later";
+
+export type ProfessionalMandateCompletionGuidanceItem = {
+  dimension: ProfessionalMandateReadinessDimensionName;
+  state: ProfessionalMandateReadinessDimensionState;
+
+  recommended_actor: ProfessionalMandateCompletionGuidanceActor;
+  intervention_type: ProfessionalMandateCompletionGuidanceInterventionType;
+
+  prompt: string;
+  purpose: string;
+
+  source_scope: ProfessionalMandateCompletionGuidanceSource[];
+  completion_priority: ProfessionalMandateCompletionGuidancePriority;
+};
+
+export type ProfessionalMandateCompletionGuidanceResponse = {
+  readiness_state: ProfessionalMandateReadinessState;
+  guidance: ProfessionalMandateCompletionGuidanceItem[];
+};
+
+export type AdminProfessionalMandateSupportResponse = {
+  mandate: ProfessionalMandatePublicResponse | null;
+  readiness: ProfessionalMandateReadinessPublicResponse | null;
+  completion_guidance: ProfessionalMandateCompletionGuidanceResponse | null;
+};
+
+
+
 /* ---------------- ADMIN WORKER CONVERSATIONS ---------------- */
 
 export type AdminWorkerConversationSourceType =

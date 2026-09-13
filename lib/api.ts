@@ -1830,6 +1830,14 @@ export async function getAdminWorkerProfessionalIntentionSupport(
   );
 }
 
+export async function getAdminWorkerProfessionalMandateSupport(
+  workerId: number,
+): Promise<AdminProfessionalMandateSupportResponse> {
+  return adminApiFetch<AdminProfessionalMandateSupportResponse>(
+    `/admin/workers/${workerId}/professional-mandate-support`,
+  );
+}
+
 
 export async function getAdminWorkerProfessionalIntentionCompletionWorkspace(
   workerId: number,
@@ -1883,6 +1891,57 @@ export async function recordAdminWorkerProfessionalIntentionClarification(
 ): Promise<{ recorded: boolean }> {
   return adminApiFetch<{ recorded: boolean }>(
     `/admin/workers/${workerId}/professional-intention/clarifications`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function recordAdminWorkerProfessionalMandateClarification(
+  workerId: number,
+  payload:
+    | {
+        dimension: "professional_identity";
+        answer_text: string;
+        professional_identity: string;
+      }
+    | {
+        dimension: "expected_outcomes";
+        answer_text: string;
+        expected_outcomes: string[];
+      }
+    | {
+        dimension: "success_definition";
+        answer_text: string;
+        success_definition: string[];
+      }
+    | {
+        dimension: "meaning_and_contribution";
+        answer_text: string;
+        meaning_drivers?: string[];
+        engagement_drivers?: string[];
+        contribution_drivers?: string[];
+      }
+    | {
+        dimension: "constraints_and_non_negotiables";
+        answer_text: string;
+        hard_constraints?: string[];
+        soft_constraints?: string[];
+        risks_to_avoid?: string[];
+        non_negotiables?: string[];
+        no_constraints_or_non_negotiables?: true;
+      }
+    | {
+        dimension: "capacity_and_sustainability";
+        answer_text: string;
+        time_capacity?: string[];
+        energy_constraints?: string[];
+        no_energy_constraints?: true;
+      },
+): Promise<{ recorded: boolean }> {
+  return adminApiFetch<{ recorded: boolean }>(
+    `/admin/workers/${workerId}/professional-mandate/clarifications`,
     {
       method: "POST",
       body: JSON.stringify(payload),

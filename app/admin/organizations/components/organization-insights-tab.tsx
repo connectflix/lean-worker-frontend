@@ -4,11 +4,14 @@ import { useEffect, useState } from "react";
 import {
   completeAdminWorkerRecommendation,
   getAdminWorkerProfessionalIntentionCompletionWorkspace,
+  getAdminWorkerProfessionalMandateSupport,
   initializeAdminWorkerProfessionalIntention,
   recordAdminWorkerProfessionalIntentionClarification,
+  recordAdminWorkerProfessionalMandateClarification,
 } from "@/lib/api";
 import type {
   AdminOrganizationWorkerSummary,
+  AdminProfessionalMandateSupportResponse,
   OrganizationWorkerGuidanceResponse,
   ProfessionalIntentionCompletionWorkspaceResponse,
 } from "@/lib/types";
@@ -223,6 +226,67 @@ export function OrganizationInsightsTab({
     setProfessionalIntentionClarificationError,
   ] = useState<string | null>(null);
 
+  const [
+    professionalMandateSupport,
+    setProfessionalMandateSupport,
+  ] = useState<AdminProfessionalMandateSupportResponse | null>(null);
+  const [
+    professionalMandateSupportLoading,
+    setProfessionalMandateSupportLoading,
+  ] = useState(false);
+  const [
+    professionalMandateClarificationAnswer,
+    setProfessionalMandateClarificationAnswer,
+  ] = useState("");
+  const [
+    professionalMandateProfessionalIdentity,
+    setProfessionalMandateProfessionalIdentity,
+  ] = useState("");
+  const [
+    professionalMandateExpectedOutcome,
+    setProfessionalMandateExpectedOutcome,
+  ] = useState("");
+  const [
+    professionalMandateSuccessDefinition,
+    setProfessionalMandateSuccessDefinition,
+  ] = useState("");
+  const [
+    professionalMandateMeaningDriver,
+    setProfessionalMandateMeaningDriver,
+  ] = useState("");
+  const [
+    professionalMandateEngagementDriver,
+    setProfessionalMandateEngagementDriver,
+  ] = useState("");
+  const [
+    professionalMandateContributionDriver,
+    setProfessionalMandateContributionDriver,
+  ] = useState("");
+  const [
+    professionalMandateHardConstraint,
+    setProfessionalMandateHardConstraint,
+  ] = useState("");
+  const [
+    professionalMandateNonNegotiable,
+    setProfessionalMandateNonNegotiable,
+  ] = useState("");
+  const [
+    professionalMandateTimeCapacity,
+    setProfessionalMandateTimeCapacity,
+  ] = useState("");
+  const [
+    professionalMandateEnergyConstraint,
+    setProfessionalMandateEnergyConstraint,
+  ] = useState("");
+  const [
+    professionalMandateClarificationLoading,
+    setProfessionalMandateClarificationLoading,
+  ] = useState(false);
+  const [
+    professionalMandateClarificationError,
+    setProfessionalMandateClarificationError,
+  ] = useState<string | null>(null);
+
   const [completedRecommendationIds, setCompletedRecommendationIds] = useState<Set<number>>(
     () => new Set(),
   );
@@ -243,6 +307,21 @@ export function OrganizationInsightsTab({
       setProfessionalIntentionCompletionWorkspace(null);
     } finally {
       setProfessionalIntentionCompletionWorkspaceLoading(false);
+    }
+  }
+
+  async function loadProfessionalMandateSupport(workerId: number) {
+    setProfessionalMandateSupport(null);
+    setProfessionalMandateSupportLoading(true);
+
+    try {
+      const support =
+        await getAdminWorkerProfessionalMandateSupport(workerId);
+      setProfessionalMandateSupport(support);
+    } catch {
+      setProfessionalMandateSupport(null);
+    } finally {
+      setProfessionalMandateSupportLoading(false);
     }
   }
 
@@ -522,6 +601,302 @@ export function OrganizationInsightsTab({
     }
   }
 
+  async function handleRecordProfessionalIdentityMandateClarification() {
+    if (!selectedWorkerSummary) {
+      return;
+    }
+
+    const answerText = professionalMandateClarificationAnswer.trim();
+    const professionalIdentity =
+      professionalMandateProfessionalIdentity.trim();
+
+    if (!answerText || !professionalIdentity) {
+      setProfessionalMandateClarificationError(
+        "Enter the worker's answer and professional identity.",
+      );
+      return;
+    }
+
+    setProfessionalMandateClarificationError(null);
+    setProfessionalMandateClarificationLoading(true);
+
+    try {
+      await recordAdminWorkerProfessionalMandateClarification(
+        selectedWorkerSummary.worker.id,
+        {
+          dimension: "professional_identity",
+          answer_text: answerText,
+          professional_identity: professionalIdentity,
+        },
+      );
+
+      setProfessionalMandateClarificationAnswer("");
+      setProfessionalMandateProfessionalIdentity("");
+
+      await loadProfessionalMandateSupport(
+        selectedWorkerSummary.worker.id,
+      );
+    } catch {
+      setProfessionalMandateClarificationError(
+        "Recording the worker clarification failed. Please try again.",
+      );
+    } finally {
+      setProfessionalMandateClarificationLoading(false);
+    }
+  }
+
+  async function handleRecordExpectedOutcomesMandateClarification() {
+    if (!selectedWorkerSummary) {
+      return;
+    }
+
+    const answerText = professionalMandateClarificationAnswer.trim();
+    const expectedOutcome =
+      professionalMandateExpectedOutcome.trim();
+
+    if (!answerText || !expectedOutcome) {
+      setProfessionalMandateClarificationError(
+        "Enter the worker's answer and an expected outcome.",
+      );
+      return;
+    }
+
+    setProfessionalMandateClarificationError(null);
+    setProfessionalMandateClarificationLoading(true);
+
+    try {
+      await recordAdminWorkerProfessionalMandateClarification(
+        selectedWorkerSummary.worker.id,
+        {
+          dimension: "expected_outcomes",
+          answer_text: answerText,
+          expected_outcomes: [expectedOutcome],
+        },
+      );
+
+      setProfessionalMandateClarificationAnswer("");
+      setProfessionalMandateExpectedOutcome("");
+
+      await loadProfessionalMandateSupport(
+        selectedWorkerSummary.worker.id,
+      );
+    } catch {
+      setProfessionalMandateClarificationError(
+        "Recording the worker clarification failed. Please try again.",
+      );
+    } finally {
+      setProfessionalMandateClarificationLoading(false);
+    }
+  }
+
+  async function handleRecordSuccessDefinitionMandateClarification() {
+    if (!selectedWorkerSummary) {
+      return;
+    }
+
+    const answerText = professionalMandateClarificationAnswer.trim();
+    const successDefinition =
+      professionalMandateSuccessDefinition.trim();
+
+    if (!answerText || !successDefinition) {
+      setProfessionalMandateClarificationError(
+        "Enter the worker's answer and a success definition.",
+      );
+      return;
+    }
+
+    setProfessionalMandateClarificationError(null);
+    setProfessionalMandateClarificationLoading(true);
+
+    try {
+      await recordAdminWorkerProfessionalMandateClarification(
+        selectedWorkerSummary.worker.id,
+        {
+          dimension: "success_definition",
+          answer_text: answerText,
+          success_definition: [successDefinition],
+        },
+      );
+
+      setProfessionalMandateClarificationAnswer("");
+      setProfessionalMandateSuccessDefinition("");
+
+      await loadProfessionalMandateSupport(
+        selectedWorkerSummary.worker.id,
+      );
+    } catch {
+      setProfessionalMandateClarificationError(
+        "Recording the worker clarification failed. Please try again.",
+      );
+    } finally {
+      setProfessionalMandateClarificationLoading(false);
+    }
+  }
+
+  async function handleRecordMeaningAndContributionMandateClarification() {
+    if (!selectedWorkerSummary) {
+      return;
+    }
+
+    const answerText = professionalMandateClarificationAnswer.trim();
+    const meaningDriver = professionalMandateMeaningDriver.trim();
+    const engagementDriver =
+      professionalMandateEngagementDriver.trim();
+    const contributionDriver =
+      professionalMandateContributionDriver.trim();
+
+    if (
+      !answerText ||
+      (!meaningDriver && !engagementDriver && !contributionDriver)
+    ) {
+      setProfessionalMandateClarificationError(
+        "Enter the worker's answer and at least one meaning, engagement, or contribution driver.",
+      );
+      return;
+    }
+
+    setProfessionalMandateClarificationError(null);
+    setProfessionalMandateClarificationLoading(true);
+
+    try {
+      await recordAdminWorkerProfessionalMandateClarification(
+        selectedWorkerSummary.worker.id,
+        {
+          dimension: "meaning_and_contribution",
+          answer_text: answerText,
+          ...(meaningDriver
+            ? { meaning_drivers: [meaningDriver] }
+            : {}),
+          ...(engagementDriver
+            ? { engagement_drivers: [engagementDriver] }
+            : {}),
+          ...(contributionDriver
+            ? { contribution_drivers: [contributionDriver] }
+            : {}),
+        },
+      );
+
+      setProfessionalMandateClarificationAnswer("");
+      setProfessionalMandateMeaningDriver("");
+      setProfessionalMandateEngagementDriver("");
+      setProfessionalMandateContributionDriver("");
+
+      await loadProfessionalMandateSupport(
+        selectedWorkerSummary.worker.id,
+      );
+    } catch {
+      setProfessionalMandateClarificationError(
+        "Recording the worker clarification failed. Please try again.",
+      );
+    } finally {
+      setProfessionalMandateClarificationLoading(false);
+    }
+  }
+
+  async function handleRecordConstraintsMandateClarification() {
+    if (!selectedWorkerSummary) {
+      return;
+    }
+
+    const answerText = professionalMandateClarificationAnswer.trim();
+    const hardConstraint =
+      professionalMandateHardConstraint.trim();
+    const nonNegotiable =
+      professionalMandateNonNegotiable.trim();
+
+    if (!answerText || (!hardConstraint && !nonNegotiable)) {
+      setProfessionalMandateClarificationError(
+        "Enter the worker's answer and at least one constraint or non-negotiable.",
+      );
+      return;
+    }
+
+    setProfessionalMandateClarificationError(null);
+    setProfessionalMandateClarificationLoading(true);
+
+    try {
+      await recordAdminWorkerProfessionalMandateClarification(
+        selectedWorkerSummary.worker.id,
+        {
+          dimension: "constraints_and_non_negotiables",
+          answer_text: answerText,
+          ...(hardConstraint
+            ? { hard_constraints: [hardConstraint] }
+            : {}),
+          ...(nonNegotiable
+            ? { non_negotiables: [nonNegotiable] }
+            : {}),
+        },
+      );
+
+      setProfessionalMandateClarificationAnswer("");
+      setProfessionalMandateHardConstraint("");
+      setProfessionalMandateNonNegotiable("");
+
+      await loadProfessionalMandateSupport(
+        selectedWorkerSummary.worker.id,
+      );
+    } catch {
+      setProfessionalMandateClarificationError(
+        "Recording the worker clarification failed. Please try again.",
+      );
+    } finally {
+      setProfessionalMandateClarificationLoading(false);
+    }
+  }
+
+  async function handleRecordCapacityMandateClarification() {
+    if (!selectedWorkerSummary) {
+      return;
+    }
+
+    const answerText = professionalMandateClarificationAnswer.trim();
+    const timeCapacity =
+      professionalMandateTimeCapacity.trim();
+    const energyConstraint =
+      professionalMandateEnergyConstraint.trim();
+
+    if (!answerText || (!timeCapacity && !energyConstraint)) {
+      setProfessionalMandateClarificationError(
+        "Enter the worker's answer and at least one time capacity or energy constraint.",
+      );
+      return;
+    }
+
+    setProfessionalMandateClarificationError(null);
+    setProfessionalMandateClarificationLoading(true);
+
+    try {
+      await recordAdminWorkerProfessionalMandateClarification(
+        selectedWorkerSummary.worker.id,
+        {
+          dimension: "capacity_and_sustainability",
+          answer_text: answerText,
+          ...(timeCapacity
+            ? { time_capacity: [timeCapacity] }
+            : {}),
+          ...(energyConstraint
+            ? { energy_constraints: [energyConstraint] }
+            : {}),
+        },
+      );
+
+      setProfessionalMandateClarificationAnswer("");
+      setProfessionalMandateTimeCapacity("");
+      setProfessionalMandateEnergyConstraint("");
+
+      await loadProfessionalMandateSupport(
+        selectedWorkerSummary.worker.id,
+      );
+    } catch {
+      setProfessionalMandateClarificationError(
+        "Recording the worker clarification failed. Please try again.",
+      );
+    } finally {
+      setProfessionalMandateClarificationLoading(false);
+    }
+  }
+
   useEffect(() => {
     if (!selectedWorkerSummary) {
       setProfessionalIntentionCompletionWorkspace(null);
@@ -535,6 +910,23 @@ export function OrganizationInsightsTab({
       setProfessionalIntentionClarificationShortTermMission("");
       setProfessionalIntentionClarificationError(null);
       setProfessionalIntentionClarificationLoading(false);
+
+      setProfessionalMandateSupport(null);
+      setProfessionalMandateSupportLoading(false);
+      setProfessionalMandateClarificationAnswer("");
+      setProfessionalMandateProfessionalIdentity("");
+      setProfessionalMandateExpectedOutcome("");
+      setProfessionalMandateSuccessDefinition("");
+      setProfessionalMandateMeaningDriver("");
+      setProfessionalMandateEngagementDriver("");
+      setProfessionalMandateContributionDriver("");
+      setProfessionalMandateHardConstraint("");
+      setProfessionalMandateNonNegotiable("");
+      setProfessionalMandateTimeCapacity("");
+      setProfessionalMandateEnergyConstraint("");
+      setProfessionalMandateClarificationError(null);
+      setProfessionalMandateClarificationLoading(false);
+
       setCompletedRecommendationIds(new Set());
       setRecommendationCompletionLoadingId(null);
       setRecommendationCompletionError(null);
@@ -550,12 +942,30 @@ export function OrganizationInsightsTab({
     setProfessionalIntentionClarificationShortTermMission("");
     setProfessionalIntentionClarificationError(null);
     setProfessionalIntentionClarificationLoading(false);
+
+    setProfessionalMandateClarificationAnswer("");
+    setProfessionalMandateProfessionalIdentity("");
+    setProfessionalMandateExpectedOutcome("");
+    setProfessionalMandateSuccessDefinition("");
+    setProfessionalMandateMeaningDriver("");
+    setProfessionalMandateEngagementDriver("");
+    setProfessionalMandateContributionDriver("");
+    setProfessionalMandateHardConstraint("");
+    setProfessionalMandateNonNegotiable("");
+    setProfessionalMandateTimeCapacity("");
+    setProfessionalMandateEnergyConstraint("");
+    setProfessionalMandateClarificationError(null);
+    setProfessionalMandateClarificationLoading(false);
+
     setCompletedRecommendationIds(new Set());
     setRecommendationCompletionLoadingId(null);
     setRecommendationCompletionError(null);
 
     void loadProfessionalIntentionCompletionWorkspace(
       selectedWorkerSummary.worker.id
+    );
+    void loadProfessionalMandateSupport(
+      selectedWorkerSummary.worker.id,
     );
   }, [selectedWorkerSummary?.worker.id]);
 
@@ -1000,6 +1410,342 @@ export function OrganizationInsightsTab({
             </div>
           ))}
         </ScrollSection>
+      </div>
+
+      <div className="card stack" style={{ gap: 16 }}>
+        <div
+          className="row space-between"
+          style={{
+            gap: 12,
+            flexWrap: "wrap",
+            alignItems: "center",
+          }}
+        >
+          <div className="stack" style={{ gap: 4 }}>
+            <div className="section-title">
+              Professional Mandate Completion Support
+            </div>
+            <div className="muted">
+              Clarification support derived from canonical Professional Mandate
+              readiness. Worker-owned professional truth remains authoritative.
+            </div>
+          </div>
+
+          {professionalMandateSupportLoading ? (
+            <span className="badge">Loading...</span>
+          ) : professionalMandateSupport?.readiness ? (
+            <span className="badge">
+              {professionalMandateSupport.readiness.readiness_state
+                .replaceAll("_", " ")
+                .replace(/\b\w/g, (character) =>
+                  character.toUpperCase(),
+                )}
+            </span>
+          ) : null}
+        </div>
+
+        {professionalMandateClarificationError ? (
+          <div
+            style={{
+              color: "var(--danger)",
+              fontSize: 13,
+              lineHeight: 1.5,
+            }}
+          >
+            {professionalMandateClarificationError}
+          </div>
+        ) : null}
+
+        <div
+          className="stack scroll-panel"
+          style={{ gap: 12, maxHeight: 680 }}
+        >
+          {professionalMandateSupport?.readiness?.decision_ready ? (
+            <div className="card-soft muted">
+              Professional Mandate clarification is complete. No further
+              clarification is currently required.
+            </div>
+          ) : null}
+
+          {!professionalMandateSupportLoading &&
+          !professionalMandateSupport ? (
+            <div className="muted">
+              No Professional Mandate support is currently available for this
+              worker.
+            </div>
+          ) : null}
+
+          {professionalMandateSupport?.completion_guidance?.guidance?.length ? (
+            <div className="stack" style={{ gap: 10 }}>
+              {professionalMandateSupport.completion_guidance.guidance.map(
+                (item, itemIndex) => (
+                  <div
+                    key={`${item.dimension}-${itemIndex}`}
+                    className="card-soft stack"
+                    style={{ gap: 10 }}
+                  >
+                    <div
+                      className="row space-between"
+                      style={{
+                        gap: 8,
+                        flexWrap: "wrap",
+                        alignItems: "flex-start",
+                      }}
+                    >
+                      <div className="stack" style={{ gap: 4 }}>
+                        <strong>
+                          {item.dimension
+                            .replaceAll("_", " ")
+                            .replace(/\b\w/g, (character) =>
+                              character.toUpperCase(),
+                            )}
+                        </strong>
+
+                        <div className="muted">{item.purpose}</div>
+                      </div>
+
+                      <div
+                        className="row"
+                        style={{ gap: 6, flexWrap: "wrap" }}
+                      >
+                        <span className="badge">
+                          {item.state.replaceAll("_", " ")}
+                        </span>
+                        <span className="badge">
+                          {item.completion_priority}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="stack" style={{ gap: 4 }}>
+                      <strong>Suggested clarification</strong>
+                      <div>{item.prompt}</div>
+                    </div>
+
+                    <div className="card-soft stack" style={{ gap: 10 }}>
+                      <strong>Record mandate worker answer</strong>
+
+                      <label className="stack" style={{ gap: 6 }}>
+                        <span>Mandate worker answer</span>
+                        <textarea
+                          className="input"
+                          value={professionalMandateClarificationAnswer}
+                          disabled={professionalMandateClarificationLoading}
+                          onChange={(event) =>
+                            setProfessionalMandateClarificationAnswer(
+                              event.target.value,
+                            )
+                          }
+                          rows={3}
+                          placeholder="Record the worker's exact answer."
+                        />
+                      </label>
+
+                      {item.dimension === "professional_identity" ? (
+                        <label className="stack" style={{ gap: 6 }}>
+                          <span>Professional identity</span>
+                          <textarea
+                            className="input"
+                            value={professionalMandateProfessionalIdentity}
+                            disabled={professionalMandateClarificationLoading}
+                            onChange={(event) =>
+                              setProfessionalMandateProfessionalIdentity(
+                                event.target.value,
+                              )
+                            }
+                            rows={2}
+                          />
+                        </label>
+                      ) : null}
+
+                      {item.dimension === "expected_outcomes" ? (
+                        <label className="stack" style={{ gap: 6 }}>
+                          <span>Expected outcome</span>
+                          <textarea
+                            className="input"
+                            value={professionalMandateExpectedOutcome}
+                            disabled={professionalMandateClarificationLoading}
+                            onChange={(event) =>
+                              setProfessionalMandateExpectedOutcome(
+                                event.target.value,
+                              )
+                            }
+                            rows={2}
+                          />
+                        </label>
+                      ) : null}
+
+                      {item.dimension === "success_definition" ? (
+                        <label className="stack" style={{ gap: 6 }}>
+                          <span>Success definition</span>
+                          <textarea
+                            className="input"
+                            value={professionalMandateSuccessDefinition}
+                            disabled={professionalMandateClarificationLoading}
+                            onChange={(event) =>
+                              setProfessionalMandateSuccessDefinition(
+                                event.target.value,
+                              )
+                            }
+                            rows={2}
+                          />
+                        </label>
+                      ) : null}
+
+                      {item.dimension === "meaning_and_contribution" ? (
+                        <>
+                          <label className="stack" style={{ gap: 6 }}>
+                            <span>Meaning driver</span>
+                            <textarea
+                              className="input"
+                              value={professionalMandateMeaningDriver}
+                              disabled={professionalMandateClarificationLoading}
+                              onChange={(event) =>
+                                setProfessionalMandateMeaningDriver(
+                                  event.target.value,
+                                )
+                              }
+                              rows={2}
+                            />
+                          </label>
+
+                          <label className="stack" style={{ gap: 6 }}>
+                            <span>Engagement driver</span>
+                            <textarea
+                              className="input"
+                              value={professionalMandateEngagementDriver}
+                              disabled={professionalMandateClarificationLoading}
+                              onChange={(event) =>
+                                setProfessionalMandateEngagementDriver(
+                                  event.target.value,
+                                )
+                              }
+                              rows={2}
+                            />
+                          </label>
+
+                          <label className="stack" style={{ gap: 6 }}>
+                            <span>Contribution driver</span>
+                            <textarea
+                              className="input"
+                              value={professionalMandateContributionDriver}
+                              disabled={professionalMandateClarificationLoading}
+                              onChange={(event) =>
+                                setProfessionalMandateContributionDriver(
+                                  event.target.value,
+                                )
+                              }
+                              rows={2}
+                            />
+                          </label>
+                        </>
+                      ) : null}
+
+                      {item.dimension ===
+                      "constraints_and_non_negotiables" ? (
+                        <>
+                          <label className="stack" style={{ gap: 6 }}>
+                            <span>Hard constraint</span>
+                            <textarea
+                              className="input"
+                              value={professionalMandateHardConstraint}
+                              disabled={professionalMandateClarificationLoading}
+                              onChange={(event) =>
+                                setProfessionalMandateHardConstraint(
+                                  event.target.value,
+                                )
+                              }
+                              rows={2}
+                            />
+                          </label>
+
+                          <label className="stack" style={{ gap: 6 }}>
+                            <span>Non-negotiable</span>
+                            <textarea
+                              className="input"
+                              value={professionalMandateNonNegotiable}
+                              disabled={professionalMandateClarificationLoading}
+                              onChange={(event) =>
+                                setProfessionalMandateNonNegotiable(
+                                  event.target.value,
+                                )
+                              }
+                              rows={2}
+                            />
+                          </label>
+                        </>
+                      ) : null}
+
+                      {item.dimension === "capacity_and_sustainability" ? (
+                        <>
+                          <label className="stack" style={{ gap: 6 }}>
+                            <span>Time capacity</span>
+                            <textarea
+                              className="input"
+                              value={professionalMandateTimeCapacity}
+                              disabled={professionalMandateClarificationLoading}
+                              onChange={(event) =>
+                                setProfessionalMandateTimeCapacity(
+                                  event.target.value,
+                                )
+                              }
+                              rows={2}
+                            />
+                          </label>
+
+                          <label className="stack" style={{ gap: 6 }}>
+                            <span>Energy constraint</span>
+                            <textarea
+                              className="input"
+                              value={professionalMandateEnergyConstraint}
+                              disabled={professionalMandateClarificationLoading}
+                              onChange={(event) =>
+                                setProfessionalMandateEnergyConstraint(
+                                  event.target.value,
+                                )
+                              }
+                              rows={2}
+                            />
+                          </label>
+                        </>
+                      ) : null}
+
+                      <div>
+                        <button
+                          type="button"
+                          className="button"
+                          disabled={professionalMandateClarificationLoading}
+                          onClick={
+                            item.dimension === "professional_identity"
+                              ? handleRecordProfessionalIdentityMandateClarification
+                              : item.dimension === "expected_outcomes"
+                                ? handleRecordExpectedOutcomesMandateClarification
+                                : item.dimension === "success_definition"
+                                  ? handleRecordSuccessDefinitionMandateClarification
+                                  : item.dimension === "meaning_and_contribution"
+                                    ? handleRecordMeaningAndContributionMandateClarification
+                                    : item.dimension ===
+                                        "constraints_and_non_negotiables"
+                                      ? handleRecordConstraintsMandateClarification
+                                      : handleRecordCapacityMandateClarification
+                          }
+                        >
+                          {professionalMandateClarificationLoading
+                            ? "Recording..."
+                            : "Record mandate worker answer"}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="muted">
+                      Requested source: {item.source_scope.join(", ")}
+                    </div>
+                  </div>
+                ),
+              )}
+            </div>
+          ) : null}
+        </div>
       </div>
 
       <div className="card stack" style={{ gap: 16 }}>
