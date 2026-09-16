@@ -194,6 +194,8 @@ export type Recommendation = {
   completed_at?: string | null;
   levers?: Lever[];
   offers?: OfferEngineResponse | null;
+  lever_status?: "not_needed" | "selected" | "unavailable" | null;
+  lever_message?: string | null;
 };
 
 export type AIArtifactOutlineSection = {

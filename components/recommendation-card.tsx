@@ -450,6 +450,20 @@ export function RecommendationCard({
             >
               {item.description}
             </div>
+
+            {item.lever_status === "unavailable" && item.lever_message ? (
+              <div
+                className="muted"
+                style={{
+                  lineHeight: 1.65,
+                  color: "var(--coach-muted)",
+                  maxWidth: 860,
+                  fontSize: 14,
+                }}
+              >
+                {item.lever_message}
+              </div>
+            ) : null}
           </div>
 
           <div

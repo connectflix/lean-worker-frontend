@@ -51,6 +51,31 @@ describe("RecommendationCard completion", () => {
     vi.clearAllMocks();
   });
 
+  it("shows the Worker message when the required Lever is unavailable", () => {
+    render(
+      <RecommendationCard
+        item={recommendation({
+          lever_status: "unavailable",
+          lever_message:
+            "Le système n’a trouvé aucun levier disponible pour cette recommandation.",
+          levers: [],
+          offers: null,
+        })}
+        onUpdated={vi.fn()}
+        uiLanguage="fr"
+      />,
+    );
+
+    expect(
+      screen.getByText(
+        "Le système n’a trouvé aucun levier disponible pour cette recommandation.",
+      ),
+    ).toBeInTheDocument();
+
+    expect(screen.queryByText("Levier recommandé")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("action-navigator")).not.toBeInTheDocument();
+  });
+
   it("allows the Worker to mark an in-progress recommendation as completed", async () => {
     const item = recommendation();
 
