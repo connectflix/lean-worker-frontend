@@ -110,8 +110,8 @@ describe("OrganizationWorkerGuidanceCard organization recommendations", () => {
     );
 
     expect(
-      screen.getByText("Example"),
-    ).toBeInTheDocument();
+      screen.getAllByText("Example"),
+    ).toHaveLength(2);
 
     expect(
       screen.getByText(
@@ -121,7 +121,7 @@ describe("OrganizationWorkerGuidanceCard organization recommendations", () => {
   });
 
 
-  it("does not render an example block for legacy recommendations without one", () => {
+  it("renders an explicit Example placeholder for legacy recommendations without one", () => {
     render(
       <OrganizationWorkerGuidanceCard
         guidance={guidance({
@@ -140,10 +140,6 @@ describe("OrganizationWorkerGuidanceCard organization recommendations", () => {
         loading={false}
       />,
     );
-
-    expect(
-      screen.queryByText("Example"),
-    ).not.toBeInTheDocument();
 
     expect(
       screen.getByText("Historical recommendation"),
@@ -227,7 +223,7 @@ describe("OrganizationWorkerGuidanceCard organization recommendations", () => {
       name: /mark clarify decision boundaries completed/i,
     });
 
-    expect(button.closest("summary")).not.toBeNull();
+    expect(button).toBeVisible();
 
     fireEvent.click(button);
 
@@ -265,6 +261,79 @@ describe("OrganizationWorkerGuidanceCard organization recommendations", () => {
         name: /mark clarify decision boundaries completed/i,
       }),
     ).not.toBeInTheDocument();
+  });
+
+
+  it("renders every organization recommendation as a fully visible card rather than a collapsible details element", () => {
+    const { container } = render(
+      <OrganizationWorkerGuidanceCard
+        guidance={guidance()}
+        loading={false}
+        onOrganizationRecommendationCompleted={vi.fn()}
+      />,
+    );
+
+    const heading = screen.getByRole("heading", {
+      name: "Organization recommendations",
+    });
+
+    const section = heading.closest("section");
+
+    expect(section).not.toBeNull();
+    expect(section?.querySelector("details")).toBeNull();
+
+    expect(
+      screen.getByText(
+        "Make explicit which decisions the Worker can take without additional approval.",
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText(
+        "For example: allow the Worker to approve decisions up to a defined threshold without additional approval.",
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText(
+        "This removes an avoidable organizational dependency.",
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText("Reserve focused time for the selected action."),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText("This improves the conditions for execution."),
+    ).toBeInTheDocument();
+  });
+
+
+  it("keeps the Example section visible for historical recommendations without persisted example data", () => {
+    render(
+      <OrganizationWorkerGuidanceCard
+        guidance={guidance({
+          organization_recommendations: [
+            {
+              id: 799,
+              title: "Historical recommendation",
+              action: "Clarify the execution condition.",
+              example: null,
+              rationale: "Historical grounded rationale.",
+              timing: null,
+              completed_at: null,
+            },
+          ],
+        })}
+        loading={false}
+        onOrganizationRecommendationCompleted={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByText("Example not available for this historical recommendation."),
+    ).toBeInTheDocument();
   });
 
 

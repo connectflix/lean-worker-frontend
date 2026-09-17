@@ -863,86 +863,75 @@ function OrganizationRecommendationsSection({
         }}
       >
         {recommendations.map((recommendation, index) => (
-          <details
+          <article
             key={`${recommendation.title}-${index}`}
             className="card-soft"
             style={{
               border: "1px solid var(--admin-border, var(--border))",
               background: "#ffffff",
-              overflow: "hidden",
             }}
           >
-            <summary
+            <div
+              className="row space-between"
               style={{
-                cursor: "pointer",
-                listStyle: "none",
+                gap: 12,
+                alignItems: "center",
+                flexWrap: "wrap",
                 padding: 15,
               }}
             >
               <div
-                className="row space-between"
+                className="row"
                 style={{
-                  gap: 12,
+                  gap: 10,
                   alignItems: "center",
                   flexWrap: "wrap",
                 }}
               >
-                <div
-                  className="row"
-                  style={{
-                    gap: 10,
-                    alignItems: "center",
-                  }}
-                >
-                  <span className="badge">
-                    Recommendation {index + 1}
-                  </span>
-
-                  <div
-                    style={{
-                      fontWeight: 750,
-                      fontSize: 15,
-                    }}
-                  >
-                    {recommendation.title}
-                  </div>
-                </div>
+                <span className="badge">
+                  Recommendation {index + 1}
+                </span>
 
                 <div
-                  className="row"
                   style={{
-                    gap: 8,
-                    alignItems: "center",
-                    flexWrap: "wrap",
+                    fontWeight: 750,
+                    fontSize: 15,
                   }}
                 >
-                  {recommendation.completed_at ? (
-                    <span className="badge">Completed</span>
-                  ) : null}
-
-                  {recommendation.timing ? (
-                    <span className="badge">
-                      {recommendation.timing}
-                    </span>
-                  ) : null}
-
-                  {!recommendation.completed_at && onCompleted ? (
-                    <button
-                      type="button"
-                      className="btn"
-                      aria-label={`Mark ${recommendation.title} completed`}
-                      onClick={(event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        onCompleted(recommendation.id);
-                      }}
-                    >
-                      Mark completed
-                    </button>
-                  ) : null}
+                  {recommendation.title}
                 </div>
               </div>
-            </summary>
+
+              <div
+                className="row"
+                style={{
+                  gap: 8,
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                {recommendation.completed_at ? (
+                  <span className="badge">Completed</span>
+                ) : null}
+
+                {recommendation.timing ? (
+                  <span className="badge">
+                    {recommendation.timing}
+                  </span>
+                ) : null}
+
+                {!recommendation.completed_at && onCompleted ? (
+                  <button
+                    type="button"
+                    className="btn"
+                    aria-label={`Mark ${recommendation.title} completed`}
+                    onClick={() => onCompleted(recommendation.id)}
+                  >
+                    Mark completed
+                  </button>
+                ) : null}
+              </div>
+            </div>
 
             <div
               className="stack"
@@ -958,16 +947,15 @@ function OrganizationRecommendationsSection({
                 </div>
               </SoftPanel>
 
-              {recommendation.example ? (
-                <SoftPanel>
-                  <div className="stack" style={{ gap: 6 }}>
-                    <SectionLabel>Example</SectionLabel>
-                    <div className="muted" style={{ lineHeight: 1.55 }}>
-                      {recommendation.example}
-                    </div>
+              <SoftPanel>
+                <div className="stack" style={{ gap: 6 }}>
+                  <SectionLabel>Example</SectionLabel>
+                  <div className="muted" style={{ lineHeight: 1.55 }}>
+                    {recommendation.example
+                      ?? "Example not available for this historical recommendation."}
                   </div>
-                </SoftPanel>
-              ) : null}
+                </div>
+              </SoftPanel>
 
               <SoftPanel>
                 <div className="stack" style={{ gap: 6 }}>
@@ -983,9 +971,8 @@ function OrganizationRecommendationsSection({
                   </div>
                 </div>
               </SoftPanel>
-
             </div>
-          </details>
+          </article>
         ))}
       </div>
     </section>
