@@ -172,3 +172,48 @@ describe("OrganizationWorkerGuidanceCard organization recommendations", () => {
     ).not.toBeInTheDocument();
   });
 });
+
+it("shows current organization recommendations before the mandate plan", () => {
+  render(
+    <OrganizationWorkerGuidanceCard
+      guidance={guidance({
+        mandate_summary: {
+          mandate_summary: "Current professional mandate.",
+          professional_identity: "Program coordinator",
+          expected_outcomes: [],
+          success_definition: [],
+          meaning_drivers: [],
+          engagement_drivers: [],
+          contribution_drivers: [],
+          hard_constraints: [],
+          soft_constraints: [],
+          time_capacity: [],
+          energy_constraints: [],
+          risks_to_avoid: [],
+          non_negotiables: [],
+        },
+        mandate_plan: {
+          plan_summary: "A multi-step organization support path.",
+          planning_horizon: "8 to 12 weeks",
+          approach: [],
+          milestones: [],
+          assumptions: [],
+        } as any,
+      })}
+      loading={false}
+    />,
+  );
+
+  const recommendationsHeading = screen.getByRole("heading", {
+    name: "Organization recommendations",
+  });
+
+  const mandatePlanHeading = screen.getByRole("heading", {
+    name: "Mandate plan",
+  });
+
+  expect(
+    recommendationsHeading.compareDocumentPosition(mandatePlanHeading)
+      & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+});

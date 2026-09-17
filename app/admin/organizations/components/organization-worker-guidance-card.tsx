@@ -989,6 +989,10 @@ export function OrganizationWorkerGuidanceCard({
         recommendations={organizationRecommendations}
       />
 
+      <OrganizationRecommendationsSection
+        recommendations={organizationRecommendations}
+      />
+
       {guidance.mandate_summary ? (
         <div
           style={{
@@ -1013,9 +1017,6 @@ export function OrganizationWorkerGuidanceCard({
               </div>
             )}
 
-            <OrganizationRecommendationsSection
-              recommendations={organizationRecommendations}
-            />
           </div>
 
           <MandateSidebar
@@ -1034,9 +1035,6 @@ export function OrganizationWorkerGuidanceCard({
             />
           ) : null}
 
-          <OrganizationRecommendationsSection
-            recommendations={organizationRecommendations}
-          />
         </div>
       )}
     </div>
