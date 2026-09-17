@@ -227,6 +227,8 @@ describe("OrganizationWorkerGuidanceCard organization recommendations", () => {
       name: /mark clarify decision boundaries completed/i,
     });
 
+    expect(button.closest("summary")).not.toBeNull();
+
     fireEvent.click(button);
 
     expect(onCompleted).toHaveBeenCalledTimes(1);

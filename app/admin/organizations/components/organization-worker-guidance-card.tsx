@@ -925,6 +925,21 @@ function OrganizationRecommendationsSection({
                       {recommendation.timing}
                     </span>
                   ) : null}
+
+                  {!recommendation.completed_at && onCompleted ? (
+                    <button
+                      type="button"
+                      className="btn"
+                      aria-label={`Mark ${recommendation.title} completed`}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        onCompleted(recommendation.id);
+                      }}
+                    >
+                      Mark completed
+                    </button>
+                  ) : null}
                 </div>
               </div>
             </summary>
@@ -969,23 +984,6 @@ function OrganizationRecommendationsSection({
                 </div>
               </SoftPanel>
 
-              {!recommendation.completed_at && onCompleted ? (
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                  }}
-                >
-                  <button
-                    type="button"
-                    className="btn"
-                    aria-label={`Mark ${recommendation.title} completed`}
-                    onClick={() => onCompleted(recommendation.id)}
-                  >
-                    Mark completed
-                  </button>
-                </div>
-              ) : null}
             </div>
           </details>
         ))}
