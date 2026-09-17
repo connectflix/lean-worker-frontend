@@ -16,6 +16,9 @@ vi.mock(
     OrganizationWorkerGuidanceCard: (props: {
       guidance: OrganizationWorkerGuidanceResponse | null;
       loading: boolean;
+      onOrganizationRecommendationCompleted?: (
+        recommendationId: number,
+      ) => void;
     }) => {
       guidanceCardMock(props);
 
@@ -91,6 +94,9 @@ function renderInsights(
     workerSummaryLoading: boolean;
     organizationGuidance: OrganizationWorkerGuidanceResponse | null;
     organizationGuidanceLoading: boolean;
+    onOrganizationRecommendationCompleted: (
+      recommendationId: number,
+    ) => void;
   }> = {},
 ) {
   return render(
@@ -119,6 +125,9 @@ function renderInsights(
       onLeverCategoryFilterChange={vi.fn()}
       onLeverSortModeChange={vi.fn()}
       onScrollToRecommendation={vi.fn()}
+      onOrganizationRecommendationCompleted={
+        overrides.onOrganizationRecommendationCompleted ?? vi.fn()
+      }
     />,
   );
 }
@@ -139,6 +148,24 @@ describe("OrganizationInsightsTab + Organization Guidance", () => {
     expect(guidanceCardMock).toHaveBeenCalledWith({
       guidance: payload,
       loading: false,
+      onOrganizationRecommendationCompleted: expect.any(Function),
+    });
+  });
+
+
+  it("forwards organization recommendation completion to the guidance card", () => {
+    const onCompleted = vi.fn();
+    const payload = guidance();
+
+    renderInsights({
+      organizationGuidance: payload,
+      onOrganizationRecommendationCompleted: onCompleted,
+    });
+
+    expect(guidanceCardMock).toHaveBeenCalledWith({
+      guidance: payload,
+      loading: false,
+      onOrganizationRecommendationCompleted: onCompleted,
     });
   });
 
@@ -156,6 +183,7 @@ describe("OrganizationInsightsTab + Organization Guidance", () => {
     expect(guidanceCardMock).toHaveBeenCalledWith({
       guidance: null,
       loading: true,
+      onOrganizationRecommendationCompleted: expect.any(Function),
     });
   });
 

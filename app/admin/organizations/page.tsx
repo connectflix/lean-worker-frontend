@@ -18,6 +18,7 @@ import {
   getAdminOrganizationWorkerSummary,
   getAdminOrganizations,
   getAdminWorkerOrganizationGuidance,
+  completeAdminWorkerOrganizationRecommendation,
   getAdminWorkerEngagements,
   getAdminWorkerPurposeCanvases,
   getAdminWorkerSignificanceCanvases,
@@ -2724,6 +2725,19 @@ function handleNewOrganization() {
     }
   }
 
+  async function handleCompleteOrganizationRecommendation(
+    recommendationId: number,
+  ) {
+    if (!selectedWorkerId) return;
+
+    await completeAdminWorkerOrganizationRecommendation(
+      selectedWorkerId,
+      recommendationId,
+    );
+
+    await loadOrganizationGuidance(selectedWorkerId);
+  }
+
   const assignableWorkers = useMemo(() => {
     if (!isPlatformAdmin || !selectedOrganization) return [];
 
@@ -3293,6 +3307,9 @@ const relatedLeversByRecommendationId = useMemo(() => {
                 onLeverCategoryFilterChange={setLeverCategoryFilter}
                 onLeverSortModeChange={setLeverSortMode}
                 onScrollToRecommendation={scrollToRecommendation}
+                onOrganizationRecommendationCompleted={
+                  handleCompleteOrganizationRecommendation
+                }
               />
             ) : null}
 

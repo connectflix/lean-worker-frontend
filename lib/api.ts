@@ -1170,6 +1170,19 @@ export async function completeAdminWorkerRecommendation(
 }
 
 
+export async function completeAdminWorkerOrganizationRecommendation(
+  workerId: number,
+  recommendationId: number,
+): Promise<{ completed: boolean }> {
+  return adminApiFetch<{ completed: boolean }>(
+    `/admin/workers/${workerId}/organization-recommendations/${recommendationId}/complete`,
+    {
+      method: "POST",
+    },
+  );
+}
+
+
 /* ---------------- ADMIN PAYMENT TRANSACTIONS ---------------- */
 
 export async function getAdminPaymentTransactions(

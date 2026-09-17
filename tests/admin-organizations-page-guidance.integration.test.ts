@@ -171,4 +171,42 @@ describe("Admin Organizations page + Organization Guidance", () => {
       "organizationGuidanceLoading={organizationGuidanceLoading}",
     );
   });
+
+
+  it("completes an organization recommendation then reloads persisted guidance", () => {
+    expect(source).toContain(
+      "completeAdminWorkerOrganizationRecommendation",
+    );
+
+    const body = functionBody(
+      "handleCompleteOrganizationRecommendation",
+    );
+
+    expect(body).toMatch(
+      /if\s*\(!selectedWorkerId\)\s*return/,
+    );
+
+    expect(body).toMatch(
+      /await\s+completeAdminWorkerOrganizationRecommendation\s*\(\s*selectedWorkerId\s*,\s*recommendationId\s*,?\s*\)/,
+    );
+
+    expect(body).toMatch(
+      /await\s+loadOrganizationGuidance\s*\(\s*selectedWorkerId\s*\)/,
+    );
+  });
+
+
+  it("passes organization recommendation completion into OrganizationInsightsTab", () => {
+    const insightsIndex = source.lastIndexOf("<OrganizationInsightsTab");
+    expect(insightsIndex).toBeGreaterThan(-1);
+
+    const insightsBlock = source.slice(
+      insightsIndex,
+      source.indexOf("/>", insightsIndex) + 2,
+    );
+
+    expect(insightsBlock).toMatch(
+      /onOrganizationRecommendationCompleted\s*=\s*\{\s*handleCompleteOrganizationRecommendation\s*\}/,
+    );
+  });
 });

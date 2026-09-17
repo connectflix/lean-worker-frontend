@@ -40,6 +40,9 @@ type OrganizationInsightsTabProps = {
   onLeverCategoryFilterChange: (value: string) => void;
   onLeverSortModeChange: (value: LeverSortMode) => void;
   onScrollToRecommendation: (recommendationId: number) => void;
+  onOrganizationRecommendationCompleted?: (
+    recommendationId: number,
+  ) => void;
 };
 
 function formatCurrency(value: number): string {
@@ -179,6 +182,7 @@ export function OrganizationInsightsTab({
   onLeverCategoryFilterChange,
   onLeverSortModeChange,
   onScrollToRecommendation,
+  onOrganizationRecommendationCompleted,
 }: OrganizationInsightsTabProps) {
   const [
     professionalIntentionCompletionWorkspace,
@@ -1094,6 +1098,9 @@ export function OrganizationInsightsTab({
       <OrganizationWorkerGuidanceCard
         guidance={organizationGuidance}
         loading={organizationGuidanceLoading}
+        onOrganizationRecommendationCompleted={
+          onOrganizationRecommendationCompleted
+        }
       />
 
       <ProfessionalExecutionPlanCard

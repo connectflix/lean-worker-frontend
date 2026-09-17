@@ -11,6 +11,9 @@ import type {
 type OrganizationWorkerGuidanceCardProps = {
   guidance: OrganizationWorkerGuidanceResponse | null;
   loading: boolean;
+  onOrganizationRecommendationCompleted?: (
+    recommendationId: number,
+  ) => void;
 };
 
 function CountBadge({
@@ -803,8 +806,10 @@ function MandatePlanSection({
 
 function OrganizationRecommendationsSection({
   recommendations,
+  onCompleted,
 }: {
   recommendations: OrganizationSupportRecommendation[];
+  onCompleted?: (recommendationId: number) => void;
 }) {
   if (!recommendations.length) {
     return null;
@@ -848,7 +853,10 @@ function OrganizationRecommendationsSection({
         />
       </div>
 
-      <div className="stack" style={{ gap: 10 }}>
+      <div
+        className="stack scroll-panel"
+        style={{ gap: 10, maxHeight: 430 }}
+      >
         {recommendations.map((recommendation, index) => (
           <details
             key={`${recommendation.title}-${index}`}
@@ -895,11 +903,24 @@ function OrganizationRecommendationsSection({
                   </div>
                 </div>
 
-                {recommendation.timing ? (
-                  <span className="badge">
-                    {recommendation.timing}
-                  </span>
-                ) : null}
+                <div
+                  className="row"
+                  style={{
+                    gap: 8,
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  {recommendation.completed_at ? (
+                    <span className="badge">Completed</span>
+                  ) : null}
+
+                  {recommendation.timing ? (
+                    <span className="badge">
+                      {recommendation.timing}
+                    </span>
+                  ) : null}
+                </div>
               </div>
             </summary>
 
@@ -917,6 +938,17 @@ function OrganizationRecommendationsSection({
                 </div>
               </SoftPanel>
 
+              {recommendation.example ? (
+                <SoftPanel>
+                  <div className="stack" style={{ gap: 6 }}>
+                    <SectionLabel>Example</SectionLabel>
+                    <div className="muted" style={{ lineHeight: 1.55 }}>
+                      {recommendation.example}
+                    </div>
+                  </div>
+                </SoftPanel>
+              ) : null}
+
               <SoftPanel>
                 <div className="stack" style={{ gap: 6 }}>
                   <SectionLabel>Why this support matters</SectionLabel>
@@ -931,6 +963,24 @@ function OrganizationRecommendationsSection({
                   </div>
                 </div>
               </SoftPanel>
+
+              {!recommendation.completed_at && onCompleted ? (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                  }}
+                >
+                  <button
+                    type="button"
+                    className="btn"
+                    aria-label={`Mark ${recommendation.title} completed`}
+                    onClick={() => onCompleted(recommendation.id)}
+                  >
+                    Mark completed
+                  </button>
+                </div>
+              ) : null}
             </div>
           </details>
         ))}
@@ -957,6 +1007,7 @@ function EmptyGuidance() {
 export function OrganizationWorkerGuidanceCard({
   guidance,
   loading,
+  onOrganizationRecommendationCompleted,
 }: OrganizationWorkerGuidanceCardProps) {
   const organizationRecommendations =
     guidance?.organization_recommendations ?? [];
@@ -991,6 +1042,7 @@ export function OrganizationWorkerGuidanceCard({
 
       <OrganizationRecommendationsSection
         recommendations={organizationRecommendations}
+        onCompleted={onOrganizationRecommendationCompleted}
       />
 
       {guidance.mandate_summary ? (

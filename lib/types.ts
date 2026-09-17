@@ -2506,10 +2506,13 @@ export type OrganizationWorkerMandatePlan = {
 };
 
 export type OrganizationSupportRecommendation = {
+  id: number;
   title: string;
   action: string;
+  example: string | null;
   rationale: string;
   timing: string | null;
+  completed_at: string | null;
 };
 
 export type OrganizationWorkerGuidanceResponse = {
