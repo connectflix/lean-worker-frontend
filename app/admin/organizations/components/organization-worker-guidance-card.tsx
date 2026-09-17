@@ -854,8 +854,13 @@ function OrganizationRecommendationsSection({
       </div>
 
       <div
-        className="stack scroll-panel"
-        style={{ gap: 10, maxHeight: 430 }}
+        className="stack scroll-panel organization-recommendations-scroll"
+        style={{
+          gap: 10,
+          maxHeight: 430,
+          overflowY: "scroll",
+          scrollbarGutter: "stable",
+        }}
       >
         {recommendations.map((recommendation, index) => (
           <details

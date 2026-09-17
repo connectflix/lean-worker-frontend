@@ -292,6 +292,29 @@ describe("OrganizationWorkerGuidanceCard organization recommendations", () => {
   });
 
 
+  it("keeps a persistent scroll gutter for organization recommendations", () => {
+    render(
+      <OrganizationWorkerGuidanceCard
+        guidance={guidance()}
+        loading={false}
+      />,
+    );
+
+    const heading = screen.getByRole("heading", {
+      name: "Organization recommendations",
+    });
+
+    const section = heading.closest("section");
+    const scrollPanel = section?.querySelector(".scroll-panel");
+
+    expect(scrollPanel).not.toBeNull();
+    expect(scrollPanel).toHaveClass("organization-recommendations-scroll");
+    expect(scrollPanel).toHaveStyle({
+      overflowY: "scroll",
+      scrollbarGutter: "stable",
+    });
+  });
+
   it("preserves the existing loading state", () => {
     render(
       <OrganizationWorkerGuidanceCard
