@@ -9,10 +9,12 @@ import {
   type ReactNode,
 } from "react";
 import { clearAdminToken } from "@/lib/admin-auth";
-
-type AdminRole = "admin" | "organization";
-
-type AdminNavSection = "overview" | "operations" | "catalog" | "enablement" | "account";
+import {
+  getAdminShellCopy,
+  type AdminNavSection,
+  type AdminRole,
+} from "@/lib/i18n/admin-shell";
+import { useAdminUiLanguage } from "@/lib/use-admin-ui-language";
 
 type AdminNavItem = {
   label: string;
@@ -33,7 +35,6 @@ type AdminShellProps = {
 };
 
 const ADMIN_SIDEBAR_COLLAPSED_STORAGE_KEY = "leanworker.admin.sidebarCollapsed";
-
 const NAV_ITEMS: AdminNavItem[] = [
   {
     label: "Dashboard",
@@ -136,14 +137,6 @@ const SECTIONS: AdminNavSection[] = [
   "account",
 ];
 
-function sectionLabel(section: AdminNavSection): string {
-  if (section === "overview") return "Overview";
-  if (section === "operations") return "Operations";
-  if (section === "catalog") return "Catalog";
-  if (section === "enablement") return "Enablement";
-  return "Account";
-}
-
 function getInitials(value?: string | null, fallback = "LW"): string {
   const cleaned = (value || "").trim();
 
@@ -179,35 +172,6 @@ function isNavItemActive(activeHref: string, itemHref: string): boolean {
   return activeHref === itemHref || activeHref.startsWith(`${itemHref}/`);
 }
 
-function getRoleLabel(adminRole: AdminRole): string {
-  if (adminRole === "organization") return "Organization workspace";
-  return "LeanWorker control";
-}
-
-function getDisplayName(
-  adminRole: AdminRole,
-  adminOrganizationName?: string | null,
-): string {
-  if (adminRole === "organization") {
-    return adminOrganizationName || "Organization";
-  }
-
-  return "Admin";
-}
-
-function getRoleBadgeLabel(adminRole: AdminRole): string {
-  if (adminRole === "organization") return "Organization";
-  return "Platform admin";
-}
-
-function getRoleDescription(adminRole: AdminRole): string {
-  if (adminRole === "organization") {
-    return "Scoped access to organization workers, conversations, bookings and coaching assets.";
-  }
-
-  return "Centralized operations, orchestration, catalog and governance workspace.";
-}
-
 export function AdminShell({
   title,
   subtitle,
@@ -219,13 +183,26 @@ export function AdminShell({
 }: AdminShellProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const { uiLanguage, setUiLanguage } = useAdminUiLanguage();
 
-  const displayName = getDisplayName(adminRole, adminOrganizationName);
-  const roleLabel = getRoleLabel(adminRole);
+  const copy = getAdminShellCopy(uiLanguage);
+
+  const displayName =
+    adminRole === "organization"
+      ? adminOrganizationName || copy.organizationFallback
+      : "Admin";
+
+  const roleLabel = copy.roleLabel[adminRole];
 
   const visibleNavItems = useMemo(() => {
-    return NAV_ITEMS.filter((item) => item.roles.includes(adminRole));
-  }, [adminRole]);
+    return NAV_ITEMS.filter((item) => item.roles.includes(adminRole)).map(
+      (item) => ({
+        ...item,
+        label: copy.nav[item.href]?.label ?? item.label,
+        description: copy.nav[item.href]?.description ?? item.description,
+      }),
+    );
+  }, [adminRole, copy]);
 
   const activeItem = useMemo(() => {
     return (
@@ -394,8 +371,8 @@ export function AdminShell({
                 className="button ghost"
                 type="button"
                 onClick={toggleSidebarCollapsed}
-                aria-label="Collapse admin sidebar"
-                title="Collapse sidebar"
+                aria-label={copy.collapseSidebar}
+                title={copy.collapseSidebar}
                 style={{
                   width: 36,
                   height: 36,
@@ -415,8 +392,8 @@ export function AdminShell({
               className="button ghost"
               type="button"
               onClick={toggleSidebarCollapsed}
-              aria-label="Expand admin sidebar"
-              title="Expand sidebar"
+              aria-label={copy.expandSidebar}
+              title={copy.expandSidebar}
               style={{
                 width: "100%",
                 minHeight: 38,
@@ -432,7 +409,7 @@ export function AdminShell({
 
           <nav
             className="stack"
-            aria-label="Admin navigation"
+            aria-label={copy.adminNavigation}
             style={{
               gap: sidebarCollapsed ? 10 : 16,
               flex: 1,
@@ -460,7 +437,7 @@ export function AdminShell({
                         color: "#94a3b8",
                       }}
                     >
-                      {sectionLabel(section)}
+                      {copy.sections[section]}
                     </div>
                   ) : (
                     <div
@@ -635,7 +612,7 @@ export function AdminShell({
                     </div>
                   ) : (
                     <div className="muted" style={{ fontSize: 12 }}>
-                      {getRoleBadgeLabel(adminRole)}
+                      {copy.roleBadge[adminRole]}
                     </div>
                   )}
                 </div>
@@ -644,7 +621,7 @@ export function AdminShell({
 
             {!sidebarCollapsed ? (
               <div className="muted" style={{ fontSize: 12, lineHeight: 1.5 }}>
-                {getRoleDescription(adminRole)}
+                {copy.roleDescription[adminRole]}
               </div>
             ) : null}
 
@@ -652,7 +629,7 @@ export function AdminShell({
               className="button ghost"
               type="button"
               onClick={handleLogout}
-              title="Log out"
+              title={copy.logout}
               style={{
                 width: "100%",
                 justifyContent: "center",
@@ -661,7 +638,7 @@ export function AdminShell({
                 padding: sidebarCollapsed ? 0 : undefined,
               }}
             >
-              {sidebarCollapsed ? "⎋" : "Log out"}
+              {sidebarCollapsed ? "⎋" : copy.logout}
             </button>
           </div>
         </div>
@@ -700,7 +677,7 @@ export function AdminShell({
                     fontWeight: 800,
                   }}
                 >
-                  {sectionLabel(activeItem.section)}
+                  {copy.sections[activeItem.section]}
                 </span>
               ) : null}
 
@@ -713,7 +690,7 @@ export function AdminShell({
                   fontWeight: 800,
                 }}
               >
-                {getRoleBadgeLabel(adminRole)}
+                {copy.roleBadge[adminRole]}
               </span>
             </div>
 
@@ -754,18 +731,68 @@ export function AdminShell({
               alignItems: "center",
             }}
           >
+            <div
+              role="group"
+              aria-label={
+                uiLanguage === "fr"
+                  ? "Langue de l’interface"
+                  : "Interface language"
+              }
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                padding: 4,
+                borderRadius: 12,
+                background: "rgba(15,23,42,0.04)",
+                border: "1px solid rgba(15,23,42,0.07)",
+              }}
+            >
+              <button
+                type="button"
+                className="button ghost"
+                aria-label="Français"
+                aria-pressed={uiLanguage === "fr"}
+                onClick={() => setUiLanguage("fr")}
+                style={{
+                  minHeight: 32,
+                  padding: "5px 9px",
+                  borderRadius: 9,
+                  fontWeight: 800,
+                }}
+              >
+                FR
+              </button>
+
+              <button
+                type="button"
+                className="button ghost"
+                aria-label="English"
+                aria-pressed={uiLanguage === "en"}
+                onClick={() => setUiLanguage("en")}
+                style={{
+                  minHeight: 32,
+                  padding: "5px 9px",
+                  borderRadius: 9,
+                  fontWeight: 800,
+                }}
+              >
+                EN
+              </button>
+            </div>
+
             <button
               className="button ghost"
               type="button"
               onClick={toggleSidebarCollapsed}
               aria-pressed={sidebarCollapsed}
-              title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              title={sidebarCollapsed ? copy.expandSidebar : copy.collapseSidebar}
               style={{
                 minHeight: 40,
                 borderRadius: 14,
               }}
             >
-              {sidebarCollapsed ? "Expand" : "Collapse"}
+              {sidebarCollapsed ? copy.expand : copy.collapse}
             </button>
 
             <div
@@ -825,7 +852,7 @@ export function AdminShell({
                 borderRadius: 14,
               }}
             >
-              {mobileMenuOpen ? "Close" : "Menu"}
+              {mobileMenuOpen ? copy.close : copy.menu}
             </button>
           </div>
         </header>
@@ -834,7 +861,7 @@ export function AdminShell({
           <nav
             id="admin-mobile-nav"
             className="card-soft"
-            aria-label="Admin mobile navigation"
+            aria-label={copy.adminMobileNavigation}
             style={{
               margin: "14px 24px 0",
               display: "flex",
@@ -880,7 +907,7 @@ export function AdminShell({
                 borderRadius: 999,
               }}
             >
-              Log out
+              {copy.logout}
             </button>
           </nav>
         ) : null}
