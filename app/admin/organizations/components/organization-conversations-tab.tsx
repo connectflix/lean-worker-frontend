@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import {
+  getOrganizationConversationsCopy,
+  type OrganizationConversationsCopy,
+} from "@/lib/i18n/organization-conversations";
 import type {
   AdminOrganizationWorkerConversations,
   AdminOrganizationWorkerSummary,
@@ -8,6 +12,7 @@ import type {
   AdminWorkerConversationCreate,
   AdminWorkerConversationUpdate,
 } from "@/lib/types";
+import { useAdminUiLanguage } from "@/lib/use-admin-ui-language";
 
 type ConversationFormState = {
   title: string;
@@ -70,7 +75,10 @@ function formatNaiveDateTime(value: string): string | null {
   return `${day}/${month}/${year} ${hour}:${minute}`;
 }
 
-function formatDateTime(value?: string | null): string {
+function formatDateTime(
+  value: string | null | undefined,
+  locale: string,
+): string {
   if (!value) return "—";
 
   const normalizedValue = value.includes("T") ? value : value.replace(" ", "T");
@@ -86,7 +94,7 @@ function formatDateTime(value?: string | null): string {
     return value;
   }
 
-  return date.toLocaleString("fr-BE", {
+  return date.toLocaleString(locale, {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -168,17 +176,20 @@ function getTextPreview(value?: string | null, maxLength = 120): string {
   return `${text.slice(0, maxLength).trim()}…`;
 }
 
-function getConversationSourceLabel(conversation: AdminWorkerConversation): string {
+function getConversationSourceLabel(
+  conversation: AdminWorkerConversation,
+  locale: string,
+): string {
   const parts = [
     conversation.source_type || "video",
     conversation.source_label || null,
-    formatDateTime(conversation.conversation_date),
+    formatDateTime(conversation.conversation_date, locale),
   ].filter(Boolean);
 
   return parts.join(" · ");
 }
 
-function getErrorMessage(err: unknown): string {
+function getErrorMessage(err: unknown, fallback: string): string {
   if (err instanceof Error && err.message) {
     return err.message;
   }
@@ -195,11 +206,12 @@ function getErrorMessage(err: unknown): string {
     if (typeof maybeError.error === "string") return maybeError.error;
   }
 
-  return "Unable to save the external conversation.";
+  return fallback;
 }
 
 function validateExternalConversationForm(
   form: ConversationFormState,
+  validation: OrganizationConversationsCopy["validation"],
 ): string | null {
   const title = form.title.trim();
   const sourceType = form.source_type.trim();
@@ -207,27 +219,27 @@ function validateExternalConversationForm(
   const secretCode = form.secret_code.trim();
 
   if (!title) {
-    return "Title is required before saving the external conversation.";
+    return validation.titleRequired;
   }
 
   if (secretCode && !/^[A-Za-z0-9_-]+$/.test(secretCode)) {
-    return "Code secret can contain only letters, numbers, hyphens and underscores.";
+    return validation.secretCodeCharacters;
   }
 
   if (secretCode.length > 100) {
-    return "Code secret cannot exceed 100 characters.";
+    return validation.secretCodeTooLong;
   }
 
   if (sourceType === "video" && !filePath) {
-    return "File path is required when Source type is Video. Add the stored video file path, or change Source type if this is only a web link.";
+    return validation.filePathVideoRequired;
   }
 
   if (sourceType === "audio" && !filePath) {
-    return "File path is required when Source type is Audio.";
+    return validation.filePathAudioRequired;
   }
 
   if (sourceType === "upload" && !filePath) {
-    return "File path is required when Source type is Upload.";
+    return validation.filePathUploadRequired;
   }
 
   return null;
@@ -237,10 +249,12 @@ function ScrollableTextBlock({
   title,
   value,
   maxHeight = 260,
+  charsLabel,
 }: {
   title: string;
   value?: string | null;
   maxHeight?: number;
+  charsLabel: (count: number) => string;
 }) {
   if (!value) return null;
 
@@ -263,7 +277,7 @@ function ScrollableTextBlock({
         </strong>
 
         <span className="badge" style={{ fontSize: 11, padding: "5px 8px" }}>
-          {value.length} chars
+          {charsLabel(value.length)}
         </span>
       </div>
 
@@ -324,6 +338,9 @@ export function OrganizationConversationsTab({
   onEditExternalConversation,
   onCancelEditExternalConversation,
 }: OrganizationConversationsTabProps) {
+  const { uiLanguage } = useAdminUiLanguage();
+  const copy = getOrganizationConversationsCopy(uiLanguage);
+
   const [form, setForm] = useState<ConversationFormState>(EMPTY_FORM);
   const [expandedCoachSessionId, setExpandedCoachSessionId] = useState<number | null>(null);
   const [expandedExternalConversationId, setExpandedExternalConversationId] =
@@ -335,7 +352,7 @@ export function OrganizationConversationsTab({
 
   const workerLabel = selectedWorkerSummary?.worker
     ? `#${selectedWorkerSummary.worker.id} — ${selectedWorkerSummary.worker.display_name}`
-    : "No worker selected";
+    : copy.noWorkerSelected;
 
   const coachSessions = conversations?.coach_sessions ?? [];
   const externalConversations = conversations?.external_conversations ?? [];
@@ -369,7 +386,10 @@ export function OrganizationConversationsTab({
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
 
-    const validationError = validateExternalConversationForm(form);
+    const validationError = validateExternalConversationForm(
+      form,
+      copy.validation,
+    );
 
     if (validationError) {
       setFormError(validationError);
@@ -392,7 +412,7 @@ export function OrganizationConversationsTab({
       await Promise.resolve(onCreateExternalConversation(payload));
       setForm(EMPTY_FORM);
     } catch (err) {
-      setFormError(getErrorMessage(err));
+      setFormError(getErrorMessage(err, copy.validation.saveFallback));
     } finally {
       setLocalSaving(false);
     }
@@ -400,29 +420,30 @@ export function OrganizationConversationsTab({
 
   return (
     <div className="stack" style={{ gap: 16, minWidth: 0 }}>
-      <div
-        className="card-soft"
+      <section
+        data-testid="organization-conversations-summary"
+        className="card"
         style={{
           display: "flex",
           justifyContent: "space-between",
-          gap: 14,
+          gap: 20,
           alignItems: "flex-start",
           flexWrap: "wrap",
-          background: "rgba(255,255,255,0.76)",
-          border: "1px solid var(--admin-border, var(--border))",
+          padding: "20px 22px",
+          background: "var(--admin-surface)",
+          border: "1px solid var(--admin-border)",
         }}
       >
         <div className="stack" style={{ gap: 8, minWidth: 0 }}>
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-            <span className="badge primary">Conversations</span>
+            <span className="badge primary">{copy.badge}</span>
             {selectedWorkerId ? <span className="badge">{workerLabel}</span> : null}
           </div>
 
           <div className="stack" style={{ gap: 4 }}>
-            <div className="section-title">Worker conversations</div>
+            <div className="section-title">{copy.workerConversations}</div>
             <div className="muted">
-              Review AI coach sessions and add external conversation material for{" "}
-              <strong>{workerLabel}</strong>.
+              {copy.description(workerLabel)}
             </div>
           </div>
         </div>
@@ -433,21 +454,21 @@ export function OrganizationConversationsTab({
           onClick={() => void onLoadConversations()}
           disabled={!selectedWorkerId || loading}
         >
-          {loading ? "Loading..." : conversations ? "Refresh conversations" : "Load conversations"}
+          {loading ? copy.loading : conversations ? copy.refresh : copy.load}
         </button>
-      </div>
+      </section>
 
       {!selectedWorkerId ? (
         <EmptyState
-          title="No worker selected"
-          description="Select a worker first to review coach sessions and external conversations."
+          title={copy.noWorkerSelected}
+          description={copy.noWorkerDescription}
         />
       ) : null}
 
       {selectedWorkerId && !loading && !conversations ? (
         <EmptyState
-          title="Conversations not loaded"
-          description="Click “Load conversations” to fetch coach sessions and manually captured conversations."
+          title={copy.notLoadedTitle}
+          description={copy.notLoadedDescription}
         />
       ) : null}
 
@@ -455,13 +476,14 @@ export function OrganizationConversationsTab({
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "minmax(0, 1.18fr) minmax(360px, 0.82fr)",
-            gap: 16,
+            gridTemplateColumns: "minmax(0, 1.28fr) minmax(380px, 0.72fr)",
+            gap: 18,
             alignItems: "start",
             minWidth: 0,
           }}
         >
-          <div
+          <section
+            data-testid="organization-conversations-activity"
             className="stack"
             style={{
               gap: 16,
@@ -478,14 +500,13 @@ export function OrganizationConversationsTab({
                 style={{ alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}
               >
                 <div className="stack" style={{ gap: 4 }}>
-                  <div className="section-title">Coach sessions</div>
+                  <div className="section-title">{copy.coach.title}</div>
                   <div className="muted">
-                    {coachSessions.length} AI coaching session
-                    {coachSessions.length > 1 ? "s" : ""} available.
+                    {copy.coach.available(coachSessions.length)}
                   </div>
                 </div>
 
-                <span className="badge">{coachSessions.length} session(s)</span>
+                <span className="badge">{copy.coach.count(coachSessions.length)}</span>
               </div>
 
               <div
@@ -500,8 +521,8 @@ export function OrganizationConversationsTab({
               >
                 {coachSessions.length === 0 ? (
                   <EmptyState
-                    title="No coach session"
-                    description="No AI coach session was found for this worker."
+                    title={copy.coach.emptyTitle}
+                    description={copy.coach.emptyDescription}
                   />
                 ) : null}
 
@@ -528,9 +549,9 @@ export function OrganizationConversationsTab({
                       >
                         <div className="stack" style={{ gap: 6, minWidth: 0 }}>
                           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                            <span className="badge">session #{session.session_id}</span>
+                            <span className="badge">{copy.coach.session(session.session_id)}</span>
                             <span className="badge">{session.status}</span>
-                            <span className="badge">{transcriptCount} turn(s)</span>
+                            <span className="badge">{copy.coach.turns(transcriptCount)}</span>
                           </div>
 
                           <strong
@@ -539,11 +560,13 @@ export function OrganizationConversationsTab({
                               wordBreak: "break-word",
                             }}
                           >
-                            AI coaching session
+                            {copy.coach.sessionTitle}
                           </strong>
 
                           <span className="muted">
-                            Started: {formatDateTime(session.started_at)}
+                            {copy.coach.started(
+                              formatDateTime(session.started_at, copy.locale),
+                            )}
                           </span>
 
                           {session.summary ? (
@@ -557,7 +580,7 @@ export function OrganizationConversationsTab({
                               {getTextPreview(session.summary, isExpanded ? 220 : 140)}
                             </span>
                           ) : (
-                            <span className="muted">No summary available.</span>
+                            <span className="muted">{copy.coach.noSummary}</span>
                           )}
                         </div>
 
@@ -568,7 +591,7 @@ export function OrganizationConversationsTab({
                             setExpandedCoachSessionId(isExpanded ? null : session.session_id)
                           }
                         >
-                          {isExpanded ? "Hide" : "Open"}
+                          {isExpanded ? copy.common.hide : copy.common.open}
                         </button>
                       </div>
 
@@ -586,7 +609,7 @@ export function OrganizationConversationsTab({
                           }}
                         >
                           {session.transcript.length === 0 ? (
-                            <div className="muted">No transcript available.</div>
+                            <div className="muted">{copy.coach.noTranscript}</div>
                           ) : null}
 
                           {session.transcript.map((turn) => (
@@ -607,11 +630,13 @@ export function OrganizationConversationsTab({
                                 style={{ gap: 8, marginBottom: 6 }}
                               >
                                 <strong style={{ fontSize: 12 }}>
-                                  {turn.speaker === "user" ? "Worker" : "Coach"}
+                                  {turn.speaker === "user"
+                                    ? copy.coach.worker
+                                    : copy.coach.coach}
                                 </strong>
 
                                 <span className="muted" style={{ fontSize: 12 }}>
-                                  {formatDateTime(turn.created_at)}
+                                  {formatDateTime(turn.created_at, copy.locale)}
                                 </span>
                               </div>
 
@@ -641,14 +666,13 @@ export function OrganizationConversationsTab({
                 style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}
               >
                 <div className="stack" style={{ gap: 4 }}>
-                  <div className="section-title">External conversations</div>
+                  <div className="section-title">{copy.external.title}</div>
                   <div className="muted">
-                    {externalConversations.length} external conversation
-                    {externalConversations.length > 1 ? "s" : ""} captured manually.
+                    {copy.external.captured(externalConversations.length)}
                   </div>
                 </div>
 
-                <span className="badge">{externalConversations.length} captured</span>
+                <span className="badge">{copy.external.count(externalConversations.length)}</span>
               </div>
 
               <div
@@ -663,8 +687,8 @@ export function OrganizationConversationsTab({
               >
                 {externalConversations.length === 0 ? (
                   <EmptyState
-                    title="No external conversation"
-                    description="No external conversation has been added for this worker yet."
+                    title={copy.external.emptyTitle}
+                    description={copy.external.emptyDescription}
                   />
                 ) : null}
 
@@ -696,14 +720,16 @@ export function OrganizationConversationsTab({
                             <span className="badge">#{conversation.id}</span>
                             <span className="badge">{conversation.source_type || "video"}</span>
                             {conversation.video_url ? (
-                              <span className="badge primary">video</span>
+                              <span className="badge primary">{copy.external.videoBadge}</span>
                             ) : null}
                             {conversation.transcript ? (
-                              <span className="badge">transcript</span>
+                              <span className="badge">{copy.external.transcriptBadge}</span>
                             ) : null}
-                            {conversation.notes ? <span className="badge">notes</span> : null}
+                            {conversation.notes ? (
+                              <span className="badge">{copy.external.notesBadge}</span>
+                            ) : null}
                             {conversation.secret_code ? (
-                              <span className="badge">code secret</span>
+                              <span className="badge">{copy.external.secretCodeBadge}</span>
                             ) : null}
                           </div>
 
@@ -717,7 +743,10 @@ export function OrganizationConversationsTab({
                           </strong>
 
                           <span className="muted">
-                            {getConversationSourceLabel(conversation)}
+                            {getConversationSourceLabel(
+                              conversation,
+                              copy.locale,
+                            )}
                           </span>
 
                           {preview ? (
@@ -751,7 +780,7 @@ export function OrganizationConversationsTab({
                               )
                             }
                           >
-                            {isExpanded ? "Hide" : "Open"}
+                            {isExpanded ? copy.common.hide : copy.common.open}
                           </button>
 
                           <button
@@ -759,7 +788,7 @@ export function OrganizationConversationsTab({
                             type="button"
                             onClick={() => onEditExternalConversation(conversation)}
                           >
-                            Edit
+                            {copy.common.edit}
                           </button>
 
                           <button
@@ -769,7 +798,7 @@ export function OrganizationConversationsTab({
                             disabled={isSubmitting}
                             style={{ color: "var(--danger)" }}
                           >
-                            Delete
+                            {copy.common.delete}
                           </button>
                         </div>
                       </div>
@@ -785,7 +814,9 @@ export function OrganizationConversationsTab({
                         >
                           {conversation.video_url ? (
                             <div className="stack" style={{ gap: 6 }}>
-                              <strong style={{ fontSize: 12 }}>Video</strong>
+                              <strong style={{ fontSize: 12 }}>
+                                {copy.external.video}
+                              </strong>
 
                               <a
                                 href={conversation.video_url}
@@ -795,16 +826,18 @@ export function OrganizationConversationsTab({
                                 style={{
                                   width: "fit-content",
                                 }}
-                                title="Open video in a new tab"
+                                title={copy.external.openVideoTitle}
                               >
-                                Watch video
+                                {copy.external.watchVideo}
                               </a>
                             </div>
                           ) : null}
 
                           {conversation.file_path ? (
                             <div className="stack" style={{ gap: 6 }}>
-                              <strong style={{ fontSize: 12 }}>File path</strong>
+                              <strong style={{ fontSize: 12 }}>
+                                {copy.external.filePath}
+                              </strong>
                               <div
                                 style={{
                                   wordBreak: "break-word",
@@ -822,7 +855,9 @@ export function OrganizationConversationsTab({
 
                           {conversation.secret_code ? (
                             <div className="stack" style={{ gap: 6 }}>
-                              <strong style={{ fontSize: 12 }}>Code secret</strong>
+                              <strong style={{ fontSize: 12 }}>
+                                {copy.external.secretCode}
+                              </strong>
                               <code
                                 style={{
                                   width: "fit-content",
@@ -841,15 +876,17 @@ export function OrganizationConversationsTab({
                           ) : null}
 
                           <ScrollableTextBlock
-                            title="Transcript"
+                            title={copy.external.transcript}
                             value={conversation.transcript}
                             maxHeight={300}
+                            charsLabel={copy.common.chars}
                           />
 
                           <ScrollableTextBlock
-                            title="Notes"
+                            title={copy.external.notes}
                             value={conversation.notes}
                             maxHeight={240}
+                            charsLabel={copy.common.chars}
                           />
                         </div>
                       ) : null}
@@ -861,22 +898,26 @@ export function OrganizationConversationsTab({
 
             {!selectedWorkerHasConversations ? (
               <EmptyState
-                title="No conversation material"
-                description="This worker has no AI session transcript and no external conversation material yet."
+                title={copy.external.noMaterialTitle}
+                description={copy.external.noMaterialDescription}
               />
             ) : null}
-          </div>
+          </section>
 
           <form
+            data-testid="organization-conversations-capture"
             className="card stack"
             style={{
-              gap: 14,
+              gap: 16,
               minWidth: 0,
               maxHeight: "calc(100vh - 280px)",
               overflowY: "auto",
               overflowX: "hidden",
               position: "sticky",
               top: 78,
+              padding: 20,
+              borderColor: "var(--admin-border)",
+              background: "var(--admin-surface)",
             }}
             onSubmit={(event) => void handleSubmit(event)}
           >
@@ -890,7 +931,9 @@ export function OrganizationConversationsTab({
             >
               <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                 <span className={editingExternalConversation ? "badge primary" : "badge"}>
-                  {editingExternalConversation ? "editing" : "new"}
+                  {editingExternalConversation
+                    ? copy.form.editingBadge
+                    : copy.form.newBadge}
                 </span>
                 {editingExternalConversation ? (
                   <span className="badge">#{editingExternalConversation.id}</span>
@@ -900,12 +943,11 @@ export function OrganizationConversationsTab({
               <div>
                 <div className="section-title">
                   {editingExternalConversation
-                    ? "Edit external conversation"
-                    : "Add external conversation"}
+                    ? copy.form.editTitle
+                    : copy.form.addTitle}
                 </div>
                 <div className="muted">
-                  Add notes, transcript, video link, meeting context, or imported conversation
-                  material.
+                  {copy.form.description}
                 </div>
               </div>
             </div>
@@ -925,12 +967,12 @@ export function OrganizationConversationsTab({
             ) : null}
 
             <label className="stack" style={{ gap: 6 }}>
-              <span className="muted">Title</span>
+              <span className="muted">{copy.form.title}</span>
               <input
                 className="input"
                 value={form.title}
                 onChange={(event) => patchField("title", event.target.value)}
-                placeholder="Example: Initial discovery call"
+                placeholder={copy.form.titlePlaceholder}
                 required
               />
             </label>
@@ -943,54 +985,54 @@ export function OrganizationConversationsTab({
               }}
             >
               <label className="stack" style={{ gap: 6 }}>
-                <span className="muted">Source type</span>
+                <span className="muted">{copy.form.sourceType}</span>
                 <select
                   className="select"
                   value={form.source_type}
                   onChange={(event) => patchField("source_type", event.target.value)}
                 >
-                  <option value="manual">Manual</option>
-                  <option value="meeting">Meeting</option>
-                  <option value="video">Video</option>
-                  <option value="audio">Audio</option>
-                  <option value="url">URL</option>
-                  <option value="upload">Upload</option>
-                  <option value="note">Note</option>
+                  <option value="manual">{copy.form.sourceTypes.manual}</option>
+                  <option value="meeting">{copy.form.sourceTypes.meeting}</option>
+                  <option value="video">{copy.form.sourceTypes.video}</option>
+                  <option value="audio">{copy.form.sourceTypes.audio}</option>
+                  <option value="url">{copy.form.sourceTypes.url}</option>
+                  <option value="upload">{copy.form.sourceTypes.upload}</option>
+                  <option value="note">{copy.form.sourceTypes.note}</option>
                 </select>
               </label>
 
               <label className="stack" style={{ gap: 6 }}>
-                <span className="muted">Source label</span>
+                <span className="muted">{copy.form.sourceLabel}</span>
                 <input
                   className="input"
                   value={form.source_label}
                   onChange={(event) => patchField("source_label", event.target.value)}
-                  placeholder="Example: Zoom, Teams, YouTube"
+                  placeholder={copy.form.sourceLabelPlaceholder}
                 />
               </label>
             </div>
 
             <label className="stack" style={{ gap: 6 }}>
-              <span className="muted">Code secret</span>
+              <span className="muted">{copy.form.secretCode}</span>
               <input
                 className="input"
                 type="text"
                 value={form.secret_code}
                 onChange={(event) => patchField("secret_code", event.target.value)}
-                placeholder="Example: ABC123_XYZ"
+                placeholder={copy.form.secretCodePlaceholder}
                 maxLength={100}
                 autoComplete="off"
                 spellCheck={false}
                 pattern="[A-Za-z0-9_-]+"
-                title="Letters, numbers, hyphens and underscores only"
+                title={copy.form.secretCodeTitle}
               />
               <span className="muted" style={{ fontSize: 12 }}>
-                Optional. Letters, numbers, hyphens and underscores only. Maximum 100 characters.
+                {copy.form.secretCodeHelp}
               </span>
             </label>
 
             <label className="stack" style={{ gap: 6 }}>
-              <span className="muted">Conversation date</span>
+              <span className="muted">{copy.form.conversationDate}</span>
               <input
                 className="input"
                 type="datetime-local"
@@ -998,12 +1040,12 @@ export function OrganizationConversationsTab({
                 onChange={(event) => patchField("conversation_date", event.target.value)}
               />
               <span className="muted" style={{ fontSize: 12 }}>
-                Stored without timezone conversion to preserve the exact local date and time.
+                {copy.form.conversationDateHelp}
               </span>
             </label>
 
             <label className="stack" style={{ gap: 6 }}>
-              <span className="muted">Video URL</span>
+              <span className="muted">{copy.form.videoUrl}</span>
               <input
                 className="input"
                 value={form.video_url}
@@ -1014,14 +1056,14 @@ export function OrganizationConversationsTab({
 
             <label className="stack" style={{ gap: 6 }}>
               <span className="muted">
-                File path
+                {copy.form.filePath}
                 {["video", "audio", "upload"].includes(form.source_type) ? " *" : ""}
               </span>
               <input
                 className="input"
                 value={form.file_path}
                 onChange={(event) => patchField("file_path", event.target.value)}
-                placeholder="/uploads/conversation..."
+                placeholder={copy.form.filePathPlaceholder}
                 aria-invalid={
                   Boolean(formError) &&
                   ["video", "audio", "upload"].includes(form.source_type) &&
@@ -1030,19 +1072,18 @@ export function OrganizationConversationsTab({
               />
               {["video", "audio", "upload"].includes(form.source_type) ? (
                 <span className="muted" style={{ fontSize: 12 }}>
-                  Required for Video, Audio and Upload sources. Manual, Meeting and Note can be
-                  saved without a file.
+                  {copy.form.filePathHelp}
                 </span>
               ) : null}
             </label>
 
             <label className="stack" style={{ gap: 6 }}>
-              <span className="muted">Transcript</span>
+              <span className="muted">{copy.form.transcript}</span>
               <textarea
                 className="textarea"
                 value={form.transcript}
                 onChange={(event) => patchField("transcript", event.target.value)}
-                placeholder="Paste transcript or conversation content..."
+                placeholder={copy.form.transcriptPlaceholder}
                 rows={8}
                 style={{
                   minHeight: 170,
@@ -1055,12 +1096,12 @@ export function OrganizationConversationsTab({
             </label>
 
             <label className="stack" style={{ gap: 6 }}>
-              <span className="muted">Notes</span>
+              <span className="muted">{copy.form.notes}</span>
               <textarea
                 className="textarea"
                 value={form.notes}
                 onChange={(event) => patchField("notes", event.target.value)}
-                placeholder="Internal notes, observations, key signals..."
+                placeholder={copy.form.notesPlaceholder}
                 rows={5}
                 style={{
                   minHeight: 120,
@@ -1092,7 +1133,7 @@ export function OrganizationConversationsTab({
                   onClick={resetForm}
                   disabled={isSubmitting}
                 >
-                  Cancel
+                  {copy.form.cancel}
                 </button>
               ) : null}
 
@@ -1102,10 +1143,10 @@ export function OrganizationConversationsTab({
                 disabled={isSubmitting || !selectedWorkerId || !form.title.trim()}
               >
                 {isSubmitting
-                  ? "Saving..."
+                  ? copy.form.saving
                   : editingExternalConversation
-                    ? "Update conversation"
-                    : "Add conversation"}
+                    ? copy.form.update
+                    : copy.form.add}
               </button>
             </div>
           </form>
