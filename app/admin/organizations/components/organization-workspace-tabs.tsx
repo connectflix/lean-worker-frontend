@@ -1,6 +1,9 @@
 // app/admin/organizations/components/organization-workspace-tabs.tsx
 "use client";
 
+import { getOrganizationWorkspaceCopy } from "@/lib/i18n/organization-workspace";
+import { useAdminUiLanguage } from "@/lib/use-admin-ui-language";
+
 export type OrganizationWorkspaceTab =
   | "overview"
   | "organizations"
@@ -27,76 +30,27 @@ type OrganizationWorkspaceTabItem = {
   requiresWorker?: boolean;
 };
 
-const TABS: OrganizationWorkspaceTabItem[] = [
-  {
-    key: "overview",
-    label: "Overview",
-    shortLabel: "Overview",
-    description: "Executive summary of the selected organization.",
-  },
-  {
-    key: "organizations",
-    label: "Organizations",
-    shortLabel: "Orgs",
-    description: "Create, edit, and configure organizations.",
-    adminOnly: true,
-  },
-  {
-    key: "workers",
-    label: "Workers",
-    shortLabel: "Workers",
-    description: "Manage assigned workers.",
-  },
-  {
-    key: "revenue",
-    label: "Revenue",
-    shortLabel: "Revenue",
-    description: "Track subscription revenue and organization share.",
-  },
-  {
-    key: "canvases",
-    label: "Canvases",
-    shortLabel: "Canvases",
-    description: "Work on engagement, purpose, time, and significance canvases.",
-    requiresWorker: true,
-  },
-  {
-    key: "conversations",
-    label: "Conversations",
-    shortLabel: "Convos",
-    description: "Review coach sessions and manage external worker conversations.",
-    requiresWorker: true,
-  },
-  {
-    key: "insights",
-    label: "Worker Insights",
-    shortLabel: "Insights",
-    description: "Review worker profile, sessions, recommendations, artifacts, and levers.",
-    requiresWorker: true,
-  },
-  {
-    key: "access",
-    label: "Access",
-    shortLabel: "Access",
-    description: "Create or reset organization access account.",
-    adminOnly: true,
-  },
-];
-
 export function OrganizationWorkspaceTabs({
   activeTab,
   onChange,
   isPlatformAdmin,
   selectedWorkerAvailable,
 }: OrganizationWorkspaceTabsProps) {
-  const visibleTabs = TABS.filter((tab) => !tab.adminOnly || isPlatformAdmin).map((tab) => ({
-    ...tab,
-    disabled: Boolean(tab.requiresWorker && !selectedWorkerAvailable),
-  }));
+  const { uiLanguage } = useAdminUiLanguage();
+  const copy = getOrganizationWorkspaceCopy(uiLanguage);
+
+  const visibleTabs: Array<
+    OrganizationWorkspaceTabItem & { disabled: boolean }
+  > = copy.tabs
+    .filter((tab) => !tab.adminOnly || isPlatformAdmin)
+    .map((tab) => ({
+      ...tab,
+      disabled: Boolean(tab.requiresWorker && !selectedWorkerAvailable),
+    }));
 
   const activeTabDescription =
     visibleTabs.find((tab) => tab.key === activeTab)?.description ??
-    "Organization workspace navigation.";
+    copy.fallbackDescription;
 
   const lockedWorkerTabsCount = visibleTabs.filter(
     (tab) => tab.requiresWorker && !selectedWorkerAvailable,
@@ -131,7 +85,7 @@ export function OrganizationWorkspaceTabs({
       >
         <div
           role="tablist"
-          aria-label="Organization workspace tabs"
+          aria-label={copy.navigationLabel}
           style={{
             display: "flex",
             gap: 6,
@@ -159,7 +113,7 @@ export function OrganizationWorkspaceTabs({
                 }}
                 title={
                   isDisabled
-                    ? `${tab.description} Select a worker first.`
+                    ? `${tab.description} ${copy.selectWorkerSuffix}`
                     : tab.description
                 }
                 disabled={isDisabled}
@@ -217,7 +171,7 @@ export function OrganizationWorkspaceTabs({
               borderColor: "var(--border)",
             }}
           >
-            Select a worker to unlock {lockedWorkerTabsCount} workspace tabs
+            {copy.lockedWorkerTabs(lockedWorkerTabsCount)}
           </span>
         ) : (
           <span
@@ -229,7 +183,7 @@ export function OrganizationWorkspaceTabs({
               borderColor: "rgba(37,99,235,0.14)",
             }}
           >
-            Worker context active
+            {copy.workerContextActive}
           </span>
         )}
       </div>
