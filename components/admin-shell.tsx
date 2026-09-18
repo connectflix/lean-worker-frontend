@@ -753,12 +753,34 @@ export function AdminShell({
                 className="button ghost"
                 aria-label="Français"
                 aria-pressed={uiLanguage === "fr"}
+                data-language-state={
+                  uiLanguage === "fr" ? "active" : "inactive"
+                }
                 onClick={() => setUiLanguage("fr")}
                 style={{
                   minHeight: 32,
-                  padding: "5px 9px",
+                  minWidth: 52,
+                  padding: "5px 12px",
                   borderRadius: 9,
-                  fontWeight: 800,
+                  fontWeight: uiLanguage === "fr" ? 900 : 800,
+                  color:
+                    uiLanguage === "fr"
+                      ? "#ffffff"
+                      : "var(--admin-muted-strong)",
+                  background:
+                    uiLanguage === "fr"
+                      ? "var(--admin-accent)"
+                      : "rgba(255,255,255,0.72)",
+                  border:
+                    uiLanguage === "fr"
+                      ? "1px solid var(--admin-accent)"
+                      : "1px solid transparent",
+                  boxShadow:
+                    uiLanguage === "fr"
+                      ? "0 4px 12px rgba(94,106,210,0.24)"
+                      : "none",
+                  transition:
+                    "background 160ms ease, color 160ms ease, border-color 160ms ease, box-shadow 160ms ease",
                 }}
               >
                 FR
@@ -769,12 +791,34 @@ export function AdminShell({
                 className="button ghost"
                 aria-label="English"
                 aria-pressed={uiLanguage === "en"}
+                data-language-state={
+                  uiLanguage === "en" ? "active" : "inactive"
+                }
                 onClick={() => setUiLanguage("en")}
                 style={{
                   minHeight: 32,
-                  padding: "5px 9px",
+                  minWidth: 52,
+                  padding: "5px 12px",
                   borderRadius: 9,
-                  fontWeight: 800,
+                  fontWeight: uiLanguage === "en" ? 900 : 800,
+                  color:
+                    uiLanguage === "en"
+                      ? "#ffffff"
+                      : "var(--admin-muted-strong)",
+                  background:
+                    uiLanguage === "en"
+                      ? "var(--admin-accent)"
+                      : "rgba(255,255,255,0.72)",
+                  border:
+                    uiLanguage === "en"
+                      ? "1px solid var(--admin-accent)"
+                      : "1px solid transparent",
+                  boxShadow:
+                    uiLanguage === "en"
+                      ? "0 4px 12px rgba(94,106,210,0.24)"
+                      : "none",
+                  transition:
+                    "background 160ms ease, color 160ms ease, border-color 160ms ease, box-shadow 160ms ease",
                 }}
               >
                 EN

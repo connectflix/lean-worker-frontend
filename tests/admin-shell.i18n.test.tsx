@@ -50,8 +50,16 @@ describe("AdminShell internationalization", () => {
     ).toHaveAttribute("aria-pressed", "true");
 
     expect(
+      screen.getByRole("button", { name: "Français" }),
+    ).toHaveAttribute("data-language-state", "active");
+
+    expect(
       screen.getByRole("button", { name: "English" }),
     ).toHaveAttribute("aria-pressed", "false");
+
+    expect(
+      screen.getByRole("button", { name: "English" }),
+    ).toHaveAttribute("data-language-state", "inactive");
   });
 
   it("switches the complete admin shell to English and persists the choice", () => {
@@ -100,6 +108,14 @@ describe("AdminShell internationalization", () => {
     expect(
       screen.getByRole("button", { name: "English" }),
     ).toHaveAttribute("aria-pressed", "true");
+
+    expect(
+      screen.getByRole("button", { name: "English" }),
+    ).toHaveAttribute("data-language-state", "active");
+
+    expect(
+      screen.getByRole("button", { name: "Français" }),
+    ).toHaveAttribute("data-language-state", "inactive");
   });
 
   it("renders the organization role chrome fully in French", () => {
