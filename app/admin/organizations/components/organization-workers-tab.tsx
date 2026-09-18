@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { getOrganizationWorkersRevenueCopy } from "@/lib/i18n/organization-workers-revenue";
 import type { AdminOrganization, AdminWorker } from "@/lib/types";
+import { useAdminUiLanguage } from "@/lib/use-admin-ui-language";
 
 type OrganizationWorkersTabProps = {
   selectedOrganization: AdminOrganization;
@@ -31,8 +33,8 @@ type OrganizationWorkersTabProps = {
   ) => "classique" | "flix" | "executif";
 };
 
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("fr-BE", {
+function formatCurrency(value: number, locale: string): string {
+  return new Intl.NumberFormat(locale, {
     style: "currency",
     currency: "EUR",
     maximumFractionDigits: 0,
@@ -106,6 +108,9 @@ export function OrganizationWorkersTab({
   getOrganizationTypeLabel,
   getRequiredSubscriptionForOrganizationType,
 }: OrganizationWorkersTabProps) {
+  const { uiLanguage } = useAdminUiLanguage();
+  const copy = getOrganizationWorkersRevenueCopy(uiLanguage);
+
   const [editingWorkerId, setEditingWorkerId] = useState<number | null>(null);
   const [emailDraft, setEmailDraft] = useState("");
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -137,12 +142,12 @@ export function OrganizationWorkersTab({
     const normalizedEmail = emailDraft.trim().toLowerCase();
 
     if (!normalizedEmail) {
-      setEmailError("Email is required.");
+      setEmailError(copy.workers.emailRequired);
       return;
     }
 
     if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) {
-      setEmailError("Please enter a valid email address.");
+      setEmailError(copy.workers.invalidEmail);
       return;
     }
 
@@ -152,7 +157,7 @@ export function OrganizationWorkersTab({
       cancelEditingEmail();
     } catch (error) {
       setEmailError(
-        error instanceof Error ? error.message : "Unable to update worker email.",
+        error instanceof Error ? error.message : copy.workers.updateEmailError,
       );
     }
   }
@@ -166,16 +171,28 @@ export function OrganizationWorkersTab({
 
   return (
     <div className="stack" style={{ gap: 16, minWidth: 0 }}>
-      <div className="card stack" style={{ gap: 16 }}>
+      <section
+        data-testid="organization-workers-summary"
+        className="card stack"
+        style={{
+          gap: 0,
+          padding: 0,
+          overflow: "hidden",
+          borderColor: "var(--admin-border)",
+          background: "var(--admin-surface)",
+        }}
+      >
         <div
           className="row space-between"
           style={{
-            gap: 14,
+            gap: 18,
             flexWrap: "wrap",
             alignItems: "flex-start",
+            padding: "20px 22px",
+            borderBottom: "1px solid var(--admin-border)",
           }}
         >
-          <div className="stack" style={{ gap: 6 }}>
+          <div className="stack" style={{ gap: 7, minWidth: 0 }}>
             <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
               <span className="badge primary">
                 {selectedOrganization.code || `#${selectedOrganization.id}`}
@@ -185,66 +202,169 @@ export function OrganizationWorkersTab({
                 {getOrganizationTypeLabel(selectedOrganization.organization_type)}
               </span>
 
-              <span className={selectedOrganization.is_active ? "badge success" : "badge warning"}>
-                {selectedOrganization.is_active ? "Active" : "Inactive"}
+              <span
+                className={
+                  selectedOrganization.is_active
+                    ? "badge success"
+                    : "badge warning"
+                }
+              >
+                {selectedOrganization.is_active
+                  ? copy.status.active
+                  : copy.status.inactive}
               </span>
             </div>
 
-            <div className="section-title" style={{ fontSize: 20 }}>
-              Assigned workers
+            <div
+              className="section-title"
+              style={{
+                fontSize: 21,
+                letterSpacing: "-0.025em",
+              }}
+            >
+              {copy.workers.title}
             </div>
 
-            <div className="muted" style={{ maxWidth: 820 }}>
-              Manage the workers attached to this organization. Worker-level tabs such as
-              conversations, canvases, and insights are unlocked after selecting a worker.
+            <div
+              className="muted"
+              style={{
+                maxWidth: 760,
+                lineHeight: 1.5,
+              }}
+            >
+              {copy.workers.description}
             </div>
           </div>
 
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-            <span className="badge">{assignedWorkers.length} assigned</span>
-            <span className="badge">{paidWorkerCount} paid</span>
-            <span className="badge">required pack: {requiredPack}</span>
+            <span className="badge">
+              {copy.workers.assignedCount(assignedWorkers.length)}
+            </span>
+            <span className="badge">
+              {copy.workers.paidCount(paidWorkerCount)}
+            </span>
+            <span className="badge">
+              {copy.workers.requiredPack(requiredPack)}
+            </span>
           </div>
         </div>
 
-        <div className="admin-kpi-scroll">
+        <div
+          className="organization-workers-metrics"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+          }}
+        >
           <div
-            className="admin-kpi-row"
+            className="stack"
             style={{
-              gridTemplateColumns: "repeat(4, minmax(190px, 1fr))",
-              minWidth: 820,
+              gap: 5,
+              padding: "18px 22px",
+              borderRight: "1px solid var(--admin-border)",
             }}
           >
-            <div className="card-soft stack admin-kpi-card" style={{ gap: 6 }}>
-              <div className="muted">Assigned workers</div>
-              <div className="admin-metric-value" style={{ fontSize: 28 }}>
-                {assignedWorkers.length}
-              </div>
+            <div
+              className="muted"
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: "0.04em",
+                textTransform: "uppercase",
+              }}
+            >
+              {copy.workers.assignedWorkers}
             </div>
-
-            <div className="card-soft stack admin-kpi-card" style={{ gap: 6 }}>
-              <div className="muted">Paid workers</div>
-              <div className="admin-metric-value" style={{ fontSize: 28 }}>
-                {paidWorkerCount}
-              </div>
+            <div className="admin-metric-value" style={{ fontSize: 27 }}>
+              {assignedWorkers.length}
             </div>
+          </div>
 
-            <div className="card-soft stack admin-kpi-card" style={{ gap: 6 }}>
-              <div className="muted">Subscription paid</div>
-              <div className="admin-metric-value" style={{ fontSize: 24 }}>
-                {formatCurrency(totalPaidAmount)}
-              </div>
+          <div
+            className="stack"
+            style={{
+              gap: 5,
+              padding: "18px 22px",
+              borderRight: "1px solid var(--admin-border)",
+            }}
+          >
+            <div
+              className="muted"
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: "0.04em",
+                textTransform: "uppercase",
+              }}
+            >
+              {copy.workers.paidWorkers}
             </div>
+            <div className="admin-metric-value" style={{ fontSize: 27 }}>
+              {paidWorkerCount}
+            </div>
+          </div>
 
-            <div className="card-soft stack admin-kpi-card" style={{ gap: 6 }}>
-              <div className="muted">Compatible pack</div>
-              <div className="admin-metric-value" style={{ fontSize: 24 }}>
-                {requiredPack}
-              </div>
+          <div
+            className="stack"
+            style={{
+              gap: 5,
+              padding: "18px 22px",
+              borderRight: "1px solid var(--admin-border)",
+              background: "var(--admin-accent-softer)",
+            }}
+          >
+            <div
+              className="muted"
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: "0.04em",
+                textTransform: "uppercase",
+              }}
+            >
+              {copy.workers.subscriptionPaid}
+            </div>
+            <div
+              className="admin-metric-value"
+              style={{
+                fontSize: 25,
+                color: "var(--admin-accent-hover)",
+              }}
+            >
+              {formatCurrency(totalPaidAmount, copy.locale)}
+            </div>
+          </div>
+
+          <div
+            className="stack"
+            style={{
+              gap: 5,
+              padding: "18px 22px",
+            }}
+          >
+            <div
+              className="muted"
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: "0.04em",
+                textTransform: "uppercase",
+              }}
+            >
+              {copy.workers.compatiblePack}
+            </div>
+            <div
+              className="admin-metric-value"
+              style={{
+                fontSize: 25,
+                textTransform: "capitalize",
+              }}
+            >
+              {requiredPack}
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       <div
         className="grid"
@@ -256,32 +376,41 @@ export function OrganizationWorkersTab({
           alignItems: "start",
         }}
       >
-        <div className="card stack" style={{ gap: 14, minWidth: 0 }}>
+        <section
+          data-testid="organization-workers-directory"
+          className="card stack"
+          style={{
+            gap: 14,
+            minWidth: 0,
+            borderColor: "var(--admin-border)",
+            background: "var(--admin-surface)",
+          }}
+        >
           <div
             className="row space-between"
             style={{ gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}
           >
             <div className="stack" style={{ gap: 4 }}>
-              <div className="section-title">Worker directory</div>
+              <div className="section-title">{copy.workers.directoryTitle}</div>
               <div className="muted">
                 {detailLoading
-                  ? "Loading assigned workers..."
-                  : `${filteredAssignedWorkers.length} worker(s) shown`}
+                  ? copy.workers.loadingAssignedWorkers
+                  : copy.workers.workersShown(filteredAssignedWorkers.length)}
               </div>
             </div>
 
             {selectedWorkerId ? (
-              <span className="badge primary">selected worker #{selectedWorkerId}</span>
+              <span className="badge primary">{copy.workers.selectedWorker(selectedWorkerId)}</span>
             ) : (
-              <span className="badge">No worker selected</span>
+              <span className="badge">{copy.workers.noWorkerSelected}</span>
             )}
           </div>
 
           <label className="stack" style={{ gap: 6 }}>
-            <span className="muted">Search assigned workers</span>
+            <span className="muted">{copy.workers.searchLabel}</span>
             <input
               className="input"
-              placeholder="Search by name, email, role, industry, business ID..."
+              placeholder={copy.workers.searchPlaceholder}
               value={workerSearch}
               onChange={(event) => onWorkerSearchChange(event.target.value)}
             />
@@ -295,16 +424,15 @@ export function OrganizationWorkersTab({
             }}
           >
             <div className="muted">
-              Standard workers cannot be assigned to any organization. This organization requires
-              the <strong>{requiredPack}</strong> subscription pack.
+              {copy.workers.compatibilityNotice(requiredPack)}
             </div>
           </div>
 
           {detailLoading ? (
-            <div className="card-soft muted">Loading assigned workers...</div>
+            <div className="card-soft muted">{copy.workers.loadingAssignedWorkers}</div>
           ) : filteredAssignedWorkers.length === 0 ? (
             <div className="card-soft muted">
-              No assigned workers found for this search or organization.
+              {copy.workers.emptySearch}
             </div>
           ) : (
             <div
@@ -384,7 +512,7 @@ export function OrganizationWorkersTab({
                           {worker.display_name}
                         </strong>
 
-                        {isSelected ? <span className="badge primary">Selected</span> : null}
+                        {isSelected ? <span className="badge primary">{copy.workers.selected}</span> : null}
                       </div>
 
                       {editingWorkerId === worker.id ? (
@@ -414,7 +542,7 @@ export function OrganizationWorkersTab({
                                 cancelEditingEmail();
                               }
                             }}
-                            aria-label={`Email for ${worker.display_name}`}
+                            aria-label={copy.workers.emailAriaLabel(worker.display_name)}
                           />
 
                           {emailError ? (
@@ -430,7 +558,9 @@ export function OrganizationWorkersTab({
                               disabled={updatingWorkerEmail}
                               onClick={() => void saveWorkerEmail(worker)}
                             >
-                              {updatingWorkerEmail ? "Saving..." : "Save email"}
+                              {updatingWorkerEmail
+                                ? copy.workers.saving
+                                : copy.workers.saveEmail}
                             </button>
 
                             <button
@@ -439,7 +569,7 @@ export function OrganizationWorkersTab({
                               disabled={updatingWorkerEmail}
                               onClick={cancelEditingEmail}
                             >
-                              Cancel
+                              {copy.workers.cancel}
                             </button>
                           </div>
                         </div>
@@ -454,9 +584,9 @@ export function OrganizationWorkersTab({
                               minWidth: 0,
                               flex: "1 1 auto",
                             }}
-                            title={worker.email || "No email"}
+                            title={worker.email || copy.workers.noEmail}
                           >
-                            {worker.email || "No email"}
+                            {worker.email || copy.workers.noEmail}
                           </div>
 
                           {isPlatformAdmin ? (
@@ -469,7 +599,7 @@ export function OrganizationWorkersTab({
                               }}
                               style={{ minHeight: 32, padding: "6px 10px" }}
                             >
-                              Edit email
+                              {copy.workers.editEmail}
                             </button>
                           ) : null}
                         </div>
@@ -494,7 +624,8 @@ export function OrganizationWorkersTab({
                                   : "badge"
                             }
                           >
-                            {normalizeLabel(subscriptionStatus)}
+                            {copy.workers.subscriptionStatuses[subscriptionStatus] ??
+                            normalizeLabel(subscriptionStatus)}
                           </span>
                         ) : null}
 
@@ -504,7 +635,9 @@ export function OrganizationWorkersTab({
 
                         {worker.industry ? <span className="badge">{worker.industry}</span> : null}
 
-                        <span className="badge">paid {formatCurrency(paidAmount)}</span>
+                        <span className="badge">{copy.workers.paidAmount(
+                          formatCurrency(paidAmount, copy.locale),
+                        )}</span>
                       </div>
                     </div>
 
@@ -524,7 +657,7 @@ export function OrganizationWorkersTab({
                           onOpenWorker(worker.id);
                         }}
                       >
-                        Open
+                        {copy.workers.open}
                       </button>
 
                       {isPlatformAdmin ? (
@@ -538,7 +671,7 @@ export function OrganizationWorkersTab({
                           disabled={assigning}
                           style={{ color: "var(--danger)" }}
                         >
-                          Unassign
+                          {copy.workers.unassign}
                         </button>
                       ) : null}
                     </div>
@@ -547,10 +680,11 @@ export function OrganizationWorkersTab({
               })}
             </div>
           )}
-        </div>
+        </section>
 
         {isPlatformAdmin ? (
-          <div
+          <section
+            data-testid="organization-workers-assignment"
             className="card stack"
             style={{
               gap: 14,
@@ -559,28 +693,37 @@ export function OrganizationWorkersTab({
             }}
           >
             <div className="stack" style={{ gap: 4 }}>
-              <div className="section-title">Assign compatible worker</div>
+              <div className="section-title">{copy.workers.assignTitle}</div>
               <div className="muted">
-                Only unassigned workers with the required subscription pack can be attached here.
+                {copy.workers.assignDescription}
               </div>
             </div>
 
-            <div className="card-soft stack" style={{ gap: 8 }}>
+            <div
+              className="stack"
+              style={{
+                gap: 9,
+                padding: "12px 0",
+                borderTop: "1px solid var(--admin-border)",
+                borderBottom: "1px solid var(--admin-border)",
+              }}
+            >
               <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                 <span className="badge">
                   {getOrganizationTypeLabel(selectedOrganization.organization_type)}
                 </span>
-                <span className="badge primary">requires {requiredPack}</span>
+                <span className="badge primary">
+                  {copy.workers.requiresPack(requiredPack)}
+                </span>
               </div>
 
               <div className="muted">
-                {assignableWorkers.length} compatible worker
-                {assignableWorkers.length > 1 ? "s" : ""} available for assignment.
+                {copy.workers.compatibleAvailable(assignableWorkers.length)}
               </div>
             </div>
 
             <label className="stack" style={{ gap: 6 }}>
-              <span className="muted">Compatible worker</span>
+              <span className="muted">{copy.workers.compatibleWorker}</span>
               <select
                 className="select"
                 value={selectedWorkerIdToAssign}
@@ -589,8 +732,8 @@ export function OrganizationWorkersTab({
               >
                 <option value="">
                   {assignableWorkers.length === 0
-                    ? "No compatible worker available"
-                    : "Select a worker to assign"}
+                    ? copy.workers.noCompatibleWorker
+                    : copy.workers.selectWorkerToAssign}
                 </option>
 
                 {assignableWorkers.map((worker) => (
@@ -615,16 +758,46 @@ export function OrganizationWorkersTab({
                 width: "100%",
               }}
             >
-              {assigning ? "Assigning..." : "Assign worker"}
+              {assigning ? copy.workers.assigning : copy.workers.assignWorker}
             </button>
 
             <div className="fine-print">
-              After assignment, the worker becomes available in this organization workspace for
-              conversations, canvases, insights, bookings, and revenue tracking.
+              {copy.workers.assignFooter}
             </div>
-          </div>
+          </section>
         ) : null}
       </div>
+
+      <style jsx>{`
+        @media (max-width: 980px) {
+          .organization-workers-metrics {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
+
+          .organization-workers-metrics > div:nth-child(2) {
+            border-right: 0 !important;
+          }
+
+          .organization-workers-metrics > div:nth-child(-n + 2) {
+            border-bottom: 1px solid var(--admin-border);
+          }
+        }
+
+        @media (max-width: 620px) {
+          .organization-workers-metrics {
+            grid-template-columns: 1fr !important;
+          }
+
+          .organization-workers-metrics > div {
+            border-right: 0 !important;
+            border-bottom: 1px solid var(--admin-border);
+          }
+
+          .organization-workers-metrics > div:last-child {
+            border-bottom: 0 !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }
