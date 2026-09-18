@@ -1,5 +1,7 @@
 "use client";
 
+import { getOrganizationOverviewCopy } from "@/lib/i18n/organization-overview";
+import { useAdminUiLanguage } from "@/lib/use-admin-ui-language";
 import type {
   AdminOrganization,
   AdminOrganizationWorkerSummary,
@@ -27,8 +29,8 @@ type OrganizationOverviewTabProps = {
   ) => "classique" | "flix" | "executif";
 };
 
-function formatEur(value: number): string {
-  return new Intl.NumberFormat("fr-BE", {
+function formatEur(value: number, locale: string): string {
+  return new Intl.NumberFormat(locale, {
     style: "currency",
     currency: "EUR",
     minimumFractionDigits: 2,
@@ -126,6 +128,9 @@ export function OrganizationOverviewTab({
   getOrganizationTypeLabel,
   getRequiredSubscriptionForOrganizationType,
 }: OrganizationOverviewTabProps) {
+  const { uiLanguage } = useAdminUiLanguage();
+  const copy = getOrganizationOverviewCopy(uiLanguage);
+
   const organizationCode = selectedOrganization.code || `#${selectedOrganization.id}`;
   const organizationTypeLabel = getOrganizationTypeLabel(
     selectedOrganization.organization_type,
@@ -148,16 +153,18 @@ export function OrganizationOverviewTab({
           }}
         >
           <div className="stack" style={{ gap: 6 }}>
-            <div className="section-title">Organization overview</div>
+            <div className="section-title">{copy.overview.title}</div>
             <div className="muted">
-              Core organization configuration, access context, and operational entry points.
+              {copy.overview.description}
             </div>
           </div>
 
           <span
             className={selectedOrganization.is_active ? "badge success" : "badge warning"}
           >
-            {selectedOrganization.is_active ? "Active" : "Inactive"}
+            {selectedOrganization.is_active
+              ? copy.status.active
+              : copy.status.inactive}
           </span>
         </div>
 
@@ -169,16 +176,19 @@ export function OrganizationOverviewTab({
             paddingBottom: 8,
           }}
         >
-          <InfoRow label="Name" value={selectedOrganization.name} />
-          <InfoRow label="Business ID" value={organizationCode} />
-          <InfoRow label="Type" value={organizationTypeLabel} />
-          <InfoRow label="Required worker pack" value={requiredPack} />
+          <InfoRow label={copy.overview.fields.name} value={selectedOrganization.name} />
+          <InfoRow label={copy.overview.fields.businessId} value={organizationCode} />
+          <InfoRow label={copy.overview.fields.type} value={organizationTypeLabel} />
           <InfoRow
-            label="Contact email"
+            label={copy.overview.fields.requiredWorkerPack}
+            value={requiredPack}
+          />
+          <InfoRow
+            label={copy.overview.fields.contactEmail}
             value={selectedOrganization.contact_email || "—"}
           />
           <InfoRow
-            label="Contact phone"
+            label={copy.overview.fields.contactPhone}
             value={selectedOrganization.contact_phone || "—"}
           />
 
@@ -191,7 +201,7 @@ export function OrganizationOverviewTab({
             }}
           >
             <div className="muted" style={{ fontSize: 13 }}>
-              Calendly
+              {copy.overview.fields.calendly}
             </div>
 
             <span
@@ -202,8 +212,8 @@ export function OrganizationOverviewTab({
               }
             >
               {selectedOrganization.calendly_event_type_uri
-                ? "Configured"
-                : "Not configured"}
+                ? copy.status.configured
+                : copy.status.notConfigured}
             </span>
           </div>
         </div>
@@ -216,12 +226,11 @@ export function OrganizationOverviewTab({
           }}
         >
           <div className="section-title" style={{ fontSize: 15 }}>
-            Recommended next actions
+            {copy.overview.actions.title}
           </div>
 
           <div className="muted">
-            Use this workspace to move from organization setup to worker follow-up,
-            conversation review, coaching canvases, and revenue monitoring.
+            {copy.overview.actions.description}
           </div>
 
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
@@ -230,7 +239,7 @@ export function OrganizationOverviewTab({
               type="button"
               onClick={() => onNavigate("workers")}
             >
-              Open workers
+              {copy.overview.actions.openWorkers}
             </button>
 
             <button
@@ -238,7 +247,7 @@ export function OrganizationOverviewTab({
               type="button"
               onClick={() => onNavigate("revenue")}
             >
-              View revenue
+              {copy.overview.actions.viewRevenue}
             </button>
 
             <button
@@ -247,7 +256,7 @@ export function OrganizationOverviewTab({
               onClick={() => onNavigate("conversations")}
               disabled={!selectedWorkerId}
             >
-              Review conversations
+              {copy.overview.actions.reviewConversations}
             </button>
 
             <button
@@ -256,7 +265,7 @@ export function OrganizationOverviewTab({
               onClick={() => onNavigate("canvases")}
               disabled={!selectedWorkerId}
             >
-              Open canvases
+              {copy.overview.actions.openCanvases}
             </button>
 
             <button
@@ -265,7 +274,7 @@ export function OrganizationOverviewTab({
               onClick={() => onNavigate("insights")}
               disabled={!selectedWorkerId}
             >
-              Worker insights
+              {copy.overview.actions.workerInsights}
             </button>
           </div>
         </div>
@@ -273,38 +282,46 @@ export function OrganizationOverviewTab({
 
       <div className="card stack" style={{ gap: 18 }}>
         <div className="stack" style={{ gap: 6 }}>
-          <div className="section-title">Operational snapshot</div>
+          <div className="section-title">{copy.overview.snapshot.title}</div>
           <div className="muted">
-            A compact view of worker volume, monetization, and selected worker activity.
+            {copy.overview.snapshot.description}
           </div>
         </div>
 
         <div className="grid grid-2">
           <MetricCard
-            label="Assigned workers"
+            label={copy.common.assignedWorkers}
             value={organizationRevenueSummary.assignedWorkerCount}
-            helper="Workers currently linked to this organization."
+            helper={copy.overview.snapshot.assignedWorkersHelper}
           />
 
           <MetricCard
-            label="Paid workers"
+            label={copy.common.paidWorkers}
             value={organizationRevenueSummary.paidWorkerCount}
-            helper="Workers with tracked subscription revenue."
+            helper={copy.overview.snapshot.paidWorkersHelper}
           />
 
           <MetricCard
-            label="Organization revenue"
-            value={formatEur(organizationRevenueSummary.organizationRevenueExVat)}
-            helper={`${Math.round(
-              organizationRevenueSummary.revenueShareRate * 100,
-            )}% organization share, ex-VAT.`}
+            label={copy.common.organizationRevenue}
+            value={formatEur(
+              organizationRevenueSummary.organizationRevenueExVat,
+              copy.locale,
+            )}
+            helper={copy.overview.snapshot.organizationRevenueHelper(
+              Math.round(
+                organizationRevenueSummary.revenueShareRate * 100,
+              ),
+            )}
             emphasis
           />
 
           <MetricCard
-            label="Platform share"
-            value={formatEur(organizationRevenueSummary.platformRevenueExVat)}
-            helper="Remaining platform revenue, ex-VAT."
+            label={copy.overview.snapshot.platformShare}
+            value={formatEur(
+              organizationRevenueSummary.platformRevenueExVat,
+              copy.locale,
+            )}
+            helper={copy.overview.snapshot.platformShareHelper}
           />
         </div>
 
@@ -327,17 +344,17 @@ export function OrganizationOverviewTab({
           >
             <div className="stack" style={{ gap: 4 }}>
               <div className="section-title" style={{ fontSize: 15 }}>
-                Selected worker
+                {copy.overview.worker.title}
               </div>
               <div className="muted">
-                Current worker context used for insights, conversations, and canvases.
+                {copy.overview.worker.description}
               </div>
             </div>
 
             {selectedWorker ? (
-              <span className="badge primary">Worker selected</span>
+              <span className="badge primary">{copy.overview.worker.selected}</span>
             ) : (
-              <span className="badge warning">No worker</span>
+              <span className="badge warning">{copy.overview.worker.none}</span>
             )}
           </div>
 
@@ -355,7 +372,9 @@ export function OrganizationOverviewTab({
                   {selectedWorker.display_name}
                 </div>
 
-                <div className="muted">{selectedWorker.email || "No email"}</div>
+                <div className="muted">
+                  {selectedWorker.email || copy.overview.worker.noEmail}
+                </div>
 
                 {selectedWorker.current_role || selectedWorker.profession ? (
                   <div className="muted">
@@ -367,16 +386,24 @@ export function OrganizationOverviewTab({
               <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                 <span className="badge">{selectedWorker.subscription_pack}</span>
                 <span className="badge">
-                  {selectedWorkerSummary?.session_count ?? 0} sessions
+                  {copy.overview.worker.sessions(
+                    selectedWorkerSummary?.session_count ?? 0,
+                  )}
                 </span>
                 <span className="badge">
-                  {selectedWorkerSummary?.external_conversation_count ?? 0} external conversations
+                  {copy.overview.worker.externalConversations(
+                    selectedWorkerSummary?.external_conversation_count ?? 0,
+                  )}
                 </span>
                 <span className="badge">
-                  {selectedWorkerSummary?.recommendation_count ?? 0} recommendations
+                  {copy.overview.worker.recommendations(
+                    selectedWorkerSummary?.recommendation_count ?? 0,
+                  )}
                 </span>
                 <span className="badge">
-                  {selectedWorkerSummary?.artifact_count ?? 0} artifacts
+                  {copy.overview.worker.artifacts(
+                    selectedWorkerSummary?.artifact_count ?? 0,
+                  )}
                 </span>
               </div>
 
@@ -386,7 +413,7 @@ export function OrganizationOverviewTab({
                   type="button"
                   onClick={() => onNavigate("conversations")}
                 >
-                  Conversations
+                  {copy.overview.worker.conversationsAction}
                 </button>
 
                 <button
@@ -394,7 +421,7 @@ export function OrganizationOverviewTab({
                   type="button"
                   onClick={() => onNavigate("insights")}
                 >
-                  Insights
+                  {copy.overview.worker.insightsAction}
                 </button>
 
                 <button
@@ -402,15 +429,14 @@ export function OrganizationOverviewTab({
                   type="button"
                   onClick={() => onNavigate("canvases")}
                 >
-                  Canvases
+                  {copy.overview.worker.canvasesAction}
                 </button>
               </div>
             </>
           ) : (
             <>
               <div className="muted">
-                No worker selected yet. Open the Workers tab and select one to unlock
-                conversations, canvases, and worker insights.
+                {copy.overview.worker.emptyDescription}
               </div>
 
               <div>
@@ -419,7 +445,7 @@ export function OrganizationOverviewTab({
                   type="button"
                   onClick={() => onNavigate("workers")}
                 >
-                  Select a worker
+                  {copy.overview.worker.selectAction}
                 </button>
               </div>
             </>

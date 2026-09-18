@@ -1,6 +1,8 @@
 "use client";
 
+import { getOrganizationOverviewCopy } from "@/lib/i18n/organization-overview";
 import type { AdminOrganization, AdminOrganizationWorkerSummary } from "@/lib/types";
+import { useAdminUiLanguage } from "@/lib/use-admin-ui-language";
 
 type OrganizationRevenueSummary = {
   assignedWorkerCount: number;
@@ -22,18 +24,26 @@ type OrganizationWorkspaceHeroProps = {
   ) => "classique" | "flix" | "executif";
 };
 
-function formatEur(value: number): string {
-  return new Intl.NumberFormat("fr-BE", {
+function formatEur(value: number, locale: string): string {
+  return new Intl.NumberFormat(locale, {
     style: "currency",
     currency: "EUR",
     maximumFractionDigits: 0,
   }).format(value);
 }
 
-function StatusBadge({ active }: { active: boolean }) {
+function StatusBadge({
+  active,
+  activeLabel,
+  inactiveLabel,
+}: {
+  active: boolean;
+  activeLabel: string;
+  inactiveLabel: string;
+}) {
   return (
     <span className={active ? "badge success" : "badge warning"}>
-      {active ? "Active" : "Inactive"}
+      {active ? activeLabel : inactiveLabel}
     </span>
   );
 }
@@ -107,6 +117,9 @@ export function OrganizationWorkspaceHero({
   getOrganizationTypeLabel,
   getRequiredSubscriptionForOrganizationType,
 }: OrganizationWorkspaceHeroProps) {
+  const { uiLanguage } = useAdminUiLanguage();
+  const copy = getOrganizationOverviewCopy(uiLanguage);
+
   const organizationTypeLabel = getOrganizationTypeLabel(
     selectedOrganization.organization_type,
   );
@@ -119,7 +132,7 @@ export function OrganizationWorkspaceHero({
     ? `#${selectedWorkerSummary.worker.id} — ${selectedWorkerSummary.worker.display_name}`
     : selectedWorkerId
       ? `#${selectedWorkerId}`
-      : "No worker selected";
+      : copy.common.noWorkerSelected;
 
   const revenueSharePercent = Math.round(
     organizationRevenueSummary.revenueShareRate * 100,
@@ -157,9 +170,13 @@ export function OrganizationWorkspaceHero({
 
             <span className="badge">{organizationTypeLabel}</span>
 
-            <StatusBadge active={selectedOrganization.is_active} />
+            <StatusBadge
+              active={selectedOrganization.is_active}
+              activeLabel={copy.status.active}
+              inactiveLabel={copy.status.inactive}
+            />
 
-            <span className="badge">Required pack: {requiredPack}</span>
+            <span className="badge">{copy.common.requiredPack(requiredPack)}</span>
           </div>
 
           <div
@@ -186,7 +203,7 @@ export function OrganizationWorkspaceHero({
             }}
           >
             {selectedOrganization.description ||
-              "No organization description configured yet."}
+              copy.common.noDescription}
           </div>
         </div>
 
@@ -201,16 +218,20 @@ export function OrganizationWorkspaceHero({
         >
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
             <span className="badge">
-              {organizationRevenueSummary.assignedWorkerCount} worker(s)
+              {copy.common.workerCount(
+                organizationRevenueSummary.assignedWorkerCount,
+              )}
             </span>
             <span className="badge">
-              {organizationRevenueSummary.paidWorkerCount} paid
+              {copy.common.paidCount(
+                organizationRevenueSummary.paidWorkerCount,
+              )}
             </span>
           </div>
 
           <div className="stack" style={{ gap: 4 }}>
             <div className="muted" style={{ fontSize: 12 }}>
-              Selected worker
+              {copy.common.selectedWorker}
             </div>
 
             <div
@@ -234,40 +255,46 @@ export function OrganizationWorkspaceHero({
       <div className="admin-kpi-scroll">
         <div className="admin-kpi-row admin-kpi-row--6">
           <HeroMetricCard
-            label="Assigned workers"
+            label={copy.common.assignedWorkers}
             value={organizationRevenueSummary.assignedWorkerCount}
-            helper="Workers linked to this organization"
+            helper={copy.hero.assignedWorkersHelper}
           />
 
           <HeroMetricCard
-            label="Paid workers"
+            label={copy.common.paidWorkers}
             value={organizationRevenueSummary.paidWorkerCount}
-            helper="Workers with paid subscriptions"
+            helper={copy.hero.paidWorkersHelper}
           />
 
           <HeroMetricCard
-            label="Organization revenue"
-            value={formatEur(organizationRevenueSummary.organizationRevenueExVat)}
-            helper={`${revenueSharePercent}% organization share`}
+            label={copy.common.organizationRevenue}
+            value={formatEur(
+              organizationRevenueSummary.organizationRevenueExVat,
+              copy.locale,
+            )}
+            helper={copy.common.organizationShare(revenueSharePercent)}
             emphasis
           />
 
           <HeroMetricCard
-            label="Gross subscriptions"
-            value={formatEur(organizationRevenueSummary.grossSubscriptionRevenueExVat)}
-            helper="Total subscription revenue ex-VAT"
+            label={copy.hero.grossSubscriptions}
+            value={formatEur(
+              organizationRevenueSummary.grossSubscriptionRevenueExVat,
+              copy.locale,
+            )}
+            helper={copy.hero.grossSubscriptionsHelper}
           />
 
           <HeroMetricCard
-            label="Selected worker sessions"
+            label={copy.hero.selectedWorkerSessions}
             value={selectedWorkerSummary?.session_count ?? 0}
-            helper="AI coaching sessions"
+            helper={copy.hero.sessionsHelper}
           />
 
           <HeroMetricCard
-            label="Recommendations"
+            label={copy.common.recommendations}
             value={selectedWorkerSummary?.recommendation_count ?? 0}
-            helper="Generated recommendations"
+            helper={copy.hero.recommendationsHelper}
           />
         </div>
       </div>
