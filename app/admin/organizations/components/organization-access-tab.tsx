@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { getOrganizationAccessCopy } from "@/lib/i18n/organization-access";
 import type { AdminOrganizationAccessAccount } from "@/lib/types";
+import { useAdminUiLanguage } from "@/lib/use-admin-ui-language";
 
 type OrganizationAccessTabProps = {
   selectedOrganizationId: number | null;
@@ -17,12 +19,14 @@ type OrganizationAccessTabProps = {
 function MaskedPassword({
   value,
   visible,
+  emptyLabel,
 }: {
   value?: string | null;
   visible: boolean;
+  emptyLabel: string;
 }) {
   if (!value) {
-    return <span className="muted">No temporary password returned.</span>;
+    return <span className="muted">{emptyLabel}</span>;
   }
 
   return (
@@ -56,6 +60,9 @@ export function OrganizationAccessTab({
   accessAccountResult,
   onCreateOrResetAccessAccount,
 }: OrganizationAccessTabProps) {
+  const { uiLanguage } = useAdminUiLanguage();
+  const copy = getOrganizationAccessCopy(uiLanguage);
+
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
 
@@ -96,36 +103,48 @@ export function OrganizationAccessTab({
         alignItems: "start",
       }}
     >
-      <div className="card stack" style={{ gap: 16, minWidth: 0 }}>
-        <div
+      <div className="stack" style={{ gap: 16, minWidth: 0 }}>
+        <section
+          data-testid="organization-access-summary"
+          className="card stack"
+          style={{
+            gap: 16,
+            minWidth: 0,
+            padding: 20,
+            background: "var(--admin-surface)",
+            border: "1px solid var(--admin-border)",
+          }}
+        >
+          <div
           className="row space-between"
           style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}
         >
           <div className="stack" style={{ gap: 4 }}>
-            <div className="section-title">Organization access account</div>
+            <div className="section-title">{copy.title}</div>
             <div className="muted">
-              Create or reset the organization login account. The account uses the organization
-              contact email and generates a temporary password shown once.
+              {copy.description}
             </div>
           </div>
 
           {editingOrganizationId ? (
-            <span className="badge primary">organization #{editingOrganizationId}</span>
+            <span className="badge primary">
+              {copy.organizationBadge(editingOrganizationId)}
+            </span>
           ) : (
-            <span className="badge warning">no organization selected</span>
+            <span className="badge warning">{copy.noOrganizationSelected}</span>
           )}
         </div>
 
         <div className="grid grid-3">
           <div className="card-soft stack" style={{ gap: 6, padding: 14 }}>
-            <div className="muted">Organization</div>
+            <div className="muted">{copy.organization}</div>
             <div className="admin-metric-value" style={{ fontSize: 22 }}>
               {editingOrganizationId ? `#${editingOrganizationId}` : "—"}
             </div>
           </div>
 
           <div className="card-soft stack" style={{ gap: 6, padding: 14 }}>
-            <div className="muted">Contact email</div>
+            <div className="muted">{copy.contactEmail}</div>
             <div
               style={{
                 fontWeight: 700,
@@ -134,33 +153,45 @@ export function OrganizationAccessTab({
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
               }}
-              title={normalizedContactEmail || "Not configured"}
+              title={normalizedContactEmail || copy.notConfigured}
             >
-              {normalizedContactEmail || "Not configured"}
+              {normalizedContactEmail || copy.notConfigured}
             </div>
           </div>
 
           <div className="card-soft stack" style={{ gap: 6, padding: 14 }}>
-            <div className="muted">Access status</div>
+            <div className="muted">{copy.accessStatus}</div>
             <div>
               {accessAccountResult ? (
-                <span className="badge success">generated</span>
+                <span className="badge success">{copy.generated}</span>
               ) : normalizedContactEmail ? (
-                <span className="badge warning">ready to generate</span>
+                <span className="badge warning">{copy.readyToGenerate}</span>
               ) : (
-                <span className="badge danger">email required</span>
+                <span className="badge danger">{copy.emailRequired}</span>
               )}
             </div>
           </div>
         </div>
+        </section>
 
+        <section
+          data-testid="organization-access-configuration"
+          className="card stack"
+          style={{
+            gap: 14,
+            minWidth: 0,
+            padding: 20,
+            background: "var(--admin-surface)",
+            border: "1px solid var(--admin-border)",
+          }}
+        >
         {!selectedOrganizationId || !editingOrganizationId ? (
           <div className="card-soft stack" style={{ gap: 8 }}>
             <div className="section-title" style={{ fontSize: 15 }}>
-              Organization required
+              {copy.organizationRequired}
             </div>
             <div className="muted">
-              Select and save an organization before creating an access account.
+              {copy.organizationRequiredDescription}
             </div>
           </div>
         ) : (
@@ -179,24 +210,23 @@ export function OrganizationAccessTab({
             <div className="row space-between" style={{ gap: 10, flexWrap: "wrap" }}>
               <div className="stack" style={{ gap: 4 }}>
                 <div className="section-title" style={{ fontSize: 15 }}>
-                  Login configuration
+                  {copy.loginConfiguration}
                 </div>
 
                 <div className="muted">
-                  This action creates or resets the organization login account using the contact
-                  email.
+                  {copy.loginConfigurationDescription}
                 </div>
               </div>
 
               {normalizedContactEmail ? (
-                <span className="badge primary">email available</span>
+                <span className="badge primary">{copy.emailAvailable}</span>
               ) : (
-                <span className="badge danger">missing email</span>
+                <span className="badge danger">{copy.missingEmail}</span>
               )}
             </div>
 
             <div className="card-soft stack" style={{ gap: 6, background: "#ffffff" }}>
-              <div className="muted">Login email</div>
+              <div className="muted">{copy.loginEmail}</div>
               <div
                 style={{
                   fontWeight: 800,
@@ -204,13 +234,13 @@ export function OrganizationAccessTab({
                   wordBreak: "break-word",
                 }}
               >
-                {normalizedContactEmail || "No contact email configured"}
+                {normalizedContactEmail || copy.noContactEmailConfigured}
               </div>
             </div>
 
             {!normalizedContactEmail ? (
               <div className="muted" style={{ color: "var(--danger)" }}>
-                Add a contact email in the Organization tab before creating an access account.
+                {copy.missingEmailDescription}
               </div>
             ) : null}
 
@@ -222,21 +252,23 @@ export function OrganizationAccessTab({
                 disabled={!canGenerateAccount}
               >
                 {accessAccountSaving
-                  ? "Generating account..."
+                  ? copy.generatingAccount
                   : accessAccountResult
-                    ? "Reset organization account"
-                    : "Create organization account"}
+                    ? copy.resetOrganizationAccount
+                    : copy.createOrganizationAccount}
               </button>
 
               {accessAccountResult ? (
-                <span className="badge warning">resets password</span>
+                <span className="badge warning">{copy.resetsPassword}</span>
               ) : null}
             </div>
           </div>
         )}
+        </section>
       </div>
 
-      <div
+      <section
+        data-testid="organization-access-credentials"
         className="card stack"
         style={{
           gap: 16,
@@ -246,9 +278,9 @@ export function OrganizationAccessTab({
         }}
       >
         <div className="stack" style={{ gap: 4 }}>
-          <div className="section-title">Access result</div>
+          <div className="section-title">{copy.resultTitle}</div>
           <div className="muted">
-            Temporary credentials are displayed here only after generation or reset.
+            {copy.resultDescription}
           </div>
         </div>
 
@@ -263,10 +295,10 @@ export function OrganizationAccessTab({
           >
             <div className="row space-between" style={{ gap: 10, flexWrap: "wrap" }}>
               <div className="section-title" style={{ fontSize: 15 }}>
-                Access account generated
+                {copy.accountGenerated}
               </div>
 
-              <span className="badge success">shown once</span>
+              <span className="badge success">{copy.shownOnce}</span>
             </div>
 
             <div style={{ fontWeight: 800, lineHeight: 1.45 }}>
@@ -274,7 +306,7 @@ export function OrganizationAccessTab({
             </div>
 
             <div className="card-soft stack" style={{ gap: 8, background: "#ffffff" }}>
-              <div className="muted">Login email</div>
+              <div className="muted">{copy.loginEmail}</div>
               <div
                 style={{
                   fontWeight: 800,
@@ -288,7 +320,7 @@ export function OrganizationAccessTab({
 
             <div className="card-soft stack" style={{ gap: 10, background: "#ffffff" }}>
               <div className="row space-between" style={{ gap: 10, flexWrap: "wrap" }}>
-                <div className="muted">Temporary password</div>
+                <div className="muted">{copy.temporaryPassword}</div>
 
                 <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                   <button
@@ -297,7 +329,7 @@ export function OrganizationAccessTab({
                     onClick={() => setPasswordVisible((prev) => !prev)}
                     style={{ minHeight: 34, padding: "7px 11px", fontSize: 12 }}
                   >
-                    {passwordVisible ? "Hide" : "Show"}
+                    {passwordVisible ? copy.hide : copy.show}
                   </button>
 
                   <button
@@ -307,10 +339,10 @@ export function OrganizationAccessTab({
                     style={{ minHeight: 34, padding: "7px 11px", fontSize: 12 }}
                   >
                     {copyState === "copied"
-                      ? "Copied"
+                      ? copy.copied
                       : copyState === "failed"
-                        ? "Copy failed"
-                        : "Copy password"}
+                        ? copy.copyFailed
+                        : copy.copyPassword}
                   </button>
                 </div>
               </div>
@@ -318,6 +350,7 @@ export function OrganizationAccessTab({
               <MaskedPassword
                 value={accessAccountResult.temporary_password}
                 visible={passwordVisible}
+                emptyLabel={copy.noTemporaryPassword}
               />
             </div>
 
@@ -329,34 +362,31 @@ export function OrganizationAccessTab({
               }}
             >
               <div className="muted" style={{ color: "var(--warning)" }}>
-                Share this password securely. It will not be visible again after you leave this
-                result.
+                {copy.secureShareWarning}
               </div>
             </div>
           </div>
         ) : (
           <div className="card-soft stack" style={{ gap: 8 }}>
             <div className="section-title" style={{ fontSize: 15 }}>
-              No credential generated yet
+              {copy.noCredentialTitle}
             </div>
             <div className="muted">
-              Once you create or reset an organization account, the email and temporary password
-              will appear here.
+              {copy.noCredentialDescription}
             </div>
           </div>
         )}
 
         <div className="card-soft stack" style={{ gap: 8 }}>
           <div className="section-title" style={{ fontSize: 15 }}>
-            Security note
+            {copy.securityNote}
           </div>
 
           <div className="muted">
-            Use this action only when onboarding an organization user or when the organization
-            contact needs a password reset. The password should be sent through a secure channel.
+            {copy.securityDescription}
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
