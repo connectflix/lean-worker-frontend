@@ -1,11 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import {
+  getOrganizationAdminCopy,
+  type OrganizationAdminCopy,
+} from "@/lib/i18n/organization-admin";
 import type {
   AdminCalendlyEventType,
   AdminOrganization,
   AdminOrganizationType,
 } from "@/lib/types";
+import { useAdminUiLanguage } from "@/lib/use-admin-ui-language";
 
 type OrganizationFormState = {
   name: string;
@@ -42,16 +47,19 @@ type OrganizationAdminTabProps = {
   ) => "classique" | "flix" | "executif";
 };
 
-function getOrganizationTypeDescription(type?: string | null): string {
+function getOrganizationTypeDescription(
+  type: string | null | undefined,
+  copy: OrganizationAdminCopy,
+): string {
   if (type === "agent_premium") {
-    return "Premium organization workspace for workers on the Flix subscription pack.";
+    return copy.organizationTypeDescription.agentPremium;
   }
 
   if (type === "agent_de_reve") {
-    return "Executive organization workspace for workers on the Executif subscription pack.";
+    return copy.organizationTypeDescription.agentDeReve;
   }
 
-  return "Standard organization workspace for workers on the Classique subscription pack.";
+  return copy.organizationTypeDescription.agentFlix;
 }
 
 function getOrganizationTypeTone(type?: string | null): {
@@ -96,8 +104,11 @@ function getCalendlySearchText(eventType: AdminCalendlyEventType): string {
     .toLowerCase();
 }
 
-function getShortCalendlyUrl(value?: string | null): string {
-  if (!value) return "No scheduling URL";
+function getShortCalendlyUrl(
+  value: string | null | undefined,
+  emptyLabel: string,
+): string {
+  if (!value) return emptyLabel;
 
   return value
     .replace("https://", "")
@@ -122,6 +133,9 @@ export function OrganizationAdminTab({
   getOrganizationTypeLabel,
   getRequiredSubscriptionForOrganizationType,
 }: OrganizationAdminTabProps) {
+  const { uiLanguage } = useAdminUiLanguage();
+  const copy = getOrganizationAdminCopy(uiLanguage);
+
   const [organizationSearch, setOrganizationSearch] = useState("");
   const [calendlySearch, setCalendlySearch] = useState("");
 
@@ -207,23 +221,23 @@ export function OrganizationAdminTab({
         alignItems: "start",
       }}
     >
-      <div
-        className="card stack"
-        style={{
-          gap: 16,
-          minWidth: 0,
-          maxHeight: "calc(100vh - 250px)",
-          overflow: "hidden",
-        }}
-      >
+      <div className="stack" style={{ gap: 16, minWidth: 0 }}>
+        <section
+          data-testid="organization-admin-summary"
+          className="card stack"
+          style={{
+            gap: 16,
+            minWidth: 0,
+          }}
+        >
         <div
           className="row space-between"
           style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}
         >
           <div className="stack" style={{ gap: 4 }}>
-            <div className="section-title">Organizations</div>
+            <div className="section-title">{copy.organizations}</div>
             <div className="muted">
-              Create, select, and configure organization workspaces.
+              {copy.organizationsDescription}
             </div>
           </div>
 
@@ -234,20 +248,20 @@ export function OrganizationAdminTab({
             disabled={detailLoading}
             style={{ minHeight: 38 }}
           >
-            New organization
+            {copy.newOrganization}
           </button>
         </div>
 
         <div className="grid grid-3">
           <div className="card-soft stack" style={{ gap: 6, padding: 14 }}>
-            <div className="muted">Total</div>
+            <div className="muted">{copy.total}</div>
             <div className="admin-metric-value" style={{ fontSize: 24 }}>
               {safeOrganizations.length}
             </div>
           </div>
 
           <div className="card-soft stack" style={{ gap: 6, padding: 14 }}>
-            <div className="muted">Active</div>
+            <div className="muted">{copy.activePlural}</div>
             <div
               className="admin-metric-value"
               style={{ fontSize: 24, color: "var(--success)" }}
@@ -257,7 +271,7 @@ export function OrganizationAdminTab({
           </div>
 
           <div className="card-soft stack" style={{ gap: 6, padding: 14 }}>
-            <div className="muted">Inactive</div>
+            <div className="muted">{copy.inactivePlural}</div>
             <div
               className="admin-metric-value"
               style={{ fontSize: 24, color: "var(--warning)" }}
@@ -266,21 +280,32 @@ export function OrganizationAdminTab({
             </div>
           </div>
         </div>
+        </section>
 
+        <section
+          data-testid="organization-admin-directory"
+          className="card stack"
+          style={{
+            gap: 16,
+            minWidth: 0,
+            maxHeight: "calc(100vh - 430px)",
+            overflow: "hidden",
+          }}
+        >
         <label className="stack" style={{ gap: 6 }}>
-          <span className="muted">Search organizations</span>
+          <span className="muted">{copy.searchOrganizations}</span>
           <input
             className="input"
             value={organizationSearch}
             onChange={(event) => setOrganizationSearch(event.target.value)}
-            placeholder="Search by name, business ID, email, or type..."
+            placeholder={copy.searchOrganizationsPlaceholder}
           />
         </label>
 
         {safeOrganizations.length === 0 ? (
-          <div className="card-soft muted">No organizations found.</div>
+          <div className="card-soft muted">{copy.noOrganizationsFound}</div>
         ) : filteredOrganizations.length === 0 ? (
-          <div className="card-soft muted">No organization matches this search.</div>
+          <div className="card-soft muted">{copy.noOrganizationMatchesSearch}</div>
         ) : (
           <div
             className="stack scroll-panel"
@@ -337,11 +362,11 @@ export function OrganizationAdminTab({
                       </span>
 
                       <span className={organization.is_active ? "badge success" : "badge warning"}>
-                        {organization.is_active ? "active" : "inactive"}
+                        {organization.is_active ? copy.active : copy.inactive}
                       </span>
                     </div>
 
-                    {isSelected ? <span className="badge primary">selected</span> : null}
+                    {isSelected ? <span className="badge primary">{copy.selected}</span> : null}
                   </div>
 
                   <div className="stack" style={{ gap: 4 }}>
@@ -357,7 +382,7 @@ export function OrganizationAdminTab({
                     </div>
 
                     <div className="muted">
-                      Required worker subscription:{" "}
+                      {copy.requiredWorkerSubscription}{" "}
                       <strong>
                         {getRequiredSubscriptionForOrganizationType(
                           organization.organization_type,
@@ -382,15 +407,15 @@ export function OrganizationAdminTab({
 
                   <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                     {organization.calendly_event_type_uri ? (
-                      <span className="badge success">Calendly configured</span>
+                      <span className="badge success">{copy.calendlyConfigured}</span>
                     ) : (
-                      <span className="badge warning">Calendly missing</span>
+                      <span className="badge warning">{copy.calendlyMissing}</span>
                     )}
 
                     {organization.contact_email ? (
-                      <span className="badge success">Contact email</span>
+                      <span className="badge success">{copy.contactEmailAvailable}</span>
                     ) : (
-                      <span className="badge warning">No contact email</span>
+                      <span className="badge warning">{copy.noContactEmail}</span>
                     )}
                   </div>
                 </button>
@@ -398,9 +423,11 @@ export function OrganizationAdminTab({
             })}
           </div>
         )}
+        </section>
       </div>
 
-      <div
+      <section
+        data-testid="organization-admin-editor"
         className="card stack"
         style={{
           gap: 16,
@@ -419,12 +446,12 @@ export function OrganizationAdminTab({
           <div className="stack" style={{ gap: 4 }}>
             <div className="section-title">
               {editingOrganizationId
-                ? `Edit organization #${editingOrganizationId}`
-                : "Create organization"}
+                ? copy.editOrganization(editingOrganizationId)
+                : copy.createOrganization}
             </div>
 
             <div className="muted">
-              Configure identity, organization type, contact details, and booking integration.
+              {copy.editorDescription}
             </div>
           </div>
 
@@ -432,7 +459,7 @@ export function OrganizationAdminTab({
             className={form.is_active ? "badge success" : "badge warning"}
             style={{ flexShrink: 0 }}
           >
-            {form.is_active ? "active" : "inactive"}
+            {form.is_active ? copy.active : copy.inactive}
           </span>
         </div>
 
@@ -457,16 +484,16 @@ export function OrganizationAdminTab({
             </span>
 
             <span className="badge">
-              required pack: {getRequiredSubscriptionForOrganizationType(form.organization_type)}
+              {copy.requiredPack} {getRequiredSubscriptionForOrganizationType(form.organization_type)}
             </span>
           </div>
 
-          <div className="muted">{getOrganizationTypeDescription(form.organization_type)}</div>
+          <div className="muted">{getOrganizationTypeDescription(form.organization_type, copy)}</div>
         </div>
 
         <form onSubmit={onSubmit} className="stack" style={{ gap: 14 }}>
           <label className="stack" style={{ gap: 6 }}>
-            <strong>Name</strong>
+            <strong>{copy.name}</strong>
             <input
               className="input"
               value={form.name}
@@ -477,18 +504,18 @@ export function OrganizationAdminTab({
                 })
               }
               disabled={detailLoading}
-              placeholder="Example: Acme Coaching Partner"
+              placeholder={copy.namePlaceholder}
               required
             />
           </label>
 
           <label className="stack" style={{ gap: 6 }}>
-            <strong>Business ID</strong>
+            <strong>{copy.businessId}</strong>
             <input
               className="input"
-              value={form.code || "Generated automatically"}
+              value={form.code || copy.generatedAutomatically}
               disabled
-              placeholder="Generated automatically"
+              placeholder={copy.generatedAutomatically}
               style={{
                 cursor: "not-allowed",
                 background: "var(--admin-surface-muted)",
@@ -496,12 +523,12 @@ export function OrganizationAdminTab({
               }}
             />
             <div className="fine-print">
-              System-generated identifier. It follows the ORG-xxxxxx convention.
+              {copy.businessIdDescription}
             </div>
           </label>
 
           <label className="stack" style={{ gap: 6 }}>
-            <strong>Organization type</strong>
+            <strong>{copy.organizationType}</strong>
             <select
               className="select"
               value={form.organization_type}
@@ -513,14 +540,14 @@ export function OrganizationAdminTab({
               }
               disabled={detailLoading}
             >
-              <option value="agent_flix">agent flix — workers classique only</option>
-              <option value="agent_premium">agent premium — workers flix only</option>
-              <option value="agent_de_reve">agent de rêve — workers executif only</option>
+              <option value="agent_flix">{copy.organizationTypeOptions.agentFlix}</option>
+              <option value="agent_premium">{copy.organizationTypeOptions.agentPremium}</option>
+              <option value="agent_de_reve">{copy.organizationTypeOptions.agentDeReve}</option>
             </select>
           </label>
 
           <label className="stack" style={{ gap: 6 }}>
-            <strong>Description</strong>
+            <strong>{copy.description}</strong>
             <textarea
               className="textarea"
               value={form.description}
@@ -531,7 +558,7 @@ export function OrganizationAdminTab({
                 })
               }
               disabled={detailLoading}
-              placeholder="Describe the organization, operating model, partnership scope, or worker context..."
+              placeholder={copy.descriptionPlaceholder}
               rows={5}
               style={{
                 minHeight: 130,
@@ -544,7 +571,7 @@ export function OrganizationAdminTab({
 
           <div className="grid grid-2">
             <label className="stack" style={{ gap: 6 }}>
-              <strong>Contact email</strong>
+              <strong>{copy.contactEmail}</strong>
               <input
                 className="input"
                 type="email"
@@ -561,7 +588,7 @@ export function OrganizationAdminTab({
             </label>
 
             <label className="stack" style={{ gap: 6 }}>
-              <strong>Contact phone</strong>
+              <strong>{copy.contactPhone}</strong>
               <input
                 className="input"
                 value={form.contact_phone}
@@ -577,10 +604,19 @@ export function OrganizationAdminTab({
             </label>
           </div>
 
-          <div className="stack" style={{ gap: 8 }}>
-            <strong>Calendly event</strong>
+          <section
+            data-testid="organization-admin-booking"
+            className="card-soft stack"
+            style={{
+              gap: 10,
+              padding: 16,
+              border: "1px solid var(--admin-border)",
+              background: "var(--admin-surface-muted)",
+            }}
+          >
+            <strong>{copy.calendlyEvent}</strong>
 
-            <div className="card-soft stack" style={{ gap: 10 }}>
+            <div className="stack" style={{ gap: 10 }}>
               {selectedCalendlyEventType ? (
                 <div
                   className="card-soft stack"
@@ -593,7 +629,7 @@ export function OrganizationAdminTab({
                   <div className="row space-between" style={{ gap: 10, flexWrap: "wrap" }}>
                     <div className="stack" style={{ gap: 4, minWidth: 0 }}>
                       <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                        <span className="badge success">Selected</span>
+                        <span className="badge success">{copy.calendlySelected}</span>
 
                         {selectedCalendlyEventType.duration ? (
                           <span className="badge">
@@ -608,7 +644,7 @@ export function OrganizationAdminTab({
                               : "badge warning"
                           }
                         >
-                          {selectedCalendlyEventType.active ? "active" : "inactive"}
+                          {selectedCalendlyEventType.active ? copy.active : copy.inactive}
                         </span>
                       </div>
 
@@ -623,7 +659,10 @@ export function OrganizationAdminTab({
                         }}
                         title={selectedCalendlyEventType.scheduling_url || undefined}
                       >
-                        {getShortCalendlyUrl(selectedCalendlyEventType.scheduling_url)}
+                        {getShortCalendlyUrl(
+                          selectedCalendlyEventType.scheduling_url,
+                          copy.noSchedulingUrl,
+                        )}
                       </div>
                     </div>
 
@@ -638,7 +677,7 @@ export function OrganizationAdminTab({
                         borderColor: "rgba(239,68,68,0.22)",
                       }}
                     >
-                      Clear
+                      {copy.clear}
                     </button>
                   </div>
 
@@ -653,7 +692,7 @@ export function OrganizationAdminTab({
                         textDecoration: "none",
                       }}
                     >
-                      Open Calendly scheduling page
+                      {copy.openCalendlyPage}
                     </a>
                   ) : null}
                 </div>
@@ -666,7 +705,7 @@ export function OrganizationAdminTab({
                     background: "rgba(251,191,36,0.10)",
                   }}
                 >
-                  <span className="badge warning">Current saved event not found</span>
+                  <span className="badge warning">{copy.currentSavedEventNotFound}</span>
                   <div className="muted" style={{ lineHeight: 1.5, wordBreak: "break-all" }}>
                     {form.calendly_event_type_uri}
                   </div>
@@ -683,17 +722,17 @@ export function OrganizationAdminTab({
                       borderColor: "rgba(239,68,68,0.22)",
                     }}
                   >
-                    Clear saved value
+                    {copy.clearSavedValue}
                   </button>
                 </div>
               ) : (
                 <div className="muted" style={{ lineHeight: 1.5 }}>
-                  No Calendly event selected yet.
+                  {copy.noCalendlySelected}
                 </div>
               )}
 
               <label className="stack" style={{ gap: 6 }}>
-                <span className="muted">Search Calendly events</span>
+                <span className="muted">{copy.searchCalendlyEvents}</span>
                 <input
                   className="input"
                   value={calendlySearch}
@@ -701,8 +740,8 @@ export function OrganizationAdminTab({
                   disabled={detailLoading || calendlyEventTypesLoading}
                   placeholder={
                     calendlyEventTypesLoading
-                      ? "Loading Calendly events..."
-                      : "Search by name, slug, duration or URL..."
+                      ? copy.loadingCalendlyEvents
+                      : copy.searchCalendlyPlaceholder
                   }
                 />
               </label>
@@ -715,7 +754,7 @@ export function OrganizationAdminTab({
                     lineHeight: 1.45,
                   }}
                 >
-                  Calendly events could not be loaded: {calendlyEventTypesError}
+                  {copy.calendlyLoadError} {calendlyEventTypesError}
                 </div>
               ) : null}
 
@@ -723,7 +762,7 @@ export function OrganizationAdminTab({
               !calendlyEventTypesError &&
               safeCalendlyEventTypes.length === 0 ? (
                 <div className="fine-print">
-                  No Calendly event type was found. Check your Calendly API token and scope.
+                  {copy.noCalendlyEventTypes}
                 </div>
               ) : null}
 
@@ -732,7 +771,7 @@ export function OrganizationAdminTab({
               safeCalendlyEventTypes.length > 0 &&
               filteredCalendlyEventTypes.length === 0 ? (
                 <div className="card-soft muted">
-                  No Calendly event matches this search.
+                  {copy.noCalendlyMatchesSearch}
                 </div>
               ) : null}
 
@@ -777,7 +816,7 @@ export function OrganizationAdminTab({
                             <strong>{eventType.name}</strong>
 
                             {isSelected ? (
-                              <span className="badge success">selected</span>
+                              <span className="badge success">{copy.selected}</span>
                             ) : null}
                           </div>
 
@@ -789,7 +828,7 @@ export function OrganizationAdminTab({
                             <span
                               className={eventType.active ? "badge success" : "badge warning"}
                             >
-                              {eventType.active ? "active" : "inactive"}
+                              {eventType.active ? copy.active : copy.inactive}
                             </span>
 
                             {eventType.slug ? (
@@ -806,7 +845,10 @@ export function OrganizationAdminTab({
                             }}
                             title={eventType.scheduling_url || eventType.uri}
                           >
-                            {getShortCalendlyUrl(eventType.scheduling_url || eventType.uri)}
+                            {getShortCalendlyUrl(
+                              eventType.scheduling_url || eventType.uri,
+                              copy.noSchedulingUrl,
+                            )}
                           </div>
                         </button>
                       );
@@ -815,19 +857,17 @@ export function OrganizationAdminTab({
 
                   {hiddenCalendlyEventTypeCount > 0 ? (
                     <div className="fine-print">
-                      {hiddenCalendlyEventTypeCount} more result(s). Refine your search to narrow
-                      the list.
+                      {copy.moreResults(hiddenCalendlyEventTypeCount)}
                     </div>
                   ) : null}
                 </div>
               ) : null}
 
               <div className="fine-print">
-                Dedicated Calendly event type used to restrict this organization to its own
-                bookings.
+                {copy.calendlyPurpose}
               </div>
             </div>
-          </div>
+          </section>
 
           <label
             className="card-soft row"
@@ -856,10 +896,9 @@ export function OrganizationAdminTab({
             />
 
             <div className="stack" style={{ gap: 2 }}>
-              <strong>Active organization</strong>
+              <strong>{copy.activeOrganization}</strong>
               <span className="muted">
-                Inactive organizations remain saved but should not be used for active worker
-                assignment or bookings.
+                {copy.activeOrganizationDescription}
               </span>
             </div>
           </label>
@@ -883,19 +922,19 @@ export function OrganizationAdminTab({
               onClick={onNewOrganization}
               disabled={detailLoading}
             >
-              New organization
+              {copy.newOrganization}
             </button>
 
             <button className="button" type="submit" disabled={saving || detailLoading}>
               {saving
-                ? "Saving..."
+                ? copy.saving
                 : editingOrganizationId
-                  ? "Save organization"
-                  : "Create organization"}
+                  ? copy.saveOrganization
+                  : copy.createOrganizationAction}
             </button>
           </div>
         </form>
-      </div>
+      </section>
     </div>
   );
 }
