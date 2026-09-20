@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { OrganizationInsightsTab } from "@/app/admin/organizations/components/organization-insights-tab";
@@ -181,8 +181,14 @@ describe("Organization Insights internationalization", () => {
     ).toBeInTheDocument();
 
     expect(
-      screen.getByText(/Collaborateur sélectionné :/),
+      screen.getByRole("heading", {
+        name: "Alex Worker",
+      }),
     ).toBeInTheDocument();
+
+    expect(
+      screen.getByTestId("organization-insights-worker-context"),
+    ).toHaveTextContent("Senior Analyst · Brussels");
 
     expect(
       screen.getByText("Conversations externes"),
@@ -208,6 +214,74 @@ describe("Organization Insights internationalization", () => {
 
     expect(
       screen.getByRole("option", { name: "Toutes les catégories" }),
+    ).toBeInTheDocument();
+  });
+
+  it("uses the shared Admin B2B shell and metric primitives for worker intelligence", () => {
+    window.localStorage.setItem("leanworker.uiLanguage", "fr");
+
+    renderInsights();
+
+    expect(screen.getByTestId("admin-page")).toBeInTheDocument();
+
+    expect(
+      screen.getByTestId("organization-insights-worker-header"),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByTestId("organization-insights-metrics"),
+    ).toBeInTheDocument();
+
+    expect(screen.getAllByTestId("admin-metric-card")).toHaveLength(6);
+  });
+
+  it("presents an identity-first manager header and attention summary", () => {
+    window.localStorage.setItem("leanworker.uiLanguage", "fr");
+
+    const summary = workerSummary();
+
+    summary.recommendations = [
+      {
+        id: 11,
+        status: "open",
+        priority: "high",
+        title: "Strengthen leadership positioning",
+        description: "Prepare a concrete leadership positioning action.",
+      },
+    ] as never;
+
+    renderInsights({
+      selectedWorkerSummary: summary,
+    });
+
+    const header = screen.getByTestId(
+      "organization-insights-worker-header",
+    );
+
+    expect(
+      within(header).getByRole("heading", {
+        name: "Alex Worker",
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByTestId("organization-insights-worker-context"),
+    ).toHaveTextContent("Senior Analyst");
+
+    expect(
+      screen.getByTestId("organization-insights-worker-context"),
+    ).toHaveTextContent("Brussels");
+
+    const attention = screen.getByTestId(
+      "organization-insights-attention",
+    );
+
+    expect(
+      within(attention).getByText("À surveiller"),
+    ).toBeInTheDocument();
+
+    expect(
+      within(attention).getByText("1 recommandation ouverte"),
     ).toBeInTheDocument();
   });
 

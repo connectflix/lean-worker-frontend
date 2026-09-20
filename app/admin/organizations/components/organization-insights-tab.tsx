@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { getOrganizationInsightsCopy } from "@/lib/i18n/organization-insights";
 import { useAdminUiLanguage } from "@/lib/use-admin-ui-language";
+import { AdminMetricCard, AdminPage } from "@/components/admin-ui";
 import {
   completeAdminWorkerRecommendation,
   getAdminWorkerProfessionalExecutionPlan,
@@ -81,34 +82,6 @@ function getWorkerSubscriptionPaidExVat(
   }
 
   return 0;
-}
-
-function InsightMetricCard({
-  label,
-  value,
-  helper,
-}: {
-  label: string;
-  value: string | number;
-  helper?: string;
-}) {
-  return (
-    <div className="card-soft stack admin-kpi-card" style={{ gap: 7, minHeight: 108 }}>
-      <div className="muted">{label}</div>
-
-      <div
-        className="admin-metric-value"
-        style={{
-          fontSize: typeof value === "number" ? 28 : 18,
-          letterSpacing: "-0.04em",
-        }}
-      >
-        {value}
-      </div>
-
-      {helper ? <div className="fine-print">{helper}</div> : null}
-    </div>
-  );
 }
 
 function DetailRow({
@@ -1031,68 +1004,133 @@ export function OrganizationInsightsTab({
 
   const subscriptionPaid = getWorkerSubscriptionPaidExVat(selectedWorkerSummary.worker);
 
+  const openRecommendationCount =
+    selectedWorkerSummary.recommendations.filter(
+      (recommendation) =>
+        recommendation.status !== "completed" &&
+        recommendation.status !== "dismissed" &&
+        !completedRecommendationIds.has(recommendation.id),
+    ).length;
+
   return (
-    <div className="stack" style={{ gap: 16 }}>
-      <div className="card stack" style={{ gap: 16 }}>
+    <AdminPage style={{ gap: 16 }}>
+      <div
+        data-testid="organization-insights-worker-header"
+        className="card stack"
+        style={{ gap: 16 }}
+      >
         <div
           className="row space-between"
           style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}
         >
-          <div className="stack" style={{ gap: 5 }}>
-            <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-              <span className="badge primary">
-                worker #{selectedWorkerSummary.worker.id}
-              </span>
-              <span className="badge">{selectedWorkerSummary.worker.subscription_pack}</span>
-              {selectedWorkerSummary.worker.business_id ? (
-                <span className="badge">{selectedWorkerSummary.worker.business_id}</span>
-              ) : null}
-            </div>
-
-            <div className="section-title" style={{ fontSize: 20 }}>
+          <div className="stack" style={{ gap: 10, minWidth: 0 }}>
+            <div className="muted" style={{ fontSize: 12, fontWeight: 700 }}>
               {copy.workspaceTitle}
             </div>
 
-            <div className="muted">
-              {copy.selectedWorker}{" "}
-              <strong>{selectedWorkerSummary.worker.display_name}</strong>
+            <h1
+              style={{
+                margin: 0,
+                color: "var(--admin-ink)",
+                fontSize: 24,
+                lineHeight: 1.2,
+                fontWeight: 850,
+                letterSpacing: "-0.03em",
+              }}
+            >
+              {selectedWorkerSummary.worker.display_name}
+            </h1>
+
+            <div
+              data-testid="organization-insights-worker-context"
+              className="muted"
+              style={{ fontSize: 14 }}
+            >
+              {[
+                selectedWorkerSummary.worker.current_role,
+                selectedWorkerSummary.worker.location,
+              ]
+                .filter(Boolean)
+                .join(" · ") || "—"}
+            </div>
+
+            <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+              <span className="badge">
+                worker #{selectedWorkerSummary.worker.id}
+              </span>
+              <span className="badge">
+                {selectedWorkerSummary.worker.subscription_pack}
+              </span>
+              {selectedWorkerSummary.worker.business_id ? (
+                <span className="badge">
+                  {selectedWorkerSummary.worker.business_id}
+                </span>
+              ) : null}
             </div>
           </div>
         </div>
 
-        <div className="admin-kpi-scroll">
+        <div
+          data-testid="organization-insights-attention"
+          className="card-soft row space-between"
+          style={{
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div className="stack" style={{ gap: 3 }}>
+            <strong>{copy.attentionTitle}</strong>
+            <div className="muted">
+              {copy.openRecommendation(openRecommendationCount)}
+            </div>
+          </div>
+
+          <span
+            className={
+              openRecommendationCount > 0 ? "badge primary" : "badge"
+            }
+          >
+            {openRecommendationCount}
+          </span>
+        </div>
+
+        <div
+          data-testid="organization-insights-metrics"
+          className="admin-kpi-scroll"
+        >
           <div className="admin-kpi-row admin-kpi-row--6">
-            <InsightMetricCard
+            <AdminMetricCard
               label={copy.metrics.sessions}
               value={selectedWorkerSummary.session_count}
               helper={copy.metrics.sessionsHelper}
             />
 
-            <InsightMetricCard
+            <AdminMetricCard
               label={copy.metrics.externalConversations}
               value={selectedWorkerSummary.external_conversation_count}
               helper={copy.metrics.externalConversationsHelper}
             />
 
-            <InsightMetricCard
+            <AdminMetricCard
               label={copy.metrics.recommendations}
               value={selectedWorkerSummary.recommendation_count}
               helper={copy.metrics.recommendationsHelper}
             />
 
-            <InsightMetricCard
+            <AdminMetricCard
               label={copy.metrics.artifacts}
               value={selectedWorkerSummary.artifact_count}
               helper={copy.metrics.artifactsHelper}
             />
 
-            <InsightMetricCard
+            <AdminMetricCard
               label={copy.metrics.levers}
               value={selectedWorkerSummary.lever_count}
               helper={copy.metrics.leversHelper}
             />
 
-            <InsightMetricCard
+            <AdminMetricCard
               label={copy.metrics.blueprint}
               value={
                 selectedWorkerSummary.career_blueprint
@@ -2265,6 +2303,6 @@ export function OrganizationInsightsTab({
         ) : null}
         </div>
       </div>
-    </div>
+    </AdminPage>
   );
 }

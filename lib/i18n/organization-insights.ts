@@ -5,6 +5,8 @@ export type OrganizationInsightsCopy = {
   loadingWorkerSummary: string;
   selectWorker: string;
   selectedWorker: string;
+  attentionTitle: string;
+  openRecommendation: (count: number) => string;
 
   metrics: {
     sessions: string;
@@ -177,6 +179,9 @@ const COPY: Record<SupportedUiLanguage, OrganizationInsightsCopy> = {
     loadingWorkerSummary: "Loading worker summary...",
     selectWorker: "Select a worker to view details.",
     selectedWorker: "Selected worker:",
+    attentionTitle: "Needs attention",
+    openRecommendation: (count) =>
+      `${count} open ${count === 1 ? "recommendation" : "recommendations"}`,
 
     metrics: {
       sessions: "Sessions",
@@ -384,6 +389,9 @@ const COPY: Record<SupportedUiLanguage, OrganizationInsightsCopy> = {
     selectWorker:
       "Sélectionnez un collaborateur pour afficher ses informations.",
     selectedWorker: "Collaborateur sélectionné :",
+    attentionTitle: "À surveiller",
+    openRecommendation: (count) =>
+      `${count} ${count === 1 ? "recommandation ouverte" : "recommandations ouvertes"}`,
 
     metrics: {
       sessions: "Sessions",
