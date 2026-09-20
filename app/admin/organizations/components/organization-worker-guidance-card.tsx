@@ -1,5 +1,8 @@
 "use client";
 
+import { getOrganizationInsightsChildCardsCopy } from "@/lib/i18n/organization-insights-child-cards";
+import { useAdminUiLanguage } from "@/lib/use-admin-ui-language";
+
 import type {
   OrganizationWorkerMandateConstraint,
   OrganizationSupportRecommendation,
@@ -7,6 +10,13 @@ import type {
   OrganizationWorkerMandatePlan,
   OrganizationWorkerMandateSummary,
 } from "@/lib/types";
+
+function useGuidanceCopy() {
+  const { uiLanguage } = useAdminUiLanguage();
+
+  return getOrganizationInsightsChildCardsCopy(uiLanguage).guidance;
+}
+
 
 type OrganizationWorkerGuidanceCardProps = {
   guidance: OrganizationWorkerGuidanceResponse | null;
@@ -124,6 +134,7 @@ function ConstraintCards({
   title: string;
   items: OrganizationWorkerMandateConstraint[];
 }) {
+  const copy = useGuidanceCopy();
   if (!items.length) {
     return null;
   }
@@ -147,7 +158,7 @@ function ConstraintCards({
 
           <CountBadge
             count={items.length}
-            label={items.length === 1 ? "item" : "items"}
+            label={items.length === 1 ? copy.item : copy.items}
           />
         </div>
       </summary>
@@ -202,6 +213,7 @@ function CollapsibleList({
   items: string[];
   open?: boolean;
 }) {
+  const copy = useGuidanceCopy();
   if (!items.length) {
     return null;
   }
@@ -225,7 +237,7 @@ function CollapsibleList({
 
           <CountBadge
             count={items.length}
-            label={items.length === 1 ? "item" : "items"}
+            label={items.length === 1 ? copy.item : copy.items}
           />
         </div>
       </summary>
@@ -249,6 +261,7 @@ function ExecutiveHeader({
   plan: OrganizationWorkerMandatePlan | null;
   recommendations: OrganizationSupportRecommendation[];
 }) {
+  const copy = useGuidanceCopy();
   return (
     <section
       className="card stack"
@@ -272,7 +285,7 @@ function ExecutiveHeader({
             className="badge primary"
             style={{ width: "fit-content" }}
           >
-            Organization guidance
+            {copy.badge}
           </span>
 
           <div
@@ -282,7 +295,7 @@ function ExecutiveHeader({
               letterSpacing: "-0.025em",
             }}
           >
-            Worker guidance workspace
+            {copy.workspaceTitle}
           </div>
 
           <div
@@ -292,8 +305,7 @@ function ExecutiveHeader({
               lineHeight: 1.5,
             }}
           >
-            Executive view of the Worker&apos;s professional mandate,
-            organization-side support path, and current support recommendations.
+            {copy.workspaceDescription}
           </div>
         </div>
 
@@ -306,7 +318,7 @@ function ExecutiveHeader({
           }}
         >
           <span className="badge">
-            {summary ? "Mandate available" : "Mandate missing"}
+            {summary ? copy.mandateAvailable : copy.mandateMissing}
           </span>
 
           {plan ? (
@@ -314,18 +326,18 @@ function ExecutiveHeader({
               <span className="badge">{plan.planning_horizon}</span>
               <span className="badge">
                 {plan.milestones.length}{" "}
-                {plan.milestones.length === 1 ? "step" : "steps"}
+                {plan.milestones.length === 1 ? copy.step : copy.steps}
               </span>
             </>
           ) : (
-            <span className="badge">Plan missing</span>
+            <span className="badge">{copy.planMissing}</span>
           )}
 
           <span className="badge">
             {recommendations.length}{" "}
             {recommendations.length === 1
-              ? "recommendation"
-              : "recommendations"}
+              ? copy.recommendation
+              : copy.recommendations}
           </span>
         </div>
       </div>
@@ -338,10 +350,11 @@ function MandateOverview({
 }: {
   summary: OrganizationWorkerMandateSummary;
 }) {
+  const copy = useGuidanceCopy();
   return (
     <section className="card stack" style={{ gap: 16 }}>
       <div className="stack" style={{ gap: 5 }}>
-        <SectionLabel>Mandate</SectionLabel>
+        <SectionLabel>{copy.mandateLabel}</SectionLabel>
 
         <h2
           className="section-title"
@@ -350,11 +363,11 @@ function MandateOverview({
             fontSize: 18,
           }}
         >
-          Mandate summary
+          {copy.mandateSummary}
         </h2>
 
         <div className="muted">
-          The Worker&apos;s current professional success frame.
+          {copy.mandateSummaryDescription}
         </div>
       </div>
 
@@ -376,7 +389,7 @@ function MandateOverview({
 
       {summary.professional_identity ? (
         <div className="stack" style={{ gap: 6 }}>
-          <SectionLabel>Professional identity</SectionLabel>
+          <SectionLabel>{copy.professionalIdentity}</SectionLabel>
 
           <div
             style={{
@@ -399,21 +412,21 @@ function MandateOverview({
       >
         <SoftPanel>
           <CompactList
-            title="Expected outcomes"
+            title={copy.expectedOutcomes}
             items={summary.expected_outcomes}
           />
         </SoftPanel>
 
         <SoftPanel>
           <CompactList
-            title="Success definition"
+            title={copy.successDefinition}
             items={summary.success_definition}
           />
         </SoftPanel>
 
         <SoftPanel>
           <CompactList
-            title="Contribution drivers"
+            title={copy.contributionDrivers}
             items={summary.contribution_drivers}
           />
         </SoftPanel>
@@ -427,6 +440,7 @@ function MandateSidebar({
 }: {
   summary: OrganizationWorkerMandateSummary;
 }) {
+  const copy = useGuidanceCopy();
   return (
     <aside
       className="stack"
@@ -439,27 +453,27 @@ function MandateSidebar({
     >
       <section className="card stack" style={{ gap: 14 }}>
         <div className="stack" style={{ gap: 4 }}>
-          <SectionLabel>Operating frame</SectionLabel>
-          <div className="section-title">At a glance</div>
+          <SectionLabel>{copy.operatingFrame}</SectionLabel>
+          <div className="section-title">{copy.atAGlance}</div>
         </div>
 
         <SoftPanel>
           <CompactList
-            title="Time capacity"
+            title={copy.timeCapacity}
             items={summary.time_capacity}
           />
         </SoftPanel>
 
         <SoftPanel>
           <CompactList
-            title="Non-negotiables"
+            title={copy.nonNegotiables}
             items={summary.non_negotiables}
           />
         </SoftPanel>
 
         <SoftPanel>
           <CompactList
-            title="Risks to avoid"
+            title={copy.risksToAvoid}
             items={summary.risks_to_avoid}
           />
         </SoftPanel>
@@ -467,39 +481,39 @@ function MandateSidebar({
 
       <section className="card stack" style={{ gap: 14 }}>
         <div className="stack" style={{ gap: 4 }}>
-          <SectionLabel>Drivers</SectionLabel>
-          <div className="section-title">What sustains the Worker</div>
+          <SectionLabel>{copy.drivers}</SectionLabel>
+          <div className="section-title">{copy.sustainsWorker}</div>
         </div>
 
         <CollapsibleList
-          title="Meaning drivers"
+          title={copy.meaningDrivers}
           items={summary.meaning_drivers}
         />
 
         <CollapsibleList
-          title="Engagement drivers"
+          title={copy.engagementDrivers}
           items={summary.engagement_drivers}
         />
 
         <CollapsibleList
-          title="Energy constraints"
+          title={copy.energyConstraints}
           items={summary.energy_constraints}
         />
       </section>
 
       <section className="card stack" style={{ gap: 14 }}>
         <div className="stack" style={{ gap: 4 }}>
-          <SectionLabel>Guardrails</SectionLabel>
-          <div className="section-title">Constraints</div>
+          <SectionLabel>{copy.guardrails}</SectionLabel>
+          <div className="section-title">{copy.constraints}</div>
         </div>
 
         <ConstraintCards
-          title="Hard constraints"
+          title={copy.hardConstraints}
           items={summary.hard_constraints}
         />
 
         <ConstraintCards
-          title="Soft constraints"
+          title={copy.softConstraints}
           items={summary.soft_constraints}
         />
       </section>
@@ -514,6 +528,7 @@ function MilestoneAccordion({
   milestone: OrganizationWorkerMandatePlan["milestones"][number];
   defaultOpen: boolean;
 }) {
+  const copy = useGuidanceCopy();
   return (
     <details
       open={defaultOpen}
@@ -549,7 +564,8 @@ function MilestoneAccordion({
             }}
           >
             <span className="badge">
-              Step {milestone.sequence}
+              {copy.step.charAt(0).toUpperCase() + copy.step.slice(1)}{" "}
+              {milestone.sequence}
             </span>
 
             <div
@@ -587,7 +603,7 @@ function MilestoneAccordion({
           }}
         >
           <div className="stack" style={{ gap: 6 }}>
-            <SectionLabel>Objective</SectionLabel>
+            <SectionLabel>{copy.objective}</SectionLabel>
 
             <div
               style={{
@@ -608,21 +624,21 @@ function MilestoneAccordion({
         >
           <SoftPanel>
             <CompactList
-              title="Expected progress"
+              title={copy.expectedProgress}
               items={milestone.expected_progress}
             />
           </SoftPanel>
 
           <SoftPanel>
             <CompactList
-              title="Organization support"
+              title={copy.organizationSupport}
               items={milestone.organization_support}
             />
           </SoftPanel>
 
           <SoftPanel>
             <CompactList
-              title="Dependencies"
+              title={copy.dependencies}
               items={milestone.dependencies}
             />
           </SoftPanel>
@@ -637,6 +653,7 @@ function MandatePlanSection({
 }: {
   plan: OrganizationWorkerMandatePlan;
 }) {
+  const copy = useGuidanceCopy();
   return (
     <section className="card stack" style={{ gap: 16 }}>
       <div
@@ -657,12 +674,11 @@ function MandatePlanSection({
               fontSize: 18,
             }}
           >
-            Mandate plan
+            {copy.mandatePlan}
           </h2>
 
           <div className="muted">
-            Adaptive organization-side support path for helping the Worker
-            realize the mandate.
+            {copy.mandatePlanDescription}
           </div>
         </div>
 
@@ -675,7 +691,7 @@ function MandatePlanSection({
         >
           <span className="badge">
             {plan.milestones.length}{" "}
-            {plan.milestones.length === 1 ? "step" : "steps"}
+            {plan.milestones.length === 1 ? copy.step : copy.steps}
           </span>
         </div>
       </div>
@@ -710,11 +726,15 @@ function MandatePlanSection({
                 gap: 10,
               }}
             >
-              <div style={{ fontWeight: 750 }}>Approach</div>
+              <div style={{ fontWeight: 750 }}>{copy.approach}</div>
 
               <CountBadge
                 count={plan.approach.length}
-                label={plan.approach.length === 1 ? "principle" : "principles"}
+                label={
+                  plan.approach.length === 1
+                    ? copy.principle
+                    : copy.principles
+                }
               />
             </div>
           </summary>
@@ -777,14 +797,14 @@ function MandatePlanSection({
                 gap: 10,
               }}
             >
-              <div style={{ fontWeight: 750 }}>Planning assumptions</div>
+              <div style={{ fontWeight: 750 }}>{copy.planningAssumptions}</div>
 
               <CountBadge
                 count={plan.assumptions.length}
                 label={
                   plan.assumptions.length === 1
-                    ? "assumption"
-                    : "assumptions"
+                    ? copy.assumption
+                    : copy.assumptions
                 }
               />
             </div>
@@ -811,6 +831,7 @@ function OrganizationRecommendationsSection({
   recommendations: OrganizationSupportRecommendation[];
   onCompleted?: (recommendationId: number) => void;
 }) {
+  const copy = useGuidanceCopy();
   if (!recommendations.length) {
     return null;
   }
@@ -826,7 +847,7 @@ function OrganizationRecommendationsSection({
         }}
       >
         <div className="stack" style={{ gap: 5 }}>
-          <SectionLabel>Current support actions</SectionLabel>
+          <SectionLabel>{copy.currentSupportActions}</SectionLabel>
 
           <h2
             className="section-title"
@@ -835,11 +856,11 @@ function OrganizationRecommendationsSection({
               fontSize: 18,
             }}
           >
-            Organization recommendations
+            {copy.organizationRecommendations}
           </h2>
 
           <div className="muted">
-            What the organization can do to improve the conditions for the Worker&apos;s next action.
+            {copy.organizationRecommendationsDescription}
           </div>
         </div>
 
@@ -847,8 +868,8 @@ function OrganizationRecommendationsSection({
           count={recommendations.length}
           label={
             recommendations.length === 1
-              ? "recommendation"
-              : "recommendations"
+              ? copy.recommendation
+              : copy.recommendations
           }
         />
       </div>
@@ -889,7 +910,7 @@ function OrganizationRecommendationsSection({
                 }}
               >
                 <span className="badge">
-                  Recommendation {index + 1}
+                  {copy.recommendationNumber(index + 1)}
                 </span>
 
                 <div
@@ -911,7 +932,7 @@ function OrganizationRecommendationsSection({
                 }}
               >
                 {recommendation.completed_at ? (
-                  <span className="badge">Completed</span>
+                  <span className="badge">{copy.completed}</span>
                 ) : null}
 
                 {recommendation.timing ? (
@@ -924,10 +945,10 @@ function OrganizationRecommendationsSection({
                   <button
                     type="button"
                     className="btn"
-                    aria-label={`Mark ${recommendation.title} completed`}
+                    aria-label={copy.markCompleted(recommendation.title)}
                     onClick={() => onCompleted(recommendation.id)}
                   >
-                    Mark completed
+                    {copy.markCompletedButton}
                   </button>
                 ) : null}
               </div>
@@ -942,24 +963,24 @@ function OrganizationRecommendationsSection({
             >
               <SoftPanel>
                 <div className="stack" style={{ gap: 6 }}>
-                  <SectionLabel>Organization action</SectionLabel>
+                  <SectionLabel>{copy.organizationAction}</SectionLabel>
                   <div>{recommendation.action}</div>
                 </div>
               </SoftPanel>
 
               <SoftPanel>
                 <div className="stack" style={{ gap: 6 }}>
-                  <SectionLabel>Example</SectionLabel>
+                  <SectionLabel>{copy.example}</SectionLabel>
                   <div className="muted" style={{ lineHeight: 1.55 }}>
                     {recommendation.example
-                      ?? "Example not available for this historical recommendation."}
+                      ?? copy.historicalExampleUnavailable}
                   </div>
                 </div>
               </SoftPanel>
 
               <SoftPanel>
                 <div className="stack" style={{ gap: 6 }}>
-                  <SectionLabel>Why this support matters</SectionLabel>
+                  <SectionLabel>{copy.rationale}</SectionLabel>
 
                   <div
                     className="muted"
@@ -980,15 +1001,15 @@ function OrganizationRecommendationsSection({
 }
 
 function EmptyGuidance() {
+  const copy = useGuidanceCopy();
   return (
     <div className="card-soft stack" style={{ gap: 6 }}>
       <div style={{ fontWeight: 750 }}>
-        No mandate guidance available yet.
+        {copy.emptyTitle}
       </div>
 
       <div className="muted">
-        Guidance will appear after a professional mandate has been established
-        for this Worker.
+        {copy.emptyDescription}
       </div>
     </div>
   );
@@ -999,13 +1020,14 @@ export function OrganizationWorkerGuidanceCard({
   loading,
   onOrganizationRecommendationCompleted,
 }: OrganizationWorkerGuidanceCardProps) {
+  const copy = useGuidanceCopy();
   const organizationRecommendations =
     guidance?.organization_recommendations ?? [];
 
   if (loading) {
     return (
       <div className="card-soft">
-        Loading organization guidance...
+        {copy.loading}
       </div>
     );
   }
@@ -1055,7 +1077,7 @@ export function OrganizationWorkerGuidanceCard({
               />
             ) : (
               <div className="card-soft">
-                No mandate plan available yet.
+                {copy.planUnavailable}
               </div>
             )}
 
@@ -1068,7 +1090,7 @@ export function OrganizationWorkerGuidanceCard({
       ) : (
         <div className="stack" style={{ gap: 16 }}>
           <div className="card-soft">
-            No mandate summary available yet.
+            {copy.summaryUnavailable}
           </div>
 
           {guidance.mandate_plan ? (

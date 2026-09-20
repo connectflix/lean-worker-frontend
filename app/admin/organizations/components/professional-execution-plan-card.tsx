@@ -1,8 +1,18 @@
 "use client";
 
+import { getOrganizationInsightsChildCardsCopy } from "@/lib/i18n/organization-insights-child-cards";
+import { useAdminUiLanguage } from "@/lib/use-admin-ui-language";
+
 import type {
   ProfessionalExecutionPlanResponse,
 } from "@/lib/types";
+
+
+function useExecutionPlanCopy() {
+  const { uiLanguage } = useAdminUiLanguage();
+
+  return getOrganizationInsightsChildCardsCopy(uiLanguage).executionPlan;
+}
 
 
 type ProfessionalExecutionPlanCardProps = {
@@ -85,6 +95,7 @@ function MilestoneCard({
   milestone: ProfessionalExecutionPlanResponse["milestones"][number];
   defaultOpen: boolean;
 }) {
+  const copy = useExecutionPlanCopy();
   return (
     <details
       className="card-soft"
@@ -126,7 +137,8 @@ function MilestoneCard({
                 flexShrink: 0,
               }}
             >
-              Step {milestone.sequence}
+              {copy.step.charAt(0).toUpperCase() + copy.step.slice(1)}{" "}
+                  {milestone.sequence}
             </span>
 
             <div
@@ -192,7 +204,7 @@ function MilestoneCard({
               marginBottom: 5,
             }}
           >
-            Objective
+            {copy.objective}
           </div>
 
           <div
@@ -223,7 +235,7 @@ function MilestoneCard({
               }}
             >
               <SectionList
-                title="Expected progress"
+                title={copy.expectedProgress}
                 icon="↗"
                 items={milestone.expected_progress}
               />
@@ -240,7 +252,7 @@ function MilestoneCard({
               }}
             >
               <SectionList
-                title="Completion evidence"
+                title={copy.completionEvidence}
                 icon="✓"
                 items={milestone.completion_evidence}
               />
@@ -257,7 +269,7 @@ function MilestoneCard({
               }}
             >
               <SectionList
-                title="Dependencies"
+                title={copy.dependencies}
                 icon="◇"
                 items={milestone.dependencies}
               />
@@ -364,10 +376,11 @@ export function ProfessionalExecutionPlanCard({
   plan,
   loading,
 }: ProfessionalExecutionPlanCardProps) {
+  const copy = useExecutionPlanCopy();
   if (loading) {
     return (
       <div className="card-soft">
-        Loading Professional Execution Plan...
+        {copy.loading}
       </div>
     );
   }
@@ -379,12 +392,11 @@ export function ProfessionalExecutionPlanCard({
         style={{ gap: 6 }}
       >
         <div style={{ fontWeight: 750 }}>
-          No Professional Execution Plan available yet.
+          {copy.emptyTitle}
         </div>
 
         <div className="muted">
-          The persisted plan will appear here once Professional Mandate
-          and Professional Intention are ready for plan generation.
+          {copy.emptyDescription}
         </div>
       </div>
     );
@@ -414,19 +426,18 @@ export function ProfessionalExecutionPlanCard({
             className="badge primary"
             style={{ width: "fit-content" }}
           >
-            Professional planning
+            {copy.badge}
           </div>
 
           <h2
             className="section-title"
             style={{ margin: 0 }}
           >
-            Professional Execution Plan
+            {copy.title}
           </h2>
 
           <div className="muted">
-            Durable professional path derived from the current
-            Professional Mandate and Professional Intention.
+            {copy.description}
           </div>
         </div>
 
@@ -441,15 +452,15 @@ export function ProfessionalExecutionPlanCard({
           <span className="badge">
             {plan.planning_horizon_months}{" "}
             {plan.planning_horizon_months === 1
-              ? "month"
-              : "months"}
+              ? copy.month
+              : copy.months}
           </span>
 
           <span className="badge">
             {plan.milestones.length}{" "}
             {plan.milestones.length === 1
-              ? "step"
-              : "steps"}
+              ? copy.step
+              : copy.steps}
           </span>
         </div>
       </div>
@@ -474,7 +485,7 @@ export function ProfessionalExecutionPlanCard({
             marginBottom: 6,
           }}
         >
-          Plan overview
+          {copy.overview}
         </div>
 
         <div
@@ -504,7 +515,7 @@ export function ProfessionalExecutionPlanCard({
               fontSize: 14,
             }}
           >
-            Roadmap
+            {copy.roadmap}
           </div>
 
           <div
@@ -513,7 +524,7 @@ export function ProfessionalExecutionPlanCard({
               fontSize: 12,
             }}
           >
-            Select a step to view details
+            {copy.selectStep}
           </div>
         </div>
 
@@ -541,7 +552,7 @@ export function ProfessionalExecutionPlanCard({
               fontSize: 14,
             }}
           >
-            Planning context
+            {copy.planningContext}
           </div>
 
           <div
@@ -553,14 +564,14 @@ export function ProfessionalExecutionPlanCard({
             }}
           >
             <SecondarySection
-              title="Guardrails"
-              description="Constraints and boundaries that the plan must preserve."
+              title={copy.guardrails}
+              description={copy.guardrailsDescription}
               items={plan.guardrails}
             />
 
             <SecondarySection
-              title="Planning assumptions"
-              description="Assumptions used where the canonical sources do not provide certainty."
+              title={copy.planningAssumptions}
+              description={copy.planningAssumptionsDescription}
               items={plan.assumptions}
             />
           </div>

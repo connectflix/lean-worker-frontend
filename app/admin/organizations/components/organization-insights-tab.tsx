@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { getOrganizationInsightsCopy } from "@/lib/i18n/organization-insights";
+import { useAdminUiLanguage } from "@/lib/use-admin-ui-language";
 import {
   completeAdminWorkerRecommendation,
   getAdminWorkerProfessionalExecutionPlan,
@@ -184,6 +186,9 @@ export function OrganizationInsightsTab({
   onScrollToRecommendation,
   onOrganizationRecommendationCompleted,
 }: OrganizationInsightsTabProps) {
+  const { uiLanguage } = useAdminUiLanguage();
+  const copy = getOrganizationInsightsCopy(uiLanguage);
+
   const [
     professionalIntentionCompletionWorkspace,
     setProfessionalIntentionCompletionWorkspace,
@@ -373,7 +378,7 @@ export function OrganizationInsightsTab({
       );
     } catch {
       setProfessionalIntentionInitializationError(
-        "Professional Intention initialization failed. Please try again."
+        copy.errors.intentionInitializationFailed
       );
     } finally {
       setProfessionalIntentionInitializationLoading(false);
@@ -396,7 +401,7 @@ export function OrganizationInsightsTab({
       targetHorizonMonths < 1
     ) {
       setProfessionalIntentionClarificationError(
-        "Enter the worker's answer and a valid target horizon in months.",
+        copy.errors.targetHorizonValidation,
       );
       return;
     }
@@ -422,7 +427,7 @@ export function OrganizationInsightsTab({
       );
     } catch {
       setProfessionalIntentionClarificationError(
-        "Recording the worker clarification failed. Please try again.",
+        copy.errors.recordingClarificationFailed,
       );
     } finally {
       setProfessionalIntentionClarificationLoading(false);
@@ -440,7 +445,7 @@ export function OrganizationInsightsTab({
 
     if (!answerText || !movementSummary) {
       setProfessionalIntentionClarificationError(
-        "Enter the worker's answer and a movement summary.",
+        copy.errors.movementDefinitionValidation,
       );
       return;
     }
@@ -466,7 +471,7 @@ export function OrganizationInsightsTab({
       );
     } catch {
       setProfessionalIntentionClarificationError(
-        "Recording the worker clarification failed. Please try again.",
+        copy.errors.recordingClarificationFailed,
       );
     } finally {
       setProfessionalIntentionClarificationLoading(false);
@@ -484,7 +489,7 @@ export function OrganizationInsightsTab({
 
     if (!answerText || !targetIdentity) {
       setProfessionalIntentionClarificationError(
-        "Enter the worker's answer and a target identity.",
+        copy.errors.targetStateValidation,
       );
       return;
     }
@@ -510,7 +515,7 @@ export function OrganizationInsightsTab({
       );
     } catch {
       setProfessionalIntentionClarificationError(
-        "Recording the worker clarification failed. Please try again.",
+        copy.errors.recordingClarificationFailed,
       );
     } finally {
       setProfessionalIntentionClarificationLoading(false);
@@ -528,7 +533,7 @@ export function OrganizationInsightsTab({
 
     if (!answerText || !desiredImpact) {
       setProfessionalIntentionClarificationError(
-        "Enter the worker's answer and a desired impact.",
+        copy.errors.desiredOutcomesValidation,
       );
       return;
     }
@@ -554,7 +559,7 @@ export function OrganizationInsightsTab({
       );
     } catch {
       setProfessionalIntentionClarificationError(
-        "Recording the worker clarification failed. Please try again.",
+        copy.errors.recordingClarificationFailed,
       );
     } finally {
       setProfessionalIntentionClarificationLoading(false);
@@ -581,7 +586,7 @@ export function OrganizationInsightsTab({
       });
     } catch {
       setRecommendationCompletionError(
-        "Recommendation completion failed. Please try again.",
+        copy.errors.recommendationCompletionFailed,
       );
     } finally {
       setRecommendationCompletionLoadingId(null);
@@ -599,7 +604,7 @@ export function OrganizationInsightsTab({
 
     if (!answerText || !shortTermMission) {
       setProfessionalIntentionClarificationError(
-        "Enter the worker's answer and a short-term mission.",
+        copy.errors.shortTermMissionValidation,
       );
       return;
     }
@@ -625,7 +630,7 @@ export function OrganizationInsightsTab({
       );
     } catch {
       setProfessionalIntentionClarificationError(
-        "Recording the worker clarification failed. Please try again.",
+        copy.errors.recordingClarificationFailed,
       );
     } finally {
       setProfessionalIntentionClarificationLoading(false);
@@ -643,7 +648,7 @@ export function OrganizationInsightsTab({
 
     if (!answerText || !professionalIdentity) {
       setProfessionalMandateClarificationError(
-        "Enter the worker's answer and professional identity.",
+        copy.errors.mandateProfessionalIdentityValidation,
       );
       return;
     }
@@ -669,7 +674,7 @@ export function OrganizationInsightsTab({
       );
     } catch {
       setProfessionalMandateClarificationError(
-        "Recording the worker clarification failed. Please try again.",
+        copy.errors.recordingClarificationFailed,
       );
     } finally {
       setProfessionalMandateClarificationLoading(false);
@@ -687,7 +692,7 @@ export function OrganizationInsightsTab({
 
     if (!answerText || !expectedOutcome) {
       setProfessionalMandateClarificationError(
-        "Enter the worker's answer and an expected outcome.",
+        copy.errors.mandateExpectedOutcomeValidation,
       );
       return;
     }
@@ -713,7 +718,7 @@ export function OrganizationInsightsTab({
       );
     } catch {
       setProfessionalMandateClarificationError(
-        "Recording the worker clarification failed. Please try again.",
+        copy.errors.recordingClarificationFailed,
       );
     } finally {
       setProfessionalMandateClarificationLoading(false);
@@ -731,7 +736,7 @@ export function OrganizationInsightsTab({
 
     if (!answerText || !successDefinition) {
       setProfessionalMandateClarificationError(
-        "Enter the worker's answer and a success definition.",
+        copy.errors.mandateSuccessDefinitionValidation,
       );
       return;
     }
@@ -757,7 +762,7 @@ export function OrganizationInsightsTab({
       );
     } catch {
       setProfessionalMandateClarificationError(
-        "Recording the worker clarification failed. Please try again.",
+        copy.errors.recordingClarificationFailed,
       );
     } finally {
       setProfessionalMandateClarificationLoading(false);
@@ -781,7 +786,7 @@ export function OrganizationInsightsTab({
       (!meaningDriver && !engagementDriver && !contributionDriver)
     ) {
       setProfessionalMandateClarificationError(
-        "Enter the worker's answer and at least one meaning, engagement, or contribution driver.",
+        copy.errors.mandateMeaningValidation,
       );
       return;
     }
@@ -817,7 +822,7 @@ export function OrganizationInsightsTab({
       );
     } catch {
       setProfessionalMandateClarificationError(
-        "Recording the worker clarification failed. Please try again.",
+        copy.errors.recordingClarificationFailed,
       );
     } finally {
       setProfessionalMandateClarificationLoading(false);
@@ -837,7 +842,7 @@ export function OrganizationInsightsTab({
 
     if (!answerText || (!hardConstraint && !nonNegotiable)) {
       setProfessionalMandateClarificationError(
-        "Enter the worker's answer and at least one constraint or non-negotiable.",
+        copy.errors.mandateConstraintsValidation,
       );
       return;
     }
@@ -869,7 +874,7 @@ export function OrganizationInsightsTab({
       );
     } catch {
       setProfessionalMandateClarificationError(
-        "Recording the worker clarification failed. Please try again.",
+        copy.errors.recordingClarificationFailed,
       );
     } finally {
       setProfessionalMandateClarificationLoading(false);
@@ -889,7 +894,7 @@ export function OrganizationInsightsTab({
 
     if (!answerText || (!timeCapacity && !energyConstraint)) {
       setProfessionalMandateClarificationError(
-        "Enter the worker's answer and at least one time capacity or energy constraint.",
+        copy.errors.mandateCapacityValidation,
       );
       return;
     }
@@ -921,7 +926,7 @@ export function OrganizationInsightsTab({
       );
     } catch {
       setProfessionalMandateClarificationError(
-        "Recording the worker clarification failed. Please try again.",
+        copy.errors.recordingClarificationFailed,
       );
     } finally {
       setProfessionalMandateClarificationLoading(false);
@@ -1009,8 +1014,8 @@ export function OrganizationInsightsTab({
   if (workerSummaryLoading) {
     return (
       <div className="card stack">
-        <div className="section-title">Worker performance workspace</div>
-        <div className="muted">Loading worker summary...</div>
+        <div className="section-title">{copy.workspaceTitle}</div>
+        <div className="muted">{copy.loadingWorkerSummary}</div>
       </div>
     );
   }
@@ -1018,8 +1023,8 @@ export function OrganizationInsightsTab({
   if (!selectedWorkerSummary) {
     return (
       <div className="card stack">
-        <div className="section-title">Worker performance workspace</div>
-        <div className="muted">Select a worker to view details.</div>
+        <div className="section-title">{copy.workspaceTitle}</div>
+        <div className="muted">{copy.selectWorker}</div>
       </div>
     );
   }
@@ -1045,11 +1050,12 @@ export function OrganizationInsightsTab({
             </div>
 
             <div className="section-title" style={{ fontSize: 20 }}>
-              Worker performance workspace
+              {copy.workspaceTitle}
             </div>
 
             <div className="muted">
-              Selected worker: <strong>{selectedWorkerSummary.worker.display_name}</strong>
+              {copy.selectedWorker}{" "}
+              <strong>{selectedWorkerSummary.worker.display_name}</strong>
             </div>
           </div>
         </div>
@@ -1057,39 +1063,43 @@ export function OrganizationInsightsTab({
         <div className="admin-kpi-scroll">
           <div className="admin-kpi-row admin-kpi-row--6">
             <InsightMetricCard
-              label="Sessions"
+              label={copy.metrics.sessions}
               value={selectedWorkerSummary.session_count}
-              helper="AI coach sessions"
+              helper={copy.metrics.sessionsHelper}
             />
 
             <InsightMetricCard
-              label="External conversations"
+              label={copy.metrics.externalConversations}
               value={selectedWorkerSummary.external_conversation_count}
-              helper="Manually added material"
+              helper={copy.metrics.externalConversationsHelper}
             />
 
             <InsightMetricCard
-              label="Recommendations"
+              label={copy.metrics.recommendations}
               value={selectedWorkerSummary.recommendation_count}
-              helper="Generated actions"
+              helper={copy.metrics.recommendationsHelper}
             />
 
             <InsightMetricCard
-              label="Artifacts"
+              label={copy.metrics.artifacts}
               value={selectedWorkerSummary.artifact_count}
-              helper="Ebooks, audio or paid assets"
+              helper={copy.metrics.artifactsHelper}
             />
 
             <InsightMetricCard
-              label="Levers"
+              label={copy.metrics.levers}
               value={selectedWorkerSummary.lever_count}
-              helper="Matched support resources"
+              helper={copy.metrics.leversHelper}
             />
 
             <InsightMetricCard
-              label="Blueprint"
-              value={selectedWorkerSummary.career_blueprint ? "Available" : "Not available"}
-              helper="Career identity signal"
+              label={copy.metrics.blueprint}
+              value={
+                selectedWorkerSummary.career_blueprint
+                  ? copy.metrics.blueprintAvailable
+                  : copy.metrics.blueprintUnavailable
+              }
+              helper={copy.metrics.blueprintHelper}
             />
           </div>
         </div>
@@ -1110,52 +1120,52 @@ export function OrganizationInsightsTab({
 
       <div className="grid grid-2" style={{ alignItems: "start" }}>
         <div className="card stack" style={{ gap: 14 }}>
-          <div className="section-title">Worker profile</div>
+          <div className="section-title">{copy.workerProfile}</div>
 
           <div className="card-soft stack" style={{ gap: 0 }}>
-            <DetailRow label="Name" value={selectedWorkerSummary.worker.display_name} />
-            <DetailRow label="Email" value={selectedWorkerSummary.worker.email} />
-            <DetailRow label="Business ID" value={selectedWorkerSummary.worker.business_id} />
-            <DetailRow label="Role" value={selectedWorkerSummary.worker.current_role} />
-            <DetailRow label="Industry" value={selectedWorkerSummary.worker.industry} />
-            <DetailRow label="Language" value={selectedWorkerSummary.worker.language} />
-            <DetailRow label="Subscription" value={selectedWorkerSummary.worker.subscription_pack} />
-            <DetailRow label="Subscription paid" value={formatCurrency(subscriptionPaid)} />
-            <DetailRow label="Organization share" value={formatCurrency(subscriptionPaid * 0.75)} />
-            <DetailRow label="Profession" value={selectedWorkerSummary.worker.profession} />
-            <DetailRow label="Location" value={selectedWorkerSummary.worker.location} />
+            <DetailRow label={copy.profileFields.name} value={selectedWorkerSummary.worker.display_name} />
+            <DetailRow label={copy.profileFields.email} value={selectedWorkerSummary.worker.email} />
+            <DetailRow label={copy.profileFields.businessId} value={selectedWorkerSummary.worker.business_id} />
+            <DetailRow label={copy.profileFields.role} value={selectedWorkerSummary.worker.current_role} />
+            <DetailRow label={copy.profileFields.industry} value={selectedWorkerSummary.worker.industry} />
+            <DetailRow label={copy.profileFields.language} value={selectedWorkerSummary.worker.language} />
+            <DetailRow label={copy.profileFields.subscription} value={selectedWorkerSummary.worker.subscription_pack} />
+            <DetailRow label={copy.profileFields.subscriptionPaid} value={formatCurrency(subscriptionPaid)} />
+            <DetailRow label={copy.profileFields.organizationShare} value={formatCurrency(subscriptionPaid * 0.75)} />
+            <DetailRow label={copy.profileFields.profession} value={selectedWorkerSummary.worker.profession} />
+            <DetailRow label={copy.profileFields.location} value={selectedWorkerSummary.worker.location} />
           </div>
         </div>
 
         <div className="card stack" style={{ gap: 14 }}>
-          <div className="section-title">Career blueprint</div>
+          <div className="section-title">{copy.careerBlueprint}</div>
 
           {selectedWorkerSummary.career_blueprint ? (
             <div className="card-soft stack" style={{ gap: 0 }}>
               <DetailRow
-                label="Identity"
+                label={copy.careerBlueprintFields.identity}
                 value={selectedWorkerSummary.career_blueprint.identity_text}
               />
-              <DetailRow label="Vision" value={selectedWorkerSummary.career_blueprint.vision_text} />
+              <DetailRow label={copy.careerBlueprintFields.vision} value={selectedWorkerSummary.career_blueprint.vision_text} />
               <DetailRow
-                label="Talent focus"
+                label={copy.careerBlueprintFields.talentFocus}
                 value={selectedWorkerSummary.career_blueprint.talent_focus_text}
               />
               <DetailRow
-                label="Career focus"
+                label={copy.careerBlueprintFields.careerFocus}
                 value={selectedWorkerSummary.career_blueprint.career_focus_text}
               />
               <DetailRow
-                label="Inspiration person"
+                label={copy.careerBlueprintFields.inspirationPerson}
                 value={selectedWorkerSummary.career_blueprint.inspiration_person}
               />
               <DetailRow
-                label="Aspiration person"
+                label={copy.careerBlueprintFields.aspirationPerson}
                 value={selectedWorkerSummary.career_blueprint.aspiration_person}
               />
             </div>
           ) : (
-            <div className="card-soft muted">No career blueprint available.</div>
+            <div className="card-soft muted">{copy.noCareerBlueprint}</div>
           )}
         </div>
       </div>
@@ -1166,21 +1176,24 @@ export function OrganizationInsightsTab({
           style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}
         >
           <div className="stack" style={{ gap: 4 }}>
-            <div className="section-title">Levers workspace</div>
+            <div className="section-title">{copy.leversWorkspace}</div>
             <div className="muted">
-              Search, filter and review levers connected to the selected worker.
+              {copy.leversWorkspaceDescription}
             </div>
           </div>
 
           <span className="badge">
-            {filteredLevers.length} shown / {selectedWorkerSummary.lever_count} total
+            {copy.leversShown(
+              filteredLevers.length,
+              selectedWorkerSummary.lever_count,
+            )}
           </span>
         </div>
 
         <div className="grid grid-3">
           <input
             className="input"
-            placeholder="Search levers by name, category, provider, reason..."
+            placeholder={copy.searchLeversPlaceholder}
             value={leverSearch}
             onChange={(event) => onLeverSearchChange(event.target.value)}
           />
@@ -1190,7 +1203,7 @@ export function OrganizationInsightsTab({
             value={leverCategoryFilter}
             onChange={(event) => onLeverCategoryFilterChange(event.target.value)}
           >
-            <option value="all">All categories</option>
+            <option value="all">{copy.allCategories}</option>
             {leverCategories.map((category) => (
               <option key={category} value={category}>
                 {category}
@@ -1203,9 +1216,9 @@ export function OrganizationInsightsTab({
             value={leverSortMode}
             onChange={(event) => onLeverSortModeChange(event.target.value as LeverSortMode)}
           >
-            <option value="highlighted">Sort by highlighted / rank</option>
-            <option value="most_used">Sort by most used</option>
-            <option value="name">Sort by name</option>
+            <option value="highlighted">{copy.sortHighlighted}</option>
+            <option value="most_used">{copy.sortMostUsed}</option>
+            <option value="name">{copy.sortName}</option>
           </select>
         </div>
       </div>
@@ -1231,9 +1244,9 @@ export function OrganizationInsightsTab({
         }}
       >
         <ScrollSection
-          title="Sessions"
+          title={copy.collections.sessions}
           count={selectedWorkerSummary.sessions.length}
-          emptyLabel="No sessions found."
+          emptyLabel={copy.collections.noSessions}
         >
           {selectedWorkerSummary.sessions.map((session) => (
             <div
@@ -1253,7 +1266,7 @@ export function OrganizationInsightsTab({
                 <div className="muted">{formatDateTime(session.started_at)}</div>
 
                 <div style={{ fontSize: 14, lineHeight: 1.55, wordBreak: "break-word" }}>
-                  {session.summary || "No summary available."}
+                  {session.summary || copy.collections.noSummary}
                 </div>
               </div>
             </div>
@@ -1261,9 +1274,9 @@ export function OrganizationInsightsTab({
         </ScrollSection>
 
         <ScrollSection
-          title="Recommendations"
+          title={copy.collections.recommendations}
           count={selectedWorkerSummary.recommendations.length}
-          emptyLabel="No recommendations found."
+          emptyLabel={copy.collections.noRecommendations}
         >
           {selectedWorkerSummary.recommendations.map((recommendation) => {
             const relatedLevers = relatedLeversByRecommendationId.get(recommendation.id) ?? [];
@@ -1303,20 +1316,20 @@ export function OrganizationInsightsTab({
                       <button
                         type="button"
                         className="button"
-                        aria-label={`Mark recommendation ${recommendation.id} as completed`}
+                        aria-label={copy.collections.markCompletedAria(recommendation.id)}
                         disabled={recommendationCompletionLoadingId === recommendation.id}
                         onClick={() => void handleCompleteRecommendation(recommendation.id)}
                       >
                         {recommendationCompletionLoadingId === recommendation.id
-                          ? "Marking completed..."
-                          : "Mark as completed"}
+                          ? copy.collections.markingCompleted
+                          : copy.collections.markCompleted}
                       </button>
                     </div>
                   ) : null}
 
                   {relatedLevers.length > 0 ? (
                     <div className="stack" style={{ gap: 6 }}>
-                      <div className="muted">Related levers</div>
+                      <div className="muted">{copy.collections.relatedLevers}</div>
 
                       <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                         {relatedLevers.map((lever) => (
@@ -1334,9 +1347,9 @@ export function OrganizationInsightsTab({
         </ScrollSection>
 
         <ScrollSection
-          title="Artifacts"
+          title={copy.collections.artifacts}
           count={selectedWorkerSummary.artifacts.length}
-          emptyLabel="No artifacts found."
+          emptyLabel={copy.collections.noArtifacts}
         >
           {selectedWorkerSummary.artifacts.map((artifact) => (
             <div
@@ -1371,9 +1384,9 @@ export function OrganizationInsightsTab({
         </ScrollSection>
 
         <ScrollSection
-          title="Levers"
+          title={copy.collections.levers}
           count={filteredLevers.length}
-          emptyLabel="No levers found."
+          emptyLabel={copy.collections.noLevers}
         >
           {filteredLevers.map((lever) => (
             <div
@@ -1388,11 +1401,11 @@ export function OrganizationInsightsTab({
                 <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                   <span className="badge">#{lever.id}</span>
                   <span className="badge">{lever.category}</span>
-                  <span className="badge">{lever.is_active ? "active" : "inactive"}</span>
-                  <span className="badge">used {lever.usage_count}x</span>
+                  <span className="badge">{lever.is_active ? copy.collections.active : copy.collections.inactive}</span>
+                  <span className="badge">{copy.collections.used(lever.usage_count)}</span>
 
-                  {lever.is_highlighted ? <span className="badge primary">highlighted</span> : null}
-                  {lever.is_default ? <span className="badge">default</span> : null}
+                  {lever.is_highlighted ? <span className="badge primary">{copy.collections.highlighted}</span> : null}
+                  {lever.is_default ? <span className="badge">{copy.collections.defaultLabel}</span> : null}
                 </div>
 
                 <div className="section-title" style={{ fontSize: 15 }}>
@@ -1404,29 +1417,31 @@ export function OrganizationInsightsTab({
                 </div>
 
                 <div className="muted">
-                  Provider: {lever.provider_type || "—"} · Paid: {lever.is_paid ? "yes" : "no"}
+                  {copy.collections.provider}: {lever.provider_type || "—"} ·{" "}
+                  {copy.collections.paid}:{" "}
+                  {lever.is_paid ? copy.collections.yes : copy.collections.no}
                 </div>
 
                 {lever.price_min_eur != null || lever.price_max_eur != null ? (
                   <div className="muted">
-                    Price:{" "}
+                    {copy.collections.price}:{" "}
                     {lever.price_min_eur != null && lever.price_max_eur != null
                       ? `€${lever.price_min_eur} - €${lever.price_max_eur}`
                       : lever.price_min_eur != null
-                        ? `from €${lever.price_min_eur}`
-                        : `up to €${lever.price_max_eur}`}
+                        ? copy.collections.fromPrice(lever.price_min_eur)
+                        : copy.collections.upToPrice(lever.price_max_eur!)}
                   </div>
                 ) : null}
 
                 {lever.match_reasons.length > 0 ? (
                   <div className="muted" style={{ wordBreak: "break-word" }}>
-                    Match reasons: {lever.match_reasons.join(" • ")}
+                    {copy.collections.matchReasons}: {lever.match_reasons.join(" • ")}
                   </div>
                 ) : null}
 
                 {lever.recommendation_ids.length > 0 ? (
                   <div className="stack" style={{ gap: 6 }}>
-                    <div className="muted">Linked recommendations</div>
+                    <div className="muted">{copy.collections.linkedRecommendations}</div>
 
                     <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                       {lever.recommendation_ids.map((recommendationId) => (
@@ -1437,7 +1452,7 @@ export function OrganizationInsightsTab({
                           style={{ padding: "6px 10px", minHeight: 32, fontSize: 12 }}
                           onClick={() => onScrollToRecommendation(recommendationId)}
                         >
-                          Recommendation #{recommendationId}
+                          {copy.collections.recommendation(recommendationId)}
                         </button>
                       ))}
                     </div>
@@ -1447,7 +1462,7 @@ export function OrganizationInsightsTab({
                 {lever.url ? (
                   <div>
                     <a href={lever.url} target="_blank" rel="noreferrer" className="link-button">
-                      Open lever link
+                      {copy.collections.openLeverLink}
                     </a>
                   </div>
                 ) : null}
@@ -1468,16 +1483,13 @@ export function OrganizationInsightsTab({
         >
           <div className="stack" style={{ gap: 4 }}>
             <div className="section-title">
-              Professional Mandate Completion Support
+              {copy.mandate.title}
             </div>
-            <div className="muted">
-              Clarification support derived from canonical Professional Mandate
-              readiness. Worker-owned professional truth remains authoritative.
-            </div>
+            <div className="muted">{copy.mandate.description}</div>
           </div>
 
           {professionalMandateSupportLoading ? (
-            <span className="badge">Loading...</span>
+            <span className="badge">{copy.clarification.loading}</span>
           ) : professionalMandateSupport?.readiness ? (
             <span className="badge">
               {professionalMandateSupport.readiness.readiness_state
@@ -1507,8 +1519,7 @@ export function OrganizationInsightsTab({
         >
           {professionalMandateSupport?.readiness?.decision_ready ? (
             <div className="card-soft muted">
-              Professional Mandate clarification is complete. No further
-              clarification is currently required.
+              {copy.mandate.completed}
             </div>
           ) : null}
 
@@ -1563,15 +1574,15 @@ export function OrganizationInsightsTab({
                     </div>
 
                     <div className="stack" style={{ gap: 4 }}>
-                      <strong>Suggested clarification</strong>
+                      <strong>{copy.clarification.suggestedClarification}</strong>
                       <div>{item.prompt}</div>
                     </div>
 
                     <div className="card-soft stack" style={{ gap: 10 }}>
-                      <strong>Record mandate worker answer</strong>
+                      <strong>{copy.mandate.recordSectionTitle}</strong>
 
                       <label className="stack" style={{ gap: 6 }}>
-                        <span>Mandate worker answer</span>
+                        <span>{copy.mandate.workerAnswer}</span>
                         <textarea
                           className="input"
                           value={professionalMandateClarificationAnswer}
@@ -1582,13 +1593,13 @@ export function OrganizationInsightsTab({
                             )
                           }
                           rows={3}
-                          placeholder="Record the worker's exact answer."
+                          placeholder={copy.clarification.recordExactAnswerPlaceholder}
                         />
                       </label>
 
                       {item.dimension === "professional_identity" ? (
                         <label className="stack" style={{ gap: 6 }}>
-                          <span>Professional identity</span>
+                          <span>{copy.mandate.professionalIdentity}</span>
                           <textarea
                             className="input"
                             value={professionalMandateProfessionalIdentity}
@@ -1605,7 +1616,7 @@ export function OrganizationInsightsTab({
 
                       {item.dimension === "expected_outcomes" ? (
                         <label className="stack" style={{ gap: 6 }}>
-                          <span>Expected outcome</span>
+                          <span>{copy.mandate.expectedOutcome}</span>
                           <textarea
                             className="input"
                             value={professionalMandateExpectedOutcome}
@@ -1622,7 +1633,7 @@ export function OrganizationInsightsTab({
 
                       {item.dimension === "success_definition" ? (
                         <label className="stack" style={{ gap: 6 }}>
-                          <span>Success definition</span>
+                          <span>{copy.mandate.successDefinition}</span>
                           <textarea
                             className="input"
                             value={professionalMandateSuccessDefinition}
@@ -1640,7 +1651,7 @@ export function OrganizationInsightsTab({
                       {item.dimension === "meaning_and_contribution" ? (
                         <>
                           <label className="stack" style={{ gap: 6 }}>
-                            <span>Meaning driver</span>
+                            <span>{copy.mandate.meaningDriver}</span>
                             <textarea
                               className="input"
                               value={professionalMandateMeaningDriver}
@@ -1655,7 +1666,7 @@ export function OrganizationInsightsTab({
                           </label>
 
                           <label className="stack" style={{ gap: 6 }}>
-                            <span>Engagement driver</span>
+                            <span>{copy.mandate.engagementDriver}</span>
                             <textarea
                               className="input"
                               value={professionalMandateEngagementDriver}
@@ -1670,7 +1681,7 @@ export function OrganizationInsightsTab({
                           </label>
 
                           <label className="stack" style={{ gap: 6 }}>
-                            <span>Contribution driver</span>
+                            <span>{copy.mandate.contributionDriver}</span>
                             <textarea
                               className="input"
                               value={professionalMandateContributionDriver}
@@ -1690,7 +1701,7 @@ export function OrganizationInsightsTab({
                       "constraints_and_non_negotiables" ? (
                         <>
                           <label className="stack" style={{ gap: 6 }}>
-                            <span>Hard constraint</span>
+                            <span>{copy.mandate.hardConstraint}</span>
                             <textarea
                               className="input"
                               value={professionalMandateHardConstraint}
@@ -1705,7 +1716,7 @@ export function OrganizationInsightsTab({
                           </label>
 
                           <label className="stack" style={{ gap: 6 }}>
-                            <span>Non-negotiable</span>
+                            <span>{copy.mandate.nonNegotiable}</span>
                             <textarea
                               className="input"
                               value={professionalMandateNonNegotiable}
@@ -1724,7 +1735,7 @@ export function OrganizationInsightsTab({
                       {item.dimension === "capacity_and_sustainability" ? (
                         <>
                           <label className="stack" style={{ gap: 6 }}>
-                            <span>Time capacity</span>
+                            <span>{copy.mandate.timeCapacity}</span>
                             <textarea
                               className="input"
                               value={professionalMandateTimeCapacity}
@@ -1739,7 +1750,7 @@ export function OrganizationInsightsTab({
                           </label>
 
                           <label className="stack" style={{ gap: 6 }}>
-                            <span>Energy constraint</span>
+                            <span>{copy.mandate.energyConstraint}</span>
                             <textarea
                               className="input"
                               value={professionalMandateEnergyConstraint}
@@ -1776,14 +1787,14 @@ export function OrganizationInsightsTab({
                           }
                         >
                           {professionalMandateClarificationLoading
-                            ? "Recording..."
-                            : "Record mandate worker answer"}
+                            ? copy.clarification.recording
+                            : copy.mandate.recordAction}
                         </button>
                       </div>
                     </div>
 
                     <div className="muted">
-                      Requested source: {item.source_scope.join(", ")}
+                      {copy.clarification.requestedSource}{" "} {item.source_scope.join(", ")}
                     </div>
                   </div>
                 ),
@@ -1800,18 +1811,14 @@ export function OrganizationInsightsTab({
         >
           <div className="stack" style={{ gap: 4 }}>
             <div className="section-title">
-              Professional Intention Completion Workspace
+              {copy.intention.title}
             </div>
-            <div className="muted">
-              Clarification support for the Organization coach. Candidate evidence
-              helps prepare the worker conversation without replacing worker-owned
-              professional truth.
-            </div>
+            <div className="muted">{copy.intention.description}</div>
           </div>
 
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
             {professionalIntentionCompletionWorkspaceLoading ? (
-              <span className="badge">Loading...</span>
+              <span className="badge">{copy.clarification.loading}</span>
             ) : professionalIntentionCompletionWorkspace ? (
               <span className="badge">
                 {professionalIntentionCompletionWorkspace.readiness_state
@@ -1828,8 +1835,8 @@ export function OrganizationInsightsTab({
                 onClick={handleInitializeProfessionalIntention}
               >
                 {professionalIntentionInitializationLoading
-                  ? "Initializing..."
-                  : "Initialize Professional Intention"}
+                  ? copy.intention.initializing
+                  : copy.intention.initializeAction}
               </button>
             ) : null}
           </div>
@@ -1865,24 +1872,19 @@ export function OrganizationInsightsTab({
         >
           {!professionalIntentionCompletionWorkspaceLoading &&
         !professionalIntentionCompletionWorkspace ? (
-          <div className="muted">
-            No clarification workspace is currently available for this worker.
-          </div>
+          <div className="muted">{copy.intention.unavailable}</div>
         ) : null}
 
         {professionalIntentionCompletionWorkspace?.completion_closed ? (
           <div className="card-soft muted">
-            Professional Intention clarification is complete. No further
-            clarification is currently required.
+            {copy.intention.completed}
           </div>
         ) : null}
 
         {professionalIntentionCompletionWorkspace?.items ? (
           professionalIntentionCompletionWorkspace.items.length === 0 &&
           !professionalIntentionCompletionWorkspace.completion_closed ? (
-            <div className="muted">
-              No blocking clarification item is currently available.
-            </div>
+            <div className="muted">{copy.intention.noBlockingItem}</div>
           ) : (
             <div className="stack" style={{ gap: 10 }}>
               {professionalIntentionCompletionWorkspace.items.map(
@@ -1922,21 +1924,21 @@ export function OrganizationInsightsTab({
                     </div>
 
                     <div className="stack" style={{ gap: 4 }}>
-                      <strong>Suggested clarification</strong>
+                      <strong>{copy.clarification.suggestedClarification}</strong>
                       <div>{item.suggested_question}</div>
                     </div>
 
                     <div className="stack" style={{ gap: 4 }}>
-                      <strong>Resolution condition</strong>
+                      <strong>{copy.intention.resolutionCondition}</strong>
                       <div className="muted">{item.resolution_condition}</div>
                     </div>
 
                     {item.dimension === "target_horizon" ? (
                       <div className="card-soft stack" style={{ gap: 10 }}>
-                        <strong>Record worker answer</strong>
+                        <strong>{copy.intention.recordSectionTitle}</strong>
 
                         <label className="stack" style={{ gap: 6 }}>
-                          <span>Worker answer</span>
+                          <span>{copy.intention.workerAnswer}</span>
                           <textarea
                             className="input"
                             value={professionalIntentionClarificationAnswer}
@@ -1947,12 +1949,12 @@ export function OrganizationInsightsTab({
                               )
                             }
                             rows={3}
-                            placeholder="Record the worker's exact answer."
+                            placeholder={copy.clarification.recordExactAnswerPlaceholder}
                           />
                         </label>
 
                         <label className="stack" style={{ gap: 6 }}>
-                          <span>Target horizon in months</span>
+                          <span>{copy.intention.targetHorizonMonths}</span>
                           <input
                             className="input"
                             type="number"
@@ -1976,25 +1978,23 @@ export function OrganizationInsightsTab({
                             onClick={handleRecordTargetHorizonClarification}
                           >
                             {professionalIntentionClarificationLoading
-                              ? "Recording..."
-                              : "Record worker answer"}
+                              ? copy.clarification.recording
+                              : copy.intention.recordAction}
                           </button>
                         </div>
 
                         <div className="fine-print">
-                          The worker&apos;s exact answer is preserved as worker-authored
-                          truth. The horizon in months is the normalized structured
-                          value used to update the canonical Professional Intention.
+                          {copy.intention.targetHorizonHelp}
                         </div>
                       </div>
                     ) : null}
 
                     {item.dimension === "movement_definition" ? (
                       <div className="card-soft stack" style={{ gap: 10 }}>
-                        <strong>Record worker answer</strong>
+                        <strong>{copy.intention.recordSectionTitle}</strong>
 
                         <label className="stack" style={{ gap: 6 }}>
-                          <span>Worker answer</span>
+                          <span>{copy.intention.workerAnswer}</span>
                           <textarea
                             className="input"
                             value={professionalIntentionClarificationAnswer}
@@ -2005,12 +2005,12 @@ export function OrganizationInsightsTab({
                               )
                             }
                             rows={3}
-                            placeholder="Record the worker's exact answer."
+                            placeholder={copy.clarification.recordExactAnswerPlaceholder}
                           />
                         </label>
 
                         <label className="stack" style={{ gap: 6 }}>
-                          <span>Movement summary</span>
+                          <span>{copy.intention.movementSummary}</span>
                           <textarea
                             className="input"
                             value={professionalIntentionClarificationMovementSummary}
@@ -2021,7 +2021,7 @@ export function OrganizationInsightsTab({
                               )
                             }
                             rows={3}
-                            placeholder="Capture the normalized professional movement."
+                            placeholder={copy.intention.movementSummaryPlaceholder}
                           />
                         </label>
 
@@ -2033,25 +2033,23 @@ export function OrganizationInsightsTab({
                             onClick={handleRecordMovementDefinitionClarification}
                           >
                             {professionalIntentionClarificationLoading
-                              ? "Recording..."
-                              : "Record worker answer"}
+                              ? copy.clarification.recording
+                              : copy.intention.recordAction}
                           </button>
                         </div>
 
                         <div className="fine-print">
-                          The worker&apos;s exact answer is preserved as worker-authored
-                          truth. The movement summary is the normalized structured
-                          value used to update the canonical Professional Intention.
+                          {copy.intention.movementHelp}
                         </div>
                       </div>
                     ) : null}
 
                     {item.dimension === "target_state" ? (
                       <div className="card-soft stack" style={{ gap: 10 }}>
-                        <strong>Record worker answer</strong>
+                        <strong>{copy.intention.recordSectionTitle}</strong>
 
                         <label className="stack" style={{ gap: 6 }}>
-                          <span>Worker answer</span>
+                          <span>{copy.intention.workerAnswer}</span>
                           <textarea
                             className="input"
                             value={professionalIntentionClarificationAnswer}
@@ -2062,12 +2060,12 @@ export function OrganizationInsightsTab({
                               )
                             }
                             rows={3}
-                            placeholder="Record the worker's exact answer."
+                            placeholder={copy.clarification.recordExactAnswerPlaceholder}
                           />
                         </label>
 
                         <label className="stack" style={{ gap: 6 }}>
-                          <span>Target identity</span>
+                          <span>{copy.intention.targetIdentity}</span>
                           <textarea
                             className="input"
                             value={professionalIntentionClarificationTargetIdentity}
@@ -2078,7 +2076,7 @@ export function OrganizationInsightsTab({
                               )
                             }
                             rows={3}
-                            placeholder="Capture the normalized target professional identity."
+                            placeholder={copy.intention.targetIdentityPlaceholder}
                           />
                         </label>
 
@@ -2090,25 +2088,23 @@ export function OrganizationInsightsTab({
                             onClick={handleRecordTargetStateClarification}
                           >
                             {professionalIntentionClarificationLoading
-                              ? "Recording..."
-                              : "Record worker answer"}
+                              ? copy.clarification.recording
+                              : copy.intention.recordAction}
                           </button>
                         </div>
 
                         <div className="fine-print">
-                          The worker&apos;s exact answer is preserved as worker-authored
-                          truth. The target identity is the normalized structured
-                          value used to update the canonical Professional Intention.
+                          {copy.intention.targetIdentityHelp}
                         </div>
                       </div>
                     ) : null}
 
                     {item.dimension === "desired_outcomes" ? (
                       <div className="card-soft stack" style={{ gap: 10 }}>
-                        <strong>Record worker answer</strong>
+                        <strong>{copy.intention.recordSectionTitle}</strong>
 
                         <label className="stack" style={{ gap: 6 }}>
-                          <span>Worker answer</span>
+                          <span>{copy.intention.workerAnswer}</span>
                           <textarea
                             className="input"
                             value={professionalIntentionClarificationAnswer}
@@ -2119,12 +2115,12 @@ export function OrganizationInsightsTab({
                               )
                             }
                             rows={3}
-                            placeholder="Record the worker's exact answer."
+                            placeholder={copy.clarification.recordExactAnswerPlaceholder}
                           />
                         </label>
 
                         <label className="stack" style={{ gap: 6 }}>
-                          <span>Desired impact</span>
+                          <span>{copy.intention.desiredImpact}</span>
                           <textarea
                             className="input"
                             value={professionalIntentionClarificationDesiredImpact}
@@ -2135,7 +2131,7 @@ export function OrganizationInsightsTab({
                               )
                             }
                             rows={3}
-                            placeholder="Capture the normalized desired professional impact."
+                            placeholder={copy.intention.desiredImpactPlaceholder}
                           />
                         </label>
 
@@ -2147,25 +2143,23 @@ export function OrganizationInsightsTab({
                             onClick={handleRecordDesiredOutcomesClarification}
                           >
                             {professionalIntentionClarificationLoading
-                              ? "Recording..."
-                              : "Record worker answer"}
+                              ? copy.clarification.recording
+                              : copy.intention.recordAction}
                           </button>
                         </div>
 
                         <div className="fine-print">
-                          The worker&apos;s exact answer is preserved as worker-authored
-                          truth. The desired impact is the normalized structured
-                          value used to update the canonical Professional Intention.
+                          {copy.intention.desiredImpactHelp}
                         </div>
                       </div>
                     ) : null}
 
                     {item.dimension === "progress_markers" ? (
                       <div className="card-soft stack" style={{ gap: 10 }}>
-                        <strong>Record worker answer</strong>
+                        <strong>{copy.intention.recordSectionTitle}</strong>
 
                         <label className="stack" style={{ gap: 6 }}>
-                          <span>Worker answer</span>
+                          <span>{copy.intention.workerAnswer}</span>
                           <textarea
                             className="input"
                             value={professionalIntentionClarificationAnswer}
@@ -2176,12 +2170,12 @@ export function OrganizationInsightsTab({
                               )
                             }
                             rows={3}
-                            placeholder="Record the worker's exact answer."
+                            placeholder={copy.clarification.recordExactAnswerPlaceholder}
                           />
                         </label>
 
                         <label className="stack" style={{ gap: 6 }}>
-                          <span>Short-term mission</span>
+                          <span>{copy.intention.shortTermMission}</span>
                           <textarea
                             className="input"
                             value={professionalIntentionClarificationShortTermMission}
@@ -2192,7 +2186,7 @@ export function OrganizationInsightsTab({
                               )
                             }
                             rows={3}
-                            placeholder="Capture one normalized short-term mission."
+                            placeholder={copy.intention.shortTermMissionPlaceholder}
                           />
                         </label>
 
@@ -2204,31 +2198,28 @@ export function OrganizationInsightsTab({
                             onClick={handleRecordProgressMarkersClarification}
                           >
                             {professionalIntentionClarificationLoading
-                              ? "Recording..."
-                              : "Record worker answer"}
+                              ? copy.clarification.recording
+                              : copy.intention.recordAction}
                           </button>
                         </div>
 
                         <div className="fine-print">
-                          The worker&apos;s exact answer is preserved as worker-authored
-                          truth. The short-term mission is the normalized structured
-                          value used to update the canonical Professional Intention.
+                          {copy.intention.shortTermMissionHelp}
                         </div>
                       </div>
                     ) : null}
 
                     <div className="muted">
-                      Requested source:{" "}
+                      {copy.clarification.requestedSource}{" "}
                       {item.requested_source_actor.replaceAll("_", " ")}
                     </div>
 
                     <div className="stack" style={{ gap: 8 }}>
-                      <strong>Evidence already known</strong>
+                      <strong>{copy.intention.evidenceAlreadyKnown}</strong>
 
                       {item.evidence.length === 0 ? (
                         <div className="muted">
-                          No candidate evidence is currently available for this
-                          dimension.
+                          {copy.intention.noCandidateEvidence}
                         </div>
                       ) : (
                         item.evidence.map((evidence, evidenceIndex) => (
@@ -2245,11 +2236,11 @@ export function OrganizationInsightsTab({
                                 {evidence.source_type.replaceAll("_", " ")}
                               </span>
                               <span className="badge">
-                                source:{" "}
+                                {copy.intention.source}{" "}
                                 {evidence.source_actor.replaceAll("_", " ")}
                               </span>
                               <span className="badge">
-                                captured by:{" "}
+                                {copy.intention.capturedBy}{" "}
                                 {evidence.captured_by_actor.replaceAll("_", " ")}
                               </span>
                             </div>
@@ -2257,10 +2248,10 @@ export function OrganizationInsightsTab({
                             <div className="muted">{evidence.summary}</div>
 
                             <div className="muted">
-                              Candidate evidence only — resolution support:{" "}
+                              {copy.intention.candidateEvidenceOnly}{" "}
                               {evidence.supports_resolution
-                                ? "confirmed"
-                                : "not confirmed"}
+                                ? copy.intention.confirmed
+                                : copy.intention.notConfirmed}
                             </div>
                           </div>
                         ))
