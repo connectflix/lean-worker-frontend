@@ -459,6 +459,54 @@ describe("Organization Insights internationalization", () => {
     expect(within(attention).getByText("0")).toBeInTheDocument();
   });
 
+  it("renders the worker intelligence navigation with Overview selected by default", () => {
+    window.localStorage.setItem("leanworker.uiLanguage", "fr");
+
+    renderInsights();
+
+    const navigation = screen.getByRole("tablist", {
+      name: "Navigation de l’intelligence collaborateur",
+    });
+
+    expect(navigation).toBeInTheDocument();
+
+    const overview = within(navigation).getByRole("tab", {
+      name: "Vue d’ensemble",
+    });
+
+    expect(overview).toHaveAttribute("aria-selected", "true");
+
+    expect(
+      within(navigation).getByRole("tab", {
+        name: "Contexte",
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      within(navigation).getByRole("tab", {
+        name: "Décision",
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      within(navigation).getByRole("tab", {
+        name: "Exécution",
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      within(navigation).getByRole("tab", {
+        name: "Trajectoire",
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      within(navigation).getByRole("tab", {
+        name: "Historique",
+      }),
+    ).toBeInTheDocument();
+  });
+
   it("switches the worker intelligence workspace immediately to English", () => {
     window.localStorage.setItem("leanworker.uiLanguage", "en");
 

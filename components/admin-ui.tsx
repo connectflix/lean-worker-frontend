@@ -512,3 +512,86 @@ export function AdminStatusBadge({
     </span>
   );
 }
+
+type AdminTabItem = {
+  key: string;
+  label: string;
+  disabled?: boolean;
+};
+
+type AdminTabsProps = {
+  ariaLabel: string;
+  activeTab: string;
+  tabs: AdminTabItem[];
+  onChange: (tabKey: string) => void;
+};
+
+export function AdminTabs({
+  ariaLabel,
+  activeTab,
+  tabs,
+  onChange,
+}: AdminTabsProps) {
+  return (
+    <div
+      style={{
+        width: "100%",
+        overflowX: "auto",
+        overflowY: "hidden",
+        WebkitOverflowScrolling: "touch",
+        paddingBottom: 2,
+      }}
+    >
+      <div
+        role="tablist"
+        aria-label={ariaLabel}
+        style={{
+          display: "flex",
+          gap: 6,
+          alignItems: "center",
+          flexWrap: "nowrap",
+          minWidth: "max-content",
+        }}
+      >
+        {tabs.map((tab) => {
+          const isActive = activeTab === tab.key;
+          const isDisabled = Boolean(tab.disabled);
+
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              aria-disabled={isDisabled}
+              disabled={isDisabled}
+              className={isActive ? "button" : "button ghost"}
+              onClick={() => {
+                if (!isDisabled) {
+                  onChange(tab.key);
+                }
+              }}
+              style={{
+                minHeight: 36,
+                borderRadius: 999,
+                padding: "8px 13px",
+                whiteSpace: "nowrap",
+                flexShrink: 0,
+                fontSize: 13,
+                fontWeight: isActive ? 700 : 600,
+                letterSpacing: "-0.01em",
+                opacity: isDisabled ? 0.44 : 1,
+                cursor: isDisabled ? "not-allowed" : "pointer",
+                boxShadow: isActive
+                  ? "0 8px 18px rgba(94, 106, 210, 0.14)"
+                  : "none",
+              }}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

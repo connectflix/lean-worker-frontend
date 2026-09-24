@@ -12,6 +12,16 @@ export type OrganizationInsightsCopy = {
   attentionIntentionClarification: string;
   attentionExecutionPlanUnavailable: string;
 
+  navigation: {
+    ariaLabel: string;
+    overview: string;
+    context: string;
+    decision: string;
+    execution: string;
+    trajectory: string;
+    history: string;
+  };
+
   metrics: {
     sessions: string;
     sessionsHelper: string;
@@ -191,6 +201,16 @@ const COPY: Record<SupportedUiLanguage, OrganizationInsightsCopy> = {
     attentionIntentionClarification:
       "Professional intention needs clarification",
     attentionExecutionPlanUnavailable: "Execution plan unavailable",
+
+    navigation: {
+      ariaLabel: "Worker intelligence navigation",
+      overview: "Overview",
+      context: "Context",
+      decision: "Decision",
+      execution: "Execution",
+      trajectory: "Trajectory",
+      history: "History",
+    },
 
     metrics: {
       sessions: "Sessions",
@@ -406,6 +426,16 @@ const COPY: Record<SupportedUiLanguage, OrganizationInsightsCopy> = {
     attentionIntentionClarification:
       "Intention professionnelle à clarifier",
     attentionExecutionPlanUnavailable: "Plan d’exécution indisponible",
+
+    navigation: {
+      ariaLabel: "Navigation de l’intelligence collaborateur",
+      overview: "Vue d’ensemble",
+      context: "Contexte",
+      decision: "Décision",
+      execution: "Exécution",
+      trajectory: "Trajectoire",
+      history: "Historique",
+    },
 
     metrics: {
       sessions: "Sessions",

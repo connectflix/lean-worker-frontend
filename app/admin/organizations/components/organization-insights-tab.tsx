@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { getOrganizationInsightsCopy } from "@/lib/i18n/organization-insights";
 import { useAdminUiLanguage } from "@/lib/use-admin-ui-language";
-import { AdminMetricCard, AdminPage } from "@/components/admin-ui";
+import { AdminMetricCard, AdminPage, AdminTabs } from "@/components/admin-ui";
 import {
   completeAdminWorkerRecommendation,
   getAdminWorkerProfessionalExecutionPlan,
@@ -161,6 +161,9 @@ export function OrganizationInsightsTab({
 }: OrganizationInsightsTabProps) {
   const { uiLanguage } = useAdminUiLanguage();
   const copy = getOrganizationInsightsCopy(uiLanguage);
+
+  const [activeIntelligenceTab, setActiveIntelligenceTab] =
+    useState("overview");
 
   const [
     professionalIntentionCompletionWorkspace,
@@ -1199,6 +1202,38 @@ export function OrganizationInsightsTab({
           </div>
         </div>
       </div>
+
+      <AdminTabs
+        ariaLabel={copy.navigation.ariaLabel}
+        activeTab={activeIntelligenceTab}
+        onChange={setActiveIntelligenceTab}
+        tabs={[
+          {
+            key: "overview",
+            label: copy.navigation.overview,
+          },
+          {
+            key: "context",
+            label: copy.navigation.context,
+          },
+          {
+            key: "decision",
+            label: copy.navigation.decision,
+          },
+          {
+            key: "execution",
+            label: copy.navigation.execution,
+          },
+          {
+            key: "trajectory",
+            label: copy.navigation.trajectory,
+          },
+          {
+            key: "history",
+            label: copy.navigation.history,
+          },
+        ]}
+      />
 
       <OrganizationWorkerGuidanceCard
         guidance={organizationGuidance}
