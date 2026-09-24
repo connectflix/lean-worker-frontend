@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { OrganizationInsightsTab } from "@/app/admin/organizations/components/organization-insights-tab";
@@ -283,6 +289,174 @@ describe("Organization Insights internationalization", () => {
     expect(
       within(attention).getByText("1 recommandation ouverte"),
     ).toBeInTheDocument();
+  });
+
+  it("summarizes manager attention signals from existing worker readiness state", async () => {
+    window.localStorage.setItem("leanworker.uiLanguage", "fr");
+
+    const summary = workerSummary();
+
+    summary.career_blueprint = null;
+    summary.recommendations = [
+      {
+        id: 11,
+        status: "open",
+        priority: "high",
+        title: "Strengthen leadership positioning",
+        description: "Prepare a concrete leadership positioning action.",
+      },
+    ] as never;
+
+    vi.mocked(
+      getAdminWorkerProfessionalMandateSupport,
+    ).mockResolvedValue({
+      mandate: null,
+      readiness: {
+        readiness_state: "partially_grounded",
+        dimensions: [],
+        blocking_dimensions: ["professional_identity"],
+        decision_ready: false,
+      },
+      completion_guidance: null,
+    } as never);
+
+    vi.mocked(
+      getAdminWorkerProfessionalIntentionCompletionWorkspace,
+    ).mockResolvedValue({
+      readiness_state: "partially_ready",
+      completion_closed: false,
+      initialization_available: false,
+      items: [
+        {
+          dimension: "target_state",
+          current_state: "partial",
+          reason: "Target state still needs clarification.",
+          suggested_question: "What target state is intended?",
+          requested_source_actor: "worker",
+          resolution_status: "open",
+          resolution_condition: "Target state is explicit.",
+          evidence: [],
+        },
+      ],
+    } as never);
+
+    vi.mocked(
+      getAdminWorkerProfessionalExecutionPlan,
+    ).mockResolvedValue(null as never);
+
+    renderInsights({
+      selectedWorkerSummary: summary,
+    });
+
+    const attention = screen.getByTestId(
+      "organization-insights-attention",
+    );
+
+    expect(
+      within(attention).getByText("1 recommandation ouverte"),
+    ).toBeInTheDocument();
+
+    expect(
+      within(attention).getByText("Profil de carrière à compléter"),
+    ).toBeInTheDocument();
+
+    expect(
+      await within(attention).findByText(
+        "Mandat professionnel à clarifier",
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      await within(attention).findByText(
+        "Intention professionnelle à clarifier",
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      await within(attention).findByText(
+        "Plan d’exécution indisponible",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("does not surface false manager attention signals for completed worker state", async () => {
+    window.localStorage.setItem("leanworker.uiLanguage", "fr");
+
+    vi.mocked(
+      getAdminWorkerProfessionalMandateSupport,
+    ).mockResolvedValue({
+      mandate: null,
+      readiness: {
+        readiness_state: "decision_ready",
+        dimensions: [],
+        blocking_dimensions: [],
+        decision_ready: true,
+      },
+      completion_guidance: null,
+    } as never);
+
+    vi.mocked(
+      getAdminWorkerProfessionalIntentionCompletionWorkspace,
+    ).mockResolvedValue({
+      readiness_state: "plan_ready",
+      completion_closed: true,
+      initialization_available: false,
+      items: [],
+    } as never);
+
+    vi.mocked(
+      getAdminWorkerProfessionalExecutionPlan,
+    ).mockResolvedValue({
+      plan_summary: "Execution plan available.",
+      planning_horizon_months: 6,
+      milestones: [],
+      guardrails: [],
+      assumptions: [],
+    } as never);
+
+    renderInsights();
+
+    await waitFor(() => {
+      expect(
+        getAdminWorkerProfessionalMandateSupport,
+      ).toHaveBeenCalledTimes(1);
+
+      expect(
+        getAdminWorkerProfessionalIntentionCompletionWorkspace,
+      ).toHaveBeenCalledTimes(1);
+
+      expect(
+        getAdminWorkerProfessionalExecutionPlan,
+      ).toHaveBeenCalledTimes(1);
+    });
+
+    const attention = screen.getByTestId(
+      "organization-insights-attention",
+    );
+
+    expect(
+      within(attention).queryByText(/recommandation ouverte/),
+    ).not.toBeInTheDocument();
+
+    expect(
+      within(attention).queryByText("Profil de carrière à compléter"),
+    ).not.toBeInTheDocument();
+
+    expect(
+      within(attention).queryByText("Mandat professionnel à clarifier"),
+    ).not.toBeInTheDocument();
+
+    expect(
+      within(attention).queryByText(
+        "Intention professionnelle à clarifier",
+      ),
+    ).not.toBeInTheDocument();
+
+    expect(
+      within(attention).queryByText("Plan d’exécution indisponible"),
+    ).not.toBeInTheDocument();
+
+    expect(within(attention).getByText("0")).toBeInTheDocument();
   });
 
   it("switches the worker intelligence workspace immediately to English", () => {

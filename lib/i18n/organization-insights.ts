@@ -7,6 +7,10 @@ export type OrganizationInsightsCopy = {
   selectedWorker: string;
   attentionTitle: string;
   openRecommendation: (count: number) => string;
+  attentionCareerBlueprintMissing: string;
+  attentionMandateClarification: string;
+  attentionIntentionClarification: string;
+  attentionExecutionPlanUnavailable: string;
 
   metrics: {
     sessions: string;
@@ -182,6 +186,11 @@ const COPY: Record<SupportedUiLanguage, OrganizationInsightsCopy> = {
     attentionTitle: "Needs attention",
     openRecommendation: (count) =>
       `${count} open ${count === 1 ? "recommendation" : "recommendations"}`,
+    attentionCareerBlueprintMissing: "Career profile needs completion",
+    attentionMandateClarification: "Professional mandate needs clarification",
+    attentionIntentionClarification:
+      "Professional intention needs clarification",
+    attentionExecutionPlanUnavailable: "Execution plan unavailable",
 
     metrics: {
       sessions: "Sessions",
@@ -392,6 +401,11 @@ const COPY: Record<SupportedUiLanguage, OrganizationInsightsCopy> = {
     attentionTitle: "À surveiller",
     openRecommendation: (count) =>
       `${count} ${count === 1 ? "recommandation ouverte" : "recommandations ouvertes"}`,
+    attentionCareerBlueprintMissing: "Profil de carrière à compléter",
+    attentionMandateClarification: "Mandat professionnel à clarifier",
+    attentionIntentionClarification:
+      "Intention professionnelle à clarifier",
+    attentionExecutionPlanUnavailable: "Plan d’exécution indisponible",
 
     metrics: {
       sessions: "Sessions",

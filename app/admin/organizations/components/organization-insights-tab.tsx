@@ -171,6 +171,10 @@ export function OrganizationInsightsTab({
     setProfessionalIntentionCompletionWorkspaceLoading,
   ] = useState(false);
   const [
+    professionalIntentionCompletionWorkspaceLoaded,
+    setProfessionalIntentionCompletionWorkspaceLoaded,
+  ] = useState(false);
+  const [
     professionalIntentionInitializationLoading,
     setProfessionalIntentionInitializationLoading,
   ] = useState(false);
@@ -219,6 +223,10 @@ export function OrganizationInsightsTab({
     professionalExecutionPlanLoading,
     setProfessionalExecutionPlanLoading,
   ] = useState(false);
+  const [
+    professionalExecutionPlanLoaded,
+    setProfessionalExecutionPlanLoaded,
+  ] = useState(false);
 
   const [
     professionalMandateSupport,
@@ -227,6 +235,10 @@ export function OrganizationInsightsTab({
   const [
     professionalMandateSupportLoading,
     setProfessionalMandateSupportLoading,
+  ] = useState(false);
+  const [
+    professionalMandateSupportLoaded,
+    setProfessionalMandateSupportLoaded,
   ] = useState(false);
   const [
     professionalMandateClarificationAnswer,
@@ -291,6 +303,7 @@ export function OrganizationInsightsTab({
 
   async function loadProfessionalIntentionCompletionWorkspace(workerId: number) {
     setProfessionalIntentionCompletionWorkspace(null);
+    setProfessionalIntentionCompletionWorkspaceLoaded(false);
     setProfessionalIntentionCompletionWorkspaceLoading(true);
 
     try {
@@ -301,11 +314,13 @@ export function OrganizationInsightsTab({
       setProfessionalIntentionCompletionWorkspace(null);
     } finally {
       setProfessionalIntentionCompletionWorkspaceLoading(false);
+      setProfessionalIntentionCompletionWorkspaceLoaded(true);
     }
   }
 
   async function loadProfessionalExecutionPlan(workerId: number) {
     setProfessionalExecutionPlan(null);
+    setProfessionalExecutionPlanLoaded(false);
     setProfessionalExecutionPlanLoading(true);
 
     try {
@@ -316,11 +331,13 @@ export function OrganizationInsightsTab({
       setProfessionalExecutionPlan(null);
     } finally {
       setProfessionalExecutionPlanLoading(false);
+      setProfessionalExecutionPlanLoaded(true);
     }
   }
 
   async function loadProfessionalMandateSupport(workerId: number) {
     setProfessionalMandateSupport(null);
+    setProfessionalMandateSupportLoaded(false);
     setProfessionalMandateSupportLoading(true);
 
     try {
@@ -331,6 +348,7 @@ export function OrganizationInsightsTab({
       setProfessionalMandateSupport(null);
     } finally {
       setProfessionalMandateSupportLoading(false);
+      setProfessionalMandateSupportLoaded(true);
     }
   }
 
@@ -910,6 +928,7 @@ export function OrganizationInsightsTab({
     if (!selectedWorkerSummary) {
       setProfessionalIntentionCompletionWorkspace(null);
       setProfessionalIntentionCompletionWorkspaceLoading(false);
+      setProfessionalIntentionCompletionWorkspaceLoaded(false);
       setProfessionalIntentionInitializationError(null);
       setProfessionalIntentionClarificationAnswer("");
       setProfessionalIntentionClarificationHorizonMonths("");
@@ -922,9 +941,11 @@ export function OrganizationInsightsTab({
 
       setProfessionalExecutionPlan(null);
       setProfessionalExecutionPlanLoading(false);
+      setProfessionalExecutionPlanLoaded(false);
 
       setProfessionalMandateSupport(null);
       setProfessionalMandateSupportLoading(false);
+      setProfessionalMandateSupportLoaded(false);
       setProfessionalMandateClarificationAnswer("");
       setProfessionalMandateProfessionalIdentity("");
       setProfessionalMandateExpectedOutcome("");
@@ -1012,6 +1033,33 @@ export function OrganizationInsightsTab({
         !completedRecommendationIds.has(recommendation.id),
     ).length;
 
+  const managerAttentionSignals = [
+    ...(openRecommendationCount > 0
+      ? [copy.openRecommendation(openRecommendationCount)]
+      : []),
+
+    ...(!selectedWorkerSummary.career_blueprint
+      ? [copy.attentionCareerBlueprintMissing]
+      : []),
+
+    ...(professionalMandateSupportLoaded &&
+    professionalMandateSupport?.readiness &&
+    !professionalMandateSupport.readiness.decision_ready
+      ? [copy.attentionMandateClarification]
+      : []),
+
+    ...(professionalIntentionCompletionWorkspaceLoaded &&
+    professionalIntentionCompletionWorkspace?.items.some(
+      (item) => item.resolution_status !== "resolved",
+    )
+      ? [copy.attentionIntentionClarification]
+      : []),
+
+    ...(professionalExecutionPlanLoaded && !professionalExecutionPlan
+      ? [copy.attentionExecutionPlanUnavailable]
+      : []),
+  ];
+
   return (
     <AdminPage style={{ gap: 16 }}>
       <div
@@ -1075,23 +1123,32 @@ export function OrganizationInsightsTab({
           className="card-soft row space-between"
           style={{
             gap: 12,
-            alignItems: "center",
+            alignItems: "flex-start",
             flexWrap: "wrap",
           }}
         >
-          <div className="stack" style={{ gap: 3 }}>
+          <div className="stack" style={{ gap: 8, minWidth: 0 }}>
             <strong>{copy.attentionTitle}</strong>
-            <div className="muted">
-              {copy.openRecommendation(openRecommendationCount)}
-            </div>
+
+            {managerAttentionSignals.length > 0 ? (
+              <div className="stack" style={{ gap: 5 }}>
+                {managerAttentionSignals.map((signal) => (
+                  <div key={signal} className="muted">
+                    {signal}
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </div>
 
           <span
             className={
-              openRecommendationCount > 0 ? "badge primary" : "badge"
+              managerAttentionSignals.length > 0
+                ? "badge primary"
+                : "badge"
             }
           >
-            {openRecommendationCount}
+            {managerAttentionSignals.length}
           </span>
         </div>
 
