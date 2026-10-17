@@ -164,6 +164,29 @@ export function OrganizationInsightsTab({
 
   const [activeIntelligenceTab, setActiveIntelligenceTab] =
     useState("overview");
+  const [pendingRecommendationId, setPendingRecommendationId] =
+    useState<number | null>(null);
+
+  function handleNavigateToRecommendation(recommendationId: number) {
+    setPendingRecommendationId(recommendationId);
+    setActiveIntelligenceTab("decision");
+  }
+
+  useEffect(() => {
+    if (
+      activeIntelligenceTab !== "decision" ||
+      pendingRecommendationId == null
+    ) {
+      return;
+    }
+
+    onScrollToRecommendation(pendingRecommendationId);
+    setPendingRecommendationId(null);
+  }, [
+    activeIntelligenceTab,
+    pendingRecommendationId,
+    onScrollToRecommendation,
+  ]);
 
   const [
     professionalIntentionCompletionWorkspace,
@@ -1235,13 +1258,15 @@ export function OrganizationInsightsTab({
         ]}
       />
 
-      <OrganizationWorkerGuidanceCard
-        guidance={organizationGuidance}
-        loading={organizationGuidanceLoading}
-        onOrganizationRecommendationCompleted={
-          onOrganizationRecommendationCompleted
-        }
-      />
+      {activeIntelligenceTab === "decision" ? (
+        <OrganizationWorkerGuidanceCard
+          guidance={organizationGuidance}
+          loading={organizationGuidanceLoading}
+          onOrganizationRecommendationCompleted={
+            onOrganizationRecommendationCompleted
+          }
+        />
+      ) : null}
 
       <ProfessionalExecutionPlanCard
         plan={professionalExecutionPlan}
@@ -1405,11 +1430,12 @@ export function OrganizationInsightsTab({
           ))}
         </ScrollSection>
 
-        <ScrollSection
-          title={copy.collections.recommendations}
-          count={selectedWorkerSummary.recommendations.length}
-          emptyLabel={copy.collections.noRecommendations}
-        >
+        {activeIntelligenceTab === "decision" ? (
+          <ScrollSection
+            title={copy.collections.recommendations}
+            count={selectedWorkerSummary.recommendations.length}
+            emptyLabel={copy.collections.noRecommendations}
+          >
           {selectedWorkerSummary.recommendations.map((recommendation) => {
             const relatedLevers = relatedLeversByRecommendationId.get(recommendation.id) ?? [];
             const isCompleted =
@@ -1476,7 +1502,8 @@ export function OrganizationInsightsTab({
               </div>
             );
           })}
-        </ScrollSection>
+          </ScrollSection>
+        ) : null}
 
         <ScrollSection
           title={copy.collections.artifacts}
@@ -1582,7 +1609,9 @@ export function OrganizationInsightsTab({
                           type="button"
                           className="button ghost"
                           style={{ padding: "6px 10px", minHeight: 32, fontSize: 12 }}
-                          onClick={() => onScrollToRecommendation(recommendationId)}
+                          onClick={() =>
+                            handleNavigateToRecommendation(recommendationId)
+                          }
                         >
                           {copy.collections.recommendation(recommendationId)}
                         </button>

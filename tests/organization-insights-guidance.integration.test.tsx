@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { OrganizationInsightsTab } from "@/app/admin/organizations/components/organization-insights-tab";
@@ -134,12 +134,48 @@ function renderInsights(
 
 
 describe("OrganizationInsightsTab + Organization Guidance", () => {
+  it("moves organization guidance out of Overview and into Decision", () => {
+    renderInsights({
+      organizationGuidance: guidance(),
+    });
+
+    const overview = screen.getByRole("tab", {
+      name: "Overview",
+    });
+
+    const decision = screen.getByRole("tab", {
+      name: "Decision",
+    });
+
+    expect(overview).toHaveAttribute("aria-selected", "true");
+    expect(decision).toHaveAttribute("aria-selected", "false");
+
+    expect(
+      screen.queryByTestId("organization-worker-guidance-card"),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(decision);
+
+    expect(overview).toHaveAttribute("aria-selected", "false");
+    expect(decision).toHaveAttribute("aria-selected", "true");
+
+    expect(
+      screen.getByTestId("organization-worker-guidance-card"),
+    ).toBeInTheDocument();
+  });
+
   it("renders the dedicated guidance card for the selected Worker", () => {
     const payload = guidance();
 
     renderInsights({
       organizationGuidance: payload,
     });
+
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Decision",
+      }),
+    );
 
     expect(
       screen.getByTestId("organization-worker-guidance-card"),
@@ -162,6 +198,12 @@ describe("OrganizationInsightsTab + Organization Guidance", () => {
       onOrganizationRecommendationCompleted: onCompleted,
     });
 
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Decision",
+      }),
+    );
+
     expect(guidanceCardMock).toHaveBeenCalledWith({
       guidance: payload,
       loading: false,
@@ -175,6 +217,12 @@ describe("OrganizationInsightsTab + Organization Guidance", () => {
       organizationGuidance: null,
       organizationGuidanceLoading: true,
     });
+
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Decision",
+      }),
+    );
 
     expect(
       screen.getByText("guidance-loading"),
@@ -194,6 +242,12 @@ describe("OrganizationInsightsTab + Organization Guidance", () => {
     renderInsights({
       organizationGuidance: payload,
     });
+
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Decision",
+      }),
+    );
 
     expect(
       screen.getByText(

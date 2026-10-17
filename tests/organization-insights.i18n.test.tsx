@@ -858,6 +858,12 @@ describe("Organization Insights internationalization", () => {
       ]),
     });
 
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Décision",
+      }),
+    );
+
     expect(screen.getByText("Aucune synthèse disponible.")).not.toBeNull();
 
     expect(

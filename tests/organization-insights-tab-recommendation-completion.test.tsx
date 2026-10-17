@@ -84,6 +84,34 @@ function renderTab(recommendationStatus = "in_progress") {
 }
 
 describe("OrganizationInsightsTab recommendation completion", () => {
+  it("moves worker recommendations out of Overview and into Decision", () => {
+    renderTab("in_progress");
+
+    const overview = screen.getByRole("tab", {
+      name: "Overview",
+    });
+
+    const decision = screen.getByRole("tab", {
+      name: "Decision",
+    });
+
+    expect(overview).toHaveAttribute("aria-selected", "true");
+    expect(decision).toHaveAttribute("aria-selected", "false");
+
+    expect(
+      screen.queryByText("Clarify positioning"),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(decision);
+
+    expect(overview).toHaveAttribute("aria-selected", "false");
+    expect(decision).toHaveAttribute("aria-selected", "true");
+
+    expect(
+      screen.getByText("Clarify positioning"),
+    ).toBeInTheDocument();
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
 
@@ -96,8 +124,84 @@ describe("OrganizationInsightsTab recommendation completion", () => {
     });
   });
 
+  it("opens Decision before scrolling from a linked lever to its recommendation", async () => {
+    const onScrollToRecommendation = vi.fn();
+
+    const lever = {
+      id: 41,
+      name: "Decision support lever",
+      description: "Supports the worker recommendation.",
+      category: "development",
+      provider_type: "internal",
+      is_paid: false,
+      is_active: true,
+      is_highlighted: false,
+      is_default: false,
+      usage_count: 1,
+      match_reasons: [],
+      recommendation_ids: [31],
+      url: null,
+    } as any;
+
+    const summary = buildSummary("in_progress");
+    summary.levers = [lever];
+    summary.lever_count = 1;
+
+    render(
+      <OrganizationInsightsTab
+        selectedWorkerSummary={summary}
+        workerSummaryLoading={false}
+        organizationGuidance={null}
+        organizationGuidanceLoading={false}
+        leverSearch=""
+        leverCategoryFilter="all"
+        leverSortMode="highlighted"
+        leverCategories={["development"]}
+        filteredLevers={[lever]}
+        relatedLeversByRecommendationId={new Map()}
+        onLeverSearchChange={vi.fn()}
+        onLeverCategoryFilterChange={vi.fn()}
+        onLeverSortModeChange={vi.fn()}
+        onScrollToRecommendation={onScrollToRecommendation}
+      />,
+    );
+
+    const overview = screen.getByRole("tab", {
+      name: "Overview",
+    });
+
+    const decision = screen.getByRole("tab", {
+      name: "Decision",
+    });
+
+    expect(overview).toHaveAttribute("aria-selected", "true");
+    expect(decision).toHaveAttribute("aria-selected", "false");
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /^Recommendation #31$/,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(decision).toHaveAttribute("aria-selected", "true");
+    });
+
+    expect(overview).toHaveAttribute("aria-selected", "false");
+
+    await waitFor(() => {
+      expect(onScrollToRecommendation).toHaveBeenCalledWith(31);
+    });
+  });
+
   it("allows Admin or Organization to mark a worker recommendation as completed", async () => {
     renderTab("in_progress");
+
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Decision",
+      }),
+    );
 
     fireEvent.click(
       screen.getByRole("button", {
@@ -114,6 +218,12 @@ describe("OrganizationInsightsTab recommendation completion", () => {
     renderTab("open");
 
     fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Decision",
+      }),
+    );
+
+    fireEvent.click(
       screen.getByRole("button", {
         name: /mark.*completed/i,
       }),
@@ -126,6 +236,12 @@ describe("OrganizationInsightsTab recommendation completion", () => {
 
   it("removes the completion action after successful completion", async () => {
     renderTab("in_progress");
+
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Decision",
+      }),
+    );
 
     const button = screen.getByRole("button", {
       name: /mark.*completed/i,
@@ -146,6 +262,12 @@ describe("OrganizationInsightsTab recommendation completion", () => {
 
   it("does not expose the completion action for an already completed recommendation", () => {
     renderTab("completed");
+
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Decision",
+      }),
+    );
 
     expect(
       screen.queryByRole("button", {
