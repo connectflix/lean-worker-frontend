@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { getOrganizationInsightsCopy } from "@/lib/i18n/organization-insights";
 import { useAdminUiLanguage } from "@/lib/use-admin-ui-language";
 import {
+  AdminActionCard,
   AdminMetricCard,
   AdminPage,
   AdminSection,
@@ -1268,22 +1269,12 @@ export function OrganizationInsightsTab({
               {managerAttentionSignals.length > 0 ? (
                 <div className="stack" style={{ gap: 5 }}>
                   {managerAttentionSignals.map((signal) => (
-                    <button
+                    <AdminActionCard
                       key={signal.key}
-                      type="button"
-                      className="button ghost"
+                      label={signal.label}
+                      destination={copy.navigation[signal.targetTab]}
                       onClick={() => setActiveIntelligenceTab(signal.targetTab)}
-                      style={{
-                        justifyContent: "flex-start",
-                        minHeight: "auto",
-                        padding: 0,
-                        border: 0,
-                        boxShadow: "none",
-                        textAlign: "left",
-                      }}
-                    >
-                      {signal.label}
-                    </button>
+                    />
                   ))}
                 </div>
               ) : null}

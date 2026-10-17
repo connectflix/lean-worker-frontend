@@ -363,6 +363,32 @@ describe("Organization Insights internationalization", () => {
     expect(status).toHaveAttribute("data-tone", "warning");
   });
 
+  it("presents manager attention as a destination-aware action card", () => {
+    window.localStorage.setItem("leanworker.uiLanguage", "fr");
+
+    const summary = workerSummary();
+
+    summary.recommendations = [
+      {
+        id: 11,
+        status: "open",
+        priority: "high",
+        title: "Strengthen leadership positioning",
+        description: "Prepare a concrete leadership positioning action.",
+      },
+    ] as never;
+
+    renderInsights({
+      selectedWorkerSummary: summary,
+    });
+
+    const action = screen.getByTestId("admin-action-card");
+
+    expect(action).toHaveRole("button");
+    expect(action).toHaveTextContent("1 recommandation ouverte");
+    expect(action).toHaveTextContent("Décision");
+  });
+
   it("navigates from an open recommendation attention signal to Decision", () => {
     window.localStorage.setItem("leanworker.uiLanguage", "fr");
 
@@ -395,7 +421,7 @@ describe("Organization Insights internationalization", () => {
 
     fireEvent.click(
       screen.getByRole("button", {
-        name: "1 recommandation ouverte",
+        name: /1 recommandation ouverte/,
       }),
     );
 

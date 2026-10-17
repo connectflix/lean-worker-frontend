@@ -22,6 +22,12 @@ type AdminMetricCardProps = {
   tone?: AdminTone;
 };
 
+type AdminActionCardProps = {
+  label: string;
+  destination: string;
+  onClick: () => void;
+};
+
 type AdminStateProps = {
   title: string;
   description?: string;
@@ -163,6 +169,59 @@ export function AdminSection({
 
       {children}
     </section>
+  );
+}
+
+export function AdminActionCard({
+  label,
+  destination,
+  onClick,
+}: AdminActionCardProps) {
+  return (
+    <button
+      data-testid="admin-action-card"
+      type="button"
+      onClick={onClick}
+      style={{
+        display: "flex",
+        width: "100%",
+        minWidth: 0,
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 16,
+        padding: "12px 14px",
+        borderRadius: 14,
+        border: "1px solid var(--admin-border)",
+        background: "var(--admin-surface-muted)",
+        color: "var(--admin-ink)",
+        cursor: "pointer",
+        textAlign: "left",
+        font: "inherit",
+      }}
+    >
+      <span
+        style={{
+          minWidth: 0,
+          fontSize: 14,
+          fontWeight: 700,
+          lineHeight: 1.4,
+        }}
+      >
+        {label}
+      </span>
+
+      <span
+        style={{
+          flexShrink: 0,
+          color: "var(--admin-accent)",
+          fontSize: 12,
+          fontWeight: 800,
+          lineHeight: 1.3,
+        }}
+      >
+        {destination}
+      </span>
+    </button>
   );
 }
 
