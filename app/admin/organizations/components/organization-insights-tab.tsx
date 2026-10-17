@@ -1061,28 +1061,58 @@ export function OrganizationInsightsTab({
 
   const managerAttentionSignals = [
     ...(openRecommendationCount > 0
-      ? [copy.openRecommendation(openRecommendationCount)]
+      ? [
+          {
+            key: "open-recommendations",
+            label: copy.openRecommendation(openRecommendationCount),
+            targetTab: "decision" as const,
+          },
+        ]
       : []),
 
     ...(!selectedWorkerSummary.career_blueprint
-      ? [copy.attentionCareerBlueprintMissing]
+      ? [
+          {
+            key: "career-blueprint",
+            label: copy.attentionCareerBlueprintMissing,
+            targetTab: "context" as const,
+          },
+        ]
       : []),
 
     ...(professionalMandateSupportLoaded &&
     professionalMandateSupport?.readiness &&
     !professionalMandateSupport.readiness.decision_ready
-      ? [copy.attentionMandateClarification]
+      ? [
+          {
+            key: "professional-mandate",
+            label: copy.attentionMandateClarification,
+            targetTab: "context" as const,
+          },
+        ]
       : []),
 
     ...(professionalIntentionCompletionWorkspaceLoaded &&
     professionalIntentionCompletionWorkspace?.items.some(
       (item) => item.resolution_status !== "resolved",
     )
-      ? [copy.attentionIntentionClarification]
+      ? [
+          {
+            key: "professional-intention",
+            label: copy.attentionIntentionClarification,
+            targetTab: "context" as const,
+          },
+        ]
       : []),
 
     ...(professionalExecutionPlanLoaded && !professionalExecutionPlan
-      ? [copy.attentionExecutionPlanUnavailable]
+      ? [
+          {
+            key: "execution-plan",
+            label: copy.attentionExecutionPlanUnavailable,
+            targetTab: "execution" as const,
+          },
+        ]
       : []),
   ];
 
@@ -1195,9 +1225,22 @@ export function OrganizationInsightsTab({
               {managerAttentionSignals.length > 0 ? (
                 <div className="stack" style={{ gap: 5 }}>
                   {managerAttentionSignals.map((signal) => (
-                    <div key={signal} className="muted">
-                      {signal}
-                    </div>
+                    <button
+                      key={signal.key}
+                      type="button"
+                      className="button ghost"
+                      onClick={() => setActiveIntelligenceTab(signal.targetTab)}
+                      style={{
+                        justifyContent: "flex-start",
+                        minHeight: "auto",
+                        padding: 0,
+                        border: 0,
+                        boxShadow: "none",
+                        textAlign: "left",
+                      }}
+                    >
+                      {signal.label}
+                    </button>
                   ))}
                 </div>
               ) : null}

@@ -303,6 +303,46 @@ describe("Organization Insights internationalization", () => {
     ).toBeInTheDocument();
   });
 
+  it("navigates from an open recommendation attention signal to Decision", () => {
+    window.localStorage.setItem("leanworker.uiLanguage", "fr");
+
+    const summary = workerSummary();
+
+    summary.recommendations = [
+      {
+        id: 11,
+        status: "open",
+        priority: "high",
+        title: "Strengthen leadership positioning",
+        description: "Prepare a concrete leadership positioning action.",
+      },
+    ] as never;
+
+    renderInsights({
+      selectedWorkerSummary: summary,
+    });
+
+    const overview = screen.getByRole("tab", {
+      name: "Vue d’ensemble",
+    });
+
+    const decision = screen.getByRole("tab", {
+      name: "Décision",
+    });
+
+    expect(overview).toHaveAttribute("aria-selected", "true");
+    expect(decision).toHaveAttribute("aria-selected", "false");
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "1 recommandation ouverte",
+      }),
+    );
+
+    expect(overview).toHaveAttribute("aria-selected", "false");
+    expect(decision).toHaveAttribute("aria-selected", "true");
+  });
+
   it("summarizes manager attention signals from existing worker readiness state", async () => {
     window.localStorage.setItem("leanworker.uiLanguage", "fr");
 
