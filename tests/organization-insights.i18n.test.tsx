@@ -563,6 +563,34 @@ describe("Organization Insights internationalization", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("places the executive Overview summary beneath worker intelligence navigation", () => {
+    window.localStorage.setItem("leanworker.uiLanguage", "fr");
+
+    renderInsights();
+
+    const navigation = screen.getByRole("tablist", {
+      name: "Navigation de l’intelligence collaborateur",
+    });
+
+    const attention = screen.getByTestId(
+      "organization-insights-attention",
+    );
+
+    const metrics = screen.getByTestId(
+      "organization-insights-metrics",
+    );
+
+    expect(
+      navigation.compareDocumentPosition(attention) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    expect(
+      navigation.compareDocumentPosition(metrics) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it("moves the professional execution plan out of Overview and into Execution", () => {
     renderInsights();
 
