@@ -1268,10 +1268,12 @@ export function OrganizationInsightsTab({
         />
       ) : null}
 
-      <ProfessionalExecutionPlanCard
-        plan={professionalExecutionPlan}
-        loading={professionalExecutionPlanLoading}
-      />
+      {activeIntelligenceTab === "execution" ? (
+        <ProfessionalExecutionPlanCard
+          plan={professionalExecutionPlan}
+          loading={professionalExecutionPlanLoading}
+        />
+      ) : null}
 
       {activeIntelligenceTab === "context" ? (
         <div className="grid grid-2" style={{ alignItems: "start" }}>

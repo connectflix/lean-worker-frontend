@@ -513,6 +513,34 @@ describe("Organization Insights internationalization", () => {
     ).toBeInTheDocument();
   });
 
+  it("moves the professional execution plan out of Overview and into Execution", () => {
+    renderInsights();
+
+    const overview = screen.getByRole("tab", {
+      name: "Overview",
+    });
+
+    const execution = screen.getByRole("tab", {
+      name: "Execution",
+    });
+
+    expect(overview).toHaveAttribute("aria-selected", "true");
+    expect(execution).toHaveAttribute("aria-selected", "false");
+
+    expect(
+      screen.queryByTestId("professional-execution-plan-card"),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(execution);
+
+    expect(overview).toHaveAttribute("aria-selected", "false");
+    expect(execution).toHaveAttribute("aria-selected", "true");
+
+    expect(
+      screen.getByTestId("professional-execution-plan-card"),
+    ).toBeInTheDocument();
+  });
+
   it("moves professional context details out of Overview and into Context", () => {
     window.localStorage.setItem("leanworker.uiLanguage", "fr");
 
