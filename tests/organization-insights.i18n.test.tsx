@@ -547,6 +547,68 @@ describe("Organization Insights internationalization", () => {
     ).toBeInTheDocument();
   });
 
+  it("moves sessions and artifacts out of Overview and into History", () => {
+    window.localStorage.setItem("leanworker.uiLanguage", "fr");
+
+    const summary = workerSummary();
+
+    summary.sessions = [
+      {
+        session_id: 101,
+        status: "completed",
+        started_at: "2026-09-01T10:00:00Z",
+        summary: "Session history summary",
+      },
+    ] as never;
+
+    summary.artifacts = [
+      {
+        id: 31,
+        format: "ebook",
+        status: "ready",
+        title: "Leadership guide",
+        price_eur: 15,
+        error_message: null,
+      },
+    ] as never;
+
+    renderInsights({
+      selectedWorkerSummary: summary,
+    });
+
+    const overview = screen.getByRole("tab", {
+      name: "Vue d’ensemble",
+    });
+
+    const history = screen.getByRole("tab", {
+      name: "Historique",
+    });
+
+    expect(overview).toHaveAttribute("aria-selected", "true");
+    expect(history).toHaveAttribute("aria-selected", "false");
+
+    expect(
+      screen.queryByText("Session history summary"),
+    ).not.toBeInTheDocument();
+
+    expect(
+      screen.queryByText("Leadership guide"),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(history);
+
+    expect(overview).toHaveAttribute("aria-selected", "false");
+    expect(history).toHaveAttribute("aria-selected", "true");
+
+    expect(
+      screen.getByText("Session history summary"),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText("Leadership guide"),
+    ).toBeInTheDocument();
+  });
+
   it("moves lever workspace and lever resources out of Overview and into Trajectory", () => {
     window.localStorage.setItem("leanworker.uiLanguage", "fr");
 
@@ -976,11 +1038,21 @@ describe("Organization Insights internationalization", () => {
 
     fireEvent.click(
       screen.getByRole("tab", {
-        name: "Décision",
+        name: "Historique",
       }),
     );
 
     expect(screen.getByText("Aucune synthèse disponible.")).not.toBeNull();
+
+    expect(
+      screen.getByText("Leadership guide"),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Décision",
+      }),
+    );
 
     expect(
       screen.getByRole("button", {

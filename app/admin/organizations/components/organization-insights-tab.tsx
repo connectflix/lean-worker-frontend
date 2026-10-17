@@ -1408,11 +1408,12 @@ export function OrganizationInsightsTab({
           alignItems: "start",
         }}
       >
-        <ScrollSection
-          title={copy.collections.sessions}
-          count={selectedWorkerSummary.sessions.length}
-          emptyLabel={copy.collections.noSessions}
-        >
+        {activeIntelligenceTab === "history" ? (
+          <ScrollSection
+            title={copy.collections.sessions}
+            count={selectedWorkerSummary.sessions.length}
+            emptyLabel={copy.collections.noSessions}
+          >
           {selectedWorkerSummary.sessions.map((session) => (
             <div
               key={session.session_id}
@@ -1436,7 +1437,8 @@ export function OrganizationInsightsTab({
               </div>
             </div>
           ))}
-        </ScrollSection>
+          </ScrollSection>
+        ) : null}
 
         {activeIntelligenceTab === "decision" ? (
           <ScrollSection
@@ -1513,11 +1515,12 @@ export function OrganizationInsightsTab({
           </ScrollSection>
         ) : null}
 
-        <ScrollSection
-          title={copy.collections.artifacts}
-          count={selectedWorkerSummary.artifacts.length}
-          emptyLabel={copy.collections.noArtifacts}
-        >
+        {activeIntelligenceTab === "history" ? (
+          <ScrollSection
+            title={copy.collections.artifacts}
+            count={selectedWorkerSummary.artifacts.length}
+            emptyLabel={copy.collections.noArtifacts}
+          >
           {selectedWorkerSummary.artifacts.map((artifact) => (
             <div
               key={artifact.id}
@@ -1548,7 +1551,8 @@ export function OrganizationInsightsTab({
               </div>
             </div>
           ))}
-        </ScrollSection>
+          </ScrollSection>
+        ) : null}
 
         {activeIntelligenceTab === "trajectory" ? (
           <ScrollSection
