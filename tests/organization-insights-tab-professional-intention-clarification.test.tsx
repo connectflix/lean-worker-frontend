@@ -207,6 +207,12 @@ describe("OrganizationInsightsTab Professional Intention clarification", () => {
 
     renderComponent();
 
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Context",
+      }),
+    );
+
     expect(
       await screen.findByText("Target Horizon"),
     ).toBeInTheDocument();
@@ -282,6 +288,12 @@ describe("OrganizationInsightsTab Professional Intention clarification", () => {
       .mockResolvedValueOnce(closedWorkspace);
 
     renderComponent();
+
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Context",
+      }),
+    );
 
     expect(
       await screen.findByText("Movement Definition"),
@@ -362,6 +374,12 @@ describe("OrganizationInsightsTab Professional Intention clarification", () => {
 
     renderComponent();
 
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Context",
+      }),
+    );
+
     expect(
       await screen.findByText("Target State"),
     ).toBeInTheDocument();
@@ -440,6 +458,12 @@ describe("OrganizationInsightsTab Professional Intention clarification", () => {
       .mockResolvedValueOnce(closedWorkspace);
 
     renderComponent();
+
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Context",
+      }),
+    );
 
     expect(
       await screen.findByText("Desired Outcomes"),
@@ -520,6 +544,12 @@ describe("OrganizationInsightsTab Professional Intention clarification", () => {
       .mockResolvedValueOnce(closedWorkspace);
 
     renderComponent();
+
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Context",
+      }),
+    );
 
     expect(
       await screen.findByText("Progress Markers"),

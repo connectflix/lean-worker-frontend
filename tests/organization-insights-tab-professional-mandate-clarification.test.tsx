@@ -194,6 +194,12 @@ describe("OrganizationInsightsTab Professional Mandate clarification", () => {
 
     renderComponent();
 
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Context",
+      }),
+    );
+
     expect(
       await screen.findByText("Professional Identity"),
     ).toBeInTheDocument();
@@ -264,6 +270,12 @@ describe("OrganizationInsightsTab Professional Mandate clarification", () => {
 
     renderComponent();
 
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Context",
+      }),
+    );
+
     expect(await screen.findByText("Expected Outcomes")).toBeInTheDocument();
 
     fireEvent.change(
@@ -322,6 +334,12 @@ describe("OrganizationInsightsTab Professional Mandate clarification", () => {
 
     renderComponent();
 
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Context",
+      }),
+    );
+
     expect(await screen.findByText("Success Definition")).toBeInTheDocument();
 
     fireEvent.change(
@@ -377,6 +395,12 @@ describe("OrganizationInsightsTab Professional Mandate clarification", () => {
       .mockResolvedValueOnce(closedMandateSupport);
 
     renderComponent();
+
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Context",
+      }),
+    );
 
     expect(
       await screen.findByText("Meaning And Contribution"),
@@ -458,6 +482,12 @@ describe("OrganizationInsightsTab Professional Mandate clarification", () => {
 
     renderComponent();
 
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Context",
+      }),
+    );
+
     expect(
       await screen.findByText("Constraints And Non Negotiables"),
     ).toBeInTheDocument();
@@ -527,6 +557,12 @@ describe("OrganizationInsightsTab Professional Mandate clarification", () => {
       .mockResolvedValueOnce(closedMandateSupport);
 
     renderComponent();
+
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Context",
+      }),
+    );
 
     expect(
       await screen.findByText("Capacity And Sustainability"),

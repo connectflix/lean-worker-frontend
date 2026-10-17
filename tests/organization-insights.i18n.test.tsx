@@ -182,6 +182,12 @@ describe("Organization Insights internationalization", () => {
 
     renderInsights();
 
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Contexte",
+      }),
+    );
+
     expect(
       screen.getByText("Espace de suivi du collaborateur"),
     ).toBeInTheDocument();
@@ -507,10 +513,74 @@ describe("Organization Insights internationalization", () => {
     ).toBeInTheDocument();
   });
 
+  it("moves professional context details out of Overview and into Context", () => {
+    window.localStorage.setItem("leanworker.uiLanguage", "fr");
+
+    renderInsights();
+
+    const navigation = screen.getByRole("tablist", {
+      name: "Navigation de l’intelligence collaborateur",
+    });
+
+    const overview = within(navigation).getByRole("tab", {
+      name: "Vue d’ensemble",
+    });
+
+    const context = within(navigation).getByRole("tab", {
+      name: "Contexte",
+    });
+
+    expect(overview).toHaveAttribute("aria-selected", "true");
+    expect(context).toHaveAttribute("aria-selected", "false");
+
+    expect(
+      screen.queryByText("Profil du collaborateur"),
+    ).not.toBeInTheDocument();
+
+    expect(
+      screen.getAllByText("Profil de carrière"),
+    ).toHaveLength(1);
+
+    expect(
+      screen.queryByText("Clarification du mandat professionnel"),
+    ).not.toBeInTheDocument();
+
+    expect(
+      screen.queryByText("Clarification de l’intention professionnelle"),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(context);
+
+    expect(overview).toHaveAttribute("aria-selected", "false");
+    expect(context).toHaveAttribute("aria-selected", "true");
+
+    expect(
+      screen.getByText("Profil du collaborateur"),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getAllByText("Profil de carrière"),
+    ).toHaveLength(2);
+
+    expect(
+      screen.getByText("Clarification du mandat professionnel"),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText("Clarification de l’intention professionnelle"),
+    ).toBeInTheDocument();
+  });
+
   it("switches the worker intelligence workspace immediately to English", () => {
     window.localStorage.setItem("leanworker.uiLanguage", "en");
 
     renderInsights();
+
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Context",
+      }),
+    );
 
     expect(
       screen.getByText("Worker performance workspace"),
@@ -566,6 +636,12 @@ describe("Organization Insights internationalization", () => {
 
     renderInsights();
 
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Contexte",
+      }),
+    );
+
     expect(
       await screen.findByText("Clarification du mandat professionnel"),
     ).toBeInTheDocument();
@@ -614,6 +690,12 @@ describe("Organization Insights internationalization", () => {
 
     renderInsights();
 
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Contexte",
+      }),
+    );
+
     expect(
       await screen.findByText(
         "La clarification du mandat professionnel est terminée. Aucune clarification supplémentaire n’est requise actuellement.",
@@ -647,6 +729,12 @@ describe("Organization Insights internationalization", () => {
     } as never);
 
     renderInsights();
+
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Contexte",
+      }),
+    );
 
     expect(
       await screen.findByText("Clarification de l’intention professionnelle"),
@@ -692,6 +780,12 @@ describe("Organization Insights internationalization", () => {
     } as never);
 
     renderInsights();
+
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Contexte",
+      }),
+    );
 
     expect(
       await screen.findByText(
@@ -848,6 +942,12 @@ describe("Organization Insights internationalization", () => {
 
     renderInsights();
 
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Contexte",
+      }),
+    );
+
     const button = await screen.findByRole("button", {
       name: "Enregistrer la réponse du collaborateur",
     });
@@ -893,6 +993,12 @@ describe("Organization Insights internationalization", () => {
     } as never);
 
     renderInsights();
+
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Contexte",
+      }),
+    );
 
     const button = await screen.findByRole("button", {
       name: "Enregistrer la réponse au mandat",
@@ -970,6 +1076,12 @@ describe("Organization Insights internationalization", () => {
     } as never);
 
     renderInsights();
+
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Contexte",
+      }),
+    );
 
     expect(
       await screen.findByText("Clarification de l’intention professionnelle"),
@@ -1125,6 +1237,12 @@ describe("Organization Insights internationalization", () => {
     } as never);
 
     renderInsights();
+
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Contexte",
+      }),
+    );
 
     expect(
       await screen.findByText("Clarification du mandat professionnel"),

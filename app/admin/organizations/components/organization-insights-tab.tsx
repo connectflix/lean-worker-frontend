@@ -1248,8 +1248,9 @@ export function OrganizationInsightsTab({
         loading={professionalExecutionPlanLoading}
       />
 
-      <div className="grid grid-2" style={{ alignItems: "start" }}>
-        <div className="card stack" style={{ gap: 14 }}>
+      {activeIntelligenceTab === "context" ? (
+        <div className="grid grid-2" style={{ alignItems: "start" }}>
+          <div className="card stack" style={{ gap: 14 }}>
           <div className="section-title">{copy.workerProfile}</div>
 
           <div className="card-soft stack" style={{ gap: 0 }}>
@@ -1297,8 +1298,9 @@ export function OrganizationInsightsTab({
           ) : (
             <div className="card-soft muted">{copy.noCareerBlueprint}</div>
           )}
+          </div>
         </div>
-      </div>
+      ) : null}
 
       <div className="card stack" style={{ gap: 14 }}>
         <div
@@ -1602,18 +1604,20 @@ export function OrganizationInsightsTab({
         </ScrollSection>
       </div>
 
-      <div className="card stack" style={{ gap: 16 }}>
-        <div
-          className="row space-between"
-          style={{
-            gap: 12,
-            flexWrap: "wrap",
-            alignItems: "center",
-          }}
-        >
-          <div className="stack" style={{ gap: 4 }}>
-            <div className="section-title">
-              {copy.mandate.title}
+      {activeIntelligenceTab === "context" ? (
+        <>
+          <div className="card stack" style={{ gap: 16 }}>
+            <div
+              className="row space-between"
+              style={{
+                gap: 12,
+                flexWrap: "wrap",
+                alignItems: "center",
+              }}
+            >
+              <div className="stack" style={{ gap: 4 }}>
+                <div className="section-title">
+                  {copy.mandate.title}
             </div>
             <div className="muted">{copy.mandate.description}</div>
           </div>
@@ -2395,6 +2399,8 @@ export function OrganizationInsightsTab({
         ) : null}
         </div>
       </div>
+        </>
+      ) : null}
     </AdminPage>
   );
 }
