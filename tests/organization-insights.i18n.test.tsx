@@ -214,6 +214,12 @@ describe("Organization Insights internationalization", () => {
       screen.getAllByText("Profil de carrière"),
     ).toHaveLength(2);
 
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Trajectoire",
+      }),
+    );
+
     expect(
       screen.getByText("Ressources et leviers"),
     ).toBeInTheDocument();
@@ -541,6 +547,82 @@ describe("Organization Insights internationalization", () => {
     ).toBeInTheDocument();
   });
 
+  it("moves lever workspace and lever resources out of Overview and into Trajectory", () => {
+    window.localStorage.setItem("leanworker.uiLanguage", "fr");
+
+    const summary = workerSummary();
+
+    const lever = {
+      id: 21,
+      category: "coaching",
+      is_active: true,
+      usage_count: 2,
+      is_highlighted: true,
+      is_default: true,
+      name: "Leadership coaching",
+      description: "Structured leadership support.",
+      provider_type: "partner",
+      is_paid: true,
+      price_min_eur: 100,
+      price_max_eur: 250,
+      match_reasons: ["Leadership transition"],
+      recommendation_ids: [11],
+      url: "https://example.com/lever",
+    };
+
+    summary.levers = [lever] as never;
+    summary.lever_count = 1;
+
+    renderInsights({
+      selectedWorkerSummary: summary,
+      filteredLevers: [lever] as never,
+    });
+
+    const overview = screen.getByRole("tab", {
+      name: "Vue d’ensemble",
+    });
+
+    const trajectory = screen.getByRole("tab", {
+      name: "Trajectoire",
+    });
+
+    expect(overview).toHaveAttribute("aria-selected", "true");
+    expect(trajectory).toHaveAttribute("aria-selected", "false");
+
+    expect(
+      screen.queryByText("Ressources et leviers"),
+    ).not.toBeInTheDocument();
+
+    expect(
+      screen.queryByPlaceholderText(
+        "Rechercher par nom, catégorie, fournisseur ou motif...",
+      ),
+    ).not.toBeInTheDocument();
+
+    expect(
+      screen.queryByText("Leadership coaching"),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(trajectory);
+
+    expect(overview).toHaveAttribute("aria-selected", "false");
+    expect(trajectory).toHaveAttribute("aria-selected", "true");
+
+    expect(
+      screen.getByText("Ressources et leviers"),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByPlaceholderText(
+        "Rechercher par nom, catégorie, fournisseur ou motif...",
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText("Leadership coaching"),
+    ).toBeInTheDocument();
+  });
+
   it("moves professional context details out of Overview and into Context", () => {
     window.localStorage.setItem("leanworker.uiLanguage", "fr");
 
@@ -625,6 +707,12 @@ describe("Organization Insights internationalization", () => {
     expect(
       screen.getByText("Career blueprint"),
     ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Trajectory",
+      }),
+    );
 
     expect(
       screen.getByText("Levers workspace"),
@@ -905,6 +993,12 @@ describe("Organization Insights internationalization", () => {
     ).toBeInTheDocument();
 
     expect(screen.getByText("Leviers associés")).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Trajectoire",
+      }),
+    );
 
     expect(screen.getByText("actif")).toBeInTheDocument();
     expect(screen.getByText("utilisé 2×")).toBeInTheDocument();

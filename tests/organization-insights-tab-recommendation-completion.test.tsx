@@ -170,12 +170,22 @@ describe("OrganizationInsightsTab recommendation completion", () => {
       name: "Overview",
     });
 
+    const trajectory = screen.getByRole("tab", {
+      name: "Trajectory",
+    });
+
     const decision = screen.getByRole("tab", {
       name: "Decision",
     });
 
     expect(overview).toHaveAttribute("aria-selected", "true");
+    expect(trajectory).toHaveAttribute("aria-selected", "false");
     expect(decision).toHaveAttribute("aria-selected", "false");
+
+    fireEvent.click(trajectory);
+
+    expect(overview).toHaveAttribute("aria-selected", "false");
+    expect(trajectory).toHaveAttribute("aria-selected", "true");
 
     fireEvent.click(
       screen.getByRole("button", {

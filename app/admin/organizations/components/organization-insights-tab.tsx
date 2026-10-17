@@ -1329,58 +1329,64 @@ export function OrganizationInsightsTab({
         </div>
       ) : null}
 
-      <div className="card stack" style={{ gap: 14 }}>
-        <div
-          className="row space-between"
-          style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}
-        >
-          <div className="stack" style={{ gap: 4 }}>
-            <div className="section-title">{copy.leversWorkspace}</div>
-            <div className="muted">
-              {copy.leversWorkspaceDescription}
+      {activeIntelligenceTab === "trajectory" ? (
+        <div className="card stack" style={{ gap: 14 }}>
+          <div
+            className="row space-between"
+            style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}
+          >
+            <div className="stack" style={{ gap: 4 }}>
+              <div className="section-title">{copy.leversWorkspace}</div>
+              <div className="muted">
+                {copy.leversWorkspaceDescription}
+              </div>
             </div>
+
+            <span className="badge">
+              {copy.leversShown(
+                filteredLevers.length,
+                selectedWorkerSummary.lever_count,
+              )}
+            </span>
           </div>
 
-          <span className="badge">
-            {copy.leversShown(
-              filteredLevers.length,
-              selectedWorkerSummary.lever_count,
-            )}
-          </span>
+          <div className="grid grid-3">
+            <input
+              className="input"
+              placeholder={copy.searchLeversPlaceholder}
+              value={leverSearch}
+              onChange={(event) => onLeverSearchChange(event.target.value)}
+            />
+
+            <select
+              className="select"
+              value={leverCategoryFilter}
+              onChange={(event) =>
+                onLeverCategoryFilterChange(event.target.value)
+              }
+            >
+              <option value="all">{copy.allCategories}</option>
+              {leverCategories.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+
+            <select
+              className="select"
+              value={leverSortMode}
+              onChange={(event) =>
+                onLeverSortModeChange(event.target.value as LeverSortMode)
+              }
+            >
+              <option value="highlighted">{copy.sortHighlighted}</option>
+              <option value="most_used">{copy.sortMostUsed}</option>
+              <option value="name">{copy.sortName}</option>
+            </select>
+          </div>
         </div>
-
-        <div className="grid grid-3">
-          <input
-            className="input"
-            placeholder={copy.searchLeversPlaceholder}
-            value={leverSearch}
-            onChange={(event) => onLeverSearchChange(event.target.value)}
-          />
-
-          <select
-            className="select"
-            value={leverCategoryFilter}
-            onChange={(event) => onLeverCategoryFilterChange(event.target.value)}
-          >
-            <option value="all">{copy.allCategories}</option>
-            {leverCategories.map((category) => (
-              <option key={category} value={category}>
-                {category}
-              </option>
-            ))}
-          </select>
-
-          <select
-            className="select"
-            value={leverSortMode}
-            onChange={(event) => onLeverSortModeChange(event.target.value as LeverSortMode)}
-          >
-            <option value="highlighted">{copy.sortHighlighted}</option>
-            <option value="most_used">{copy.sortMostUsed}</option>
-            <option value="name">{copy.sortName}</option>
-          </select>
-        </div>
-      </div>
+      ) : null}
 
       {recommendationCompletionError ? (
         <div
@@ -1544,11 +1550,12 @@ export function OrganizationInsightsTab({
           ))}
         </ScrollSection>
 
-        <ScrollSection
-          title={copy.collections.levers}
-          count={filteredLevers.length}
-          emptyLabel={copy.collections.noLevers}
-        >
+        {activeIntelligenceTab === "trajectory" ? (
+          <ScrollSection
+            title={copy.collections.levers}
+            count={filteredLevers.length}
+            emptyLabel={copy.collections.noLevers}
+          >
           {filteredLevers.map((lever) => (
             <div
               key={lever.id}
@@ -1632,7 +1639,8 @@ export function OrganizationInsightsTab({
               </div>
             </div>
           ))}
-        </ScrollSection>
+          </ScrollSection>
+        ) : null}
       </div>
 
       {activeIntelligenceTab === "context" ? (
