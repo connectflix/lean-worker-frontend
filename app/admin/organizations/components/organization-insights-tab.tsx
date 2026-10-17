@@ -3,7 +3,12 @@
 import { useEffect, useState } from "react";
 import { getOrganizationInsightsCopy } from "@/lib/i18n/organization-insights";
 import { useAdminUiLanguage } from "@/lib/use-admin-ui-language";
-import { AdminMetricCard, AdminPage, AdminTabs } from "@/components/admin-ui";
+import {
+  AdminMetricCard,
+  AdminPage,
+  AdminStatusBadge,
+  AdminTabs,
+} from "@/components/admin-ui";
 import {
   completeAdminWorkerRecommendation,
   getAdminWorkerProfessionalExecutionPlan,
@@ -1116,6 +1121,27 @@ export function OrganizationInsightsTab({
       : []),
   ];
 
+  const managerAttentionAssessmentInProgress =
+    !professionalMandateSupportLoaded ||
+    !professionalIntentionCompletionWorkspaceLoaded ||
+    !professionalExecutionPlanLoaded;
+
+  const managerAttentionStatus =
+    managerAttentionSignals.length > 0
+      ? {
+          label: copy.attentionNeedsAttention,
+          tone: "warning" as const,
+        }
+      : managerAttentionAssessmentInProgress
+        ? {
+            label: copy.attentionAssessmentInProgress,
+            tone: "default" as const,
+          }
+        : {
+            label: copy.attentionNoAttentionNeeded,
+            tone: "success" as const,
+          };
+
   return (
     <AdminPage style={{ gap: 16 }}>
       <div
@@ -1246,15 +1272,28 @@ export function OrganizationInsightsTab({
               ) : null}
             </div>
 
-            <span
-              className={
-                managerAttentionSignals.length > 0
-                  ? "badge primary"
-                  : "badge"
-              }
+            <div
+              className="row"
+              style={{
+                gap: 8,
+                alignItems: "center",
+                flexWrap: "wrap",
+              }}
             >
-              {managerAttentionSignals.length}
-            </span>
+              <AdminStatusBadge tone={managerAttentionStatus.tone}>
+                {managerAttentionStatus.label}
+              </AdminStatusBadge>
+
+              <span
+                className={
+                  managerAttentionSignals.length > 0
+                    ? "badge primary"
+                    : "badge"
+                }
+              >
+                {managerAttentionSignals.length}
+              </span>
+            </div>
           </div>
 
           <div

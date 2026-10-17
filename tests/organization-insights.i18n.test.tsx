@@ -303,6 +303,35 @@ describe("Organization Insights internationalization", () => {
     ).toBeInTheDocument();
   });
 
+  it("frames an actionable manager attention state with a warning status", () => {
+    window.localStorage.setItem("leanworker.uiLanguage", "fr");
+
+    const summary = workerSummary();
+
+    summary.recommendations = [
+      {
+        id: 11,
+        status: "open",
+        priority: "high",
+        title: "Strengthen leadership positioning",
+        description: "Prepare a concrete leadership positioning action.",
+      },
+    ] as never;
+
+    renderInsights({
+      selectedWorkerSummary: summary,
+    });
+
+    const attention = screen.getByTestId(
+      "organization-insights-attention",
+    );
+
+    const status = within(attention).getByText("Attention requise");
+
+    expect(status).toBeInTheDocument();
+    expect(status).toHaveAttribute("data-tone", "warning");
+  });
+
   it("navigates from an open recommendation attention signal to Decision", () => {
     window.localStorage.setItem("leanworker.uiLanguage", "fr");
 
@@ -431,6 +460,37 @@ describe("Organization Insights internationalization", () => {
     ).toBeInTheDocument();
   });
 
+  it("keeps manager attention assessment in progress until readiness data is loaded", () => {
+    window.localStorage.setItem("leanworker.uiLanguage", "fr");
+
+    vi.mocked(
+      getAdminWorkerProfessionalMandateSupport,
+    ).mockReturnValue(new Promise(() => {}) as never);
+
+    vi.mocked(
+      getAdminWorkerProfessionalIntentionCompletionWorkspace,
+    ).mockReturnValue(new Promise(() => {}) as never);
+
+    vi.mocked(
+      getAdminWorkerProfessionalExecutionPlan,
+    ).mockReturnValue(new Promise(() => {}) as never);
+
+    renderInsights();
+
+    const attention = screen.getByTestId(
+      "organization-insights-attention",
+    );
+
+    const status = within(attention).getByText("Analyse en cours");
+
+    expect(status).toBeInTheDocument();
+    expect(status).toHaveAttribute("data-tone", "default");
+
+    expect(
+      within(attention).queryByText("Aucun point d’attention"),
+    ).not.toBeInTheDocument();
+  });
+
   it("does not surface false manager attention signals for completed worker state", async () => {
     window.localStorage.setItem("leanworker.uiLanguage", "fr");
 
@@ -509,6 +569,13 @@ describe("Organization Insights internationalization", () => {
     ).not.toBeInTheDocument();
 
     expect(within(attention).getByText("0")).toBeInTheDocument();
+
+    const status = within(attention).getByText(
+      "Aucun point d’attention",
+    );
+
+    expect(status).toBeInTheDocument();
+    expect(status).toHaveAttribute("data-tone", "success");
   });
 
   it("renders the worker intelligence navigation with Overview selected by default", () => {

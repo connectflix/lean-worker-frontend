@@ -6,6 +6,9 @@ export type OrganizationInsightsCopy = {
   selectWorker: string;
   selectedWorker: string;
   attentionTitle: string;
+  attentionAssessmentInProgress: string;
+  attentionNeedsAttention: string;
+  attentionNoAttentionNeeded: string;
   openRecommendation: (count: number) => string;
   attentionCareerBlueprintMissing: string;
   attentionMandateClarification: string;
@@ -194,6 +197,9 @@ const COPY: Record<SupportedUiLanguage, OrganizationInsightsCopy> = {
     selectWorker: "Select a worker to view details.",
     selectedWorker: "Selected worker:",
     attentionTitle: "Needs attention",
+    attentionAssessmentInProgress: "Assessment in progress",
+    attentionNeedsAttention: "Needs attention",
+    attentionNoAttentionNeeded: "No attention needed",
     openRecommendation: (count) =>
       `${count} open ${count === 1 ? "recommendation" : "recommendations"}`,
     attentionCareerBlueprintMissing: "Career profile needs completion",
@@ -419,6 +425,9 @@ const COPY: Record<SupportedUiLanguage, OrganizationInsightsCopy> = {
       "Sélectionnez un collaborateur pour afficher ses informations.",
     selectedWorker: "Collaborateur sélectionné :",
     attentionTitle: "À surveiller",
+    attentionAssessmentInProgress: "Analyse en cours",
+    attentionNeedsAttention: "Attention requise",
+    attentionNoAttentionNeeded: "Aucun point d’attention",
     openRecommendation: (count) =>
       `${count} ${count === 1 ? "recommandation ouverte" : "recommandations ouvertes"}`,
     attentionCareerBlueprintMissing: "Profil de carrière à compléter",
