@@ -1144,86 +1144,90 @@ export function OrganizationInsightsTab({
           </div>
         </div>
 
-        <div
-          data-testid="organization-insights-attention"
-          className="card-soft row space-between"
-          style={{
-            gap: 12,
-            alignItems: "flex-start",
-            flexWrap: "wrap",
-          }}
-        >
-          <div className="stack" style={{ gap: 8, minWidth: 0 }}>
-            <strong>{copy.attentionTitle}</strong>
+        {activeIntelligenceTab === "overview" ? (
+          <>
+            <div
+              data-testid="organization-insights-attention"
+              className="card-soft row space-between"
+              style={{
+                gap: 12,
+                alignItems: "flex-start",
+                flexWrap: "wrap",
+              }}
+            >
+              <div className="stack" style={{ gap: 8, minWidth: 0 }}>
+                <strong>{copy.attentionTitle}</strong>
 
-            {managerAttentionSignals.length > 0 ? (
-              <div className="stack" style={{ gap: 5 }}>
-                {managerAttentionSignals.map((signal) => (
-                  <div key={signal} className="muted">
-                    {signal}
+                {managerAttentionSignals.length > 0 ? (
+                  <div className="stack" style={{ gap: 5 }}>
+                    {managerAttentionSignals.map((signal) => (
+                      <div key={signal} className="muted">
+                        {signal}
+                      </div>
+                    ))}
                   </div>
-                ))}
+                ) : null}
               </div>
-            ) : null}
-          </div>
 
-          <span
-            className={
-              managerAttentionSignals.length > 0
-                ? "badge primary"
-                : "badge"
-            }
-          >
-            {managerAttentionSignals.length}
-          </span>
-        </div>
+              <span
+                className={
+                  managerAttentionSignals.length > 0
+                    ? "badge primary"
+                    : "badge"
+                }
+              >
+                {managerAttentionSignals.length}
+              </span>
+            </div>
 
-        <div
-          data-testid="organization-insights-metrics"
-          className="admin-kpi-scroll"
-        >
-          <div className="admin-kpi-row admin-kpi-row--6">
-            <AdminMetricCard
-              label={copy.metrics.sessions}
-              value={selectedWorkerSummary.session_count}
-              helper={copy.metrics.sessionsHelper}
-            />
+            <div
+              data-testid="organization-insights-metrics"
+              className="admin-kpi-scroll"
+            >
+              <div className="admin-kpi-row admin-kpi-row--6">
+                <AdminMetricCard
+                  label={copy.metrics.sessions}
+                  value={selectedWorkerSummary.session_count}
+                  helper={copy.metrics.sessionsHelper}
+                />
 
-            <AdminMetricCard
-              label={copy.metrics.externalConversations}
-              value={selectedWorkerSummary.external_conversation_count}
-              helper={copy.metrics.externalConversationsHelper}
-            />
+                <AdminMetricCard
+                  label={copy.metrics.externalConversations}
+                  value={selectedWorkerSummary.external_conversation_count}
+                  helper={copy.metrics.externalConversationsHelper}
+                />
 
-            <AdminMetricCard
-              label={copy.metrics.recommendations}
-              value={selectedWorkerSummary.recommendation_count}
-              helper={copy.metrics.recommendationsHelper}
-            />
+                <AdminMetricCard
+                  label={copy.metrics.recommendations}
+                  value={selectedWorkerSummary.recommendation_count}
+                  helper={copy.metrics.recommendationsHelper}
+                />
 
-            <AdminMetricCard
-              label={copy.metrics.artifacts}
-              value={selectedWorkerSummary.artifact_count}
-              helper={copy.metrics.artifactsHelper}
-            />
+                <AdminMetricCard
+                  label={copy.metrics.artifacts}
+                  value={selectedWorkerSummary.artifact_count}
+                  helper={copy.metrics.artifactsHelper}
+                />
 
-            <AdminMetricCard
-              label={copy.metrics.levers}
-              value={selectedWorkerSummary.lever_count}
-              helper={copy.metrics.leversHelper}
-            />
+                <AdminMetricCard
+                  label={copy.metrics.levers}
+                  value={selectedWorkerSummary.lever_count}
+                  helper={copy.metrics.leversHelper}
+                />
 
-            <AdminMetricCard
-              label={copy.metrics.blueprint}
-              value={
-                selectedWorkerSummary.career_blueprint
-                  ? copy.metrics.blueprintAvailable
-                  : copy.metrics.blueprintUnavailable
-              }
-              helper={copy.metrics.blueprintHelper}
-            />
-          </div>
-        </div>
+                <AdminMetricCard
+                  label={copy.metrics.blueprint}
+                  value={
+                    selectedWorkerSummary.career_blueprint
+                      ? copy.metrics.blueprintAvailable
+                      : copy.metrics.blueprintUnavailable
+                  }
+                  helper={copy.metrics.blueprintHelper}
+                />
+              </div>
+            </div>
+          </>
+        ) : null}
       </div>
 
       <AdminTabs

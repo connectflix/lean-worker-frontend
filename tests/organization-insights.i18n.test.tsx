@@ -182,6 +182,10 @@ describe("Organization Insights internationalization", () => {
 
     renderInsights();
 
+    expect(
+      screen.getByText("Conversations externes"),
+    ).toBeInTheDocument();
+
     fireEvent.click(
       screen.getByRole("tab", {
         name: "Contexte",
@@ -203,16 +207,12 @@ describe("Organization Insights internationalization", () => {
     ).toHaveTextContent("Senior Analyst · Brussels");
 
     expect(
-      screen.getByText("Conversations externes"),
-    ).toBeInTheDocument();
-
-    expect(
       screen.getByText("Profil du collaborateur"),
     ).toBeInTheDocument();
 
     expect(
-      screen.getAllByText("Profil de carrière"),
-    ).toHaveLength(2);
+      screen.getByText("Profil de carrière"),
+    ).toBeInTheDocument();
 
     fireEvent.click(
       screen.getByRole("tab", {
@@ -519,6 +519,50 @@ describe("Organization Insights internationalization", () => {
     ).toBeInTheDocument();
   });
 
+  it("keeps executive attention and metrics exclusive to Overview", () => {
+    window.localStorage.setItem("leanworker.uiLanguage", "fr");
+
+    renderInsights();
+
+    const overview = screen.getByRole("tab", {
+      name: "Vue d’ensemble",
+    });
+
+    const context = screen.getByRole("tab", {
+      name: "Contexte",
+    });
+
+    expect(overview).toHaveAttribute("aria-selected", "true");
+
+    expect(
+      screen.getByTestId("organization-insights-worker-header"),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByTestId("organization-insights-attention"),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByTestId("organization-insights-metrics"),
+    ).toBeInTheDocument();
+
+    fireEvent.click(context);
+
+    expect(context).toHaveAttribute("aria-selected", "true");
+
+    expect(
+      screen.getByTestId("organization-insights-worker-header"),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.queryByTestId("organization-insights-attention"),
+    ).not.toBeInTheDocument();
+
+    expect(
+      screen.queryByTestId("organization-insights-metrics"),
+    ).not.toBeInTheDocument();
+  });
+
   it("moves the professional execution plan out of Overview and into Execution", () => {
     renderInsights();
 
@@ -731,8 +775,8 @@ describe("Organization Insights internationalization", () => {
     ).toBeInTheDocument();
 
     expect(
-      screen.getAllByText("Profil de carrière"),
-    ).toHaveLength(2);
+      screen.getByText("Profil de carrière"),
+    ).toBeInTheDocument();
 
     expect(
       screen.getByText("Clarification du mandat professionnel"),
@@ -748,6 +792,10 @@ describe("Organization Insights internationalization", () => {
 
     renderInsights();
 
+    expect(
+      screen.getByText("External conversations"),
+    ).toBeInTheDocument();
+
     fireEvent.click(
       screen.getByRole("tab", {
         name: "Context",
@@ -756,10 +804,6 @@ describe("Organization Insights internationalization", () => {
 
     expect(
       screen.getByText("Worker performance workspace"),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByText("External conversations"),
     ).toBeInTheDocument();
 
     expect(
