@@ -303,6 +303,37 @@ describe("Organization Insights internationalization", () => {
     ).toBeInTheDocument();
   });
 
+  it("structures Overview as manager attention followed by key metrics", () => {
+    window.localStorage.setItem("leanworker.uiLanguage", "fr");
+
+    renderInsights();
+
+    const attention = screen.getByTestId(
+      "organization-insights-attention",
+    );
+
+    const metrics = screen.getByTestId(
+      "organization-insights-metrics",
+    );
+
+    expect(
+      within(attention).getByRole("heading", {
+        name: "À surveiller",
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      within(metrics).getByRole("heading", {
+        name: "Repères clés",
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      attention.compareDocumentPosition(metrics) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it("frames an actionable manager attention state with a warning status", () => {
     window.localStorage.setItem("leanworker.uiLanguage", "fr");
 

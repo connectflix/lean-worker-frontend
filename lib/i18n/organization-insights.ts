@@ -26,6 +26,7 @@ export type OrganizationInsightsCopy = {
   };
 
   metrics: {
+    title: string;
     sessions: string;
     sessionsHelper: string;
     externalConversations: string;
@@ -219,6 +220,7 @@ const COPY: Record<SupportedUiLanguage, OrganizationInsightsCopy> = {
     },
 
     metrics: {
+      title: "Key metrics",
       sessions: "Sessions",
       sessionsHelper: "AI coach sessions",
       externalConversations: "External conversations",
@@ -447,6 +449,7 @@ const COPY: Record<SupportedUiLanguage, OrganizationInsightsCopy> = {
     },
 
     metrics: {
+      title: "Repères clés",
       sessions: "Sessions",
       sessionsHelper: "Sessions avec le coach IA",
       externalConversations: "Conversations externes",

@@ -6,6 +6,7 @@ import { useAdminUiLanguage } from "@/lib/use-admin-ui-language";
 import {
   AdminMetricCard,
   AdminPage,
+  AdminSection,
   AdminStatusBadge,
   AdminTabs,
 } from "@/components/admin-ui";
@@ -1236,18 +1237,34 @@ export function OrganizationInsightsTab({
 
       {activeIntelligenceTab === "overview" ? (
         <>
-          <div
-            data-testid="organization-insights-attention"
-            className="card-soft row space-between"
-            style={{
-              gap: 12,
-              alignItems: "flex-start",
-              flexWrap: "wrap",
-            }}
-          >
-            <div className="stack" style={{ gap: 8, minWidth: 0 }}>
-              <strong>{copy.attentionTitle}</strong>
+          <div data-testid="organization-insights-attention">
+            <AdminSection
+              title={copy.attentionTitle}
+              actions={
+                <div
+                  className="row"
+                  style={{
+                    gap: 8,
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <AdminStatusBadge tone={managerAttentionStatus.tone}>
+                    {managerAttentionStatus.label}
+                  </AdminStatusBadge>
 
+                  <span
+                    className={
+                      managerAttentionSignals.length > 0
+                        ? "badge primary"
+                        : "badge"
+                    }
+                  >
+                    {managerAttentionSignals.length}
+                  </span>
+                </div>
+              }
+            >
               {managerAttentionSignals.length > 0 ? (
                 <div className="stack" style={{ gap: 5 }}>
                   {managerAttentionSignals.map((signal) => (
@@ -1270,36 +1287,12 @@ export function OrganizationInsightsTab({
                   ))}
                 </div>
               ) : null}
-            </div>
-
-            <div
-              className="row"
-              style={{
-                gap: 8,
-                alignItems: "center",
-                flexWrap: "wrap",
-              }}
-            >
-              <AdminStatusBadge tone={managerAttentionStatus.tone}>
-                {managerAttentionStatus.label}
-              </AdminStatusBadge>
-
-              <span
-                className={
-                  managerAttentionSignals.length > 0
-                    ? "badge primary"
-                    : "badge"
-                }
-              >
-                {managerAttentionSignals.length}
-              </span>
-            </div>
+            </AdminSection>
           </div>
 
-          <div
-            data-testid="organization-insights-metrics"
-            className="admin-kpi-scroll"
-          >
+          <div data-testid="organization-insights-metrics">
+            <AdminSection title={copy.metrics.title}>
+              <div className="admin-kpi-scroll">
             <div className="admin-kpi-row admin-kpi-row--6">
               <AdminMetricCard
                 label={copy.metrics.sessions}
@@ -1341,6 +1334,8 @@ export function OrganizationInsightsTab({
                 helper={copy.metrics.blueprintHelper}
               />
             </div>
+              </div>
+            </AdminSection>
           </div>
         </>
       ) : null}
