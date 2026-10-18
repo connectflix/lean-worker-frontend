@@ -1162,21 +1162,60 @@ export type ExperienceRatingEmailPreviewResponse = {
 
 /* ---------------- ADMIN LEVERS ---------------- */
 
-export type AdminLever = {
-  id: number;
+export type LeverType =
+  | "transformation"
+  | "impact"
+  | "development";
+
+export type LeverEntityKind =
+  | "person"
+  | "organization"
+  | "resource";
+
+export type ExternalLeverCandidate = {
   category: string;
+  lever_type: LeverType;
+  entity_kind: LeverEntityKind;
   name: string;
   description: string;
   url: string | null;
   tags: string[];
   target_problem: string[];
-  provider_type?: string;
-  is_paid?: boolean;
-  price_min_eur?: number | null;
-  price_max_eur?: number | null;
-  currency?: string;
-  is_default?: boolean;
-  priority_score?: number;
+  source_provider: string;
+  source_external_id: string | null;
+  source_url: string | null;
+  source_payload_json: Record<string, unknown>;
+};
+
+export type OrganizationRecommendationLeverDiscoveryRequest = {
+  provider_name: string;
+  lever_type: LeverType;
+  entity_kind: LeverEntityKind;
+  category: string;
+  limit?: number;
+};
+
+export type AdminLever = {
+  id: number;
+  category: string;
+  lever_type: LeverType | null;
+  entity_kind: LeverEntityKind | null;
+  name: string;
+  description: string;
+  url: string | null;
+  source_provider: string | null;
+  source_external_id: string | null;
+  source_url: string | null;
+  source_payload_json: Record<string, unknown> | null;
+  tags: string[];
+  target_problem: string[];
+  provider_type: string;
+  is_paid: boolean;
+  price_min_eur: number | null;
+  price_max_eur: number | null;
+  currency: string;
+  is_default: boolean;
+  priority_score: number;
   is_active: boolean;
   created_at: string;
 };

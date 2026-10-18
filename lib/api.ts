@@ -7,6 +7,8 @@ import type {
   AdminLever,
   AdminLeverCreate,
   AdminLeverUpdate,
+  ExternalLeverCandidate,
+  OrganizationRecommendationLeverDiscoveryRequest,
   AdminLoginResponse,
   AdminChangePasswordRequest,
   AdminChangePasswordResponse,
@@ -975,6 +977,19 @@ export async function deleteAdminLever(leverId: number): Promise<{ deleted: bool
   });
 }
 
+
+export async function saveAdminDiscoveredLever(
+  candidate: ExternalLeverCandidate,
+): Promise<AdminLever> {
+  return adminApiFetch<AdminLever>(
+    "/admin/levers/discovery/save",
+    {
+      method: "POST",
+      body: JSON.stringify(candidate),
+    },
+  );
+}
+
 /* ---------------- ADMIN DASHBOARD / QUALITY ---------------- */
 
 export async function getAdminDashboardSummary(): Promise<AdminDashboardSummary> {
@@ -1178,6 +1193,21 @@ export async function completeAdminWorkerOrganizationRecommendation(
     `/admin/workers/${workerId}/organization-recommendations/${recommendationId}/complete`,
     {
       method: "POST",
+    },
+  );
+}
+
+
+export async function discoverAdminWorkerOrganizationRecommendationLevers(
+  workerId: number,
+  recommendationId: number,
+  payload: OrganizationRecommendationLeverDiscoveryRequest,
+): Promise<ExternalLeverCandidate[]> {
+  return adminApiFetch<ExternalLeverCandidate[]>(
+    `/admin/workers/${workerId}/organization-recommendations/${recommendationId}/lever-discovery`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
     },
   );
 }
