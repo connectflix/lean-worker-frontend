@@ -73,6 +73,21 @@ export type OrganizationInsightsChildCardsCopy = {
     markCompletedButton: string;
     markCompleted: (title: string) => string;
     historicalExampleUnavailable: string;
+
+    leverDiscovery: string;
+    leverDiscoveryDescription: string;
+    leverType: string;
+    leverCategory: string;
+    leverTypeFor: (title: string) => string;
+    leverCategoryFor: (title: string) => string;
+    transformationLever: string;
+    impactLever: string;
+    discoverLevers: string;
+    discoveringLevers: string;
+    discoverLeversFor: (title: string) => string;
+    noExternalLeverCandidates: string;
+    leverDiscoveryFailed: string;
+    openExternalLever: string;
   };
 
   executionPlan: {
@@ -189,6 +204,23 @@ const COPY: Record<
       markCompleted: (title) => `Mark ${title} completed`,
       historicalExampleUnavailable:
         "Example not available for this historical recommendation.",
+
+      leverDiscovery: "Lever discovery",
+      leverDiscoveryDescription:
+        "Search external candidates for this organization recommendation. Discovery does not select or recommend a Lever to the Worker.",
+      leverType: "Lever type",
+      leverCategory: "Lever category",
+      leverTypeFor: (title) => `Lever type for ${title}`,
+      leverCategoryFor: (title) => `Lever category for ${title}`,
+      transformationLever: "Transformation",
+      impactLever: "Impact",
+      discoverLevers: "Discover Levers",
+      discoveringLevers: "Discovering...",
+      discoverLeversFor: (title) => `Discover Levers for ${title}`,
+      noExternalLeverCandidates: "No external Lever candidates found.",
+      leverDiscoveryFailed:
+        "Lever discovery failed. Please try again.",
+      openExternalLever: "Open external profile",
     },
 
     executionPlan: {
@@ -308,6 +340,24 @@ const COPY: Record<
       markCompleted: (title) => `Marquer ${title} comme terminée`,
       historicalExampleUnavailable:
         "Exemple non disponible pour cette recommandation historique.",
+
+      leverDiscovery: "Découverte de leviers",
+      leverDiscoveryDescription:
+        "Rechercher des candidats externes pour cette recommandation de l’organisation. La découverte ne sélectionne ni ne recommande un levier au collaborateur.",
+      leverType: "Type de levier",
+      leverCategory: "Catégorie de levier",
+      leverTypeFor: (title) => `Type de levier pour ${title}`,
+      leverCategoryFor: (title) => `Catégorie de levier pour ${title}`,
+      transformationLever: "Transformation",
+      impactLever: "Impact",
+      discoverLevers: "Rechercher des leviers",
+      discoveringLevers: "Recherche en cours...",
+      discoverLeversFor: (title) => `Rechercher des leviers pour ${title}`,
+      noExternalLeverCandidates:
+        "Aucun candidat de levier externe trouvé.",
+      leverDiscoveryFailed:
+        "La recherche de leviers a échoué. Veuillez réessayer.",
+      openExternalLever: "Ouvrir le profil externe",
     },
 
     executionPlan: {

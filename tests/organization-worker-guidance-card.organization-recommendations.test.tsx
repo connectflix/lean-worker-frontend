@@ -2,7 +2,10 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { OrganizationWorkerGuidanceCard } from "@/app/admin/organizations/components/organization-worker-guidance-card";
-import type { OrganizationWorkerGuidanceResponse } from "@/lib/types";
+import type {
+  ExternalLeverCandidate,
+  OrganizationWorkerGuidanceResponse,
+} from "@/lib/types";
 
 
 function guidance(
@@ -385,6 +388,158 @@ describe("OrganizationWorkerGuidanceCard organization recommendations", () => {
       scrollbarGutter: "stable",
     });
   });
+
+
+  it("discovers transformation Levers from an explicit recommendation-scoped identity", async () => {
+    const onLeverDiscovery = vi.fn(async () => []);
+
+    render(
+      <OrganizationWorkerGuidanceCard
+        guidance={guidance()}
+        loading={false}
+        onOrganizationRecommendationLeverDiscovery={onLeverDiscovery}
+      />,
+    );
+
+    const typeSelect = screen.getByRole("combobox", {
+      name: /lever type for clarify decision boundaries/i,
+    });
+
+    const categorySelect = screen.getByRole("combobox", {
+      name: /lever category for clarify decision boundaries/i,
+    });
+
+    expect(typeSelect).toHaveValue("transformation");
+    expect(categorySelect).toHaveValue("mentor");
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /discover levers for clarify decision boundaries/i,
+      }),
+    );
+
+    await screen.findByText(/no external lever candidates found/i);
+
+    expect(onLeverDiscovery).toHaveBeenCalledTimes(1);
+    expect(onLeverDiscovery).toHaveBeenCalledWith(
+      801,
+      {
+        provider_name: "apollo",
+        lever_type: "transformation",
+        entity_kind: "person",
+        category: "mentor",
+        limit: 10,
+      },
+    );
+  });
+
+
+  it("constrains Impact discovery to organization company Levers", async () => {
+    const onLeverDiscovery = vi.fn(async () => []);
+
+    render(
+      <OrganizationWorkerGuidanceCard
+        guidance={guidance()}
+        loading={false}
+        onOrganizationRecommendationLeverDiscovery={onLeverDiscovery}
+      />,
+    );
+
+    fireEvent.change(
+      screen.getByRole("combobox", {
+        name: /lever type for clarify decision boundaries/i,
+      }),
+      {
+        target: {
+          value: "impact",
+        },
+      },
+    );
+
+    expect(
+      screen.getByRole("combobox", {
+        name: /lever category for clarify decision boundaries/i,
+      }),
+    ).toHaveValue("company");
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /discover levers for clarify decision boundaries/i,
+      }),
+    );
+
+    await screen.findByText(/no external lever candidates found/i);
+
+    expect(onLeverDiscovery).toHaveBeenCalledWith(
+      801,
+      {
+        provider_name: "apollo",
+        lever_type: "impact",
+        entity_kind: "organization",
+        category: "company",
+        limit: 10,
+      },
+    );
+  });
+
+
+  it("renders discovered candidates read-only without implying Worker selection or catalog save", async () => {
+    const candidate: ExternalLeverCandidate = {
+      category: "mentor",
+      lever_type: "transformation",
+      entity_kind: "person",
+      name: "Enterprise Architecture Mentor",
+      description: "Experienced architecture mentor.",
+      url: "https://example.com/profile",
+      tags: ["architecture"],
+      target_problem: ["decision clarity"],
+      source_provider: "apollo",
+      source_external_id: "person-123",
+      source_url: "https://example.com/profile",
+      source_payload_json: {},
+    };
+
+    const onLeverDiscovery = vi.fn(async () => [candidate]);
+
+    render(
+      <OrganizationWorkerGuidanceCard
+        guidance={guidance()}
+        loading={false}
+        onOrganizationRecommendationLeverDiscovery={onLeverDiscovery}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /discover levers for clarify decision boundaries/i,
+      }),
+    );
+
+    expect(
+      await screen.findByText("Enterprise Architecture Mentor"),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText("Experienced architecture mentor."),
+    ).toBeInTheDocument();
+
+    expect(screen.getByText(/apollo/i)).toBeInTheDocument();
+
+    expect(
+      screen.queryByRole("button", {
+        name: /save.*catalog/i,
+      }),
+    ).not.toBeInTheDocument();
+
+    expect(
+      screen.queryByText(/selected for worker/i),
+    ).not.toBeInTheDocument();
+
+    expect(
+      screen.queryByText(/recommended to worker/i),
+    ).not.toBeInTheDocument();
+  });
+
 
   it("preserves the existing loading state", () => {
     render(

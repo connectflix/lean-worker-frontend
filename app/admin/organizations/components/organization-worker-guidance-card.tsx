@@ -1,9 +1,14 @@
 "use client";
 
+import { useState } from "react";
+
 import { getOrganizationInsightsChildCardsCopy } from "@/lib/i18n/organization-insights-child-cards";
 import { useAdminUiLanguage } from "@/lib/use-admin-ui-language";
 
 import type {
+  ExternalLeverCandidate,
+  LeverType,
+  OrganizationRecommendationLeverDiscoveryRequest,
   OrganizationWorkerMandateConstraint,
   OrganizationSupportRecommendation,
   OrganizationWorkerGuidanceResponse,
@@ -24,6 +29,10 @@ type OrganizationWorkerGuidanceCardProps = {
   onOrganizationRecommendationCompleted?: (
     recommendationId: number,
   ) => void;
+  onOrganizationRecommendationLeverDiscovery?: (
+    recommendationId: number,
+    payload: OrganizationRecommendationLeverDiscoveryRequest,
+  ) => Promise<ExternalLeverCandidate[]>;
 };
 
 function CountBadge({
@@ -824,12 +833,243 @@ function MandatePlanSection({
   );
 }
 
+
+const TRANSFORMATION_CATEGORIES = [
+  "coach",
+  "mentor",
+  "trainer",
+  "peer",
+  "internship_supervisor",
+  "sponsor",
+] as const;
+
+
+function OrganizationRecommendationLeverDiscovery({
+  recommendation,
+  onDiscover,
+}: {
+  recommendation: OrganizationSupportRecommendation;
+  onDiscover: (
+    recommendationId: number,
+    payload: OrganizationRecommendationLeverDiscoveryRequest,
+  ) => Promise<ExternalLeverCandidate[]>;
+}) {
+  const copy = useGuidanceCopy();
+
+  const [leverType, setLeverType] =
+    useState<Extract<LeverType, "transformation" | "impact">>(
+      "transformation",
+    );
+  const [category, setCategory] = useState("mentor");
+  const [candidates, setCandidates] =
+    useState<ExternalLeverCandidate[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function handleLeverTypeChange(
+    nextLeverType: Extract<LeverType, "transformation" | "impact">,
+  ) {
+    setLeverType(nextLeverType);
+    setCategory(
+      nextLeverType === "transformation"
+        ? "mentor"
+        : "company",
+    );
+    setCandidates(null);
+    setError(null);
+  }
+
+  async function handleDiscover() {
+    const entityKind =
+      leverType === "transformation"
+        ? "person"
+        : "organization";
+
+    setLoading(true);
+    setError(null);
+    setCandidates(null);
+
+    try {
+      const discovered = await onDiscover(
+        recommendation.id,
+        {
+          provider_name: "apollo",
+          lever_type: leverType,
+          entity_kind: entityKind,
+          category,
+          limit: 10,
+        },
+      );
+
+      setCandidates(discovered);
+    } catch {
+      setError(copy.leverDiscoveryFailed);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <SoftPanel>
+      <div className="stack" style={{ gap: 10 }}>
+        <div className="stack" style={{ gap: 4 }}>
+          <SectionLabel>{copy.leverDiscovery}</SectionLabel>
+          <div className="muted" style={{ lineHeight: 1.5 }}>
+            {copy.leverDiscoveryDescription}
+          </div>
+        </div>
+
+        <div
+          className="row"
+          style={{
+            gap: 10,
+            flexWrap: "wrap",
+            alignItems: "end",
+          }}
+        >
+          <label className="stack" style={{ gap: 5 }}>
+            <span className="muted">{copy.leverType}</span>
+            <select
+              className="input"
+              aria-label={copy.leverTypeFor(recommendation.title)}
+              value={leverType}
+              disabled={loading}
+              onChange={(event) =>
+                handleLeverTypeChange(
+                  event.target.value as
+                    Extract<LeverType, "transformation" | "impact">,
+                )
+              }
+            >
+              <option value="transformation">
+                {copy.transformationLever}
+              </option>
+              <option value="impact">
+                {copy.impactLever}
+              </option>
+            </select>
+          </label>
+
+          <label className="stack" style={{ gap: 5 }}>
+            <span className="muted">{copy.leverCategory}</span>
+            <select
+              className="input"
+              aria-label={copy.leverCategoryFor(recommendation.title)}
+              value={category}
+              disabled={loading}
+              onChange={(event) => {
+                setCategory(event.target.value);
+                setCandidates(null);
+                setError(null);
+              }}
+            >
+              {leverType === "transformation" ? (
+                TRANSFORMATION_CATEGORIES.map((value) => (
+                  <option key={value} value={value}>
+                    {value.replaceAll("_", " ")}
+                  </option>
+                ))
+              ) : (
+                <option value="company">company</option>
+              )}
+            </select>
+          </label>
+
+          <button
+            type="button"
+            className="btn"
+            disabled={loading}
+            aria-label={copy.discoverLeversFor(recommendation.title)}
+            onClick={handleDiscover}
+          >
+            {loading
+              ? copy.discoveringLevers
+              : copy.discoverLevers}
+          </button>
+        </div>
+
+        {error ? (
+          <div
+            style={{
+              color: "var(--danger)",
+              fontSize: 13,
+              lineHeight: 1.5,
+            }}
+          >
+            {error}
+          </div>
+        ) : null}
+
+        {candidates?.length === 0 ? (
+          <div className="muted">
+            {copy.noExternalLeverCandidates}
+          </div>
+        ) : null}
+
+        {candidates?.length ? (
+          <div className="stack" style={{ gap: 8 }}>
+            {candidates.map((candidate, index) => (
+              <div
+                key={
+                  candidate.source_external_id
+                  ?? candidate.source_url
+                  ?? `${candidate.name}-${index}`
+                }
+                className="card-soft stack"
+                style={{ gap: 6 }}
+              >
+                <div
+                  className="row"
+                  style={{
+                    gap: 8,
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                  }}
+                >
+                  <strong>{candidate.name}</strong>
+                  <span className="badge">
+                    {candidate.category.replaceAll("_", " ")}
+                  </span>
+                  <span className="badge">
+                    {candidate.source_provider}
+                  </span>
+                </div>
+
+                <div className="muted" style={{ lineHeight: 1.5 }}>
+                  {candidate.description}
+                </div>
+
+                {candidate.url ? (
+                  <a
+                    href={candidate.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="link-button"
+                  >
+                    {copy.openExternalLever}
+                  </a>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    </SoftPanel>
+  );
+}
+
+
 function OrganizationRecommendationsSection({
   recommendations,
   onCompleted,
+  onLeverDiscovery,
 }: {
   recommendations: OrganizationSupportRecommendation[];
   onCompleted?: (recommendationId: number) => void;
+  onLeverDiscovery?: (
+    recommendationId: number,
+    payload: OrganizationRecommendationLeverDiscoveryRequest,
+  ) => Promise<ExternalLeverCandidate[]>;
 }) {
   const copy = useGuidanceCopy();
   if (!recommendations.length) {
@@ -992,6 +1232,13 @@ function OrganizationRecommendationsSection({
                   </div>
                 </div>
               </SoftPanel>
+
+              {onLeverDiscovery ? (
+                <OrganizationRecommendationLeverDiscovery
+                  recommendation={recommendation}
+                  onDiscover={onLeverDiscovery}
+                />
+              ) : null}
             </div>
           </article>
         ))}
@@ -1019,6 +1266,7 @@ export function OrganizationWorkerGuidanceCard({
   guidance,
   loading,
   onOrganizationRecommendationCompleted,
+  onOrganizationRecommendationLeverDiscovery,
 }: OrganizationWorkerGuidanceCardProps) {
   const copy = useGuidanceCopy();
   const organizationRecommendations =
@@ -1055,6 +1303,7 @@ export function OrganizationWorkerGuidanceCard({
       <OrganizationRecommendationsSection
         recommendations={organizationRecommendations}
         onCompleted={onOrganizationRecommendationCompleted}
+        onLeverDiscovery={onOrganizationRecommendationLeverDiscovery}
       />
 
       {guidance.mandate_summary ? (
