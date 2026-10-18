@@ -7,13 +7,20 @@ import { AdminGuard } from "@/components/admin-guard";
 import { AdminShell } from "@/components/admin-shell";
 import { clearAdminToken } from "@/lib/admin-auth";
 import {
+  discoverAdminWorkerOrganizationRecommendationLevers,
   getAdminMe,
+  getAdminWorkerOrganizationGuidance,
   getAdminWorkerProfessionalIntentionCompletionWorkspace,
+  saveAdminDiscoveredLever,
 } from "@/lib/api";
+import { OrganizationWorkerGuidanceCard } from "@/app/admin/organizations/components/organization-worker-guidance-card";
 import type {
   AdminMe,
   AdminOrganizationDetail,
   AdminWorker,
+  ExternalLeverCandidate,
+  OrganizationRecommendationLeverDiscoveryRequest,
+  OrganizationWorkerGuidanceResponse,
   ProfessionalIntentionCompletionWorkspaceResponse,
   AIArtifactStatusResponse,
   CareerBlueprintResponse,
@@ -251,6 +258,10 @@ function AdminOrganizationWorkerDetailContent() {
   const [admin, setAdmin] = useState<AdminMe | null>(null);
   const [organizationName, setOrganizationName] = useState<string>("");
   const [summary, setSummary] = useState<WorkerSummaryResponse | null>(null);
+  const [organizationGuidance, setOrganizationGuidance] =
+    useState<OrganizationWorkerGuidanceResponse | null>(null);
+  const [organizationGuidanceLoading, setOrganizationGuidanceLoading] =
+    useState(false);
   const [
     professionalIntentionCompletionWorkspace,
     setProfessionalIntentionCompletionWorkspace,
@@ -262,6 +273,20 @@ function AdminOrganizationWorkerDetailContent() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  async function loadOrganizationGuidance(workerId: number) {
+    setOrganizationGuidance(null);
+    setOrganizationGuidanceLoading(true);
+
+    try {
+      const guidance = await getAdminWorkerOrganizationGuidance(workerId);
+      setOrganizationGuidance(guidance);
+    } catch {
+      setOrganizationGuidance(null);
+    } finally {
+      setOrganizationGuidanceLoading(false);
+    }
+  }
 
   async function loadProfessionalIntentionCompletionWorkspace(workerId: number) {
     setProfessionalIntentionCompletionWorkspace(null);
@@ -294,6 +319,7 @@ function AdminOrganizationWorkerDetailContent() {
 
         setOrganizationName(organizationDetail.organization.name);
         setSummary(workerSummary);
+        void loadOrganizationGuidance(workerId);
         void loadProfessionalIntentionCompletionWorkspace(workerId);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load worker detail.");
@@ -310,6 +336,23 @@ function AdminOrganizationWorkerDetailContent() {
 
     void load();
   }, [organizationId, workerId]);
+
+  async function handleDiscoverOrganizationRecommendationLevers(
+    recommendationId: number,
+    payload: OrganizationRecommendationLeverDiscoveryRequest,
+  ) {
+    return discoverAdminWorkerOrganizationRecommendationLevers(
+      workerId,
+      recommendationId,
+      payload,
+    );
+  }
+
+  async function handleSaveDiscoveredLever(
+    candidate: ExternalLeverCandidate,
+  ) {
+    return saveAdminDiscoveredLever(candidate);
+  }
 
   const worker = summary?.worker ?? null;
   const blueprint = summary?.career_blueprint ?? null;
@@ -623,6 +666,17 @@ function AdminOrganizationWorkerDetailContent() {
               )}
             </div>
           </div>
+
+          <OrganizationWorkerGuidanceCard
+            guidance={organizationGuidance}
+            loading={organizationGuidanceLoading}
+            onOrganizationRecommendationLeverDiscovery={
+              handleDiscoverOrganizationRecommendationLevers
+            }
+            onOrganizationRecommendationLeverSave={
+              handleSaveDiscoveredLever
+            }
+          />
 
           <div className="card stack" style={{ gap: 14 }}>
             <div
