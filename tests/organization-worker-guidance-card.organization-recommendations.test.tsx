@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { OrganizationWorkerGuidanceCard } from "@/app/admin/organizations/components/organization-worker-guidance-card";
 import type {
+  AdminLever,
   ExternalLeverCandidate,
   OrganizationWorkerGuidanceResponse,
 } from "@/lib/types";
@@ -538,6 +539,219 @@ describe("OrganizationWorkerGuidanceCard organization recommendations", () => {
     expect(
       screen.queryByText(/recommended to worker/i),
     ).not.toBeInTheDocument();
+  });
+
+
+
+  it("saves a discovered candidate only through an explicit catalog action", async () => {
+    const candidate: ExternalLeverCandidate = {
+      category: "mentor",
+      lever_type: "transformation",
+      entity_kind: "person",
+      name: "Enterprise Architecture Mentor",
+      description: "Experienced architecture mentor.",
+      url: "https://example.com/profile",
+      tags: ["architecture"],
+      target_problem: ["decision clarity"],
+      source_provider: "apollo",
+      source_external_id: "person-123",
+      source_url: "https://example.com/profile",
+      source_payload_json: {},
+    };
+
+    const savedLever: AdminLever = {
+      id: 44,
+      ...candidate,
+      provider_type: "external",
+      is_paid: false,
+      price_min_eur: null,
+      price_max_eur: null,
+      currency: "EUR",
+      is_default: false,
+      priority_score: 0,
+      is_active: true,
+      created_at: "2026-10-18T12:00:00",
+    };
+
+    const onLeverDiscovery = vi.fn(async () => [candidate]);
+    const onLeverSave = vi.fn(async () => savedLever);
+
+    render(
+      <OrganizationWorkerGuidanceCard
+        guidance={guidance()}
+        loading={false}
+        onOrganizationRecommendationLeverDiscovery={onLeverDiscovery}
+        onOrganizationRecommendationLeverSave={onLeverSave}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /discover levers for clarify decision boundaries/i,
+      }),
+    );
+
+    expect(
+      await screen.findByText("Enterprise Architecture Mentor"),
+    ).toBeInTheDocument();
+
+    const saveButton = screen.getByRole("button", {
+      name: /save enterprise architecture mentor to lever catalog/i,
+    });
+
+    expect(onLeverSave).not.toHaveBeenCalled();
+
+    fireEvent.click(saveButton);
+
+    expect(
+      await screen.findByText(/saved to lever catalog/i),
+    ).toBeInTheDocument();
+
+    expect(onLeverSave).toHaveBeenCalledTimes(1);
+    expect(onLeverSave).toHaveBeenCalledWith(candidate);
+  });
+
+
+  it("makes catalog persistence semantics explicit after save", async () => {
+    const candidate: ExternalLeverCandidate = {
+      category: "company",
+      lever_type: "impact",
+      entity_kind: "organization",
+      name: "Transformation Partner",
+      description: "Organization discovered externally.",
+      url: "https://example.com/company",
+      tags: ["transformation"],
+      target_problem: [],
+      source_provider: "apollo",
+      source_external_id: "organization-456",
+      source_url: "https://example.com/company",
+      source_payload_json: {},
+    };
+
+    const savedLever: AdminLever = {
+      id: 45,
+      ...candidate,
+      provider_type: "external",
+      is_paid: false,
+      price_min_eur: null,
+      price_max_eur: null,
+      currency: "EUR",
+      is_default: false,
+      priority_score: 0,
+      is_active: true,
+      created_at: "2026-10-18T12:00:00",
+    };
+
+    render(
+      <OrganizationWorkerGuidanceCard
+        guidance={guidance()}
+        loading={false}
+        onOrganizationRecommendationLeverDiscovery={vi.fn(async () => [
+          candidate,
+        ])}
+        onOrganizationRecommendationLeverSave={vi.fn(async () => savedLever)}
+      />,
+    );
+
+    fireEvent.change(
+      screen.getByRole("combobox", {
+        name: /lever type for clarify decision boundaries/i,
+      }),
+      {
+        target: {
+          value: "impact",
+        },
+      },
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /discover levers for clarify decision boundaries/i,
+      }),
+    );
+
+    await screen.findByText("Transformation Partner");
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /save transformation partner to lever catalog/i,
+      }),
+    );
+
+    expect(
+      await screen.findByText(/saved to lever catalog/i),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText(
+        /saving this lever makes it available to the canonical catalog/i,
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText(
+        /does not select or recommend it to the worker/i,
+      ),
+    ).toBeInTheDocument();
+  });
+
+
+  it("keeps a discovered candidate available when catalog save fails", async () => {
+    const candidate: ExternalLeverCandidate = {
+      category: "mentor",
+      lever_type: "transformation",
+      entity_kind: "person",
+      name: "Enterprise Architecture Mentor",
+      description: "Experienced architecture mentor.",
+      url: "https://example.com/profile",
+      tags: ["architecture"],
+      target_problem: [],
+      source_provider: "apollo",
+      source_external_id: "person-123",
+      source_url: "https://example.com/profile",
+      source_payload_json: {},
+    };
+
+    render(
+      <OrganizationWorkerGuidanceCard
+        guidance={guidance()}
+        loading={false}
+        onOrganizationRecommendationLeverDiscovery={vi.fn(async () => [
+          candidate,
+        ])}
+        onOrganizationRecommendationLeverSave={vi.fn(async () => {
+          throw new Error("save failed");
+        })}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /discover levers for clarify decision boundaries/i,
+      }),
+    );
+
+    await screen.findByText("Enterprise Architecture Mentor");
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /save enterprise architecture mentor to lever catalog/i,
+      }),
+    );
+
+    expect(
+      await screen.findByText(/saving lever to catalog failed/i),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText("Enterprise Architecture Mentor"),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("button", {
+        name: /save enterprise architecture mentor to lever catalog/i,
+      }),
+    ).toBeEnabled();
   });
 
 

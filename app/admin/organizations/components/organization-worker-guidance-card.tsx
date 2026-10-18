@@ -6,6 +6,7 @@ import { getOrganizationInsightsChildCardsCopy } from "@/lib/i18n/organization-i
 import { useAdminUiLanguage } from "@/lib/use-admin-ui-language";
 
 import type {
+  AdminLever,
   ExternalLeverCandidate,
   LeverType,
   OrganizationRecommendationLeverDiscoveryRequest,
@@ -33,6 +34,9 @@ type OrganizationWorkerGuidanceCardProps = {
     recommendationId: number,
     payload: OrganizationRecommendationLeverDiscoveryRequest,
   ) => Promise<ExternalLeverCandidate[]>;
+  onOrganizationRecommendationLeverSave?: (
+    candidate: ExternalLeverCandidate,
+  ) => Promise<AdminLever>;
 };
 
 function CountBadge({
@@ -847,12 +851,16 @@ const TRANSFORMATION_CATEGORIES = [
 function OrganizationRecommendationLeverDiscovery({
   recommendation,
   onDiscover,
+  onSave,
 }: {
   recommendation: OrganizationSupportRecommendation;
   onDiscover: (
     recommendationId: number,
     payload: OrganizationRecommendationLeverDiscoveryRequest,
   ) => Promise<ExternalLeverCandidate[]>;
+  onSave?: (
+    candidate: ExternalLeverCandidate,
+  ) => Promise<AdminLever>;
 }) {
   const copy = useGuidanceCopy();
 
@@ -865,6 +873,23 @@ function OrganizationRecommendationLeverDiscovery({
     useState<ExternalLeverCandidate[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [savingCandidateKey, setSavingCandidateKey] =
+    useState<string | null>(null);
+  const [savedCandidateKeys, setSavedCandidateKeys] =
+    useState<Set<string>>(() => new Set());
+  const [saveErrorCandidateKey, setSaveErrorCandidateKey] =
+    useState<string | null>(null);
+
+  function candidateKey(
+    candidate: ExternalLeverCandidate,
+    index: number,
+  ): string {
+    return (
+      candidate.source_external_id
+      ?? candidate.source_url
+      ?? `${candidate.name}-${index}`
+    );
+  }
 
   function handleLeverTypeChange(
     nextLeverType: Extract<LeverType, "transformation" | "impact">,
@@ -877,6 +902,9 @@ function OrganizationRecommendationLeverDiscovery({
     );
     setCandidates(null);
     setError(null);
+    setSavingCandidateKey(null);
+    setSavedCandidateKeys(new Set());
+    setSaveErrorCandidateKey(null);
   }
 
   async function handleDiscover() {
@@ -888,6 +916,9 @@ function OrganizationRecommendationLeverDiscovery({
     setLoading(true);
     setError(null);
     setCandidates(null);
+    setSavingCandidateKey(null);
+    setSavedCandidateKeys(new Set());
+    setSaveErrorCandidateKey(null);
 
     try {
       const discovered = await onDiscover(
@@ -906,6 +937,31 @@ function OrganizationRecommendationLeverDiscovery({
       setError(copy.leverDiscoveryFailed);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleSaveCandidate(
+    candidate: ExternalLeverCandidate,
+    key: string,
+  ) {
+    if (!onSave) {
+      return;
+    }
+
+    setSavingCandidateKey(key);
+    setSaveErrorCandidateKey(null);
+
+    try {
+      await onSave(candidate);
+      setSavedCandidateKeys((current) => {
+        const next = new Set(current);
+        next.add(key);
+        return next;
+      });
+    } catch {
+      setSaveErrorCandidateKey(key);
+    } finally {
+      setSavingCandidateKey(null);
     }
   }
 
@@ -961,6 +1017,9 @@ function OrganizationRecommendationLeverDiscovery({
                 setCategory(event.target.value);
                 setCandidates(null);
                 setError(null);
+                setSavingCandidateKey(null);
+                setSavedCandidateKeys(new Set());
+                setSaveErrorCandidateKey(null);
               }}
             >
               {leverType === "transformation" ? (
@@ -1008,49 +1067,99 @@ function OrganizationRecommendationLeverDiscovery({
 
         {candidates?.length ? (
           <div className="stack" style={{ gap: 8 }}>
-            {candidates.map((candidate, index) => (
-              <div
-                key={
-                  candidate.source_external_id
-                  ?? candidate.source_url
-                  ?? `${candidate.name}-${index}`
-                }
-                className="card-soft stack"
-                style={{ gap: 6 }}
-              >
+            {candidates.map((candidate, index) => {
+              const key = candidateKey(candidate, index);
+              const saving = savingCandidateKey === key;
+              const saved = savedCandidateKeys.has(key);
+              const saveFailed = saveErrorCandidateKey === key;
+
+              return (
                 <div
-                  className="row"
-                  style={{
-                    gap: 8,
-                    flexWrap: "wrap",
-                    alignItems: "center",
-                  }}
+                  key={key}
+                  className="card-soft stack"
+                  style={{ gap: 8 }}
                 >
-                  <strong>{candidate.name}</strong>
-                  <span className="badge">
-                    {candidate.category.replaceAll("_", " ")}
-                  </span>
-                  <span className="badge">
-                    {candidate.source_provider}
-                  </span>
-                </div>
-
-                <div className="muted" style={{ lineHeight: 1.5 }}>
-                  {candidate.description}
-                </div>
-
-                {candidate.url ? (
-                  <a
-                    href={candidate.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="link-button"
+                  <div
+                    className="row"
+                    style={{
+                      gap: 8,
+                      flexWrap: "wrap",
+                      alignItems: "center",
+                    }}
                   >
-                    {copy.openExternalLever}
-                  </a>
-                ) : null}
-              </div>
-            ))}
+                    <strong>{candidate.name}</strong>
+                    <span className="badge">
+                      {candidate.category.replaceAll("_", " ")}
+                    </span>
+                    <span className="badge">
+                      {candidate.source_provider}
+                    </span>
+                  </div>
+
+                  <div className="muted" style={{ lineHeight: 1.5 }}>
+                    {candidate.description}
+                  </div>
+
+                  <div
+                    className="row"
+                    style={{
+                      gap: 8,
+                      flexWrap: "wrap",
+                      alignItems: "center",
+                    }}
+                  >
+                    {candidate.url ? (
+                      <a
+                        href={candidate.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="link-button"
+                      >
+                        {copy.openExternalLever}
+                      </a>
+                    ) : null}
+
+                    {onSave && !saved ? (
+                      <button
+                        type="button"
+                        className="btn"
+                        disabled={saving}
+                        aria-label={copy.saveLeverToCatalogFor(candidate.name)}
+                        onClick={() => handleSaveCandidate(candidate, key)}
+                      >
+                        {saving
+                          ? copy.savingLeverToCatalog
+                          : copy.saveLeverToCatalog}
+                      </button>
+                    ) : null}
+                  </div>
+
+                  {saved ? (
+                    <div className="stack" style={{ gap: 4 }}>
+                      <div className="badge" style={{ width: "fit-content" }}>
+                        {copy.savedToLeverCatalog}
+                      </div>
+
+                      <div className="muted" style={{ lineHeight: 1.5 }}>
+                        {copy.savedLeverCatalogSemantics}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {saveFailed ? (
+                    <div
+                      style={{
+                        color: "var(--danger)",
+                        fontSize: 13,
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      {copy.saveLeverToCatalogFailed}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
           </div>
         ) : null}
       </div>
@@ -1063,6 +1172,7 @@ function OrganizationRecommendationsSection({
   recommendations,
   onCompleted,
   onLeverDiscovery,
+  onLeverSave,
 }: {
   recommendations: OrganizationSupportRecommendation[];
   onCompleted?: (recommendationId: number) => void;
@@ -1070,6 +1180,9 @@ function OrganizationRecommendationsSection({
     recommendationId: number,
     payload: OrganizationRecommendationLeverDiscoveryRequest,
   ) => Promise<ExternalLeverCandidate[]>;
+  onLeverSave?: (
+    candidate: ExternalLeverCandidate,
+  ) => Promise<AdminLever>;
 }) {
   const copy = useGuidanceCopy();
   if (!recommendations.length) {
@@ -1237,6 +1350,7 @@ function OrganizationRecommendationsSection({
                 <OrganizationRecommendationLeverDiscovery
                   recommendation={recommendation}
                   onDiscover={onLeverDiscovery}
+                  onSave={onLeverSave}
                 />
               ) : null}
             </div>
@@ -1267,6 +1381,7 @@ export function OrganizationWorkerGuidanceCard({
   loading,
   onOrganizationRecommendationCompleted,
   onOrganizationRecommendationLeverDiscovery,
+  onOrganizationRecommendationLeverSave,
 }: OrganizationWorkerGuidanceCardProps) {
   const copy = useGuidanceCopy();
   const organizationRecommendations =
@@ -1304,6 +1419,7 @@ export function OrganizationWorkerGuidanceCard({
         recommendations={organizationRecommendations}
         onCompleted={onOrganizationRecommendationCompleted}
         onLeverDiscovery={onOrganizationRecommendationLeverDiscovery}
+        onLeverSave={onOrganizationRecommendationLeverSave}
       />
 
       {guidance.mandate_summary ? (

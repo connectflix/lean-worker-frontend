@@ -88,6 +88,13 @@ export type OrganizationInsightsChildCardsCopy = {
     noExternalLeverCandidates: string;
     leverDiscoveryFailed: string;
     openExternalLever: string;
+
+    saveLeverToCatalog: string;
+    savingLeverToCatalog: string;
+    saveLeverToCatalogFor: (name: string) => string;
+    savedToLeverCatalog: string;
+    savedLeverCatalogSemantics: string;
+    saveLeverToCatalogFailed: string;
   };
 
   executionPlan: {
@@ -221,6 +228,16 @@ const COPY: Record<
       leverDiscoveryFailed:
         "Lever discovery failed. Please try again.",
       openExternalLever: "Open external profile",
+
+      saveLeverToCatalog: "Save to Lever catalog",
+      savingLeverToCatalog: "Saving...",
+      saveLeverToCatalogFor: (name) =>
+        `Save ${name} to Lever catalog`,
+      savedToLeverCatalog: "Saved to Lever catalog",
+      savedLeverCatalogSemantics:
+        "Saving this Lever makes it available to the canonical catalog. It does not select or recommend it to the Worker.",
+      saveLeverToCatalogFailed:
+        "Saving Lever to catalog failed. Please try again.",
     },
 
     executionPlan: {
@@ -358,6 +375,16 @@ const COPY: Record<
       leverDiscoveryFailed:
         "La recherche de leviers a échoué. Veuillez réessayer.",
       openExternalLever: "Ouvrir le profil externe",
+
+      saveLeverToCatalog: "Enregistrer dans le catalogue de leviers",
+      savingLeverToCatalog: "Enregistrement...",
+      saveLeverToCatalogFor: (name) =>
+        `Enregistrer ${name} dans le catalogue de leviers`,
+      savedToLeverCatalog: "Enregistré dans le catalogue de leviers",
+      savedLeverCatalogSemantics:
+        "L’enregistrement rend ce levier disponible dans le catalogue canonique. Il ne le sélectionne ni ne le recommande au collaborateur.",
+      saveLeverToCatalogFailed:
+        "L’enregistrement du levier dans le catalogue a échoué. Veuillez réessayer.",
     },
 
     executionPlan: {
