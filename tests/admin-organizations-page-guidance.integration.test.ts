@@ -196,6 +196,80 @@ describe("Admin Organizations page + Organization Guidance", () => {
   });
 
 
+
+  it("imports the recommendation Lever discovery and catalog-save APIs", () => {
+    expect(source).toContain(
+      "discoverAdminWorkerOrganizationRecommendationLevers",
+    );
+
+    expect(source).toContain(
+      "saveAdminDiscoveredLever",
+    );
+  });
+
+
+  it("discovers Levers from the selected Worker and recommendation without mutating guidance", () => {
+    const body = functionBody(
+      "handleDiscoverOrganizationRecommendationLevers",
+    );
+
+    expect(body).toMatch(
+      /if\s*\(!selectedWorkerId\)\s*(?:\{\s*)?return/,
+    );
+
+    expect(body).toMatch(
+      /return\s+discoverAdminWorkerOrganizationRecommendationLevers\s*\(\s*selectedWorkerId\s*,\s*recommendationId\s*,\s*payload\s*,?\s*\)/,
+    );
+
+    expect(body).not.toContain("loadOrganizationGuidance");
+    expect(body).not.toContain("setSelectedWorkerSummary");
+  });
+
+
+  it("saves an approved discovered Lever then refreshes the selected Worker summary", () => {
+    const body = functionBody("handleSaveDiscoveredLever");
+
+    expect(body).toMatch(
+      /if\s*\(!selectedOrganizationId\s*\|\|\s*!selectedWorkerId\)/,
+    );
+
+    expect(body).toMatch(
+      /const\s+savedLever\s*=\s*await\s+saveAdminDiscoveredLever\s*\(\s*candidate\s*\)/,
+    );
+
+    expect(body).toMatch(
+      /await\s+getAdminOrganizationWorkerSummary\s*\(\s*selectedOrganizationId\s*,\s*selectedWorkerId\s*,?\s*\)/,
+    );
+
+    expect(body).toContain("setSelectedWorkerSummary(summary)");
+    expect(body).toContain("return savedLever");
+
+    expect(body).not.toContain("loadOrganizationGuidance");
+    expect(body).not.toContain(
+      "completeAdminWorkerOrganizationRecommendation",
+    );
+  });
+
+
+  it("passes Lever discovery and catalog save callbacks into OrganizationInsightsTab", () => {
+    const insightsIndex = source.lastIndexOf("<OrganizationInsightsTab");
+    expect(insightsIndex).toBeGreaterThan(-1);
+
+    const insightsBlock = source.slice(
+      insightsIndex,
+      source.indexOf("/>", insightsIndex) + 2,
+    );
+
+    expect(insightsBlock).toMatch(
+      /onOrganizationRecommendationLeverDiscovery\s*=\s*\{\s*handleDiscoverOrganizationRecommendationLevers\s*\}/,
+    );
+
+    expect(insightsBlock).toMatch(
+      /onOrganizationRecommendationLeverSave\s*=\s*\{\s*handleSaveDiscoveredLever\s*\}/,
+    );
+  });
+
+
   it("passes organization recommendation completion into OrganizationInsightsTab", () => {
     const insightsIndex = source.lastIndexOf("<OrganizationInsightsTab");
     expect(insightsIndex).toBeGreaterThan(-1);

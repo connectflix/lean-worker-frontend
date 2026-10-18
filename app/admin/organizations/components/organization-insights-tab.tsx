@@ -21,8 +21,11 @@ import {
   recordAdminWorkerProfessionalMandateClarification,
 } from "@/lib/api";
 import type {
+  AdminLever,
   AdminOrganizationWorkerSummary,
   AdminProfessionalMandateSupportResponse,
+  ExternalLeverCandidate,
+  OrganizationRecommendationLeverDiscoveryRequest,
   OrganizationWorkerGuidanceResponse,
   ProfessionalExecutionPlanResponse,
   ProfessionalIntentionCompletionWorkspaceResponse,
@@ -53,6 +56,13 @@ type OrganizationInsightsTabProps = {
   onOrganizationRecommendationCompleted?: (
     recommendationId: number,
   ) => void;
+  onOrganizationRecommendationLeverDiscovery?: (
+    recommendationId: number,
+    payload: OrganizationRecommendationLeverDiscoveryRequest,
+  ) => Promise<ExternalLeverCandidate[]>;
+  onOrganizationRecommendationLeverSave?: (
+    candidate: ExternalLeverCandidate,
+  ) => Promise<AdminLever>;
 };
 
 function formatCurrency(value: number): string {
@@ -165,6 +175,8 @@ export function OrganizationInsightsTab({
   onLeverSortModeChange,
   onScrollToRecommendation,
   onOrganizationRecommendationCompleted,
+  onOrganizationRecommendationLeverDiscovery,
+  onOrganizationRecommendationLeverSave,
 }: OrganizationInsightsTabProps) {
   const { uiLanguage } = useAdminUiLanguage();
   const copy = getOrganizationInsightsCopy(uiLanguage);
@@ -1338,6 +1350,16 @@ export function OrganizationInsightsTab({
           onOrganizationRecommendationCompleted={
             onOrganizationRecommendationCompleted
           }
+          {...(onOrganizationRecommendationLeverDiscovery
+            ? {
+                onOrganizationRecommendationLeverDiscovery,
+              }
+            : {})}
+          {...(onOrganizationRecommendationLeverSave
+            ? {
+                onOrganizationRecommendationLeverSave,
+              }
+            : {})}
         />
       ) : null}
 

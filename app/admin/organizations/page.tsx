@@ -19,6 +19,8 @@ import {
   getAdminOrganizations,
   getAdminWorkerOrganizationGuidance,
   completeAdminWorkerOrganizationRecommendation,
+  discoverAdminWorkerOrganizationRecommendationLevers,
+  saveAdminDiscoveredLever,
   getAdminWorkerEngagements,
   getAdminWorkerPurposeCanvases,
   getAdminWorkerSignificanceCanvases,
@@ -80,6 +82,8 @@ import type {
   AdminOrganizationType,
   AdminOrganizationUpdate,
   AdminOrganizationWorkerSummary,
+  ExternalLeverCandidate,
+  OrganizationRecommendationLeverDiscoveryRequest,
   OrganizationWorkerGuidanceResponse,
   AdminWorker,
   AdminWorkerEngagement,
@@ -2738,6 +2742,38 @@ function handleNewOrganization() {
     await loadOrganizationGuidance(selectedWorkerId);
   }
 
+  async function handleDiscoverOrganizationRecommendationLevers(
+    recommendationId: number,
+    payload: OrganizationRecommendationLeverDiscoveryRequest,
+  ) {
+    if (!selectedWorkerId) return [];
+
+    return discoverAdminWorkerOrganizationRecommendationLevers(
+      selectedWorkerId,
+      recommendationId,
+      payload,
+    );
+  }
+
+  async function handleSaveDiscoveredLever(
+    candidate: ExternalLeverCandidate,
+  ) {
+    if (!selectedOrganizationId || !selectedWorkerId) {
+      throw new Error("Please select a worker first.");
+    }
+
+    const savedLever = await saveAdminDiscoveredLever(candidate);
+
+    const summary = await getAdminOrganizationWorkerSummary(
+      selectedOrganizationId,
+      selectedWorkerId,
+    );
+
+    setSelectedWorkerSummary(summary);
+
+    return savedLever;
+  }
+
   const assignableWorkers = useMemo(() => {
     if (!isPlatformAdmin || !selectedOrganization) return [];
 
@@ -3309,6 +3345,12 @@ const relatedLeversByRecommendationId = useMemo(() => {
                 onScrollToRecommendation={scrollToRecommendation}
                 onOrganizationRecommendationCompleted={
                   handleCompleteOrganizationRecommendation
+                }
+                onOrganizationRecommendationLeverDiscovery={
+                  handleDiscoverOrganizationRecommendationLevers
+                }
+                onOrganizationRecommendationLeverSave={
+                  handleSaveDiscoveredLever
                 }
               />
             ) : null}

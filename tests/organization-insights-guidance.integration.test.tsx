@@ -3,7 +3,10 @@ import { describe, expect, it, vi } from "vitest";
 
 import { OrganizationInsightsTab } from "@/app/admin/organizations/components/organization-insights-tab";
 import type {
+  AdminLever,
   AdminOrganizationWorkerSummary,
+  ExternalLeverCandidate,
+  OrganizationRecommendationLeverDiscoveryRequest,
   OrganizationWorkerGuidanceResponse,
 } from "@/lib/types";
 
@@ -19,6 +22,13 @@ vi.mock(
       onOrganizationRecommendationCompleted?: (
         recommendationId: number,
       ) => void;
+      onOrganizationRecommendationLeverDiscovery?: (
+        recommendationId: number,
+        payload: OrganizationRecommendationLeverDiscoveryRequest,
+      ) => Promise<ExternalLeverCandidate[]>;
+      onOrganizationRecommendationLeverSave?: (
+        candidate: ExternalLeverCandidate,
+      ) => Promise<AdminLever>;
     }) => {
       guidanceCardMock(props);
 
@@ -97,6 +107,13 @@ function renderInsights(
     onOrganizationRecommendationCompleted: (
       recommendationId: number,
     ) => void;
+    onOrganizationRecommendationLeverDiscovery: (
+      recommendationId: number,
+      payload: OrganizationRecommendationLeverDiscoveryRequest,
+    ) => Promise<ExternalLeverCandidate[]>;
+    onOrganizationRecommendationLeverSave: (
+      candidate: ExternalLeverCandidate,
+    ) => Promise<AdminLever>;
   }> = {},
 ) {
   return render(
@@ -127,6 +144,12 @@ function renderInsights(
       onScrollToRecommendation={vi.fn()}
       onOrganizationRecommendationCompleted={
         overrides.onOrganizationRecommendationCompleted ?? vi.fn()
+      }
+      onOrganizationRecommendationLeverDiscovery={
+        overrides.onOrganizationRecommendationLeverDiscovery
+      }
+      onOrganizationRecommendationLeverSave={
+        overrides.onOrganizationRecommendationLeverSave
       }
     />,
   );
@@ -209,6 +232,57 @@ describe("OrganizationInsightsTab + Organization Guidance", () => {
       loading: false,
       onOrganizationRecommendationCompleted: onCompleted,
     });
+  });
+
+
+
+  it("forwards recommendation-scoped Lever discovery to the guidance card", () => {
+    const onLeverDiscovery = vi.fn(async () => []);
+    const payload = guidance();
+
+    renderInsights({
+      organizationGuidance: payload,
+      onOrganizationRecommendationLeverDiscovery: onLeverDiscovery,
+    });
+
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Decision",
+      }),
+    );
+
+    expect(guidanceCardMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        guidance: payload,
+        loading: false,
+        onOrganizationRecommendationLeverDiscovery: onLeverDiscovery,
+      }),
+    );
+  });
+
+
+  it("forwards explicit discovered Lever save to the guidance card", () => {
+    const onLeverSave = vi.fn();
+    const payload = guidance();
+
+    renderInsights({
+      organizationGuidance: payload,
+      onOrganizationRecommendationLeverSave: onLeverSave,
+    });
+
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: "Decision",
+      }),
+    );
+
+    expect(guidanceCardMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        guidance: payload,
+        loading: false,
+        onOrganizationRecommendationLeverSave: onLeverSave,
+      }),
+    );
   });
 
 
