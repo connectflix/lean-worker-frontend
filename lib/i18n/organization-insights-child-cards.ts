@@ -88,6 +88,7 @@ export type OrganizationInsightsChildCardsCopy = {
     noExternalLeverCandidates: string;
     leverDiscoveryFailed: string;
     openExternalLever: string;
+    openLinkedInProfile: string;
 
     saveLeverToCatalog: string;
     savingLeverToCatalog: string;
@@ -228,6 +229,7 @@ const COPY: Record<
       leverDiscoveryFailed:
         "Lever discovery failed. Please try again.",
       openExternalLever: "Open external profile",
+      openLinkedInProfile: "View LinkedIn profile",
 
       saveLeverToCatalog: "Save to Lever catalog",
       savingLeverToCatalog: "Saving...",
@@ -375,6 +377,7 @@ const COPY: Record<
       leverDiscoveryFailed:
         "La recherche de leviers a échoué. Veuillez réessayer.",
       openExternalLever: "Ouvrir le profil externe",
+      openLinkedInProfile: "Voir le profil LinkedIn",
 
       saveLeverToCatalog: "Enregistrer dans le catalogue de leviers",
       savingLeverToCatalog: "Enregistrement...",

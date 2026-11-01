@@ -891,6 +891,19 @@ function OrganizationRecommendationLeverDiscovery({
     );
   }
 
+  function isLinkedInUrl(url: string | null): boolean {
+    if (!url) {
+      return false;
+    }
+
+    try {
+      const hostname = new URL(url).hostname.toLowerCase();
+      return hostname === "linkedin.com" || hostname.endsWith(".linkedin.com");
+    } catch {
+      return false;
+    }
+  }
+
   function handleLeverTypeChange(
     nextLeverType: Extract<LeverType, "transformation" | "impact">,
   ) {
@@ -1116,6 +1129,17 @@ function OrganizationRecommendationLeverDiscovery({
                         className="link-button"
                       >
                         {copy.openExternalLever}
+                      </a>
+                    ) : null}
+
+                    {isLinkedInUrl(candidate.source_url) ? (
+                      <a
+                        href={candidate.source_url!}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="link-button"
+                      >
+                        {copy.openLinkedInProfile}
                       </a>
                     ) : null}
 

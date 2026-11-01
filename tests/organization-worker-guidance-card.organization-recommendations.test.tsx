@@ -543,6 +543,109 @@ describe("OrganizationWorkerGuidanceCard organization recommendations", () => {
 
 
 
+  it("renders a LinkedIn profile link from candidate source_url without saving or recommending", async () => {
+    const candidate: ExternalLeverCandidate = {
+      category: "mentor",
+      lever_type: "transformation",
+      entity_kind: "person",
+      name: "Enterprise Architecture Mentor",
+      description: "Experienced architecture mentor.",
+      url: null,
+      tags: ["architecture"],
+      target_problem: [],
+      source_provider: "apollo",
+      source_external_id: "person-123",
+      source_url: "https://www.linkedin.com/in/enterprise-architecture-mentor",
+      source_payload_json: {},
+    };
+
+    const onLeverDiscovery = vi.fn(async () => [candidate]);
+    const onLeverSave = vi.fn();
+
+    render(
+      <OrganizationWorkerGuidanceCard
+        guidance={guidance()}
+        loading={false}
+        onOrganizationRecommendationLeverDiscovery={onLeverDiscovery}
+        onOrganizationRecommendationLeverSave={onLeverSave}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /discover levers for clarify decision boundaries/i,
+      }),
+    );
+
+    await screen.findByText("Enterprise Architecture Mentor");
+
+    const linkedinLink = screen.getByRole("link", {
+      name: /view linkedin profile/i,
+    });
+
+    expect(linkedinLink).toHaveAttribute(
+      "href",
+      "https://www.linkedin.com/in/enterprise-architecture-mentor",
+    );
+    expect(linkedinLink).toHaveAttribute("target", "_blank");
+    expect(linkedinLink).toHaveAttribute("rel", "noreferrer");
+
+    expect(onLeverSave).not.toHaveBeenCalled();
+
+    expect(
+      screen.queryByText(/selected for worker/i),
+    ).not.toBeInTheDocument();
+
+    expect(
+      screen.queryByText(/recommended to worker/i),
+    ).not.toBeInTheDocument();
+  });
+
+
+
+  it("does not label a non-LinkedIn source_url as a LinkedIn profile", async () => {
+    const candidate: ExternalLeverCandidate = {
+      category: "mentor",
+      lever_type: "transformation",
+      entity_kind: "person",
+      name: "External Mentor",
+      description: "Externally discovered mentor.",
+      url: null,
+      tags: [],
+      target_problem: [],
+      source_provider: "external-provider",
+      source_external_id: "person-456",
+      source_url: "https://profiles.example.com/person-456",
+      source_payload_json: {},
+    };
+
+    render(
+      <OrganizationWorkerGuidanceCard
+        guidance={guidance()}
+        loading={false}
+        onOrganizationRecommendationLeverDiscovery={vi.fn(async () => [
+          candidate,
+        ])}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /discover levers for clarify decision boundaries/i,
+      }),
+    );
+
+    await screen.findByText("External Mentor");
+
+    expect(
+      screen.queryByRole("link", {
+        name: /view linkedin profile/i,
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+
+
   it("saves a discovered candidate only through an explicit catalog action", async () => {
     const candidate: ExternalLeverCandidate = {
       category: "mentor",
