@@ -684,13 +684,13 @@ describe("OrganizationWorkerGuidanceCard organization recommendations", () => {
 
     expect(
       screen.getByText(
-        /saving this lever makes it available to the canonical catalog/i,
+        /available for future canonical decision engine selection/i,
       ),
     ).toBeInTheDocument();
 
     expect(
       screen.getByText(
-        /does not select or recommend it to the worker/i,
+        /does not assign or recommend it to the worker/i,
       ),
     ).toBeInTheDocument();
   });

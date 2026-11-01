@@ -235,7 +235,7 @@ const COPY: Record<
         `Save ${name} to Lever catalog`,
       savedToLeverCatalog: "Saved to Lever catalog",
       savedLeverCatalogSemantics:
-        "Saving this Lever makes it available to the canonical catalog. It does not select or recommend it to the Worker.",
+        "This Lever is now available for future canonical Decision Engine selection. Saving it does not assign or recommend it to the Worker.",
       saveLeverToCatalogFailed:
         "Saving Lever to catalog failed. Please try again.",
     },
@@ -382,7 +382,7 @@ const COPY: Record<
         `Enregistrer ${name} dans le catalogue de leviers`,
       savedToLeverCatalog: "Enregistré dans le catalogue de leviers",
       savedLeverCatalogSemantics:
-        "L’enregistrement rend ce levier disponible dans le catalogue canonique. Il ne le sélectionne ni ne le recommande au collaborateur.",
+        "Ce levier est désormais disponible pour une future sélection par le moteur de décision canonique. Son enregistrement ne l’assigne ni ne le recommande au collaborateur.",
       saveLeverToCatalogFailed:
         "L’enregistrement du levier dans le catalogue a échoué. Veuillez réessayer.",
     },

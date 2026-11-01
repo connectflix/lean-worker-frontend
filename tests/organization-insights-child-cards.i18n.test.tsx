@@ -1,9 +1,11 @@
-import { render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { OrganizationWorkerGuidanceCard } from "@/app/admin/organizations/components/organization-worker-guidance-card";
 import { ProfessionalExecutionPlanCard } from "@/app/admin/organizations/components/professional-execution-plan-card";
 import type {
+  AdminLever,
+  ExternalLeverCandidate,
   OrganizationWorkerGuidanceResponse,
   ProfessionalExecutionPlanResponse,
 } from "@/lib/types";
@@ -146,6 +148,75 @@ describe("Organization Insights child cards internationalization", () => {
 
     expect(
       screen.getByText("Clarify contribution target"),
+    ).toBeInTheDocument();
+  });
+
+
+  it("localizes post-save Lever catalog semantics in French", async () => {
+    const candidate: ExternalLeverCandidate = {
+      category: "mentor",
+      lever_type: "transformation",
+      entity_kind: "person",
+      name: "Enterprise Architecture Mentor",
+      description: "Experienced architecture mentor.",
+      url: "https://example.com/profile",
+      tags: ["architecture"],
+      target_problem: ["decision clarity"],
+      source_provider: "apollo",
+      source_external_id: "person-ld16-fr",
+      source_url: "https://example.com/profile",
+      source_payload_json: {},
+    };
+
+    const savedLever: AdminLever = {
+      id: 46,
+      ...candidate,
+      provider_type: "external",
+      is_paid: false,
+      price_min_eur: null,
+      price_max_eur: null,
+      currency: "EUR",
+      is_default: false,
+      priority_score: 0,
+      is_active: true,
+      created_at: "2026-11-01T06:00:00",
+    };
+
+    render(
+      <OrganizationWorkerGuidanceCard
+        guidance={guidance}
+        loading={false}
+        onOrganizationRecommendationLeverDiscovery={vi.fn(async () => [
+          candidate,
+        ])}
+        onOrganizationRecommendationLeverSave={vi.fn(async () => savedLever)}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /rechercher des leviers pour clarify decision boundaries/i,
+      }),
+    );
+
+    await screen.findByText("Enterprise Architecture Mentor");
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /enregistrer enterprise architecture mentor dans le catalogue de leviers/i,
+      }),
+    );
+
+    expect(
+      await screen.findByText(
+        /disponible pour une future sélection par le moteur de décision canonique/i,
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText(
+        /ne l’assigne ni ne le recommande au collaborateur/i,
+      ),
     ).toBeInTheDocument();
   });
 
