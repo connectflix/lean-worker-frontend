@@ -543,6 +543,97 @@ describe("OrganizationWorkerGuidanceCard organization recommendations", () => {
 
 
 
+  it("renders discovered candidate location from Apollo source payload", async () => {
+    const candidate: ExternalLeverCandidate = {
+      category: "mentor",
+      lever_type: "transformation",
+      entity_kind: "person",
+      name: "Brussels Architecture Mentor",
+      description: "Experienced architecture mentor.",
+      url: null,
+      tags: [],
+      target_problem: [],
+      source_provider: "apollo",
+      source_external_id: "person-location-123",
+      source_url: null,
+      source_payload_json: {
+        city: "Brussels",
+        state: "Brussels-Capital",
+        country: "Belgium",
+      },
+    };
+
+    render(
+      <OrganizationWorkerGuidanceCard
+        guidance={guidance()}
+        loading={false}
+        onOrganizationRecommendationLeverDiscovery={vi.fn(async () => [
+          candidate,
+        ])}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /discover levers for clarify decision boundaries/i,
+      }),
+    );
+
+    await screen.findByText("Brussels Architecture Mentor");
+
+    expect(
+      screen.getByText(
+        "Brussels, Brussels-Capital, Belgium",
+      ),
+    ).toBeInTheDocument();
+  });
+
+
+  it("does not render an empty discovered candidate location", async () => {
+    const candidate: ExternalLeverCandidate = {
+      category: "mentor",
+      lever_type: "transformation",
+      entity_kind: "person",
+      name: "Locationless Mentor",
+      description: "Experienced mentor.",
+      url: null,
+      tags: [],
+      target_problem: [],
+      source_provider: "apollo",
+      source_external_id: "person-locationless-123",
+      source_url: null,
+      source_payload_json: {
+        city: " ",
+        state: null,
+        country: "",
+      },
+    };
+
+    render(
+      <OrganizationWorkerGuidanceCard
+        guidance={guidance()}
+        loading={false}
+        onOrganizationRecommendationLeverDiscovery={vi.fn(async () => [
+          candidate,
+        ])}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /discover levers for clarify decision boundaries/i,
+      }),
+    );
+
+    await screen.findByText("Locationless Mentor");
+
+    expect(
+      screen.queryByTestId("external-lever-location"),
+    ).not.toBeInTheDocument();
+  });
+
+
+
   it("renders a LinkedIn profile link from candidate source_url without saving or recommending", async () => {
     const candidate: ExternalLeverCandidate = {
       category: "mentor",

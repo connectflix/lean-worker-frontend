@@ -24,6 +24,46 @@ function useGuidanceCopy() {
 }
 
 
+
+function candidateLocation(
+  candidate: ExternalLeverCandidate,
+): string | null {
+  const fields = ["city", "state", "country"] as const;
+  const values: string[] = [];
+
+  for (const field of fields) {
+    const value = candidate.source_payload_json[field];
+
+    if (typeof value !== "string") {
+      continue;
+    }
+
+    const cleaned = value.trim();
+
+    if (!cleaned) {
+      continue;
+    }
+
+    if (
+      values.some(
+        (existing) =>
+          existing.localeCompare(
+            cleaned,
+            undefined,
+            { sensitivity: "accent" },
+          ) === 0,
+      )
+    ) {
+      continue;
+    }
+
+    values.push(cleaned);
+  }
+
+  return values.length ? values.join(", ") : null;
+}
+
+
 type OrganizationWorkerGuidanceCardProps = {
   guidance: OrganizationWorkerGuidanceResponse | null;
   loading: boolean;
@@ -1082,6 +1122,7 @@ function OrganizationRecommendationLeverDiscovery({
           <div className="stack" style={{ gap: 8 }}>
             {candidates.map((candidate, index) => {
               const key = candidateKey(candidate, index);
+              const location = candidateLocation(candidate);
               const saving = savingCandidateKey === key;
               const saved = savedCandidateKeys.has(key);
               const saveFailed = saveErrorCandidateKey === key;
@@ -1112,6 +1153,19 @@ function OrganizationRecommendationLeverDiscovery({
                   <div className="muted" style={{ lineHeight: 1.5 }}>
                     {candidate.description}
                   </div>
+
+                  {location ? (
+                    <div
+                      data-testid="external-lever-location"
+                      className="muted"
+                      style={{
+                        fontSize: 13,
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      {location}
+                    </div>
+                  ) : null}
 
                   <div
                     className="row"
