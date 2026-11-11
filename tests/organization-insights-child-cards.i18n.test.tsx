@@ -152,6 +152,55 @@ describe("Organization Insights child cards internationalization", () => {
   });
 
 
+  it("localizes discovered Lever contextual proximity in French", async () => {
+    const candidate: ExternalLeverCandidate = {
+      category: "mentor",
+      lever_type: "transformation",
+      entity_kind: "person",
+      name: "Mentor Proche",
+      description: "Experienced architecture mentor.",
+      url: null,
+      tags: [],
+      target_problem: [],
+      source_provider: "apollo",
+      source_external_id: "person-proximity-fr",
+      source_url: null,
+      source_payload_json: {},
+      proximity_tier: "very_close",
+      proximity_reasons: [
+        "same_professional_function",
+        "same_role",
+        "same_organization",
+        "same_location",
+      ],
+    };
+
+    render(
+      <OrganizationWorkerGuidanceCard
+        guidance={guidance}
+        loading={false}
+        onOrganizationRecommendationLeverDiscovery={vi.fn(async () => [
+          candidate,
+        ])}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /rechercher des leviers pour clarify decision boundaries/i,
+      }),
+    );
+
+    await screen.findByText("Mentor Proche");
+
+    expect(screen.getByText("Très proche")).toBeInTheDocument();
+    expect(screen.getByText("Même fonction")).toBeInTheDocument();
+    expect(screen.getByText("Même rôle")).toBeInTheDocument();
+    expect(screen.getByText("Même organisation")).toBeInTheDocument();
+    expect(screen.getByText("Même localisation")).toBeInTheDocument();
+  });
+
+
   it("localizes post-save Lever catalog semantics in French", async () => {
     const candidate: ExternalLeverCandidate = {
       category: "mentor",

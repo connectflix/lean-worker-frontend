@@ -1172,6 +1172,19 @@ export type LeverEntityKind =
   | "organization"
   | "resource";
 
+export type ExternalLeverProximityTier =
+  | "very_close"
+  | "close"
+  | "moderate"
+  | "far"
+  | "unknown";
+
+export type ExternalLeverProximityReason =
+  | "same_professional_function"
+  | "same_role"
+  | "same_organization"
+  | "same_location";
+
 export type ExternalLeverCandidate = {
   category: string;
   lever_type: LeverType;
@@ -1185,6 +1198,8 @@ export type ExternalLeverCandidate = {
   source_external_id: string | null;
   source_url: string | null;
   source_payload_json: Record<string, unknown>;
+  proximity_tier?: ExternalLeverProximityTier | null;
+  proximity_reasons?: ExternalLeverProximityReason[];
 };
 
 export type OrganizationRecommendationLeverDiscoveryRequest = {

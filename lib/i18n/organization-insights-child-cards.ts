@@ -90,6 +90,16 @@ export type OrganizationInsightsChildCardsCopy = {
     openExternalLever: string;
     openLinkedInProfile: string;
 
+    proximityVeryClose: string;
+    proximityClose: string;
+    proximityModerate: string;
+    proximityFar: string;
+    proximityUnknown: string;
+    sameProfessionalFunction: string;
+    sameRole: string;
+    sameOrganization: string;
+    sameLocation: string;
+
     saveLeverToCatalog: string;
     savingLeverToCatalog: string;
     saveLeverToCatalogFor: (name: string) => string;
@@ -230,6 +240,16 @@ const COPY: Record<
         "Lever discovery failed. Please try again.",
       openExternalLever: "Open external profile",
       openLinkedInProfile: "View LinkedIn profile",
+
+      proximityVeryClose: "Very close",
+      proximityClose: "Close",
+      proximityModerate: "Moderate",
+      proximityFar: "Far",
+      proximityUnknown: "Unknown proximity",
+      sameProfessionalFunction: "Same function",
+      sameRole: "Same role",
+      sameOrganization: "Same organization",
+      sameLocation: "Same location",
 
       saveLeverToCatalog: "Save to Lever catalog",
       savingLeverToCatalog: "Saving...",
@@ -378,6 +398,16 @@ const COPY: Record<
         "La recherche de leviers a échoué. Veuillez réessayer.",
       openExternalLever: "Ouvrir le profil externe",
       openLinkedInProfile: "Voir le profil LinkedIn",
+
+      proximityVeryClose: "Très proche",
+      proximityClose: "Proche",
+      proximityModerate: "Proximité modérée",
+      proximityFar: "Éloigné",
+      proximityUnknown: "Proximité inconnue",
+      sameProfessionalFunction: "Même fonction",
+      sameRole: "Même rôle",
+      sameOrganization: "Même organisation",
+      sameLocation: "Même localisation",
 
       saveLeverToCatalog: "Enregistrer dans le catalogue de leviers",
       savingLeverToCatalog: "Enregistrement...",

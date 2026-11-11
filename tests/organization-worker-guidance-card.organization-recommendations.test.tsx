@@ -589,6 +589,72 @@ describe("OrganizationWorkerGuidanceCard organization recommendations", () => {
   });
 
 
+  it("renders explainable contextual proximity for discovered candidates", async () => {
+    const candidate: ExternalLeverCandidate = {
+      category: "mentor",
+      lever_type: "transformation",
+      entity_kind: "person",
+      name: "Contextually Close Mentor",
+      description: "Experienced architecture mentor.",
+      url: null,
+      tags: [],
+      target_problem: [],
+      source_provider: "apollo",
+      source_external_id: "person-proximity-123",
+      source_url: null,
+      source_payload_json: {
+        city: "Brussels",
+        country: "Belgium",
+      },
+      proximity_tier: "very_close",
+      proximity_reasons: [
+        "same_professional_function",
+        "same_role",
+        "same_organization",
+        "same_location",
+      ],
+    };
+
+    render(
+      <OrganizationWorkerGuidanceCard
+        guidance={guidance()}
+        loading={false}
+        onOrganizationRecommendationLeverDiscovery={vi.fn(async () => [
+          candidate,
+        ])}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /discover levers for clarify decision boundaries/i,
+      }),
+    );
+
+    await screen.findByText("Contextually Close Mentor");
+
+    expect(
+      screen.getByText("Very close"),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText("Same function"),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText("Same role"),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText("Same organization"),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText("Same location"),
+    ).toBeInTheDocument();
+  });
+
+
   it("does not render an empty discovered candidate location", async () => {
     const candidate: ExternalLeverCandidate = {
       category: "mentor",

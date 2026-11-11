@@ -8,6 +8,8 @@ import { useAdminUiLanguage } from "@/lib/use-admin-ui-language";
 import type {
   AdminLever,
   ExternalLeverCandidate,
+  ExternalLeverProximityReason,
+  ExternalLeverProximityTier,
   LeverType,
   OrganizationRecommendationLeverDiscoveryRequest,
   OrganizationWorkerMandateConstraint,
@@ -61,6 +63,41 @@ function candidateLocation(
   }
 
   return values.length ? values.join(", ") : null;
+}
+
+
+function proximityTierLabel(
+  tier: ExternalLeverProximityTier | null | undefined,
+  copy: ReturnType<typeof useGuidanceCopy>,
+): string | null {
+  if (!tier) {
+    return null;
+  }
+
+  const labels: Record<ExternalLeverProximityTier, string> = {
+    very_close: copy.proximityVeryClose,
+    close: copy.proximityClose,
+    moderate: copy.proximityModerate,
+    far: copy.proximityFar,
+    unknown: copy.proximityUnknown,
+  };
+
+  return labels[tier];
+}
+
+
+function proximityReasonLabel(
+  reason: ExternalLeverProximityReason,
+  copy: ReturnType<typeof useGuidanceCopy>,
+): string {
+  const labels: Record<ExternalLeverProximityReason, string> = {
+    same_professional_function: copy.sameProfessionalFunction,
+    same_role: copy.sameRole,
+    same_organization: copy.sameOrganization,
+    same_location: copy.sameLocation,
+  };
+
+  return labels[reason];
 }
 
 
@@ -1123,6 +1160,15 @@ function OrganizationRecommendationLeverDiscovery({
             {candidates.map((candidate, index) => {
               const key = candidateKey(candidate, index);
               const location = candidateLocation(candidate);
+              const proximityTier = proximityTierLabel(
+                candidate.proximity_tier,
+                copy,
+              );
+              const proximityReasons = (
+                candidate.proximity_reasons ?? []
+              ).map((reason) =>
+                proximityReasonLabel(reason, copy)
+              );
               const saving = savingCandidateKey === key;
               const saved = savedCandidateKeys.has(key);
               const saveFailed = saveErrorCandidateKey === key;
@@ -1164,6 +1210,44 @@ function OrganizationRecommendationLeverDiscovery({
                       }}
                     >
                       {location}
+                    </div>
+                  ) : null}
+
+                  {proximityTier ? (
+                    <div
+                      data-testid="external-lever-proximity"
+                      className="stack"
+                      style={{ gap: 6 }}
+                    >
+                      <div>
+                        <span className="badge">
+                          {proximityTier}
+                        </span>
+                      </div>
+
+                      {proximityReasons.length ? (
+                        <div
+                          className="row"
+                          style={{
+                            gap: 8,
+                            flexWrap: "wrap",
+                            alignItems: "center",
+                          }}
+                        >
+                          {proximityReasons.map((reason, reasonIndex) => (
+                            <span
+                              key={`${reason}-${reasonIndex}`}
+                              className="muted"
+                              style={{
+                                fontSize: 12,
+                                lineHeight: 1.4,
+                              }}
+                            >
+                              {reason}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
                     </div>
                   ) : null}
 
