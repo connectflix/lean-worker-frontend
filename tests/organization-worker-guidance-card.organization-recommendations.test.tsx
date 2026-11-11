@@ -674,6 +674,104 @@ describe("OrganizationWorkerGuidanceCard organization recommendations", () => {
   });
 
 
+  it.each([
+    ["very_close", "Very close"],
+    ["close", "Close"],
+    ["moderate", "Moderate"],
+    ["far", "Far"],
+    ["unknown", "Unknown proximity"],
+  ] as const)(
+    "renders proximity tier %s without requiring proximity reasons",
+    async (proximityTier, expectedLabel) => {
+      const candidate: ExternalLeverCandidate = {
+        category: "mentor",
+        lever_type: "transformation",
+        entity_kind: "person",
+        name: `Candidate ${proximityTier}`,
+        description: "Experienced mentor.",
+        url: null,
+        tags: [],
+        target_problem: [],
+        source_provider: "apollo",
+        source_external_id: `person-${proximityTier}`,
+        source_url: null,
+        source_payload_json: {},
+        proximity_tier: proximityTier,
+        proximity_reasons: [],
+      };
+
+      render(
+        <OrganizationWorkerGuidanceCard
+          guidance={guidance()}
+          loading={false}
+          onOrganizationRecommendationLeverDiscovery={vi.fn(async () => [
+            candidate,
+          ])}
+        />,
+      );
+
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: /discover levers for clarify decision boundaries/i,
+        }),
+      );
+
+      await screen.findByText(`Candidate ${proximityTier}`);
+
+      const proximity = screen.getByTestId("external-lever-proximity");
+
+      expect(proximity).toHaveTextContent(expectedLabel);
+      expect(
+        screen.queryAllByTestId("external-lever-proximity-reason"),
+      ).toHaveLength(0);
+    },
+  );
+
+
+  it("does not render proximity chrome for historical candidates without proximity metadata", async () => {
+    const candidate: ExternalLeverCandidate = {
+      category: "mentor",
+      lever_type: "transformation",
+      entity_kind: "person",
+      name: "Historical Mentor",
+      description: "Historical discovery candidate.",
+      url: null,
+      tags: [],
+      target_problem: [],
+      source_provider: "apollo",
+      source_external_id: "person-historical-proximity",
+      source_url: null,
+      source_payload_json: {},
+    };
+
+    render(
+      <OrganizationWorkerGuidanceCard
+        guidance={guidance()}
+        loading={false}
+        onOrganizationRecommendationLeverDiscovery={vi.fn(async () => [
+          candidate,
+        ])}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /discover levers for clarify decision boundaries/i,
+      }),
+    );
+
+    await screen.findByText("Historical Mentor");
+
+    expect(
+      screen.queryByTestId("external-lever-proximity"),
+    ).not.toBeInTheDocument();
+
+    expect(
+      screen.queryAllByTestId("external-lever-proximity-reason"),
+    ).toHaveLength(0);
+  });
+
+
   it("does not render an empty discovered candidate location", async () => {
     const candidate: ExternalLeverCandidate = {
       category: "mentor",
