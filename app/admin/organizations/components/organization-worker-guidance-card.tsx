@@ -1220,7 +1220,7 @@ function OrganizationRecommendationLeverDiscovery({
                       style={{ gap: 6 }}
                     >
                       <div>
-                        <span className="badge">
+                        <span className="badge primary">
                           {proximityTier}
                         </span>
                       </div>
@@ -1237,7 +1237,8 @@ function OrganizationRecommendationLeverDiscovery({
                           {proximityReasons.map((reason, reasonIndex) => (
                             <span
                               key={`${reason}-${reasonIndex}`}
-                              className="muted"
+                              data-testid="external-lever-proximity-reason"
+                              className="badge"
                               style={{
                                 fontSize: 12,
                                 lineHeight: 1.4,

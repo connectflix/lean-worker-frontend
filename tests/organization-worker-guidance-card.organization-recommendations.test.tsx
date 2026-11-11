@@ -652,6 +652,25 @@ describe("OrganizationWorkerGuidanceCard organization recommendations", () => {
     expect(
       screen.getByText("Same location"),
     ).toBeInTheDocument();
+
+
+    expect(
+      screen.getByText("Very close"),
+    ).toHaveClass("badge", "primary");
+
+    const proximityReasons = screen.getAllByTestId(
+      "external-lever-proximity-reason",
+    );
+
+    expect(proximityReasons).toHaveLength(4);
+
+    for (const reason of proximityReasons) {
+      expect(reason).toHaveClass("badge");
+    }
+
+    expect(
+      screen.getAllByText("Brussels, Belgium"),
+    ).toHaveLength(1);
   });
 
 
