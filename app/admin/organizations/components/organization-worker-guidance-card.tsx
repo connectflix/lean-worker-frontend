@@ -1219,6 +1219,18 @@ function OrganizationRecommendationLeverDiscovery({
                       className="stack"
                       style={{ gap: 6 }}
                     >
+                      <div
+                        className="muted"
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 800,
+                          letterSpacing: "0.08em",
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        {copy.contextualProximity}
+                      </div>
+
                       <div>
                         <span className="badge primary">
                           {proximityTier}

@@ -193,6 +193,9 @@ describe("Organization Insights child cards internationalization", () => {
 
     await screen.findByText("Mentor Proche");
 
+    expect(
+      screen.getByText("Proximité contextuelle"),
+    ).toBeInTheDocument();
     expect(screen.getByText("Très proche")).toBeInTheDocument();
     expect(screen.getByText("Même fonction")).toBeInTheDocument();
     expect(screen.getByText("Même rôle")).toBeInTheDocument();

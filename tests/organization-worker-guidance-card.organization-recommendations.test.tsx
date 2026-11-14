@@ -634,6 +634,10 @@ describe("OrganizationWorkerGuidanceCard organization recommendations", () => {
     await screen.findByText("Contextually Close Mentor");
 
     expect(
+      screen.getByText("Contextual proximity"),
+    ).toBeInTheDocument();
+
+    expect(
       screen.getByText("Very close"),
     ).toBeInTheDocument();
 

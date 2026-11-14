@@ -90,6 +90,7 @@ export type OrganizationInsightsChildCardsCopy = {
     openExternalLever: string;
     openLinkedInProfile: string;
 
+    contextualProximity: string;
     proximityVeryClose: string;
     proximityClose: string;
     proximityModerate: string;
@@ -241,6 +242,7 @@ const COPY: Record<
       openExternalLever: "Open external profile",
       openLinkedInProfile: "View LinkedIn profile",
 
+      contextualProximity: "Contextual proximity",
       proximityVeryClose: "Very close",
       proximityClose: "Close",
       proximityModerate: "Moderate",
@@ -399,6 +401,7 @@ const COPY: Record<
       openExternalLever: "Ouvrir le profil externe",
       openLinkedInProfile: "Voir le profil LinkedIn",
 
+      contextualProximity: "Proximité contextuelle",
       proximityVeryClose: "Très proche",
       proximityClose: "Proche",
       proximityModerate: "Proximité modérée",
